@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+*.local
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Wrangler
+.wrangler/

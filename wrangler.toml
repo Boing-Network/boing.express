@@ -1,0 +1,21 @@
+# Cloudflare Pages: deploy with: pnpm build && wrangler pages deploy dist --project-name=boing-wallet
+# Custom domain: add boing.express in Pages → Custom domains
+# D1, R2, KV are created via CLI and can be bound to Pages Functions or this Worker later.
+
+name = "boing-wallet-api"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Bindings (fill database_id and id after running wrangler d1 create / kv namespace create)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "boing-wallet-db"
+# database_id = "<from wrangler d1 create>"
+
+# [[r2_buckets]]
+# binding = "BUCKET"
+# bucket_name = "boing-wallet-r2"
+
+# [[kv_namespaces]]
+# binding = "KV"
+# id = "<from wrangler kv namespace create>"
