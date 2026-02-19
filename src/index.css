@@ -1,20 +1,25 @@
-/* Boing Network theme — aligned with https://boing.network (DeFi that always bounces back) */
+/* Boing Network theme — aligned with https://boing.network (The DeFi that always bounces back) */
 :root {
-  --bg: #0a0a0c;
-  --surface: #12121a;
-  --surface-elevated: #1a1a24;
-  --border: #2a2a36;
-  --text: #f0f0f5;
-  --text-secondary: #b4b4c0;
-  --muted: #6b6b7a;
+  --bg: #09090b;
+  --bg-subtle: #0a0a0c;
+  --surface: #141418;
+  --surface-elevated: #1c1c22;
+  --border: #27272a;
+  --border-subtle: #1f1f24;
+  --text: #fafafa;
+  --text-secondary: #a1a1aa;
+  --muted: #71717a;
   --accent: #f59e0b;
-  --accent-hover: #d97706;
-  --accent-soft: rgba(245, 158, 11, 0.15);
-  --success: #10b981;
+  --accent-hover: #eab308;
+  --accent-soft: rgba(245, 158, 11, 0.12);
+  --accent-glow: rgba(245, 158, 11, 0.25);
+  --success: #22c55e;
   --danger: #ef4444;
   --radius: 12px;
   --radius-sm: 8px;
+  --radius-pill: 9999px;
   --font: 'DM Sans', system-ui, sans-serif;
+  --transition: 0.2s ease;
 }
 
 * {
@@ -27,7 +32,10 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
@@ -37,15 +45,18 @@ body {
 button {
   font-family: inherit;
   cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background-color var(--transition);
 }
 
-input, textarea {
+input,
+textarea {
   font-family: inherit;
 }
 
 a {
   color: var(--accent);
   text-decoration: none;
+  transition: color var(--transition);
 }
 
 a:hover {
