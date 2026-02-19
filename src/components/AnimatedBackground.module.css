@@ -143,27 +143,31 @@
   opacity: 0.5;
 }
 
+/* Movement matches line angle: line1 -16deg → right+up */
 @keyframes shoot1 {
   0% { transform: translate(0); opacity: 0; }
   10% { opacity: 0.6; }
   90% { opacity: 0.6; }
-  100% { transform: translate(100vw, -28vw); opacity: 0; }
+  100% { transform: translate(100vw, -29vw); opacity: 0; }
 }
 
+/* line2 -55deg, origin right → left+down */
 @keyframes shoot2 {
   0% { transform: translate(0); opacity: 0; }
   10% { opacity: 0.5; }
   90% { opacity: 0.5; }
-  100% { transform: translate(-100vw, 43vw); opacity: 0; }
+  100% { transform: translate(-57vw, 82vw); opacity: 0; }
 }
 
+/* line3 45deg → right+up */
 @keyframes shoot3 {
   0% { transform: translate(0); opacity: 0; }
   10% { opacity: 0.4; }
   90% { opacity: 0.4; }
-  100% { transform: translate(100vw, 50vw); opacity: 0; }
+  100% { transform: translate(100vw, 100vw); opacity: 0; }
 }
 
+/* line4 45deg, origin right → left+up */
 @keyframes shoot4 {
   0% { transform: translate(0); opacity: 0; }
   10% { opacity: 0.3; }
@@ -171,11 +175,12 @@
   100% { transform: translate(-80vw, -80vw); opacity: 0; }
 }
 
+/* line5 -10deg, star on right → left+slight down */
 @keyframes shoot5 {
   0% { transform: translate(0); opacity: 0; }
   5% { opacity: 0.5; }
   95% { opacity: 0.5; }
-  100% { transform: translate(-90vw, -18vw); opacity: 0; }
+  100% { transform: translate(-98vw, 17vw); opacity: 0; }
 }
 
 /* ---------- Floating particles (slow, fade in/out) ---------- */

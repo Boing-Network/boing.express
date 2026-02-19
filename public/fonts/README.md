@@ -1,8 +1,9 @@
 # Fonts
 
-To use **Contraa** (or **Contra**) on the site, add:
+**Comfortaa** .ttf files are loaded and used site-wide as the primary font (CSS family name: Contraa for compatibility):
 
-- `Contraa.woff2`
-- `Contraa.woff` (optional; WOFF2 is enough for modern browsers)
-
-You can use the free [Contra font](https://www.fontsquirrel.com/fonts/contra) from Apostrophic Labs and add the webfont files here with the Contraa name.
+- `Comfortaa-Light.ttf` (300)
+- `Comfortaa-Regular.ttf` (400)
+- `Comfortaa-Medium.ttf` (500)
+- `Comfortaa-SemiBold.ttf` (600)
+- `Comfortaa-Bold.ttf` (700)

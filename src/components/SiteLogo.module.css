@@ -3,15 +3,13 @@
   align-items: center;
   gap: 0.5rem;
   text-decoration: none;
-  color: var(--text-primary);
   font-weight: 700;
   font-size: 1.2rem;
   letter-spacing: -0.02em;
-  transition: color 0.35s ease, letter-spacing 0.35s ease, gap 0.35s ease;
+  transition: letter-spacing 0.35s ease, gap 0.35s ease;
 }
 
 .logo:hover {
-  color: var(--accent-neon);
   letter-spacing: 0.02em;
   gap: 0.65rem;
 }
@@ -20,17 +18,36 @@
   opacity: 0.9;
 }
 
-.logoIcon {
+/* Logo icon: neon cyan with glow (theme accent) */
+.logoIconWrap {
   flex-shrink: 0;
-  transition: transform 0.35s var(--ease-out);
+  display: inline-flex;
+  color: var(--accent-neon);
+  filter: drop-shadow(0 0 6px var(--accent-glow)) drop-shadow(0 0 12px rgba(6, 182, 212, 0.3));
+  transition: filter 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
 
-.logo:hover .logoIcon {
+.logo:hover .logoIconWrap {
+  filter: drop-shadow(0 0 8px var(--accent-glow)) drop-shadow(0 0 16px rgba(6, 182, 212, 0.5));
   transform: scale(1.08) rotate(-4deg);
 }
 
+.logoIcon {
+  display: block;
+}
+
+/* Title text: gradient to match hero/theme */
 .logoText {
+  background: linear-gradient(to right, var(--accent-neon), var(--cyan), var(--blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   position: relative;
+  transition: filter 0.35s ease;
+}
+
+.logo:hover .logoText {
+  filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.4));
 }
 
 .logoText::after {
