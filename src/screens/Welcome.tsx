@@ -85,7 +85,7 @@ export function Welcome() {
       <div className={styles.wrap}>
         <div className={styles.card}>
           <h1 className={styles.title}>Boing Wallet</h1>
-          <p className={styles.subtitle}>Boing Express — non-custodial wallet for Boing Network</p>
+          <p className={styles.subtitle}>The DeFi that always bounces back. Non-custodial wallet for Boing Network.</p>
           <div className={styles.actions}>
             <button type="button" className={styles.primary} onClick={() => setStep('create')}>
               Create wallet

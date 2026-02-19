@@ -104,7 +104,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     clearWallet();
     setState({
       ...defaultState,
-      network: getNetwork(state.network.config.id) ?? getDefaultNetwork(),
+      network: getNetwork(state.network.config.id) ?? getDefaultNetwork()
     });
   }, [state.network.config.id]);
 

@@ -1,0 +1,38 @@
+# Deploy Boing Wallet to Cloudflare Pages on push to main.
+# Requires repo secrets: CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN
+
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          VITE_BOING_TESTNET_RPC: ${{ vars.VITE_BOING_TESTNET_RPC || 'https://testnet-rpc.boing.network' }}
+          VITE_BOING_MAINNET_RPC: ${{ vars.VITE_BOING_MAINNET_RPC || 'https://rpc.boing.network' }}
+
+      - name: Deploy to Cloudflare Pages
+        run: pnpm exec wrangler pages deploy dist --project-name=boing-wallet
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

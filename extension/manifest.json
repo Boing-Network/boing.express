@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Boing Wallet",
+  "version": "0.1.0",
+  "description": "Non-custodial wallet for Boing Network. The DeFi that always bounces back.",
+  "author": "Boing Express",
+  "homepage_url": "https://boing.express",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Boing Wallet"
+  },
+  "permissions": ["storage", "tabs"],
+  "host_permissions": [
+    "https://testnet-rpc.boing.network/*",
+    "https://rpc.boing.network/*",
+    "https://boing.network/*"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "wallet@boing.express",
+      "strict_min_version": "109.0"
+    }
+  }
+}
