@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { WalletProvider } from './context/WalletContext';
+import { AnimatedBackground } from './components/AnimatedBackground';
 import { WalletNav } from './components/WalletNav';
 import { Landing } from './screens/Landing';
 import { Welcome } from './screens/Welcome';
@@ -36,7 +37,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <WalletProvider>
-        <AppContent />
+        <AnimatedBackground />
+        <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+          <AppContent />
+        </div>
       </WalletProvider>
     </BrowserRouter>
   );

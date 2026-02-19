@@ -1,7 +1,7 @@
 /* Landing — Boing Network (boing.network) + subtle animations */
 .page {
   min-height: 100vh;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
 }
 
@@ -10,7 +10,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  background: var(--bg);
+  background: rgba(7, 7, 8, 0.85);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   animation: fadeIn 0.4s var(--ease-out);
 }
