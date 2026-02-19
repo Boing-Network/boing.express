@@ -1,4 +1,4 @@
-/* Animated background — Boing Network / boing.finance style */
+/* Animated background — exact match to boing.network hero orbs */
 .wrapper {
   position: fixed;
   inset: 0;
@@ -12,97 +12,56 @@
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  opacity: 0.35;
+  opacity: 0.4;
   will-change: transform;
+  animation: float 20s ease-in-out infinite;
 }
 
-/* Teal orb */
-.orb[data-orb="teal"] {
-  width: min(70vw, 600px);
-  height: min(70vw, 600px);
-  background: radial-gradient(circle, var(--teal) 0%, transparent 70%);
+/* Orb 1: cyan — 400px, top -20%, left 10% */
+.orb[data-orb="cyan"] {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
   top: -20%;
-  left: -10%;
-  animation: float1 25s ease-in-out infinite;
+  left: 10%;
+  animation-delay: 0s;
 }
 
-.orb[data-orb="teal2"] {
-  width: min(50vw, 400px);
-  height: min(50vw, 400px);
-  background: radial-gradient(circle, var(--teal) 0%, transparent 70%);
-  bottom: -15%;
-  right: -5%;
-  opacity: 0.25;
-  animation: float2 30s ease-in-out infinite;
+/* Orb 2: blue — 300px, bottom -10%, right 15% */
+.orb[data-orb="blue"] {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+  bottom: -10%;
+  right: 15%;
+  animation-delay: -7s;
 }
 
-/* Violet orb */
+/* Orb 3: violet — 250px, top 30%, right 5% */
 .orb[data-orb="violet"] {
-  width: min(60vw, 500px);
-  height: min(60vw, 500px);
-  background: radial-gradient(circle, var(--violet) 0%, transparent 70%);
-  top: 40%;
-  right: -15%;
-  animation: float2 28s ease-in-out infinite 2s;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
+  top: 30%;
+  right: 5%;
+  animation-delay: -14s;
 }
 
-.orb[data-orb="violet2"] {
-  width: min(45vw, 380px);
-  height: min(45vw, 380px);
-  background: radial-gradient(circle, var(--violet) 0%, transparent 70%);
-  bottom: 20%;
-  left: -10%;
-  opacity: 0.28;
-  animation: float1 26s ease-in-out infinite 4s;
-}
-
-/* Gold/amber orb */
-.orb[data-orb="gold"] {
-  width: min(55vw, 480px);
-  height: min(55vw, 480px);
-  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-  top: -10%;
-  right: 20%;
-  opacity: 0.3;
-  animation: float3 22s ease-in-out infinite 1s;
-}
-
-@keyframes float1 {
+@keyframes float {
   0%, 100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(0) scale(1);
   }
   33% {
-    transform: translate(5%, 8%) scale(1.05);
+    transform: translate(30px, -20px) scale(1.05);
   }
   66% {
-    transform: translate(-4%, -5%) scale(0.98);
-  }
-}
-
-@keyframes float2 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-6%, -7%) scale(1.03);
-  }
-  66% {
-    transform: translate(5%, 4%) scale(0.97);
-  }
-}
-
-@keyframes float3 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(-3%, 6%) scale(1.04);
+    transform: translate(-20px, 15px) scale(0.95);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .orb {
     animation: none;
-    opacity: 0.12;
+    opacity: 0.25;
   }
 }

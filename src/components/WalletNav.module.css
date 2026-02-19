@@ -3,7 +3,7 @@
   align-items: center;
   gap: 1rem;
   padding: 0.5rem 1rem;
-  background: rgba(7, 7, 8, 0.85);
+  background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   animation: fadeIn 0.3s var(--ease-out);
@@ -22,6 +22,6 @@
 }
 
 .nav .active {
-  color: var(--violet);
+  color: var(--accent-neon);
   font-weight: 500;
 }

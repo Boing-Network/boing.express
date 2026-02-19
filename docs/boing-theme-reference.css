@@ -1,0 +1,10 @@
+/* Reference: boing.network index CSS (hero, orbs, cards, buttons).
+ * Used to align boing.express theme. */
+
+/* Orbs: #06b6d4 (cyan), #3b82f6 (blue), #8b5cf6 (violet); 400px, 300px, 250px; blur 80px; opacity .4; float 20s */
+/* Hero title: linear-gradient(to right, #22d3ee, #06b6d4, #3b82f6); background-clip: text */
+/* Tagline: linear-gradient(to right, #22d3eee6, #22d3ee, #3b82f6e6) */
+/* Pills: background linear-gradient(#06b6d41a, #8b5cf61a); border rgba(34,211,238,.2) */
+/* Primary btn: linear-gradient(var(--primary-color), var(--secondary-color)); color #fff */
+/* Cards: background #1e293b59; border 1px solid rgba(34,211,238,.2); border-radius 1rem; backdrop-filter blur(12px) */
+/* Hover: border #22d3ee66; box-shadow 0 8px 24px #06b6d440 */

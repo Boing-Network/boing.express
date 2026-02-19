@@ -9,7 +9,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  background: rgba(7, 7, 8, 0.85);
+  background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   animation: fadeIn 0.4s var(--ease-out);
@@ -19,13 +19,13 @@
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--text);
+  color: var(--text-primary);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .logo:hover {
-  color: var(--accent);
+  color: var(--accent-neon);
 }
 
 .nav {
@@ -97,7 +97,7 @@
 }
 
 .sidebarActive {
-  color: var(--violet) !important;
+  color: var(--accent-neon) !important;
   font-weight: 500;
 }
 
@@ -149,12 +149,12 @@
 }
 
 .articleBody a {
-  color: var(--teal);
+  color: var(--cyan-light);
   text-decoration: none;
 }
 
 .articleBody a:hover {
-  color: var(--violet);
+  color: var(--accent-neon);
   text-decoration: underline;
 }
 
