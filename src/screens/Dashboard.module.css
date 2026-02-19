@@ -15,11 +15,8 @@
   animation: fadeIn 0.35s var(--ease-out);
 }
 
-.logo {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+.logoWrap {
+  margin-right: auto;
 }
 
 .headerActions {

@@ -1,7 +1,7 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
   padding: 0.5rem 1rem;
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(12px);
@@ -9,7 +9,17 @@
   animation: fadeIn 0.3s var(--ease-out);
 }
 
-.nav a {
+.logoWrap {
+  margin-right: 0.5rem;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav .links a {
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.9375rem;
@@ -17,11 +27,11 @@
   transition: color 0.2s ease;
 }
 
-.nav a:hover {
+.nav .links a:hover {
   color: var(--text);
 }
 
-.nav .active {
+.nav .links .active {
   color: var(--accent-neon);
   font-weight: 500;
 }

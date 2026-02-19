@@ -1,0 +1,49 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  transition: color 0.35s ease, letter-spacing 0.35s ease, gap 0.35s ease;
+}
+
+.logo:hover {
+  color: var(--accent-neon);
+  letter-spacing: 0.02em;
+  gap: 0.65rem;
+}
+
+.logo:active {
+  opacity: 0.9;
+}
+
+.logoIcon {
+  flex-shrink: 0;
+  transition: transform 0.35s var(--ease-out);
+}
+
+.logo:hover .logoIcon {
+  transform: scale(1.08) rotate(-4deg);
+}
+
+.logoText {
+  position: relative;
+}
+
+.logoText::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(to right, var(--accent-neon), var(--cyan));
+  transition: width 0.35s var(--ease-out);
+}
+
+.logo:hover .logoText::after {
+  width: 100%;
+}

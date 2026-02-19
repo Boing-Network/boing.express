@@ -1,4 +1,13 @@
 /* Boing Network theme — from boing.network index CSS */
+/* Contraa: add Contraa.woff2 / Contraa.woff to public/fonts/ to enable */
+@font-face {
+  font-family: 'Contraa';
+  src: url('/fonts/Contraa.woff2') format('woff2'), url('/fonts/Contraa.woff') format('woff');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #0f172a;
   --bg-subtle: #1e293b;
@@ -34,7 +43,7 @@
   --radius: 1rem;
   --radius-sm: 0.5rem;
   --radius-pill: 9999px;
-  --font: 'DM Sans', system-ui, sans-serif;
+  --font: 'Contraa', 'DM Sans', system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
   --transition: 0.2s ease;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);

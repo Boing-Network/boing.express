@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useWallet, NETWORKS } from '../context/WalletContext';
 import { formatAddress, accountIdFromHex } from '../boing/types';
 import type { BalanceResult } from '../networks/types';
+import { SiteLogo } from '../components/SiteLogo';
 import styles from './Dashboard.module.css';
 
 export function Dashboard() {
@@ -141,7 +142,7 @@ export function Dashboard() {
   return (
     <div className={styles.wrap}>
       <header className={styles.header}>
-        <h1 className={styles.logo}>Boing Wallet</h1>
+        <SiteLogo className={styles.logoWrap} />
         <div className={styles.headerActions}>
           <select
             value={network.config.id}

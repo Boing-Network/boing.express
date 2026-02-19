@@ -16,21 +16,8 @@
   animation: fadeIn 0.4s var(--ease-out);
 }
 
-.logo {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  text-decoration: none;
-  letter-spacing: -0.02em;
-  transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.logo:hover {
-  color: var(--accent-neon);
-}
-
-.logo:active {
-  transform: scale(0.98);
+.logoWrap {
+  /* SiteLogo fills the logo area */
 }
 
 .nav {

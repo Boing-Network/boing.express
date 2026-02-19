@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
+import { SiteLogo } from '../components/SiteLogo';
 import styles from './Landing.module.css';
 
 export function Landing() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link to="/" className={styles.logo}>Boing Wallet</Link>
+        <SiteLogo className={styles.logoWrap} />
         <nav className={styles.nav}>
           <Link to="/docs">Docs</Link>
           <Link to="/wallet" className={styles.ctaNav}>Open wallet</Link>
@@ -14,7 +15,7 @@ export function Landing() {
 
       <main className={styles.main}>
         <section className={styles.hero}>
-          <h1 className={styles.heroTitle}>Boing Wallet</h1>
+          <h1 className={styles.heroTitle}>Boing Express</h1>
           <p className={styles.heroTagline}>The DeFi that always bounces back</p>
           <div className={styles.heroPills}>
             <span>🔐 Security</span>
@@ -33,7 +34,7 @@ export function Landing() {
         </section>
 
         <section className={styles.features}>
-          <h2 className={styles.sectionTitle}>Why Boing Wallet</h2>
+          <h2 className={styles.sectionTitle}>Why Boing Express</h2>
           <div className={styles.featureGrid}>
             <div className={styles.card}>
               <span className={styles.cardIcon}>🔐</span>
