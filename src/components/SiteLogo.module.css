@@ -1,3 +1,4 @@
+/* Overall logo: aqua/teal (accent-neon) so it never appears dark/black */
 .logo {
   display: inline-flex;
   align-items: center;
@@ -6,19 +7,25 @@
   font-weight: 700;
   font-size: 1.2rem;
   letter-spacing: -0.02em;
-  transition: letter-spacing 0.35s ease, gap 0.35s ease;
+  color: var(--accent-neon);
+  transition: letter-spacing 0.35s var(--ease-out), gap 0.35s var(--ease-out),
+    filter 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
 
 .logo:hover {
-  letter-spacing: 0.02em;
-  gap: 0.65rem;
+  letter-spacing: 0.04em;
+  gap: 0.7rem;
+  color: var(--accent-neon);
+  filter: brightness(1.2);
+  transform: scale(1.03);
 }
 
 .logo:active {
   opacity: 0.9;
+  transform: scale(1.01);
 }
 
-/* Logo icon: neon cyan with glow (theme accent) */
+/* Logo icon: neon cyan with glow; hover = stronger glow + slight bounce */
 .logoIconWrap {
   flex-shrink: 0;
   display: inline-flex;
@@ -28,37 +35,36 @@
 }
 
 .logo:hover .logoIconWrap {
-  filter: drop-shadow(0 0 8px var(--accent-glow)) drop-shadow(0 0 16px rgba(6, 182, 212, 0.5));
-  transform: scale(1.08) rotate(-4deg);
+  filter: drop-shadow(0 0 10px var(--accent-glow)) drop-shadow(0 0 20px rgba(6, 182, 212, 0.6));
+  transform: scale(1.1) rotate(-6deg);
 }
 
 .logoIcon {
   display: block;
 }
 
-/* Title text: gradient to match hero/theme */
+/* Title text: aqua/teal; hover = brighter glow + underline sweep */
 .logoText {
-  background: linear-gradient(to right, var(--accent-neon), var(--cyan), var(--blue));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent-neon);
   position: relative;
-  transition: filter 0.35s ease;
+  transition: filter 0.35s var(--ease-out), text-shadow 0.35s var(--ease-out);
 }
 
 .logo:hover .logoText {
-  filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.4));
+  filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.6));
+  text-shadow: 0 0 16px rgba(6, 182, 212, 0.5), 0 0 24px rgba(6, 182, 212, 0.25);
 }
 
 .logoText::after {
   content: '';
   position: absolute;
   left: 0;
-  bottom: -2px;
+  bottom: -3px;
   width: 0;
-  height: 1px;
+  height: 2px;
   background: linear-gradient(to right, var(--accent-neon), var(--cyan));
-  transition: width 0.35s var(--ease-out);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+  transition: width 0.4s var(--ease-out);
 }
 
 .logo:hover .logoText::after {

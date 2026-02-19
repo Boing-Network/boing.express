@@ -8,12 +8,13 @@
 - **Structured data:** JSON-LD `WebSite` schema for rich results
 - **robots.txt:** Allow all, Sitemap URL
 - **sitemap.xml:** Main routes (/, /wallet, /docs, doc subpages) with priority and changefreq
-- **Theme color:** theme-color and msapplication-TileColor for browser UI
-- **Icons:** favicon.svg, apple-touch-icon
+- **Theme color:** theme-color and msapplication-TileColor for browser UI (#0f172a)
+- **Icons:** favicon.svg and apple-touch-icon use aqua/teal (#22d3ee) to match navbar logo and brand
 
-## Recommended next steps
+## Brand consistency (aqua/teal)
 
-1. **Social image:** Add `public/og-image.png` (1200×630 px) for link previews. The meta tags already point to `https://boing.express/og-image.png`. Without it, some platforms may not show an image or may fall back to the favicon.
+- **Favicon:** SVG uses stroke `#22d3ee` (accent-neon) so the tab/bookmark icon matches the site.
+- **og-image:** When you add `public/og-image.png` (1200×630), use the same aqua/teal accent so link previews match the brand.
 
 2. **Update sitemap lastmod:** When you make significant content changes, update the `<lastmod>` dates in `public/sitemap.xml` (or automate via a build step).
 
