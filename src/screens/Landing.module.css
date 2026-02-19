@@ -1,4 +1,4 @@
-/* Landing — Boing Network design alignment (boing.network) */
+/* Landing — Boing Network (boing.network) + subtle animations */
 .page {
   min-height: 100vh;
   background: var(--bg);
@@ -12,6 +12,7 @@
   padding: 1rem 1.5rem;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  animation: fadeIn 0.4s var(--ease-out);
 }
 
 .logo {
@@ -20,11 +21,15 @@
   color: var(--text);
   text-decoration: none;
   letter-spacing: -0.02em;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .logo:hover {
   color: var(--accent);
+}
+
+.logo:active {
+  transform: scale(0.98);
 }
 
 .nav {
@@ -48,17 +53,22 @@
 .ctaNav {
   padding: 0.5rem 1rem;
   background: var(--accent);
-  color: #09090b !important;
+  color: #070708 !important;
   border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 0.9375rem;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .ctaNav:hover {
   background: var(--accent-hover);
-  color: #09090b !important;
+  color: #070708 !important;
   text-decoration: none;
   box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.ctaNav:active {
+  transform: scale(0.98);
 }
 
 .main {
@@ -78,6 +88,7 @@
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.15;
+  animation: fadeInUp 0.5s var(--ease-out) both;
 }
 
 .heroTagline {
@@ -85,6 +96,7 @@
   font-size: 1.25rem;
   font-weight: 500;
   color: var(--accent);
+  animation: fadeInUp 0.5s var(--ease-out) 0.06s both;
 }
 
 .heroPills {
@@ -105,6 +117,19 @@
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-secondary);
+  animation: fadeInUpSoft 0.4s var(--ease-out) both;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.heroPills span:nth-child(1) { animation-delay: 0.12s; border-color: rgba(20, 184, 166, 0.35); color: var(--teal); }
+.heroPills span:nth-child(2) { animation-delay: 0.18s; border-color: rgba(251, 191, 36, 0.35); color: var(--accent); }
+.heroPills span:nth-child(3) { animation-delay: 0.24s; border-color: rgba(139, 92, 246, 0.35); color: var(--violet); }
+.heroPills span:nth-child(4) { animation-delay: 0.3s; border-color: rgba(20, 184, 166, 0.35); color: var(--teal); }
+
+.heroPills span:hover {
+  border-color: var(--border-subtle);
+  color: var(--text);
+  transform: translateY(-1px);
 }
 
 .heroDesc {
@@ -115,6 +140,7 @@
   margin-left: auto;
   margin-right: auto;
   font-size: 1rem;
+  animation: fadeInUp 0.5s var(--ease-out) 0.15s both;
 }
 
 .heroActions {
@@ -122,25 +148,31 @@
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+  animation: fadeInUp 0.5s var(--ease-out) 0.2s both;
 }
 
 .primaryBtn {
   display: inline-block;
   padding: 0.875rem 1.5rem;
   background: var(--accent);
-  color: #09090b;
+  color: #070708;
   text-decoration: none;
   border-radius: var(--radius-sm);
   font-weight: 600;
   font-size: 1rem;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .primaryBtn:hover {
   background: var(--accent-hover);
-  color: #09090b;
+  color: #070708;
   text-decoration: none;
   box-shadow: 0 0 24px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.primaryBtn:active {
+  transform: translateY(0);
 }
 
 .secondaryBtn {
@@ -153,13 +185,18 @@
   border-radius: var(--radius-sm);
   font-size: 1rem;
   font-weight: 500;
-  transition: border-color 0.2s ease, color 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .secondaryBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--violet);
+  color: var(--violet);
   text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.secondaryBtn:active {
+  transform: translateY(0);
 }
 
 .sectionTitle {
@@ -169,6 +206,7 @@
   letter-spacing: -0.02em;
   text-align: center;
   color: var(--text);
+  animation: fadeIn 0.5s var(--ease-out) both;
 }
 
 .features {
@@ -186,11 +224,19 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.5rem;
-  transition: border-color 0.2s ease;
+  animation: fadeInUpSoft 0.45s var(--ease-out) both;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  border-top: 3px solid var(--border);
 }
+
+.card:nth-child(1) { animation-delay: 0.08s; border-top-color: var(--teal); }
+.card:nth-child(2) { animation-delay: 0.16s; border-top-color: var(--accent); }
+.card:nth-child(3) { animation-delay: 0.24s; border-top-color: var(--violet); }
 
 .card:hover {
   border-color: var(--border-subtle);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .cardIcon {
@@ -198,6 +244,10 @@
   display: block;
   margin-bottom: 0.75rem;
 }
+
+.card:nth-child(1) .cardIcon { filter: drop-shadow(0 0 6px var(--teal-glow)); }
+.card:nth-child(2) .cardIcon { filter: drop-shadow(0 0 6px var(--accent-glow)); }
+.card:nth-child(3) .cardIcon { filter: drop-shadow(0 0 6px var(--violet-glow)); }
 
 .card h3 {
   margin: 0 0 0.5rem;
@@ -257,7 +307,7 @@
 }
 
 .footerLinks a:hover {
-  color: var(--accent);
+  color: var(--teal);
   text-decoration: none;
 }
 

@@ -11,6 +11,7 @@
   padding: 1rem 1.5rem;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  animation: fadeIn 0.4s var(--ease-out);
 }
 
 .logo {
@@ -87,6 +88,7 @@
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.95rem;
+  transition: color 0.2s ease;
 }
 
 .sidebarList a:hover {
@@ -94,7 +96,7 @@
 }
 
 .sidebarActive {
-  color: var(--accent) !important;
+  color: var(--violet) !important;
   font-weight: 500;
 }
 
@@ -106,6 +108,7 @@
 
 .article {
   max-width: 680px;
+  animation: fadeInUpSoft 0.4s var(--ease-out) both;
 }
 
 .articleTitle {
@@ -145,11 +148,12 @@
 }
 
 .articleBody a {
-  color: var(--accent);
+  color: var(--teal);
   text-decoration: none;
 }
 
 .articleBody a:hover {
+  color: var(--violet);
   text-decoration: underline;
 }
 

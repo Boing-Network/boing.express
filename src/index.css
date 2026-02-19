@@ -1,25 +1,72 @@
-/* Boing Network theme — aligned with https://boing.network (The DeFi that always bounces back) */
+/* Boing Network theme — https://boing.network (The DeFi that always bounces back) */
 :root {
-  --bg: #09090b;
-  --bg-subtle: #0a0a0c;
-  --surface: #141418;
-  --surface-elevated: #1c1c22;
-  --border: #27272a;
-  --border-subtle: #1f1f24;
-  --text: #fafafa;
-  --text-secondary: #a1a1aa;
-  --muted: #71717a;
-  --accent: #f59e0b;
-  --accent-hover: #eab308;
-  --accent-soft: rgba(245, 158, 11, 0.12);
-  --accent-glow: rgba(245, 158, 11, 0.25);
-  --success: #22c55e;
+  --bg: #070708;
+  --bg-subtle: #0a0a0d;
+  --surface: #111114;
+  --surface-elevated: #18181c;
+  --border: #25252d;
+  --border-subtle: #1c1c22;
+  --text: #f6f6f8;
+  --text-secondary: #94a3b8;
+  --muted: #64748b;
+  --accent: #fbbf24;
+  --accent-hover: #f59e0b;
+  --accent-soft: rgba(251, 191, 36, 0.12);
+  --accent-glow: rgba(251, 191, 36, 0.22);
+  --teal: #14b8a6;
+  --teal-hover: #0d9488;
+  --teal-soft: rgba(20, 184, 166, 0.15);
+  --teal-glow: rgba(20, 184, 166, 0.2);
+  --violet: #8b5cf6;
+  --violet-hover: #7c3aed;
+  --violet-soft: rgba(139, 92, 246, 0.15);
+  --violet-glow: rgba(139, 92, 246, 0.2);
+  --success: #10b981;
   --danger: #ef4444;
   --radius: 12px;
   --radius-sm: 8px;
   --radius-pill: 9999px;
   --font: 'DM Sans', system-ui, sans-serif;
   --transition: 0.2s ease;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Subtle animations — respect reduced motion */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUpSoft {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 * {
@@ -45,7 +92,7 @@ body {
 button {
   font-family: inherit;
   cursor: pointer;
-  transition: border-color var(--transition), color var(--transition), background-color var(--transition);
+  transition: border-color var(--transition), color var(--transition), background-color var(--transition), transform var(--transition), box-shadow var(--transition);
 }
 
 input,

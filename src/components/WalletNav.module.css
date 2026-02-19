@@ -5,6 +5,7 @@
   padding: 0.5rem 1rem;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  animation: fadeIn 0.3s var(--ease-out);
 }
 
 .nav a {
@@ -20,6 +21,6 @@
 }
 
 .nav .active {
-  color: var(--accent);
+  color: var(--violet);
   font-weight: 500;
 }
