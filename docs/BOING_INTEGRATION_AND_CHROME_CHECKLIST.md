@@ -1,4 +1,4 @@
-# Boing Wallet: Integration & Chrome Web Store Checklist
+# Boing Express: Integration & Chrome Web Store Checklist
 
 Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `crates/boing-primitives` (types, signature.rs).
 
@@ -73,7 +73,7 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `crates/boin
 
 | Item | Status | Notes |
 |------|--------|--------|
-| **Short description** | Dashboard | One line, e.g. "Boing Wallet – send and receive BOING on Boing Network". |
+| **Short description** | Dashboard | One line, e.g. "Boing Express — the wallet for Boing Network". |
 | **Detailed description** | Dashboard | What the wallet does: Boing support, create/import, balance, send, testnet faucet, network selector. |
 | **Screenshots** | Dashboard | At least one; multiple flows recommended. |
 | **Category** | Dashboard | e.g. Productivity or Finance; match single purpose. |

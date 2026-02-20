@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Boing Wallet",
+  "name": "Boing Express",
   "version": "0.1.0",
-  "description": "Non-custodial wallet for Boing Network. The DeFi that always bounces back.",
+  "description": "The wallet for Boing Network. Non-custodial — create/import wallet, send BOING, testnet faucet. The DeFi that always bounces back.",
   "author": "Boing Express",
   "homepage_url": "https://boing.express",
   "icons": {
@@ -17,7 +17,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Boing Wallet"
+    "default_title": "Boing Express"
   },
   "permissions": ["storage", "tabs"],
   "host_permissions": [

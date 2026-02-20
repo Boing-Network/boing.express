@@ -1,5 +1,5 @@
 /**
- * Boing Wallet extension popup — uses shared wallet core from src/.
+ * Boing Express extension popup — the wallet for Boing Network. Uses shared wallet core from src/.
  * Build with: pnpm run build:extension
  */
 

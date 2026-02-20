@@ -9,13 +9,13 @@ Use this copy in the [Chrome Web Store Developer Dashboard](https://chrome.googl
 Use in: **Store listing** → **Short description**
 
 ```
-Boing Wallet — send and receive BOING on Boing Network. Non-custodial, create/import wallet, testnet faucet.
+Boing Express — the wallet for Boing Network. Send and receive BOING, non-custodial, testnet faucet.
 ```
-*(120 characters)*
+*(98 characters)*
 
-**Alternative (shorter):**
+**Alternative:**
 ```
-Send and receive BOING on Boing Network. Non-custodial wallet, testnet faucet, mainnet ready.
+Boing Express: create/import wallet, send BOING, testnet faucet. The wallet for Boing Network.
 ```
 *(97 characters)*
 
@@ -26,7 +26,7 @@ Send and receive BOING on Boing Network. Non-custodial wallet, testnet faucet, m
 Use in: **Store listing** → **Detailed description**
 
 ```
-Boing Wallet is a non-custodial crypto wallet for Boing Network. Your keys never leave your device.
+Boing Express is the wallet for Boing Network — non-custodial; your keys never leave your device.
 
 What you can do:
 • Create a new wallet or import an existing one with a 64-character hex private key
@@ -53,7 +53,7 @@ For more: https://boing.express and https://boing.express/docs
 Use in: **Privacy practices** → **Single purpose**
 
 ```
-Crypto wallet for Boing Network: create or import a wallet, view address and balance, send BOING, and use the testnet faucet. Non-custodial; keys stay on device.
+Boing Express is the wallet for Boing Network: create or import a wallet, view address and balance, send BOING, and use the testnet faucet. Non-custodial; keys stay on device.
 ```
 
 ---
@@ -92,7 +92,7 @@ Declare in the dashboard so it matches your policy:
 Use in: **Distribution** → **Test instructions** (if the form asks how to test the extension)
 
 ```
-1. Install the extension and open the popup (click the Boing Wallet icon).
+1. Install the extension and open the popup (click the Boing Express icon).
 2. Click "Create wallet", enter a password (min 8 characters) and confirm, then click "Create wallet". You will see the dashboard with your address and balance.
 3. Select "Boing Testnet" in the network dropdown (default). If the testnet RPC is live: click "Request testnet BOING" to use the faucet; balance may update after a short delay.
 4. To test send: enter a recipient address (64 hex characters) and an amount in BOING (e.g. 0.1), then click "Send". If the network is not running, you will see a clear error (e.g. "Network unavailable").
@@ -103,9 +103,25 @@ Note: We do not provide mainnet keys or valuable assets. Testnet is for testing 
 
 ---
 
-## Screenshots
+## Graphic assets (Store listing)
 
-**Required.** Capture at least 1; 2–5 recommended. Two ways to get them:
+Use in: **Store listing** → **Graphic assets**
+
+| Asset | Spec | Notes |
+|-------|------|--------|
+| **Store icon** | From package | Already in extension (16, 48, 128 px). Used as the listing icon. |
+| **Global promo video** | YouTube video URL | Optional. Link to a short demo (e.g. create wallet, send BOING). |
+| **Screenshots** | Up to 5 | **1280×800 px** or **640×400 px**. **JPEG or 24-bit PNG.** Required (at least 1). |
+| **Small promo tile** | **440×280** | Canvas size. JPEG or 24-bit PNG. Optional. |
+| **Marquee promo tile** | **1400×560** | Canvas size. JPEG or 24-bit PNG. Optional. |
+
+Use Boing Express branding (logo, “the wallet for Boing Network”) and Boing colors (cyan/teal) for promo tiles.
+
+---
+
+## Screenshots (how to capture)
+
+**Required:** at least 1; up to 5. **Size: 1280×800 px or 640×400 px. Format: JPEG or 24-bit PNG.** Two ways to get them:
 
 ### Option A: Screenshot-helper page (no extension needed)
 
@@ -119,7 +135,7 @@ The helper page uses the same styling as the real extension and shows mock conte
 ### Option B: Screenshot the real extension
 
 1. Load the extension: Chrome → **Extensions** → **Manage** → **Load unpacked** → select the **`extension`** folder.
-2. Click the Boing Wallet icon to open the popup.
+2. Click the Boing Express icon to open the popup.
 3. Create or unlock a wallet so you can see the dashboard.
 4. Take a screenshot of the popup (or the whole browser window with the popup open). The popup is small (380×560 px), so you may want to zoom the browser (Ctrl/Cmd + plus) so the popup is larger, then capture.
 
@@ -133,15 +149,6 @@ The helper page uses the same styling as the real extension and shows mock conte
 | 4 | (Optional) Testnet faucet section visible | 1280×800 or 640×400 |
 
 Chrome’s [asset guidelines](https://developer.chrome.com/docs/webstore/publish/#screenshots) have the latest size and format rules.
-
----
-
-## Promotional images (optional)
-
-- **Small tile:** 440×280 px  
-- **Marquee:** 1400×560 px  
-
-Use Boing branding (logo, colors) and short tagline (e.g. “Non-custodial wallet for Boing Network”).
 
 ---
 
