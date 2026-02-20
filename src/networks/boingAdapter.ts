@@ -1,5 +1,7 @@
 /**
  * Boing Network adapter: implements NetworkAdapter using Boing RPC and signing.
+ * Uses boing_getAccount for balance+nonce when available; falls back to getBalance+getNonce.
+ * Simulates transaction before submit when boing_simulateTransaction is available.
  */
 
 import type { AccountId } from '../boing/types';
@@ -25,17 +27,31 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
 
     async getBalance(accountId: AccountId): Promise<BalanceResult> {
       const hex = accountIdToHex(accountId);
-      const raw = await rpc.getBalance(rpcUrl, hex);
-      return {
-        value: raw,
-        symbol: BOING_SYMBOL,
-        decimals: BOING_DECIMALS,
-      };
+      try {
+        const account = await rpc.getAccount(rpcUrl, hex);
+        return {
+          value: account.balance,
+          symbol: BOING_SYMBOL,
+          decimals: BOING_DECIMALS,
+        };
+      } catch {
+        const raw = await rpc.getBalance(rpcUrl, hex);
+        return {
+          value: raw,
+          symbol: BOING_SYMBOL,
+          decimals: BOING_DECIMALS,
+        };
+      }
     },
 
     async getNonce(accountId: AccountId): Promise<bigint> {
       const hex = accountIdToHex(accountId);
-      return rpc.getNonce(rpcUrl, hex);
+      try {
+        const account = await rpc.getAccount(rpcUrl, hex);
+        return BigInt(account.nonce);
+      } catch {
+        return rpc.getNonce(rpcUrl, hex);
+      }
     },
 
     async buildTransfer(
@@ -57,6 +73,16 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
 
     async submitTransaction(signedTxHex: string): Promise<SubmitResult> {
       try {
+        try {
+          await rpc.simulateTransaction(rpcUrl, signedTxHex);
+        } catch (simErr) {
+          const msg = simErr instanceof Error ? simErr.message : String(simErr);
+          if (msg.includes('Method not found')) {
+            // Node may not support simulate; proceed to submit
+          } else {
+            return { success: false, error: msg };
+          }
+        }
         const txHash = await rpc.submitTransaction(rpcUrl, signedTxHex);
         return { success: true, txHash };
       } catch (e) {
@@ -78,6 +104,10 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
           error: e instanceof Error ? e.message : String(e),
         };
       }
+    },
+
+    async getChainHeight(): Promise<number> {
+      return rpc.chainHeight(rpcUrl);
     },
   };
 }

@@ -4,18 +4,22 @@
  */
 
 import {
+  initExtensionWalletStorage,
   hasStoredWallet,
   getStoredWallet,
   unlockWallet,
   createAndSaveWallet,
   importAndSaveWallet,
   clearWallet,
-} from '../src/storage/walletStore';
+} from '../src/storage/walletStore.extension';
 import { createNetworks, getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
-import { accountIdFromHex, formatAddress } from '../src/boing/types';
+import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
+import { parseDecimalAmount } from '../src/boing/amount';
 import { BOING_TESTNET_RPC, BOING_MAINNET_RPC } from './config';
 
 const NETWORKS = createNetworks(BOING_TESTNET_RPC, BOING_MAINNET_RPC);
+const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
+const BOING_DECIMALS = 18;
 
 type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'dashboard';
 
@@ -23,6 +27,10 @@ let currentScreen: Screen = 'choose';
 let accountId: Uint8Array | null = null;
 let privateKey: Uint8Array | null = null;
 let selectedNetworkId = DEFAULT_NETWORK_ID;
+/** Last displayed balance string (for Max button). */
+let lastDisplayBalance = '0';
+/** Last raw balance (smallest units) for insufficient-balance check. */
+let lastBalanceRaw = '0';
 
 function $(id: string): HTMLElement {
   const el = document.getElementById(id);
@@ -64,21 +72,24 @@ async function renderChoose(): void {
   }
 }
 
-async function goDashboard(): Promise<void> {
-  if (!accountId || !privateKey) return;
+function getCurrentNetwork() {
   const network = getDefaultNetwork(NETWORKS);
-  const net = getNetwork(selectedNetworkId, NETWORKS) ?? network;
+  return getNetwork(selectedNetworkId, NETWORKS) ?? network;
+}
 
-  ($('address') as HTMLElement).textContent = formatAddress(accountId, false);
-  ($('network-select') as HTMLSelectElement).innerHTML = NETWORKS.map(
-    (n) => `<option value="${n.config.id}" ${n.config.id === selectedNetworkId ? 'selected' : ''}>${n.config.name}</option>`
-  ).join('');
-
+async function refreshDashboardBalance(): Promise<void> {
+  if (!accountId) return;
+  const net = getCurrentNetwork();
+  ($('balance') as HTMLElement).textContent = '…';
+  ($('balance-error') as HTMLElement).classList.add('hidden');
   try {
     const balance = await net.getBalance(accountId);
-    ($('balance') as HTMLElement).textContent = (
+    const displayStr = (
       Number(balance.value) / 10 ** balance.decimals
     ).toLocaleString(undefined, { maximumFractionDigits: 6 });
+    lastDisplayBalance = displayStr;
+    lastBalanceRaw = balance.value;
+    ($('balance') as HTMLElement).textContent = displayStr;
     ($('symbol') as HTMLElement).textContent = balance.symbol;
     ($('balance-error') as HTMLElement).classList.add('hidden');
   } catch (e) {
@@ -86,7 +97,28 @@ async function goDashboard(): Promise<void> {
     ($('balance-error') as HTMLElement).textContent = e instanceof Error ? e.message : String(e);
     ($('balance-error') as HTMLElement).classList.remove('hidden');
   }
+}
 
+function updateFaucetVisibility(): void {
+  const net = getCurrentNetwork();
+  const section = document.getElementById('faucet-section');
+  if (section) section.classList.toggle('hidden', !net.config.isTestnet);
+}
+
+async function goDashboard(): Promise<void> {
+  if (!accountId || !privateKey) return;
+  const network = getDefaultNetwork(NETWORKS);
+  const net = getNetwork(selectedNetworkId, NETWORKS) ?? network;
+
+  ($('address') as HTMLElement).textContent = formatAddress(accountId, false);
+  ($('balance') as HTMLElement).textContent = '…';
+  ($('network-select') as HTMLSelectElement).innerHTML = NETWORKS.map(
+    (n) => `<option value="${n.config.id}" ${n.config.id === selectedNetworkId ? 'selected' : ''}>${n.config.name}</option>`
+  ).join('');
+
+  await refreshDashboardBalance();
+  updateFaucetVisibility();
+  chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: selectedNetworkId });
   showScreen('dashboard');
 }
 
@@ -170,6 +202,9 @@ $('btn-import-back').addEventListener('click', () => showScreen('choose'));
 // --- Dashboard
 $('network-select').addEventListener('change', (e) => {
   selectedNetworkId = (e.target as HTMLSelectElement).value;
+  chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: selectedNetworkId });
+  refreshDashboardBalance();
+  updateFaucetVisibility();
 });
 
 $('btn-lock').addEventListener('click', () => {
@@ -187,6 +222,11 @@ $('btn-copy').addEventListener('click', async () => {
   setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
 });
 
+$('btn-send-max').addEventListener('click', () => {
+  ($('send-amount') as HTMLInputElement).value = lastDisplayBalance;
+  ($('send-amount') as HTMLInputElement).focus();
+});
+
 $('form-send').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!accountId || !privateKey) return;
@@ -198,16 +238,24 @@ $('form-send').addEventListener('submit', async (e) => {
     showError('send-error', 'Invalid address: 64 hex chars required');
     return;
   }
-  let amount: bigint;
-  try {
-    amount = BigInt(amountStr);
-  } catch {
-    showError('send-error', 'Invalid amount');
+  if (accountId && toHex.toLowerCase() === accountIdToHex(accountId).toLowerCase()) {
+    showError('send-error', 'Cannot send to yourself');
     return;
   }
-  if (amount <= 0n) {
-    showError('send-error', 'Amount must be positive');
+  const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
+  if (amount == null || amount <= 0n) {
+    showError('send-error', 'Enter a valid amount in BOING (e.g. 1 or 0.5)');
     return;
+  }
+  if (BigInt(lastBalanceRaw) < amount) {
+    showError('send-error', 'Insufficient balance');
+    return;
+  }
+  const sendBtn = document.getElementById('btn-send-submit') as HTMLButtonElement;
+  const originalSendText = sendBtn?.textContent ?? 'Send';
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending…';
   }
   const net = getNetwork(selectedNetworkId, NETWORKS) ?? getDefaultNetwork(NETWORKS);
   try {
@@ -223,11 +271,17 @@ $('form-send').addEventListener('submit', async (e) => {
       ($('balance') as HTMLElement).textContent = (
         Number(balance.value) / 10 ** balance.decimals
       ).toLocaleString(undefined, { maximumFractionDigits: 6 });
+      ($('send-amount') as HTMLInputElement).focus();
     } else {
       showError('send-error', result.error ?? 'Submit failed');
     }
   } catch (err) {
     showError('send-error', err instanceof Error ? err.message : String(err));
+  } finally {
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.textContent = originalSendText;
+    }
   }
 });
 
@@ -235,6 +289,10 @@ $('btn-faucet').addEventListener('click', async () => {
   if (!accountId) return;
   const net = getNetwork(selectedNetworkId, NETWORKS) ?? getDefaultNetwork(NETWORKS);
   if (!net.faucetRequest) return;
+  const faucetBtn = $('btn-faucet') as HTMLButtonElement;
+  const originalFaucetText = faucetBtn.textContent ?? 'Request testnet BOING';
+  faucetBtn.disabled = true;
+  faucetBtn.textContent = 'Requesting…';
   ($('faucet-error') as HTMLElement).classList.add('hidden');
   try {
     const result = await net.faucetRequest(accountId);
@@ -250,6 +308,9 @@ $('btn-faucet').addEventListener('click', async () => {
   } catch (err) {
     ($('faucet-error') as HTMLElement).textContent = err instanceof Error ? err.message : String(err);
     ($('faucet-error') as HTMLElement).classList.remove('hidden');
+  } finally {
+    faucetBtn.disabled = false;
+    faucetBtn.textContent = originalFaucetText;
   }
 });
 
@@ -260,5 +321,9 @@ $('btn-faucet-page').addEventListener('click', () => {
   chrome.tabs.create({ url });
 });
 
-// Init
-renderChoose();
+// Init: restore saved network, load wallet from chrome.storage.local, then show choose/unlock
+chrome.storage.local.get([STORAGE_KEY_NETWORK], (result) => {
+  const saved = result[STORAGE_KEY_NETWORK];
+  if (saved && NETWORKS.some((n) => n.config.id === saved)) selectedNetworkId = saved;
+  initExtensionWalletStorage().then(() => renderChoose());
+});

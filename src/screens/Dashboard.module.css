@@ -189,6 +189,30 @@
   border-color: var(--muted);
 }
 
+.sendAmountRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sendAmountRow .input {
+  flex: 1;
+  min-width: 0;
+}
+.maxBtn {
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.maxBtn:hover {
+  border-color: var(--accent-neon);
+  color: var(--accent-neon);
+}
+
 .faucetRow {
   display: flex;
   gap: 0.75rem;
@@ -198,6 +222,12 @@
 .faucetHint {
   margin: 0 0 0.75rem;
   font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.chainHeight {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 

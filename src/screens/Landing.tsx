@@ -68,6 +68,8 @@ export function Landing() {
             <a href="https://boing.network" target="_blank" rel="noopener noreferrer">Boing Network</a>
             <a href="https://boing.network/docs/rpc-api" target="_blank" rel="noopener noreferrer">RPC API</a>
             <Link to="/docs">Documentation</Link>
+            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/terms">Terms of Service</Link>
           </div>
           <p className={styles.footerCopy}>Boing Express · boing.express · The DeFi that always bounces back</p>
         </footer>

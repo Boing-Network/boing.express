@@ -80,8 +80,7 @@ Create the Pages project in the Cloudflare dashboard first so `project-name` mat
 
 - **Address**: 32-byte AccountId = Ed25519 public key, shown as 64-character hex (with or without `0x`).
 - **Signing**: Signable message = BLAKE3(nonce_LE \|\| sender \|\| bincode(payload) \|\| bincode(access_list)); signature = Ed25519(signable_message). Submitted as `hex(bincode(SignedTransaction))` via `boing_submitTransaction`.
-- **RPC**: JSON-RPC 2.0. Key methods: `boing_submitTransaction`, `boing_chainHeight`, `boing_getBlockByHeight`, `boing_simulateTransaction`, `boing_faucetRequest` (testnet). See `boing-network` repo `docs/RPC-API-SPEC.md`.
-- **Balance**: The app calls `boing_getBalance([hex_account_id])` if the RPC supports it. If not implemented, the UI shows `0` and you need a small indexer or state RPC (document your approach in the RPC spec).
+- **RPC**: JSON-RPC 2.0. Prefers `boing_getAccount` for balance+nonce; falls back to `boing_getBalance`/`boing_getNonce`. Submit via `boing_submitTransaction`; optional `boing_simulateTransaction` before submit. See `boing-network` repo `docs/RPC-API-SPEC.md`. Full integration and Chrome Web Store checklist: [docs/BOING_INTEGRATION_AND_CHROME_CHECKLIST.md](docs/BOING_INTEGRATION_AND_CHROME_CHECKLIST.md).
 
 ## Project structure
 
@@ -120,6 +119,8 @@ pnpm run build:extension
 
 Then in **Chrome**: open `chrome://extensions`, enable “Developer mode”, “Load unpacked”, and select the `extension` folder.  
 In **Firefox**: open `about:debugging` → “This Firefox” → “Load Temporary Add-on” and select `extension/manifest.json`.
+
+For **Chrome Web Store** submission (icons, privacy policy, listing assets), see [extension/CHROME_WEB_STORE.md](extension/CHROME_WEB_STORE.md).
 
 ## License
 

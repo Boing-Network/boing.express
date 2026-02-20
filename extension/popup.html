@@ -14,8 +14,8 @@
     <div id="screen-choose" class="screen">
       <p class="tagline">The DeFi that always bounces back</p>
       <div class="actions">
-        <button type="button" id="btn-create" class="btn-primary">Create wallet</button>
-        <button type="button" id="btn-import" class="btn-secondary">Import wallet</button>
+        <button type="button" id="btn-create" class="btn-primary" aria-label="Create new wallet">Create wallet</button>
+        <button type="button" id="btn-import" class="btn-secondary" aria-label="Import wallet with private key">Import wallet</button>
       </div>
     </div>
     <div id="screen-unlock" class="screen hidden">
@@ -23,9 +23,9 @@
       <form id="form-unlock" class="form">
         <input type="password" id="unlock-password" placeholder="Password" class="input" />
         <p id="unlock-error" class="error hidden"></p>
-        <button type="submit" class="btn-primary">Unlock</button>
+        <button type="submit" class="btn-primary" aria-label="Unlock wallet">Unlock</button>
       </form>
-      <button type="button" id="btn-unlock-back" class="btn-text">Back</button>
+      <button type="button" id="btn-unlock-back" class="btn-text" aria-label="Back to wallet options">Back</button>
     </div>
     <div id="screen-create" class="screen hidden">
       <p class="subtitle">Generate a new keypair. Back up your key.</p>
@@ -33,9 +33,9 @@
         <input type="password" id="create-password" placeholder="Password (min 8 chars)" class="input" />
         <input type="password" id="create-confirm" placeholder="Confirm password" class="input" />
         <p id="create-error" class="error hidden"></p>
-        <button type="submit" class="btn-primary">Create wallet</button>
+        <button type="submit" class="btn-primary" aria-label="Create wallet">Create wallet</button>
       </form>
-      <button type="button" id="btn-create-back" class="btn-text">Back</button>
+      <button type="button" id="btn-create-back" class="btn-text" aria-label="Back">Back</button>
     </div>
     <div id="screen-import" class="screen hidden">
       <p class="subtitle">Enter 64-char hex private key.</p>
@@ -44,20 +44,20 @@
         <input type="password" id="import-password" placeholder="Password (min 8 chars)" class="input" />
         <input type="password" id="import-confirm" placeholder="Confirm password" class="input" />
         <p id="import-error" class="error hidden"></p>
-        <button type="submit" class="btn-primary">Import wallet</button>
+        <button type="submit" class="btn-primary" aria-label="Import wallet">Import wallet</button>
       </form>
-      <button type="button" id="btn-import-back" class="btn-text">Back</button>
+      <button type="button" id="btn-import-back" class="btn-text" aria-label="Back">Back</button>
     </div>
     <div id="screen-dashboard" class="screen hidden">
       <div class="row">
-        <select id="network-select" class="select"></select>
-        <button type="button" id="btn-lock" class="btn-small">Lock</button>
+        <select id="network-select" class="select" aria-label="Select network"></select>
+        <button type="button" id="btn-lock" class="btn-small" aria-label="Lock wallet">Lock</button>
       </div>
       <section class="card">
         <h2 class="label">Address</h2>
         <div class="row">
           <code id="address" class="address"></code>
-          <button type="button" id="btn-copy" class="btn-small">Copy</button>
+          <button type="button" id="btn-copy" class="btn-small" aria-label="Copy address">Copy</button>
         </div>
       </section>
       <section class="card">
@@ -68,20 +68,29 @@
       <section class="card">
         <h2 class="label">Send</h2>
         <form id="form-send" class="form">
-          <input type="text" id="send-to" placeholder="To (64 hex)" class="input" />
-          <input type="text" id="send-amount" placeholder="Amount" class="input" />
+          <input type="text" id="send-to" placeholder="To (64 hex or 0x…)" class="input" aria-label="Recipient address" />
+          <p class="send-hint" aria-hidden="true">64 hex characters or 0x…</p>
+          <div class="row">
+          <input type="text" id="send-amount" placeholder="Amount in BOING (e.g. 1.5)" class="input" aria-label="Amount to send" inputmode="decimal" />
+          <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
+        </div>
           <p id="send-error" class="error hidden"></p>
           <p id="send-success" class="success hidden"></p>
-          <button type="submit" class="btn-primary">Send</button>
+          <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING">Send</button>
         </form>
       </section>
-      <section class="card">
+      <section id="faucet-section" class="card">
         <h2 class="label">Faucet</h2>
-        <button type="button" id="btn-faucet" class="btn-primary">Request testnet BOING</button>
-        <button type="button" id="btn-faucet-page" class="btn-secondary">Open faucet page</button>
+        <button type="button" id="btn-faucet" class="btn-primary" aria-label="Request testnet BOING from faucet">Request testnet BOING</button>
+        <button type="button" id="btn-faucet-page" class="btn-secondary" aria-label="Open faucet page in new tab">Open faucet page</button>
         <p id="faucet-error" class="error hidden"></p>
       </section>
     </div>
+    <footer class="popup-footer" aria-label="Legal">
+      <a href="https://boing.express/privacy" target="_blank" rel="noopener noreferrer" id="link-privacy">Privacy</a>
+      <span class="footer-sep">·</span>
+      <a href="https://boing.express/terms" target="_blank" rel="noopener noreferrer" id="link-terms">Terms</a>
+    </footer>
   </div>
   <script src="popup.js" type="module"></script>
 </body>

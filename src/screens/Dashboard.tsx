@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useWallet, NETWORKS } from '../context/WalletContext';
-import { formatAddress, accountIdFromHex } from '../boing/types';
+import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types';
+import { parseDecimalAmount } from '../boing/amount';
 import type { BalanceResult } from '../networks/types';
 import { SiteLogo } from '../components/SiteLogo';
 import styles from './Dashboard.module.css';
@@ -17,6 +18,7 @@ export function Dashboard() {
 
   const [balance, setBalance] = useState<BalanceResult | null>(null);
   const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [chainHeight, setChainHeight] = useState<number | null>(null);
   const [sendTo, setSendTo] = useState('');
   const [sendAmount, setSendAmount] = useState('');
   const [sendError, setSendError] = useState('');
@@ -40,6 +42,11 @@ export function Dashboard() {
       });
   }, [accountId, network]);
 
+  useEffect(() => {
+    if (!network.getChainHeight) return;
+    network.getChainHeight().then(setChainHeight).catch(() => setChainHeight(null));
+  }, [network]);
+
   async function copyAddress() {
     if (!address) return;
     await navigator.clipboard.writeText(address);
@@ -56,15 +63,18 @@ export function Dashboard() {
       setSendError('Invalid address: must be 64 hex characters');
       return;
     }
-    let amount: bigint;
-    try {
-      amount = BigInt(sendAmount);
-    } catch {
-      setSendError('Invalid amount');
+    if (accountId && toHex.toLowerCase() === accountIdToHex(accountId).toLowerCase()) {
+      setSendError('Cannot send to yourself');
       return;
     }
-    if (amount <= 0n) {
-      setSendError('Amount must be positive');
+    const decimals = balance?.decimals ?? 18;
+    const amount = sendAmount.trim() ? parseDecimalAmount(sendAmount, decimals) : null;
+    if (amount == null || amount <= 0n) {
+      setSendError('Enter a valid amount in BOING (e.g. 1 or 0.5)');
+      return;
+    }
+    if (balance && BigInt(balance.value) < amount) {
+      setSendError('Insufficient balance');
       return;
     }
     const privateKey = getPrivateKey();
@@ -183,6 +193,11 @@ export function Dashboard() {
           <p className={styles.balance}>
             {displayBalance} <span className={styles.symbol}>{balance?.symbol ?? 'BOING'}</span>
           </p>
+          {chainHeight != null && (
+            <p className={styles.chainHeight} aria-label="Chain height">
+              Block #{chainHeight.toLocaleString()}
+            </p>
+          )}
           {balanceError && <p className={styles.error}>{balanceError}</p>}
         </section>
 
@@ -191,18 +206,28 @@ export function Dashboard() {
           <form onSubmit={handleSend} className={styles.form}>
             <input
               type="text"
-              placeholder="To address (64 hex)"
+              placeholder="To address (64 hex or 0x…)"
               value={sendTo}
               onChange={(e) => setSendTo(e.target.value)}
               className={styles.input}
             />
-            <input
-              type="text"
-              placeholder="Amount (e.g. 1000000)"
-              value={sendAmount}
-              onChange={(e) => setSendAmount(e.target.value)}
-              className={styles.input}
-            />
+            <div className={styles.sendAmountRow}>
+              <input
+                type="text"
+                placeholder="Amount in BOING (e.g. 1.5)"
+                value={sendAmount}
+                onChange={(e) => setSendAmount(e.target.value)}
+                className={styles.input}
+                inputMode="decimal"
+              />
+              <button
+                type="button"
+                className={styles.maxBtn}
+                onClick={() => setSendAmount(displayBalance !== '…' && displayBalance !== '—' ? displayBalance : '')}
+              >
+                Max
+              </button>
+            </div>
             {sendError && <p className={styles.error}>{sendError}</p>}
             {sendSuccess && <p className={styles.success}>{sendSuccess}</p>}
             <button type="submit" className={styles.primary} disabled={sending}>

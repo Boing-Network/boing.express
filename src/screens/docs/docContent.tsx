@@ -46,7 +46,7 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>Send</h2>
         <p>
-          To send BOING, enter the recipient’s address (64 hex characters) and the amount (in the smallest unit, e.g. 1_000_000 for 1 BOING if decimals are 6). Submit the transaction; you’ll see a success message and optional transaction hash.
+          To send BOING, enter the recipient’s address (64 hex characters or 0x…) and the amount in BOING (e.g. 1 or 0.5). Use “Max” to send your full balance. Submit the transaction; you’ll see a success message and optional transaction hash.
         </p>
         <h2>Testnet faucet</h2>
         <p>

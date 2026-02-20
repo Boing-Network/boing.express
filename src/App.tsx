@@ -7,6 +7,8 @@ import { Welcome } from './screens/Welcome';
 import { Dashboard } from './screens/Dashboard';
 import { DocsLayout } from './screens/docs/DocsLayout';
 import { DocPage } from './screens/docs/DocPage';
+import { Privacy } from './screens/Privacy';
+import { Terms } from './screens/Terms';
 import { useWallet } from './context/WalletContext';
 
 function WalletApp() {
@@ -28,6 +30,8 @@ function AppContent() {
         <Route index element={<DocPage slug="getting-started" />} />
         <Route path=":slug" element={<DocPage />} />
       </Route>
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

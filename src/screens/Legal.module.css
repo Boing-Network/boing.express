@@ -1,0 +1,118 @@
+.page {
+  min-height: 100vh;
+  background: transparent;
+  color: var(--text);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  animation: fadeIn 0.4s var(--ease-out);
+}
+
+.logoWrap {
+  /* SiteLogo */
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav a:hover {
+  color: var(--text);
+}
+
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  animation: fadeInUpSoft 0.4s var(--ease-out) both;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.updated {
+  margin: 0 0 2rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.article {
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.article h2 {
+  margin: 2rem 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.article h2:first-of-type {
+  margin-top: 0;
+}
+
+.article p {
+  margin: 0 0 1rem;
+}
+
+.article ul {
+  margin: 0 0 1rem;
+  padding-left: 1.5rem;
+}
+
+.article li {
+  margin-bottom: 0.35rem;
+}
+
+.article a {
+  color: var(--cyan-light);
+  text-decoration: none;
+}
+
+.article a:hover {
+  color: var(--accent-neon);
+  text-decoration: underline;
+}
+
+.article code {
+  font-size: 0.9em;
+  padding: 0.15em 0.4em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.back {
+  display: inline-block;
+  margin-top: 2rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  transition: color 0.2s ease;
+}
+
+.back:hover {
+  color: var(--accent-neon);
+}
