@@ -26,6 +26,8 @@ In the Chrome Web Store dashboard you must provide:
 - **Category** (e.g. Productivity or Finance).
 - **Single purpose** description (one clear sentence describing what the extension does).
 
+**Ready-to-paste copy** for all of the above (short description, detailed description, single purpose, privacy URL, test instructions, screenshot guidance): see **[extension/STORE_LISTING_COPY.md](STORE_LISTING_COPY.md)**.
+
 ---
 
 ## Already in good shape

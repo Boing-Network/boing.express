@@ -1,0 +1,15 @@
+---
+description: Commit and push to GitHub after making updates to the codebase.
+globs: 
+alwaysApply: true
+---
+
+# Commit and push after updates
+
+When you complete a set of changes to the boing.express project:
+
+1. **Stage** the relevant files (source, config, docs — exclude build artifacts or local-only files if appropriate).
+2. **Commit** with a clear message that summarizes what changed (e.g. "Add X", "Fix Y for Z").
+3. **Push** to the remote (e.g. `git push origin main`).
+
+Do this at the end of a task or when the user asks to "commit and push" or "save to GitHub". If the user says "do this after every update", treat that as: commit and push after completing the current update.
