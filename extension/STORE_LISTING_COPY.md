@@ -105,7 +105,25 @@ Note: We do not provide mainnet keys or valuable assets. Testnet is for testing 
 
 ## Screenshots
 
-**Required.** Capture at least 1; 2–5 recommended. Suggested captures:
+**Required.** Capture at least 1; 2–5 recommended. Two ways to get them:
+
+### Option A: Screenshot-helper page (no extension needed)
+
+1. Open **`docs/screenshot-helper.html`** in Chrome (double-click the file or drag it into the browser; or run `pnpm dev` and go to `http://localhost:5173/docs/screenshot-helper.html`).
+2. Use the buttons **1. Welcome**, **2. Unlock**, **3. Dashboard** to switch which screen is shown.
+3. Resize the browser window to **1280×800** (or 640×400) for store-recommended size.
+4. Take a screenshot of the wallet area (the scaled popup in the center). On Windows: **Win+Shift+S** (Snipping Tool) or **Win+PrtScn**. Crop to the wallet UI if needed.
+
+The helper page uses the same styling as the real extension and shows mock content for the dashboard.
+
+### Option B: Screenshot the real extension
+
+1. Load the extension: Chrome → **Extensions** → **Manage** → **Load unpacked** → select the **`extension`** folder.
+2. Click the Boing Wallet icon to open the popup.
+3. Create or unlock a wallet so you can see the dashboard.
+4. Take a screenshot of the popup (or the whole browser window with the popup open). The popup is small (380×560 px), so you may want to zoom the browser (Ctrl/Cmd + plus) so the popup is larger, then capture.
+
+### Suggested captures
 
 | # | What to capture | Suggested size |
 |---|-----------------|----------------|
@@ -113,9 +131,8 @@ Note: We do not provide mainnet keys or valuable assets. Testnet is for testing 
 | 2 | Unlock screen: password field and "Unlock" (address hint visible) | 1280×800 or 640×400 |
 | 3 | Dashboard: address, balance, Send form, network selector, Lock | 1280×800 or 640×400 |
 | 4 | (Optional) Testnet faucet section visible | 1280×800 or 640×400 |
-| 5 | (Optional) Success state: e.g. "Copied" or send success message | 1280×800 or 640×400 |
 
-**How to capture:** Open the extension popup (right-click icon → Boing Wallet, or click the icon). Use a screenshot tool or browser dev tools; the popup is 380×560 px, so capture the whole popup centered on a neutral background, or capture the browser window with the popup open. Chrome’s recommended screenshot dimensions are in the [asset guidelines](https://developer.chrome.com/docs/webstore/publish/#screenshots).
+Chrome’s [asset guidelines](https://developer.chrome.com/docs/webstore/publish/#screenshots) have the latest size and format rules.
 
 ---
 

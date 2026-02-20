@@ -3,6 +3,7 @@ node_modules/
 
 # Build
 dist/
+boing-wallet-extension.zip
 *.local
 *.tsbuildinfo
 vite.config.d.ts

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280, height=800" />
+  <title>Boing Wallet — Screenshot helper for Chrome Web Store</title>
+  <link rel="stylesheet" href="../extension/popup.css" />
+  <style>
+    body { margin: 0; background: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: system-ui, sans-serif; }
+    .instructions { color: #94a3b8; font-size: 14px; margin-bottom: 16px; }
+    .instructions a { color: #22d3ee; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tabs button { padding: 8px 16px; background: #334155; border: 1px solid rgba(34,211,238,0.3); border-radius: 8px; color: #f8fafc; cursor: pointer; font-size: 14px; }
+    .tabs button:hover { border-color: #22d3ee; }
+    .tabs button.active { background: rgba(6,182,212,0.2); border-color: #22d3ee; }
+    .frame { transform: scale(2); transform-origin: top center; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    .frame .popup-body { width: 380px; min-height: 420px; max-height: 560px; background: #0f172a; }
+  </style>
+</head>
+<body>
+  <p class="instructions">
+    <strong>Chrome Web Store screenshots:</strong> Choose a screen below, then capture the wallet area (e.g. 1280×800 or 640×400). 
+    Resize the browser to 1280×800 for consistent size, or crop your screenshot. 
+    <a href="https://developer.chrome.com/docs/webstore/publish/#screenshots" target="_blank" rel="noopener">Store image guidelines</a>
+  </p>
+  <div class="tabs">
+    <button type="button" data-screen="choose" class="active">1. Welcome</button>
+    <button type="button" data-screen="unlock">2. Unlock</button>
+    <button type="button" data-screen="dashboard">3. Dashboard</button>
+  </div>
+
+  <div class="frame">
+    <div id="app" class="popup-body">
+      <div class="header">
+        <h1 class="logo">Boing Wallet</h1>
+      </div>
+      <div id="screen-choose" class="screen">
+        <p class="tagline">The DeFi that always bounces back</p>
+        <div class="actions">
+          <button type="button" class="btn-primary">Create wallet</button>
+          <button type="button" class="btn-secondary">Import wallet</button>
+        </div>
+      </div>
+      <div id="screen-unlock" class="screen hidden">
+        <p class="hint">Address: a1b2c3d4…e5f6g7h8</p>
+        <form class="form">
+          <input type="password" placeholder="Password" class="input" />
+          <button type="button" class="btn-primary">Unlock</button>
+        </form>
+        <button type="button" class="btn-text">Back</button>
+      </div>
+      <div id="screen-dashboard" class="screen hidden">
+        <div class="row">
+          <select class="select"><option>Boing Testnet</option><option>Boing Mainnet</option></select>
+          <button type="button" class="btn-small">Lock</button>
+        </div>
+        <section class="card">
+          <h2 class="label">Address</h2>
+          <div class="row">
+            <code class="address">a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456</code>
+            <button type="button" class="btn-small">Copy</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 class="label">Balance</h2>
+          <p class="balance">1,234.56 <span>BOING</span></p>
+        </section>
+        <section class="card">
+          <h2 class="label">Send</h2>
+          <form class="form">
+            <input type="text" placeholder="To (64 hex or 0x…)" class="input" />
+            <p class="send-hint">64 hex characters or 0x…</p>
+            <div class="row">
+              <input type="text" placeholder="Amount in BOING (e.g. 1.5)" class="input" />
+              <button type="button" class="btn-small">Max</button>
+            </div>
+            <button type="submit" class="btn-primary">Send</button>
+          </form>
+        </section>
+        <section class="card">
+          <h2 class="label">Faucet</h2>
+          <button type="button" class="btn-primary">Request testnet BOING</button>
+          <button type="button" class="btn-secondary">Open faucet page</button>
+        </section>
+      </div>
+      <footer class="popup-footer">
+        <a href="https://boing.express/privacy" target="_blank" rel="noopener">Privacy</a>
+        <span class="footer-sep">·</span>
+        <a href="https://boing.express/terms" target="_blank" rel="noopener">Terms</a>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.tabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const screen = btn.dataset.screen;
+        document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
+        const el = document.getElementById('screen-' + screen);
+        if (el) el.classList.remove('hidden');
+      });
+    });
+  </script>
+</body>
+</html>
