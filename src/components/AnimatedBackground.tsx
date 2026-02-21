@@ -1,16 +1,19 @@
 import styles from './AnimatedBackground.module.css';
 
 /**
- * Animated background: outerspace-oceanic theme (promo video).
- * Hexagonal grid, gradient orbs, shooting stars, floating particles, cosmic depth.
+ * Animated background: official Boing art + outerspace-oceanic theme (promo video).
+ * Official background image, gradient overlay, optional hex grid, orbs, shooting stars, particles.
  */
 export function AnimatedBackground() {
   return (
     <div className={styles.wrapper} aria-hidden>
-      {/* Base: deep navy → subtle indigo (cosmic / ocean depth) */}
+      {/* Official Boing background (hex grid, circuit lines, cosmic/oceanic) */}
+      <div className={styles.officialBg} />
+
+      {/* Subtle overlay for content readability */}
       <div className={styles.baseGradient} />
 
-      {/* Hexagonal grid — circuit / bioluminescent network (Boing motif) */}
+      {/* Optional CSS hex grid (can blend with official art) — lower opacity */}
       <div className={styles.hexGridWrap}>
         <svg className={styles.hexGrid} viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
           <defs>

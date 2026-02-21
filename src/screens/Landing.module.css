@@ -70,6 +70,33 @@
   margin-bottom: 4.5rem;
 }
 
+/* Boing robot hero — official mascot (outerspace-oceanic) */
+.heroVisual {
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.6s var(--ease-out) both;
+}
+
+.heroRobot {
+  display: block;
+  margin: 0 auto;
+  max-width: 220px;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 24px rgba(0, 229, 204, 0.25)) drop-shadow(0 0 48px rgba(0, 180, 255, 0.15));
+  transition: transform 0.4s var(--ease-out), filter 0.4s var(--ease-out);
+}
+
+.heroVisual:hover .heroRobot {
+  transform: scale(1.03);
+  filter: drop-shadow(0 0 32px rgba(0, 229, 204, 0.35)) drop-shadow(0 0 56px rgba(0, 180, 255, 0.2));
+}
+
+@media (min-width: 640px) {
+  .heroRobot {
+    max-width: 280px;
+  }
+}
+
 /* Boing Network brand: Primary #00E5CC, Secondary #00B4FF */
 .heroTitle {
   margin: 0 0 0.5rem;

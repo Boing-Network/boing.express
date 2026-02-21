@@ -8,23 +8,30 @@
   pointer-events: none;
 }
 
-/* Base: deep navy with subtle indigo/purple (cosmic + ocean depth) */
+/* Official Boing background image (hex grid, circuit lines, outerspace-oceanic) */
+.officialBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: url('/images/boing_background_dark.png') center center / cover no-repeat;
+}
+
+/* Overlay: deep navy tint for content readability */
 .baseGradient {
   position: absolute;
   inset: 0;
+  z-index: 1;
   background:
-    radial-gradient(ellipse 120% 80% at 70% 20%, rgba(30, 40, 80, 0.25) 0%, transparent 50%),
-    radial-gradient(ellipse 100% 60% at 20% 80%, rgba(20, 30, 60, 0.2) 0%, transparent 45%),
-    radial-gradient(ellipse 80% 100% at 50% 50%, rgba(15, 25, 55, 0.15) 0%, transparent 40%);
-  z-index: 0;
+    linear-gradient(to bottom, rgba(10, 14, 26, 0.4) 0%, rgba(10, 14, 26, 0.25) 50%, rgba(10, 14, 26, 0.5) 100%),
+    radial-gradient(ellipse 100% 60% at 20% 80%, rgba(20, 30, 60, 0.15) 0%, transparent 45%);
 }
 
-/* Hexagonal grid — circuit / bioluminescent network (Boing motif) */
+/* Hexagonal grid — subtle extra layer (optional, low opacity) */
 .hexGridWrap {
   position: absolute;
   inset: 0;
-  z-index: 1;
-  opacity: 0.7;
+  z-index: 2;
+  opacity: 0.35;
 }
 
 .hexGrid {
@@ -36,7 +43,7 @@
 /* ---------- Orbs (bioluminescent / nebula glow) ---------- */
 .orb {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   border-radius: 50%;
   filter: blur(80px);
   opacity: 0.4;
@@ -79,7 +86,7 @@
 
 /* ---------- Shooting stars (cosmic trails) ---------- */
 .shootingStar {
-  z-index: 3;
+  z-index: 4;
   position: absolute;
   width: 0;
   height: 0;
@@ -213,7 +220,7 @@
 /* ---------- Floating particles (bioluminescent / cosmic dust) ---------- */
 .floatParticle {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   border-radius: 50%;
   background: linear-gradient(to right, #00E5CC, #00B4FF);
   box-shadow: 0 0 6px rgba(0, 229, 204, 0.4);

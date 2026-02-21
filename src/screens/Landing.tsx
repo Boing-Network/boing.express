@@ -15,6 +15,15 @@ export function Landing() {
 
       <main className={styles.main}>
         <section className={styles.hero}>
+          <div className={styles.heroVisual}>
+            <img
+              src="/images/boing_robot_hero.png"
+              alt="Boing Network mascot — teal robot in outerspace-oceanic world"
+              className={styles.heroRobot}
+              width={280}
+              height={280}
+            />
+          </div>
           <h1 className={styles.heroTitle}>Boing Express</h1>
           <p className={styles.heroTagline}>Authentic. Decentralized. Optimal. Quality-Assured.</p>
           <div className={styles.heroPills}>
