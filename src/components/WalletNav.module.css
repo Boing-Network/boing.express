@@ -3,7 +3,7 @@
   align-items: center;
   gap: 1.25rem;
   padding: 0.5rem 1rem;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(10, 14, 26, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   animation: fadeIn 0.3s var(--ease-out);

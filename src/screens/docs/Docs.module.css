@@ -9,7 +9,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(10, 14, 26, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   animation: fadeIn 0.4s var(--ease-out);

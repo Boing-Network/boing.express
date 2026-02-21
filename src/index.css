@@ -1,77 +1,38 @@
-/* Boing Network theme — from boing.network index CSS */
-/* Comfortaa: .ttf from public/fonts/ (Light, Regular, Medium, SemiBold, Bold) */
-@font-face {
-  font-family: 'Contraa';
-  src: url('/fonts/Comfortaa-Light.ttf') format('truetype');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Contraa';
-  src: url('/fonts/Comfortaa-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Contraa';
-  src: url('/fonts/Comfortaa-Medium.ttf') format('truetype');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Contraa';
-  src: url('/fonts/Comfortaa-SemiBold.ttf') format('truetype');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Contraa';
-  src: url('/fonts/Comfortaa-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+/* Boing Network theme — Marketing Asset Package brand identity */
+/* Typography: Noto Sans (Google Fonts). Fallback: Comfortaa from /fonts/ */
 
 :root {
-  --bg: #0f172a;
-  --bg-subtle: #1e293b;
-  --bg-tertiary: #1e293b59;
-  --surface: #1e293b59;
-  --surface-elevated: #334155;
-  --border: rgba(34, 211, 238, 0.2);
-  --border-color: rgba(34, 211, 238, 0.2);
-  --border-subtle: rgba(34, 211, 238, 0.15);
+  /* Brand colors from Boing Network Marketing Asset Package PDF */
+  --bg: #0A0E1A;
+  --bg-subtle: #121829;
+  --bg-tertiary: #12182999;
+  --surface: #12182999;
+  --surface-elevated: #1a2240;
+  --border: rgba(0, 229, 204, 0.2);
+  --border-color: rgba(0, 229, 204, 0.2);
+  --border-subtle: rgba(0, 229, 204, 0.15);
   --text: #f8fafc;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-tertiary: #64748b;
   --muted: #64748b;
-  /* Primary accent: cyan (boing.network uses cyan/blue, not gold) */
-  --primary-color: #06b6d4;
-  --secondary-color: #3b82f6;
-  --accent-neon: #22d3ee;
-  --accent: #22d3ee;
-  --accent-hover: #06b6d4;
-  --accent-soft: rgba(6, 182, 212, 0.12);
-  --accent-glow: rgba(6, 182, 212, 0.4);
-  --cyan: #06b6d4;
-  --cyan-light: #22d3ee;
-  --blue: #3b82f6;
-  --violet: #8b5cf6;
-  --violet-hover: #7c3aed;
-  --violet-soft: rgba(139, 92, 246, 0.15);
-  --violet-glow: rgba(139, 92, 246, 0.2);
-  --teal: #14b8a6;
+  --primary-color: #00E5CC;
+  --secondary-color: #00B4FF;
+  --accent-neon: #00E5CC;
+  --accent: #00E5CC;
+  --accent-hover: #00B4FF;
+  --accent-soft: rgba(0, 229, 204, 0.12);
+  --accent-glow: rgba(0, 229, 204, 0.4);
+  --cyan: #00E5CC;
+  --cyan-light: #00E5CC;
+  --blue: #00B4FF;
+  --teal: #00E5CC;
   --success: #10b981;
   --danger: #ef4444;
   --radius: 1rem;
   --radius-sm: 0.5rem;
   --radius-pill: 9999px;
-  --font: 'Contraa', 'DM Sans', system-ui, sans-serif;
+  --font: 'Noto Sans', system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
   --transition: 0.2s ease;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);

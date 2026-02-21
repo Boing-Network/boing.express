@@ -1,22 +1,21 @@
-/* Boing Network theme — from boing.network (cyan, blue, violet) */
+/* Boing Network theme — Marketing Asset Package (Primary #00E5CC, Secondary #00B4FF, Dark #0A0E1A) */
 :root {
-  --bg: #0f172a;
-  --surface: #1e293b59;
-  --surface-elevated: #334155;
-  --border: rgba(34, 211, 238, 0.2);
+  --bg: #0A0E1A;
+  --surface: #12182999;
+  --surface-elevated: #1a2240;
+  --border: rgba(0, 229, 204, 0.2);
   --text: #f8fafc;
   --text-secondary: #94a3b8;
   --muted: #64748b;
-  --primary-color: #06b6d4;
-  --secondary-color: #3b82f6;
-  --accent-neon: #22d3ee;
-  --accent-glow: rgba(6, 182, 212, 0.3);
-  --violet: #8b5cf6;
+  --primary-color: #00E5CC;
+  --secondary-color: #00B4FF;
+  --accent-neon: #00E5CC;
+  --accent-glow: rgba(0, 229, 204, 0.3);
   --danger: #ef4444;
   --success: #10b981;
   --radius: 1rem;
   --radius-sm: 0.5rem;
-  --font: 'DM Sans', system-ui, sans-serif;
+  --font: 'Noto Sans', system-ui, sans-serif;
   --transition: 0.2s ease;
 }
 
@@ -204,7 +203,7 @@ body {
   transition: border-color var(--transition), transform var(--transition);
 }
 
-.card:hover { transform: translateY(-1px); border-color: rgba(34, 211, 238, 0.4); }
+.card:hover { transform: translateY(-1px); border-color: rgba(0, 229, 204, 0.4); }
 
 .label {
   margin: 0 0 8px;

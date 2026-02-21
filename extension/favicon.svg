@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <!-- Aqua/teal (#22d3ee) to match navbar logo and theme -->
-  <circle cx="16" cy="16" r="14" stroke="#22d3ee" stroke-width="2"/>
-  <path d="M10 16h4l2 6 2-6h4" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Boing Network primary (#00E5CC) per Marketing Asset Package -->
+  <circle cx="16" cy="16" r="14" stroke="#00E5CC" stroke-width="2"/>
+  <path d="M10 16h4l2 6 2-6h4" stroke="#00E5CC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -16,12 +16,14 @@ export function Landing() {
       <main className={styles.main}>
         <section className={styles.hero}>
           <h1 className={styles.heroTitle}>Boing Express</h1>
-          <p className={styles.heroTagline}>The DeFi that always bounces back</p>
+          <p className={styles.heroTagline}>Authentic. Decentralized. Optimal. Quality-Assured.</p>
           <div className={styles.heroPills}>
             <span>🔐 Security</span>
             <span>⚡ Scalability</span>
             <span>🌐 Decentralization</span>
             <span>✓ Authenticity</span>
+            <span>📋 Transparency</span>
+            <span>✓ True Quality Assurance</span>
           </div>
           <p className={styles.heroDesc}>
             Non-custodial wallet for Boing Network. Create or import a wallet, send and receive BOING,
@@ -71,7 +73,7 @@ export function Landing() {
             <Link to="/privacy">Privacy Policy</Link>
             <Link to="/terms">Terms of Service</Link>
           </div>
-          <p className={styles.footerCopy}>Boing Express · boing.express · The DeFi that always bounces back</p>
+          <p className={styles.footerCopy}>Boing Express · boing.express · Authentic. Decentralized. Optimal. Quality-Assured.</p>
         </footer>
       </main>
     </div>

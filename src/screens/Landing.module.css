@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(10, 14, 26, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   animation: fadeIn 0.4s var(--ease-out);
@@ -70,31 +70,30 @@
   margin-bottom: 4.5rem;
 }
 
-/* boing.network hero-title: gradient text */
+/* Boing Network brand: Primary #00E5CC, Secondary #00B4FF */
 .heroTitle {
   margin: 0 0 0.5rem;
   font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.15;
-  background: linear-gradient(to right, #22d3ee, #06b6d4, #3b82f6);
+  background: linear-gradient(to right, #00E5CC, #00B4FF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.4));
+  filter: drop-shadow(0 0 20px rgba(0, 229, 204, 0.4));
   animation: fadeInUp 0.5s var(--ease-out) both;
 }
 
-/* boing.network tagline */
 .heroTagline {
   margin: 0 0 1.25rem;
   font-size: 1.25rem;
   font-weight: 500;
-  background: linear-gradient(to right, rgba(34, 211, 238, 0.9), #22d3ee, rgba(59, 130, 246, 0.9));
+  background: linear-gradient(to right, rgba(0, 229, 204, 0.95), #00E5CC, rgba(0, 180, 255, 0.95));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.3));
+  filter: drop-shadow(0 0 12px rgba(0, 229, 204, 0.3));
   animation: fadeInUp 0.5s var(--ease-out) 0.06s both;
 }
 
@@ -106,13 +105,13 @@
   margin: 1.5rem 0 2rem;
 }
 
-/* boing.network hero-highlight */
+/* Pills: teal/blue gradient per brand */
 .heroPills span {
   display: inline-flex;
   align-items: center;
   padding: 0.4rem 0.75rem;
-  background: linear-gradient(to right, rgba(6, 182, 212, 0.1), rgba(139, 92, 246, 0.1));
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  background: linear-gradient(to right, rgba(0, 229, 204, 0.1), rgba(0, 180, 255, 0.1));
+  border: 1px solid rgba(0, 229, 204, 0.2);
   border-radius: 0.5rem;
   font-size: 0.9rem;
   font-weight: 500;
@@ -125,11 +124,13 @@
 .heroPills span:nth-child(2) { animation-delay: 0.18s; }
 .heroPills span:nth-child(3) { animation-delay: 0.24s; }
 .heroPills span:nth-child(4) { animation-delay: 0.3s; }
+.heroPills span:nth-child(5) { animation-delay: 0.36s; }
+.heroPills span:nth-child(6) { animation-delay: 0.42s; }
 
 .heroPills span:hover {
-  border-color: rgba(34, 211, 238, 0.4);
+  border-color: rgba(0, 229, 204, 0.4);
   transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(6, 182, 212, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 229, 204, 0.2);
   color: var(--text-primary);
 }
 
@@ -222,10 +223,10 @@
   gap: 1.5rem;
 }
 
-/* boing.network .card */
+/* Cards: deep navy surface, teal border — Boing brand */
 .card {
-  background: #1e293b59;
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   border-radius: 1rem;
   padding: 1.25rem;
   backdrop-filter: blur(12px);
@@ -239,8 +240,8 @@
 
 .card:hover {
   transform: translateY(-3px) scale(1.02);
-  border-color: rgba(34, 211, 238, 0.4);
-  box-shadow: 0 8px 24px rgba(6, 182, 212, 0.25);
+  border-color: rgba(0, 229, 204, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 229, 204, 0.25);
 }
 
 .cardIcon {

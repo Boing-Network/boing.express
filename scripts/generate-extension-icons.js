@@ -14,7 +14,7 @@ const root = path.join(__dirname, '..');
 const svgPath = path.join(root, 'extension', 'favicon.svg');
 const dir = path.join(root, 'extension', 'icons');
 
-const ICON_COLOR = '#22d3ee'; // accent-neon to match Boing theme
+const ICON_COLOR = '#00E5CC'; // Boing Network primary accent (Marketing Asset Package)
 
 if (!fs.existsSync(svgPath)) {
   console.error('extension/favicon.svg not found');

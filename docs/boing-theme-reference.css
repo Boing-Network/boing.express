@@ -1,10 +1,26 @@
-/* Reference: boing.network index CSS (hero, orbs, cards, buttons).
- * Used to align boing.express theme. */
+/* Boing Network — Marketing Asset Package brand reference
+ * Use these values to align boing.express and extension UI.
+ *
+ * Element              Value
+ * Primary Accent       #00E5CC (Teal/Cyan)
+ * Secondary Accent     #00B4FF (Electric Blue)
+ * Dark Background      #0A0E1A (Deep Navy)
+ * Light Background     #F0FFFE (Soft White-Teal)
+ * Typography           Noto Sans (Black, Bold, Medium, Regular)
+ * Tagline              "Authentic. Decentralized. Optimal. Quality-Assured."
+ *
+ * Hero title gradient: linear-gradient(to right, #00E5CC, #00B4FF)
+ * Pills/cards: border rgba(0, 229, 204, 0.2); hover rgba(0, 229, 204, 0.4)
+ * Primary btn: linear-gradient(var(--primary-color), var(--secondary-color))
+ * Cards: background var(--surface); border 1px solid var(--border)
+ */
 
-/* Orbs: #06b6d4 (cyan), #3b82f6 (blue), #8b5cf6 (violet); 400px, 300px, 250px; blur 80px; opacity .4; float 20s */
-/* Hero title: linear-gradient(to right, #22d3ee, #06b6d4, #3b82f6); background-clip: text */
-/* Tagline: linear-gradient(to right, #22d3eee6, #22d3ee, #3b82f6e6) */
-/* Pills: background linear-gradient(#06b6d41a, #8b5cf61a); border rgba(34,211,238,.2) */
-/* Primary btn: linear-gradient(var(--primary-color), var(--secondary-color)); color #fff */
-/* Cards: background #1e293b59; border 1px solid rgba(34,211,238,.2); border-radius 1rem; backdrop-filter blur(12px) */
-/* Hover: border #22d3ee66; box-shadow 0 8px 24px #06b6d440 */
+:root {
+  --primary-color: #00E5CC;
+  --secondary-color: #00B4FF;
+  --bg: #0A0E1A;
+  --bg-light: #F0FFFE;
+  --border: rgba(0, 229, 204, 0.2);
+  --accent-glow: rgba(0, 229, 204, 0.4);
+  --font: 'Noto Sans', system-ui, sans-serif;
+}

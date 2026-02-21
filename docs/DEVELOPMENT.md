@@ -120,12 +120,12 @@ If these variables are **not** set, the app uses the same defaults at build time
 - **Structured data:** JSON-LD `WebSite` schema for rich results
 - **robots.txt:** Allow all, Sitemap URL
 - **sitemap.xml:** Main routes (/, /wallet, /docs, doc subpages) with priority and changefreq
-- **Theme color:** theme-color and msapplication-TileColor for browser UI (#0f172a)
-- **Icons:** favicon.svg and apple-touch-icon use aqua/teal (#22d3ee) to match navbar logo and brand
+- **Theme color:** theme-color and msapplication-TileColor for browser UI (#0A0E1A — Boing Deep Navy)
+- **Icons:** favicon.svg and apple-touch-icon use primary teal (#00E5CC) to match Boing Network brand
 
 ### Brand consistency (aqua/teal)
 
-- **Favicon:** SVG uses stroke `#22d3ee` (accent-neon) so the tab/bookmark icon matches the site.
+- **Favicon:** SVG uses stroke `#00E5CC` (primary accent) so the tab/bookmark icon matches the Boing Network brand.
 - **og-image:** When you add `public/og-image.png` (1200×630), use the same aqua/teal accent so link previews match the brand.
 
 ### Maintenance

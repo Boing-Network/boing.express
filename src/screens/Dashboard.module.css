@@ -61,8 +61,8 @@
 }
 
 .section {
-  background: #1e293b59;
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   border-radius: 1rem;
   padding: 1.25rem;
   margin-bottom: 1rem;
@@ -78,8 +78,8 @@
 .section:nth-child(5) { animation-delay: 0.25s; }
 
 .section:hover {
-  border-color: rgba(34, 211, 238, 0.4);
-  box-shadow: 0 8px 24px rgba(6, 182, 212, 0.2);
+  border-color: rgba(0, 229, 204, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 229, 204, 0.2);
 }
 
 .sectionTitle {
