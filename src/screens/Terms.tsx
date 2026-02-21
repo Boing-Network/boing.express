@@ -4,7 +4,7 @@ import styles from './Legal.module.css';
 
 export function Terms() {
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-app`}>
       <header className={styles.header}>
         <SiteLogo className={styles.logoWrap} />
         <nav className={styles.nav}>

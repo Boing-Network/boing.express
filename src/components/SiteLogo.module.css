@@ -30,12 +30,12 @@
   flex-shrink: 0;
   display: inline-flex;
   color: var(--accent-neon);
-  filter: drop-shadow(0 0 6px var(--accent-glow)) drop-shadow(0 0 12px rgba(0, 229, 204, 0.3));
+  filter: drop-shadow(0 0 6px var(--accent-glow)) drop-shadow(0 0 12px var(--glow-cyan-soft));
   transition: filter 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
 
 .logo:hover .logoIconWrap {
-  filter: drop-shadow(0 0 10px var(--accent-glow)) drop-shadow(0 0 20px rgba(0, 229, 204, 0.6));
+  filter: drop-shadow(0 0 10px var(--accent-glow)) drop-shadow(0 0 20px var(--glow-cyan));
   transform: scale(1.1) rotate(-6deg);
 }
 
@@ -51,8 +51,8 @@
 }
 
 .logo:hover .logoText {
-  filter: drop-shadow(0 0 10px rgba(0, 229, 204, 0.6));
-  text-shadow: 0 0 16px rgba(0, 229, 204, 0.5), 0 0 24px rgba(0, 229, 204, 0.25);
+  filter: drop-shadow(0 0 10px var(--glow-cyan));
+  text-shadow: 0 0 16px var(--glow-cyan), 0 0 24px var(--glow-cyan-soft);
 }
 
 .logoText::after {
@@ -63,7 +63,7 @@
   width: 0;
   height: 2px;
   background: linear-gradient(to right, var(--accent-neon), var(--blue));
-  box-shadow: 0 0 8px rgba(0, 229, 204, 0.5);
+  box-shadow: 0 0 8px var(--glow-cyan);
   transition: width 0.4s var(--ease-out);
 }
 

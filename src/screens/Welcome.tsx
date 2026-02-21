@@ -82,7 +82,7 @@ export function Welcome() {
 
   if (step === 'choose') {
     return (
-      <div className={styles.wrap}>
+      <div className={`${styles.wrap} page-app`}>
         <div className={styles.card}>
           <h1 className={styles.title}>Boing Wallet</h1>
           <p className={styles.subtitle}>The DeFi that always bounces back. Non-custodial wallet for Boing Network.</p>
@@ -101,7 +101,7 @@ export function Welcome() {
 
   if (step === 'unlock') {
     return (
-      <div className={styles.wrap}>
+      <div className={`${styles.wrap} page-app`}>
         <div className={styles.card}>
           <h1 className={styles.title}>Unlock wallet</h1>
           {storedAddressHint && (
@@ -131,7 +131,7 @@ export function Welcome() {
 
   if (step === 'create') {
     return (
-      <div className={styles.wrap}>
+      <div className={`${styles.wrap} page-app`}>
         <div className={styles.card}>
           <h1 className={styles.title}>Create wallet</h1>
           <p className={styles.subtitle}>
@@ -169,7 +169,7 @@ export function Welcome() {
 
   // import
   return (
-    <div className={styles.wrap}>
+    <div className={`${styles.wrap} page-app`}>
       <div className={styles.card}>
         <h1 className={styles.title}>Import wallet</h1>
         <p className={styles.subtitle}>

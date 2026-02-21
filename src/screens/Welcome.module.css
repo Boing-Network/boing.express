@@ -9,18 +9,20 @@
 .card {
   width: 100%;
   max-width: 400px;
-  background: var(--surface);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  padding: 2rem;
+  border-radius: 16px;
+  padding: 24px;
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 30px var(--shadow);
   animation: fadeInUpSoft 0.4s var(--ease-out) both;
-  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  transition: border-color var(--motion-transition), box-shadow var(--motion-transition);
 }
 
 .card:hover {
-  border-color: rgba(0, 229, 204, 0.4);
-  box-shadow: 0 8px 24px rgba(0, 229, 204, 0.2);
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 30px var(--glow-cyan);
 }
 
 .title {
@@ -58,12 +60,21 @@
 .input,
 .textarea {
   width: 100%;
-  padding: 0.75rem 1rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  color: var(--text);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   font-size: 1rem;
+  transition: border-color var(--motion-transition), box-shadow var(--motion-transition);
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 8px var(--glow-cyan);
 }
 
 .textarea {
@@ -73,22 +84,26 @@
 
 .input::placeholder,
 .textarea::placeholder {
-  color: var(--muted);
+  color: var(--text-tertiary);
 }
 
+/* Design system: primary button */
 .primary {
-  padding: 0.75rem 1.25rem;
-  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-  color: #fff;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
+  color: var(--bg-primary);
   border: none;
-  border-radius: 0.5rem;
-  font-weight: 600;
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-weight: 700;
   font-size: 1rem;
-  transition: filter 0.2s ease;
+  transition: all var(--motion-transition);
+  box-shadow: 0 0 16px var(--glow-cyan);
 }
 
 .primary:hover:not(:disabled) {
-  filter: brightness(1.1);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 28px var(--glow-cyan);
 }
 
 .primary:disabled {
@@ -96,17 +111,22 @@
   cursor: not-allowed;
 }
 
+/* Design system: secondary button */
 .secondary {
-  padding: 0.75rem 1.25rem;
+  padding: 12px 28px;
   background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
+  color: var(--accent-cyan);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
+  font-family: var(--font-sans);
   font-size: 1rem;
+  transition: all var(--motion-transition);
 }
 
 .secondary:hover {
-  border-color: var(--muted);
+  background-color: var(--accent-cyan-subtle);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px var(--glow-blue);
 }
 
 .textBtn {
@@ -118,7 +138,7 @@
 }
 
 .textBtn:hover {
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .error {

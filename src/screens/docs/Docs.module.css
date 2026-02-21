@@ -9,9 +9,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  background: rgba(10, 14, 26, 0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  background: var(--nav-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-color);
   animation: fadeIn 0.4s var(--ease-out);
 }
 
@@ -33,12 +34,12 @@
   transition: color 0.2s ease;
 }
 
-.nav a:hover {
-  color: var(--text);
+.nav a:hover,
+.nav a.active {
+  color: var(--accent-teal);
 }
 
 .nav .active {
-  color: var(--accent);
   font-weight: 500;
 }
 
@@ -88,7 +89,7 @@
 }
 
 .sidebarActive {
-  color: var(--accent-neon) !important;
+  color: var(--accent-teal) !important;
   font-weight: 500;
 }
 
@@ -145,7 +146,7 @@
 }
 
 .articleBody a:hover {
-  color: var(--accent-neon);
+  color: var(--accent-teal);
   text-decoration: underline;
 }
 

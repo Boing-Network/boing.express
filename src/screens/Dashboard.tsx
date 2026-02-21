@@ -150,7 +150,7 @@ export function Dashboard() {
         : '…';
 
   return (
-    <div className={styles.wrap}>
+    <div className={`${styles.wrap} page-app`}>
       <header className={styles.header}>
         <SiteLogo className={styles.logoWrap} />
         <div className={styles.headerActions}>

@@ -16,7 +16,7 @@ export function DocsLayout() {
   const currentSlug = location.pathname.replace(/^\/docs\/?/, '') || 'getting-started';
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-app`}>
       <header className={styles.header}>
         <SiteLogo className={styles.logoWrap} />
         <nav className={styles.nav}>

@@ -3,9 +3,10 @@
   align-items: center;
   gap: 1.25rem;
   padding: 0.5rem 1rem;
-  background: rgba(10, 14, 26, 0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  background: var(--nav-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-color);
   animation: fadeIn 0.3s var(--ease-out);
 }
 
@@ -22,16 +23,17 @@
 .nav .links a {
   color: var(--text-secondary);
   text-decoration: none;
+  font-family: var(--font-sans);
   font-size: 0.9375rem;
   font-weight: 500;
-  transition: color 0.2s ease;
+  transition: color var(--motion-transition);
 }
 
-.nav .links a:hover {
-  color: var(--text);
+.nav .links a:hover,
+.nav .links a.active {
+  color: var(--accent-teal);
 }
 
 .nav .links .active {
-  color: var(--accent-neon);
   font-weight: 500;
 }

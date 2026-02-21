@@ -29,7 +29,7 @@ export function Landing() {
   const objectFiles = useExtracted ? heroManifest!.objects : [];
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-landing`}>
       <FullPage3DElements />
       <div className={styles.pageContent}>
       <header className={styles.header}>

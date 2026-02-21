@@ -35,8 +35,8 @@ export function AnimatedBackground() {
         <svg className={styles.hexGrid} viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
           <defs>
             <pattern id="hexPattern" width="17.32" height="30" patternUnits="userSpaceOnUse">
-              <path d="M8.66 0 L17.32 5 L17.32 15 L8.66 20 L0 15 L0 5 Z" fill="none" stroke="rgba(0,229,204,0.08)" strokeWidth="0.4" />
-              <path d="M8.66 15 L17.32 20 L17.32 30 L8.66 35 L0 30 L0 20 Z" fill="none" stroke="rgba(0,229,204,0.08)" strokeWidth="0.4" />
+              <path d="M8.66 0 L17.32 5 L17.32 15 L8.66 20 L0 15 L0 5 Z" fill="none" strokeWidth="0.4" />
+              <path d="M8.66 15 L17.32 20 L17.32 30 L8.66 35 L0 30 L0 20 Z" fill="none" strokeWidth="0.4" />
             </pattern>
           </defs>
           <rect width="100" height="100" fill="url(#hexPattern)" />
