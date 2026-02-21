@@ -24,7 +24,8 @@ export function Landing() {
   }, []);
 
   const useExtracted = heroManifestLoaded && heroManifest && heroManifest.robot;
-  const robotSrc = useExtracted ? `${HERO_OBJECTS_BASE}/${heroManifest!.robot}` : '/images/boing_robot_hero.png';
+  const robotSrc = useExtracted ? `${HERO_OBJECTS_BASE}/${heroManifest!.robot}` : null;
+  const envSrc = useExtracted && heroManifest!.environment ? `${HERO_OBJECTS_BASE}/${heroManifest!.environment}` : null;
   const objectFiles = useExtracted ? heroManifest!.objects : [];
 
   return (
@@ -42,51 +43,36 @@ export function Landing() {
       <main className={styles.main}>
         <section className={styles.hero}>
           <div className={`${styles.heroVisual} ${useExtracted ? styles.heroVisual3d : ''}`}>
-            {/* Base layer: full scene (when not extracted) or background (when extracted) */}
-            {!useExtracted && (
-              <>
-                <div className={styles.heroEnv}>
-                  <img src="/images/boing_robot_hero.png" alt="" aria-hidden className={styles.heroEnvImg} />
-                </div>
-                <div className={styles.heroRobotWrap}>
+            {/* Only extracted 3D elements (no raw PNGs): environment + objects + robot */}
+            {useExtracted && robotSrc && (
+              <div className={styles.heroScene3d}>
+                {/* Back layer: extracted environment only */}
+                {envSrc && (
+                  <div className={styles.heroLayer3d} data-depth="far">
+                    <img src={envSrc} alt="" aria-hidden className={styles.heroLayerImg} />
+                  </div>
+                )}
+                {objectFiles.map((file, i) => (
+                  <div
+                    key={file}
+                    className={styles.heroLayer3d}
+                    data-depth="mid"
+                    style={{ animationDelay: `${i * 0.4}s` }}
+                  >
+                    <img src={`${HERO_OBJECTS_BASE}/${file}`} alt="" aria-hidden className={styles.heroLayerImg} />
+                  </div>
+                ))}
+                <div className={`${styles.heroLayer3d} ${styles.heroRobotLayer3d}`} data-depth="near">
                   <img
-                    src="/images/boing_robot_hero.png"
+                    src={robotSrc}
                     alt="Boing Network mascot — teal robot in outerspace-oceanic world"
-                    className={styles.heroRobot}
+                    className={styles.heroLayerImg}
                   />
                 </div>
-              </>
+              </div>
             )}
-            {/* Extracted layers: 3D depth + motion (robot + env objects) */}
-            {useExtracted && (
-              <>
-                <div className={styles.heroScene3d}>
-                  {/* Back layer: original scene as environment (slightly scaled) */}
-                  <div className={styles.heroLayer3d} data-depth="far">
-                    <img src="/images/boing_robot_hero.png" alt="" aria-hidden className={styles.heroLayerImg} />
-                  </div>
-                  {/* Environment objects (jellyfish, coral, etc.) when SAM/multi-object used */}
-                  {objectFiles.map((file, i) => (
-                    <div
-                      key={file}
-                      className={styles.heroLayer3d}
-                      data-depth="mid"
-                      style={{ animationDelay: `${i * 0.4}s` }}
-                    >
-                      <img src={`${HERO_OBJECTS_BASE}/${file}`} alt="" aria-hidden className={styles.heroLayerImg} />
-                    </div>
-                  ))}
-                  {/* Robot: front layer with strongest 3D motion */}
-                  <div className={`${styles.heroLayer3d} ${styles.heroRobotLayer3d}`} data-depth="near">
-                    <img
-                      src={robotSrc}
-                      alt="Boing Network mascot — teal robot in outerspace-oceanic world"
-                      className={styles.heroLayerImg}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
+            {/* When extraction not loaded: minimal placeholder (no composite PNG) */}
+            {heroManifestLoaded && !useExtracted && <div className={styles.heroPlaceholder} aria-hidden />}
           </div>
           <h1 className={styles.heroTitle}>Boing Express</h1>
           <p className={styles.heroTagline}>Authentic. Decentralized. Optimal. Quality-Assured.</p>

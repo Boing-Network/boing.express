@@ -8,12 +8,14 @@
   pointer-events: none;
 }
 
-/* Official Boing background image (hex grid, circuit lines, outerspace-oceanic) */
-.officialBg {
+/* Extracted environment only (hero_environment.png from Python); no raw PNG background */
+.extractedEnv {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: url('/images/boing_background_dark.png') center center / cover no-repeat;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* Overlay: deep navy tint for content readability */

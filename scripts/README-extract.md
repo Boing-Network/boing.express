@@ -1,6 +1,6 @@
 # Hero object extraction
 
-Extract the Boing robot and 3D objects from `public/images/boing_robot_hero.png` for layered 3D motion on the landing page.
+Extract the Boing robot and 3D objects from `public/images/boing_robot_hero.png` for layered 3D motion. **The app uses only these extracted assets** (environment + robot + objects) for backgrounds and 3D elements; the raw `boing_background_dark.png` and composite hero PNG are not used as backgrounds.
 
 ## Quick start (rembg + connected components)
 

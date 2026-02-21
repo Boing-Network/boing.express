@@ -136,6 +136,14 @@
   50% { transform: translateY(-6px) scale(1.02); }
 }
 
+/* Placeholder when extraction not available (no raw PNG used) */
+.heroPlaceholder {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 229, 204, 0.08) 0%, transparent 70%);
+}
+
 @media (min-width: 640px) {
   .heroVisual {
     max-width: 360px;

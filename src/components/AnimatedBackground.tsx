@@ -1,14 +1,31 @@
+import { useEffect, useState } from 'react';
 import styles from './AnimatedBackground.module.css';
 
+const HERO_OBJECTS_BASE = '/images/hero_objects';
+const MANIFEST_URL = `${HERO_OBJECTS_BASE}/manifest.json`;
+
+type Manifest = { environment?: string; robot: string | null; objects: string[] } | null;
+
 /**
- * Animated background: official Boing art + outerspace-oceanic theme (promo video).
- * Official background image, gradient overlay, optional hex grid, orbs, shooting stars, particles.
+ * Animated background: extracted 3D elements only (no raw PNGs).
+ * Uses hero_environment.png from Python extraction when available; else CSS-only (gradient, hex, orbs, particles).
  */
 export function AnimatedBackground() {
+  const [manifest, setManifest] = useState<Manifest>(null);
+
+  useEffect(() => {
+    fetch(MANIFEST_URL)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: Manifest) => setManifest(data ?? null))
+      .catch(() => {});
+  }, []);
+
+  const envSrc = manifest?.environment ? `${HERO_OBJECTS_BASE}/${manifest.environment}` : null;
+
   return (
     <div className={styles.wrapper} aria-hidden>
-      {/* Official Boing background (hex grid, circuit lines, cosmic/oceanic) */}
-      <div className={styles.officialBg} />
+      {/* Extracted environment only (from Python scripts); no boing_background_dark.png */}
+      {envSrc && <div className={styles.extractedEnv} style={{ backgroundImage: `url(${envSrc})` }} />}
 
       {/* Subtle overlay for content readability */}
       <div className={styles.baseGradient} />
