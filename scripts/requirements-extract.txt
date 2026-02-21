@@ -1,0 +1,7 @@
+# Python deps for hero object extraction (run: pip install -r scripts/requirements-extract.txt)
+# For rembg use: pip install "rembg[cpu]" or "rembg[gpu]"
+rembg[cpu]>=2.0.50
+Pillow>=10.0.0
+opencv-python-headless>=4.8.0
+numpy>=1.24.0
+scipy>=1.11.0

@@ -1,8 +1,31 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SiteLogo } from '../components/SiteLogo';
 import styles from './Landing.module.css';
 
+const HERO_OBJECTS_BASE = '/images/hero_objects';
+const HERO_MANIFEST_URL = `${HERO_OBJECTS_BASE}/manifest.json`;
+
+type HeroManifest = { robot: string | null; objects: string[] } | null;
+
 export function Landing() {
+  const [heroManifest, setHeroManifest] = useState<HeroManifest>(null);
+  const [heroManifestLoaded, setHeroManifestLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch(HERO_MANIFEST_URL)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: HeroManifest) => {
+        setHeroManifest(data ?? null);
+        setHeroManifestLoaded(true);
+      })
+      .catch(() => setHeroManifestLoaded(true));
+  }, []);
+
+  const useExtracted = heroManifestLoaded && heroManifest && heroManifest.robot;
+  const robotSrc = useExtracted ? `${HERO_OBJECTS_BASE}/${heroManifest!.robot}` : '/images/boing_robot_hero.png';
+  const objectFiles = useExtracted ? heroManifest!.objects : [];
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -15,24 +38,52 @@ export function Landing() {
 
       <main className={styles.main}>
         <section className={styles.hero}>
-          <div className={styles.heroVisual}>
-            {/* Layer 1: 3D environment (jellyfish, coral, bubbles) — slow motion */}
-            <div className={styles.heroEnv}>
-              <img
-                src="/images/boing_robot_hero.png"
-                alt=""
-                aria-hidden
-                className={styles.heroEnvImg}
-              />
-            </div>
-            {/* Layer 2: Robot hero extracted (circular focus) — float/bob motion */}
-            <div className={styles.heroRobotWrap}>
-              <img
-                src="/images/boing_robot_hero.png"
-                alt="Boing Network mascot — teal robot in outerspace-oceanic world"
-                className={styles.heroRobot}
-              />
-            </div>
+          <div className={`${styles.heroVisual} ${useExtracted ? styles.heroVisual3d : ''}`}>
+            {/* Base layer: full scene (when not extracted) or background (when extracted) */}
+            {!useExtracted && (
+              <>
+                <div className={styles.heroEnv}>
+                  <img src="/images/boing_robot_hero.png" alt="" aria-hidden className={styles.heroEnvImg} />
+                </div>
+                <div className={styles.heroRobotWrap}>
+                  <img
+                    src="/images/boing_robot_hero.png"
+                    alt="Boing Network mascot — teal robot in outerspace-oceanic world"
+                    className={styles.heroRobot}
+                  />
+                </div>
+              </>
+            )}
+            {/* Extracted layers: 3D depth + motion (robot + env objects) */}
+            {useExtracted && (
+              <>
+                <div className={styles.heroScene3d}>
+                  {/* Back layer: original scene as environment (slightly scaled) */}
+                  <div className={styles.heroLayer3d} data-depth="far">
+                    <img src="/images/boing_robot_hero.png" alt="" aria-hidden className={styles.heroLayerImg} />
+                  </div>
+                  {/* Environment objects (jellyfish, coral, etc.) when SAM/multi-object used */}
+                  {objectFiles.map((file, i) => (
+                    <div
+                      key={file}
+                      className={styles.heroLayer3d}
+                      data-depth="mid"
+                      style={{ animationDelay: `${i * 0.4}s` }}
+                    >
+                      <img src={`${HERO_OBJECTS_BASE}/${file}`} alt="" aria-hidden className={styles.heroLayerImg} />
+                    </div>
+                  ))}
+                  {/* Robot: front layer with strongest 3D motion */}
+                  <div className={`${styles.heroLayer3d} ${styles.heroRobotLayer3d}`} data-depth="near">
+                    <img
+                      src={robotSrc}
+                      alt="Boing Network mascot — teal robot in outerspace-oceanic world"
+                      className={styles.heroLayerImg}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           <h1 className={styles.heroTitle}>Boing Express</h1>
           <p className={styles.heroTagline}>Authentic. Decentralized. Optimal. Quality-Assured.</p>
