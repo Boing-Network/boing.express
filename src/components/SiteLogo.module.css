@@ -25,22 +25,49 @@
   transform: scale(1.01);
 }
 
-/* Logo icon: neon cyan with glow; hover = stronger glow + slight bounce */
-.logoIconWrap {
+/* Logo image: light version for dark backgrounds (default), dark version for light mode */
+.logoImgWrap {
+  position: relative;
   flex-shrink: 0;
   display: inline-flex;
-  color: var(--accent-neon);
-  filter: drop-shadow(0 0 6px var(--accent-glow)) drop-shadow(0 0 12px var(--glow-cyan-soft));
+  align-items: center;
+  height: 2rem;
+}
+
+.logoImg,
+.logoImgDark {
+  display: block;
+  height: 2rem;
+  width: auto;
+  object-fit: contain;
   transition: filter 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
 
-.logo:hover .logoIconWrap {
-  filter: drop-shadow(0 0 10px var(--accent-glow)) drop-shadow(0 0 20px var(--glow-cyan));
-  transform: scale(1.1) rotate(-6deg);
+.logoImgDark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.logoIcon {
-  display: block;
+@media (prefers-color-scheme: light) {
+  .logoImg {
+    opacity: 0;
+    position: absolute;
+    pointer-events: none;
+  }
+  .logoImgDark {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.logo:hover .logoImgWrap .logoImg,
+.logo:hover .logoImgWrap .logoImgDark {
+  filter: brightness(1.15);
+  transform: scale(1.03);
 }
 
 /* Title text: aqua/teal; hover = brighter glow + underline sweep */
