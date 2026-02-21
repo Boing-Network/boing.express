@@ -64,6 +64,33 @@ body {
 
 .screen.hidden { display: none; }
 #faucet-section.hidden { display: none; }
+.explorer-link.hidden { display: none; }
+
+.loading-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.btn-retry {
+  margin-top: 6px;
+}
+
+.explorer-link {
+  display: inline-block;
+  margin: 4px 0 8px;
+  font-size: 12px;
+  color: var(--accent-neon);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.explorer-link:hover { color: var(--primary-color); }
+.explorer-link:focus {
+  outline: none;
+  text-decoration: underline;
+}
 
 .tagline {
   margin: 0 0 16px;

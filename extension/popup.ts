@@ -45,6 +45,12 @@ function showScreen(screen: Screen): void {
   if (el) el.classList.remove('hidden');
 }
 
+function showLoading(): void {
+  document.querySelectorAll('.screen').forEach((el) => el.classList.add('hidden'));
+  const loading = document.getElementById('screen-loading');
+  if (loading) loading.classList.remove('hidden');
+}
+
 function showError(id: string, message: string): void {
   const el = $(id);
   el.textContent = message;
@@ -80,8 +86,10 @@ function getCurrentNetwork() {
 async function refreshDashboardBalance(): Promise<void> {
   if (!accountId) return;
   const net = getCurrentNetwork();
+  const retryBtn = document.getElementById('btn-balance-retry');
   ($('balance') as HTMLElement).textContent = '…';
   ($('balance-error') as HTMLElement).classList.add('hidden');
+  if (retryBtn) retryBtn.classList.add('hidden');
   try {
     const balance = await net.getBalance(accountId);
     const displayStr = (
@@ -92,10 +100,12 @@ async function refreshDashboardBalance(): Promise<void> {
     ($('balance') as HTMLElement).textContent = displayStr;
     ($('symbol') as HTMLElement).textContent = balance.symbol;
     ($('balance-error') as HTMLElement).classList.add('hidden');
+    if (retryBtn) retryBtn.classList.add('hidden');
   } catch (e) {
     ($('balance') as HTMLElement).textContent = '—';
     ($('balance-error') as HTMLElement).textContent = e instanceof Error ? e.message : String(e);
     ($('balance-error') as HTMLElement).classList.remove('hidden');
+    if (retryBtn) retryBtn.classList.remove('hidden');
   }
 }
 
@@ -234,6 +244,8 @@ $('form-send').addEventListener('submit', async (e) => {
   const amountStr = ($('send-amount') as HTMLInputElement).value;
   hideError('send-error');
   ($('send-success') as HTMLElement).classList.add('hidden');
+  const explorerLink = document.getElementById('send-explorer-link') as HTMLAnchorElement;
+  if (explorerLink) explorerLink.classList.add('hidden');
   if (toHex.length !== 64 || !/^[0-9a-fA-F]+$/.test(toHex)) {
     showError('send-error', 'Invalid address: 64 hex chars required');
     return;
@@ -265,6 +277,11 @@ $('form-send').addEventListener('submit', async (e) => {
     const result = await net.submitTransaction(signedHex);
     if (result.success) {
       showSuccess('send-success', result.txHash ? `Sent! ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
+      const baseUrl = net.config.explorerUrl;
+      if (result.txHash && baseUrl && explorerLink) {
+        explorerLink.href = `${baseUrl.replace(/\/$/, '')}/tx/${result.txHash}`;
+        explorerLink.classList.remove('hidden');
+      }
       ($('send-amount') as HTMLInputElement).value = '';
       ($('send-to') as HTMLInputElement).value = '';
       const balance = await net.getBalance(accountId);
@@ -321,7 +338,10 @@ $('btn-faucet-page').addEventListener('click', () => {
   chrome.tabs.create({ url });
 });
 
-// Init: restore saved network, load wallet from chrome.storage.local, then show choose/unlock
+$('btn-balance-retry').addEventListener('click', () => refreshDashboardBalance());
+
+// Init: show loading, restore saved network, load wallet from chrome.storage.local, then show choose/unlock
+showLoading();
 chrome.storage.local.get([STORAGE_KEY_NETWORK], (result) => {
   const saved = result[STORAGE_KEY_NETWORK];
   if (saved && NETWORKS.some((n) => n.config.id === saved)) selectedNetworkId = saved;

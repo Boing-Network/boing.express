@@ -20,6 +20,7 @@ export function createNetworks(
       rpcUrl: testnetRpc,
       isTestnet: true,
       faucetUrl: 'https://boing.network/network/faucet',
+      explorerUrl: 'https://boing.network',
     }),
     createBoingAdapter({
       id: 'boing-mainnet',

@@ -11,7 +11,10 @@
     <div class="header">
       <h1 class="logo">Boing Express</h1>
     </div>
-    <div id="screen-choose" class="screen">
+    <div id="screen-loading" class="screen" aria-live="polite" aria-busy="true" aria-label="Loading wallet">
+      <p class="loading-message">Loading…</p>
+    </div>
+    <div id="screen-choose" class="screen hidden">
       <p class="tagline">The DeFi that always bounces back</p>
       <div class="actions">
         <button type="button" id="btn-create" class="btn-primary" aria-label="Create new wallet">Create wallet</button>
@@ -64,6 +67,7 @@
         <h2 class="label">Balance</h2>
         <p class="balance"><span id="balance">…</span> <span id="symbol">BOING</span></p>
         <p id="balance-error" class="error hidden"></p>
+        <button type="button" id="btn-balance-retry" class="btn-small btn-retry hidden" aria-label="Retry loading balance">Retry</button>
       </section>
       <section class="card">
         <h2 class="label">Send</h2>
@@ -75,7 +79,8 @@
           <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
         </div>
           <p id="send-error" class="error hidden"></p>
-          <p id="send-success" class="success hidden"></p>
+          <p id="send-success" class="success hidden" aria-live="polite"></p>
+          <a id="send-explorer-link" class="explorer-link hidden" href="#" target="_blank" rel="noopener noreferrer" aria-label="View transaction on explorer">View transaction</a>
           <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING">Send</button>
         </form>
       </section>

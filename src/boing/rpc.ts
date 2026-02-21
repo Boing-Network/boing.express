@@ -37,6 +37,9 @@ export function rpcErrorToMessage(code: number, message: string): string {
 
 let rpcId = 0;
 
+/** Default timeout for RPC requests (ms). Prevents hanging on slow or unresponsive RPC. */
+const RPC_TIMEOUT_MS = 15_000;
+
 function nextId(): number {
   return ++rpcId;
 }
@@ -52,20 +55,28 @@ export async function rpcCall<T>(
     method,
     params,
   };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
   let res: Response;
   try {
     res = await fetch(rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
   } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new Error('Request timed out. The network may be slow — try again.');
+    }
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
       throw new Error('Network unavailable or RPC not responding. Check your connection and try again.');
     }
     throw e;
   }
+  clearTimeout(timeoutId);
   if (!res.ok) {
     if (res.status === 404) throw new Error('RPC endpoint not available. The network may not be running.');
     throw new Error(`RPC HTTP ${res.status}: ${res.statusText}`);
