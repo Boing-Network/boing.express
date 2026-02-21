@@ -6,6 +6,14 @@
   padding: 1.5rem;
 }
 
+.mascot {
+  display: block;
+  width: 80px;
+  height: auto;
+  margin: 0 auto 1rem;
+  animation: boing-float var(--motion-float-duration) var(--motion-easing) infinite;
+}
+
 .card {
   width: 100%;
   max-width: 400px;

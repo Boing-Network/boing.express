@@ -142,12 +142,41 @@
   50% { transform: translateY(-6px) scale(1.02); }
 }
 
-/* Placeholder when extraction not available (no raw PNG used) */
-.heroPlaceholder {
+/* Official Boing Bot mascot when no 3D scene (design system: float animation) */
+.heroMascotWrap {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, var(--glow-cyan-subtle) 0%, transparent 70%);
+  overflow: hidden;
+  animation: boing-float var(--motion-float-duration) var(--motion-easing) infinite;
+}
+
+.heroMascotImg {
+  width: 75%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 24px var(--glow-cyan)) drop-shadow(0 0 48px var(--glow-blue));
+}
+
+.heroComicLogo {
+  display: block;
+  height: 2.5rem;
+  width: auto;
+  margin: 0 auto 0.5rem;
+  object-fit: contain;
+  animation: fadeInUp 0.5s var(--ease-out) 0.1s both;
+}
+
+.pillarIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  object-fit: contain;
 }
 
 @media (min-width: 640px) {
@@ -434,10 +463,20 @@
   box-shadow: 0 4px 30px var(--glow-cyan);
 }
 
-.cardIcon {
-  font-size: 1.5rem;
+.cardIcon,
+.cardIconImg {
   display: block;
   margin-bottom: 0.75rem;
+}
+
+.cardIcon {
+  font-size: 1.5rem;
+}
+
+.cardIconImg {
+  width: 2.5rem;
+  height: auto;
+  object-fit: contain;
 }
 
 .card h3 {

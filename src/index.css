@@ -34,11 +34,12 @@
   /* === GLOWS (for box-shadow / text-shadow) === */
   --glow-cyan: rgba(0, 229, 204, 0.4);
   --glow-cyan-subtle: rgba(0, 229, 204, 0.08);
+  --hex-grid-stroke: rgba(0, 229, 204, 0.06);
   --glow-cyan-soft: rgba(0, 229, 204, 0.15);
   --glow-blue: rgba(0, 180, 255, 0.35);
   --accent-cyan-subtle: rgba(0, 180, 255, 0.1);
-  --overlay-from: rgba(10, 14, 26, 0.2);
-  --overlay-to: rgba(10, 14, 26, 0.55);
+  --overlay-from: rgba(10, 14, 26, 0.3);
+  --overlay-to: rgba(10, 14, 26, 0.6);
   --overlay-mid: rgba(10, 14, 26, 0.4);
   --overlay-light: rgba(10, 14, 26, 0.25);
   --overlay-heavy: rgba(10, 14, 26, 0.5);
@@ -190,8 +191,23 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-primary);
 }
 
-h1 { text-shadow: 0 0 20px var(--glow-cyan); }
-h2 { text-shadow: 0 0 12px var(--glow-cyan); }
+h1 {
+  font-weight: 700;
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  text-shadow: 0 0 20px var(--glow-cyan);
+}
+
+h2 {
+  font-weight: 700;
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  text-shadow: 0 0 12px var(--glow-cyan);
+}
+
+h3 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1.25rem;
+}
 
 p {
   color: var(--text-secondary);

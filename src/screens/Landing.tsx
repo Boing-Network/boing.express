@@ -6,6 +6,16 @@ import styles from './Landing.module.css';
 
 const HERO_OBJECTS_BASE = '/images/hero_objects';
 const HERO_MANIFEST_URL = `${HERO_OBJECTS_BASE}/manifest.json`;
+const ASSETS_BASE = '/assets';
+
+const PILLARS = [
+  { key: 'security', label: 'Security', img: 'pillar-security.png' },
+  { key: 'scalability', label: 'Scalability', img: 'pillar-scalability.png' },
+  { key: 'decentralization', label: 'Decentralization', img: 'pillar-decentralization.png' },
+  { key: 'authenticity', label: 'Authenticity', img: 'pillar-authenticity.png' },
+  { key: 'transparency', label: 'Transparency', img: 'pillar-transparency.png' },
+  { key: 'quality', label: 'Quality Assurance', img: 'pillar-quality.png' },
+] as const;
 
 type HeroManifest = { environment?: string; robot: string | null; objects: string[] } | null;
 
@@ -71,18 +81,32 @@ export function Landing() {
                 </div>
               </div>
             )}
-            {/* When extraction not loaded: minimal placeholder (no composite PNG) */}
-            {heroManifestLoaded && !useExtracted && <div className={styles.heroPlaceholder} aria-hidden />}
+            {/* When extraction not loaded: official Boing Bot mascot with float */}
+            {heroManifestLoaded && !useExtracted && (
+              <div className={styles.heroMascotWrap}>
+                <img
+                  src={`${ASSETS_BASE}/mascot-excited.png`}
+                  alt="Boing Bot — Boing Network mascot"
+                  className={styles.heroMascotImg}
+                />
+              </div>
+            )}
           </div>
+          <img
+            src={`${ASSETS_BASE}/logo-boing-comic.png`}
+            alt=""
+            className={styles.heroComicLogo}
+            aria-hidden
+          />
           <h1 className={styles.heroTitle}>Boing Express</h1>
           <p className={styles.heroTagline}>Authentic. Decentralized. Optimal. Quality-Assured.</p>
           <div className={styles.heroPills}>
-            <span>🔐 Security</span>
-            <span>⚡ Scalability</span>
-            <span>🌐 Decentralization</span>
-            <span>✓ Authenticity</span>
-            <span>📋 Transparency</span>
-            <span>✓ True Quality Assurance</span>
+            {PILLARS.map(({ key, label, img }) => (
+              <span key={key}>
+                <img src={`${ASSETS_BASE}/${img}`} alt="" className={styles.pillarIcon} aria-hidden />
+                {label}
+              </span>
+            ))}
           </div>
           <p className={styles.heroDesc}>
             Non-custodial wallet for Boing Network. Create or import a wallet, send and receive BOING,
@@ -98,17 +122,17 @@ export function Landing() {
           <h2 className={styles.sectionTitle}>Why Boing Express</h2>
           <div className={styles.featureGrid}>
             <div className={styles.card}>
-              <span className={styles.cardIcon}>🔐</span>
+              <img src={`${ASSETS_BASE}/pillar-security.png`} alt="" className={styles.cardIconImg} aria-hidden />
               <h3>Non-custodial</h3>
               <p>Keys are generated and stored only on your device. Password-encrypted; we never see your private key.</p>
             </div>
             <div className={styles.card}>
-              <span className={styles.cardIcon}>⚡</span>
+              <img src={`${ASSETS_BASE}/pillar-scalability.png`} alt="" className={styles.cardIconImg} aria-hidden />
               <h3>Web & extension</h3>
               <p>Use the wallet at boing.express or install the browser extension for Chrome and Firefox.</p>
             </div>
             <div className={styles.card}>
-              <span className={styles.cardIcon}>🌐</span>
+              <img src={`${ASSETS_BASE}/pillar-decentralization.png`} alt="" className={styles.cardIconImg} aria-hidden />
               <h3>Boing Network</h3>
               <p>Native support for Boing: Ed25519 addresses, send/receive BOING, testnet faucet, mainnet when live.</p>
             </div>

@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import styles from './Welcome.module.css';
 
+const ASSETS = '/assets';
+
+const MASCOT_BY_STEP: Record<string, string> = {
+  choose: 'mascot-excited.png',
+  unlock: 'mascot-thinking.png',
+  create: 'mascot-default.png',
+  import: 'mascot-default.png',
+};
+
 type Step = 'choose' | 'create' | 'import' | 'unlock';
 
 export function Welcome() {
@@ -84,6 +93,7 @@ export function Welcome() {
     return (
       <div className={`${styles.wrap} page-app`}>
         <div className={styles.card}>
+          <img src={`${ASSETS}/${MASCOT_BY_STEP.choose}`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>Boing Wallet</h1>
           <p className={styles.subtitle}>The DeFi that always bounces back. Non-custodial wallet for Boing Network.</p>
           <div className={styles.actions}>
@@ -103,6 +113,7 @@ export function Welcome() {
     return (
       <div className={`${styles.wrap} page-app`}>
         <div className={styles.card}>
+          <img src={`${ASSETS}/${MASCOT_BY_STEP.unlock}`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>Unlock wallet</h1>
           {storedAddressHint && (
             <p className={styles.hint}>Address: {storedAddressHint}</p>
@@ -133,6 +144,7 @@ export function Welcome() {
     return (
       <div className={`${styles.wrap} page-app`}>
         <div className={styles.card}>
+          <img src={`${ASSETS}/${MASCOT_BY_STEP.create}`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>Create wallet</h1>
           <p className={styles.subtitle}>
             Generate a new Ed25519 keypair. Back up your key — we don’t store it on any server.
@@ -171,6 +183,7 @@ export function Welcome() {
   return (
     <div className={`${styles.wrap} page-app`}>
       <div className={styles.card}>
+        <img src={`${ASSETS}/${MASCOT_BY_STEP.import}`} alt="" className={styles.mascot} aria-hidden />
         <h1 className={styles.title}>Import wallet</h1>
         <p className={styles.subtitle}>
           Enter your 64-character hex private key (32 bytes). It will be encrypted with your password.

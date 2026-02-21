@@ -43,7 +43,7 @@
 }
 
 .hexGrid path {
-  stroke: var(--glow-cyan-subtle);
+  stroke: var(--hex-grid-stroke);
 }
 
 /* ---------- Orbs (bioluminescent / nebula glow) ---------- */
