@@ -5,6 +5,11 @@
   color: var(--text);
 }
 
+.pageContent {
+  position: relative;
+  z-index: 1;
+}
+
 .header {
   display: flex;
   align-items: center;

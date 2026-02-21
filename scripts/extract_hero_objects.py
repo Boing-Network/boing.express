@@ -94,8 +94,15 @@ def main():
         print("No objects above minimum area. Try lowering MIN_OBJECT_AREA_RATIO.", file=sys.stderr)
         sys.exit(1)
 
+    # Export environment layer (background only): original with foreground masked out
+    env_rgba = img.copy()
+    env_rgba[:, :, 3] = (255 - binary * 255).astype(np.uint8)
+    env_path = OUTPUT_DIR / "hero_environment.png"
+    Image.fromarray(env_rgba).save(env_path, "PNG")
+    print(f"  hero_environment.png (background layer)")
+
     print(f"Exporting {len(objects)} objects...")
-    manifest = {"robot": None, "objects": []}
+    manifest = {"environment": "hero_environment.png", "robot": None, "objects": []}
 
     for i, obj in enumerate(objects):
         mask = obj["mask"]
@@ -120,7 +127,7 @@ def main():
         json.dump(manifest, f, indent=2)
 
     print(f"Wrote {manifest_path}")
-    print("Done. Use hero_objects/ in the frontend with manifest.json for layers.")
+    print("Done. Use hero_objects/ in the frontend: environment + robot + objects for full-page 3D.")
 
 
 if __name__ == "__main__":

@@ -107,8 +107,19 @@ def main():
         print("No masks above minimum area.", file=sys.stderr)
         sys.exit(1)
 
+    # Environment: background only (original with all foreground masked out)
+    combined_mask = np.zeros((h, w), dtype=bool)
+    for m in masks:
+        combined_mask |= m["segmentation"]
+    env_rgba = img_rgba.copy()
+    env_rgba[:, :, 3] = (255 - combined_mask.astype(np.uint8) * 255).astype(np.uint8)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    env_path = OUTPUT_DIR / "hero_environment.png"
+    Image.fromarray(env_rgba).save(env_path, "PNG")
+    print("  hero_environment.png (background layer)")
+
     print(f"Exporting {len(masks)} segments...")
-    manifest = {"robot": None, "objects": []}
+    manifest = {"environment": "hero_environment.png", "robot": None, "objects": []}
 
     for i, m in enumerate(masks):
         mask = m["segmentation"]

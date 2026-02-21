@@ -1,4 +1,5 @@
 {
+  "environment": "hero_environment.png",
   "robot": "hero_robot.png",
   "objects": []
 }

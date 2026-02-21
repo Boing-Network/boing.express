@@ -37,10 +37,12 @@ This overwrites the same `public/images/hero_objects/` output and manifest forma
 
 ```json
 {
+  "environment": "hero_environment.png",
   "robot": "hero_robot.png",
   "objects": ["hero_object_1.png", "hero_object_2.png", ...]
 }
 ```
 
-- **robot**: main character (used as front layer with strongest motion).
-- **objects**: environment objects (mid layer, parallax motion). Order matches extraction (e.g. by size/position).
+- **environment**: background-only layer (no foreground); used for full-page ambient layer.
+- **robot**: main character (hero + full-page 3D slots with strongest motion).
+- **objects**: environment objects (jellyfish, coral, etc. when SAM used); full-page 3D + hero mid layer.

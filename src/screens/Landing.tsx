@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FullPage3DElements } from '../components/FullPage3DElements';
 import { SiteLogo } from '../components/SiteLogo';
 import styles from './Landing.module.css';
 
 const HERO_OBJECTS_BASE = '/images/hero_objects';
 const HERO_MANIFEST_URL = `${HERO_OBJECTS_BASE}/manifest.json`;
 
-type HeroManifest = { robot: string | null; objects: string[] } | null;
+type HeroManifest = { environment?: string; robot: string | null; objects: string[] } | null;
 
 export function Landing() {
   const [heroManifest, setHeroManifest] = useState<HeroManifest>(null);
@@ -28,6 +29,8 @@ export function Landing() {
 
   return (
     <div className={styles.page}>
+      <FullPage3DElements />
+      <div className={styles.pageContent}>
       <header className={styles.header}>
         <SiteLogo className={styles.logoWrap} />
         <nav className={styles.nav}>
@@ -146,6 +149,7 @@ export function Landing() {
           <p className={styles.footerCopy}>Boing Express · boing.express · Authentic. Decentralized. Optimal. Quality-Assured.</p>
         </footer>
       </main>
+      </div>
     </div>
   );
 }
