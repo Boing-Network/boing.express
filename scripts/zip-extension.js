@@ -16,12 +16,12 @@ const isWin = process.platform === 'win32';
 
 if (isWin) {
   execSync(
-    `powershell -Command "Compress-Archive -Path manifest.json, popup.html, popup.js, popup.css, icons -DestinationPath '${outZip.replace(/'/g, "''")}' -Force"`,
+    `powershell -Command "Compress-Archive -Path manifest.json, popup.html, popup.js, popup.css, icons, fonts -DestinationPath '${outZip.replace(/'/g, "''")}' -Force"`,
     { cwd: extDir }
   );
 } else {
   execSync(
-    `zip -r '${outZip}' manifest.json popup.html popup.js popup.css icons -x "*.map"`,
+    `zip -r '${outZip}' manifest.json popup.html popup.js popup.css icons fonts -x "*.map"`,
     { cwd: extDir }
   );
 }

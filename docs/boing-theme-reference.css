@@ -1,4 +1,4 @@
-/* Boing Network — Marketing Asset Package brand reference
+/* Boing Network — outerspace-oceanic theme (promo video / official sites)
  * Use these values to align boing.express and extension UI.
  *
  * Element              Value
@@ -6,7 +6,8 @@
  * Secondary Accent     #00B4FF (Electric Blue)
  * Dark Background      #0A0E1A (Deep Navy)
  * Light Background     #F0FFFE (Soft White-Teal)
- * Typography           Noto Sans (Black, Bold, Medium, Regular)
+ * Typography           Comfortaa (Light, Regular, Medium, SemiBold, Bold)
+ * Theme                Outerspace-oceanic: hex grid, bioluminescent orbs, cosmic depth
  * Tagline              "Authentic. Decentralized. Optimal. Quality-Assured."
  *
  * Hero title gradient: linear-gradient(to right, #00E5CC, #00B4FF)
@@ -22,5 +23,5 @@
   --bg-light: #F0FFFE;
   --border: rgba(0, 229, 204, 0.2);
   --accent-glow: rgba(0, 229, 204, 0.4);
-  --font: 'Noto Sans', system-ui, sans-serif;
+  --font: 'Comfortaa', system-ui, sans-serif;
 }

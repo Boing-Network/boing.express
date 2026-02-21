@@ -1,10 +1,10 @@
-/* Boing Network theme — Marketing Asset Package brand identity */
-/* Typography: Noto Sans (Google Fonts). Fallback: Comfortaa from /fonts/ */
+/* Boing Network theme — outerspace-oceanic (promo video / official sites) */
+/* Typography: Comfortaa (Google Fonts) */
 
 :root {
-  /* Brand colors from Boing Network Marketing Asset Package PDF */
+  /* Brand: Primary #00E5CC (Teal), Secondary #00B4FF (Electric Blue), Deep Navy #0A0E1A */
   --bg: #0A0E1A;
-  --bg-subtle: #121829;
+  --bg-subtle: #0d1220;
   --bg-tertiary: #12182999;
   --surface: #12182999;
   --surface-elevated: #1a2240;
@@ -32,7 +32,7 @@
   --radius: 1rem;
   --radius-sm: 0.5rem;
   --radius-pill: 9999px;
-  --font: 'Noto Sans', system-ui, sans-serif;
+  --font: 'Comfortaa', system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
   --transition: 0.2s ease;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
