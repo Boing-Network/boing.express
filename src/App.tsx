@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { WalletProvider } from './context/WalletContext';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { WalletNav } from './components/WalletNav';
@@ -37,14 +37,24 @@ function AppContent() {
   );
 }
 
+function AppShell() {
+  const location = useLocation();
+  const isLanding = location.pathname === '/';
+  return (
+    <>
+      {!isLanding && <AnimatedBackground />}
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+        <AppContent />
+      </div>
+    </>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <WalletProvider>
-        <AnimatedBackground />
-        <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
-          <AppContent />
-        </div>
+        <AppShell />
       </WalletProvider>
     </BrowserRouter>
   );

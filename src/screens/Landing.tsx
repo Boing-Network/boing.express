@@ -1,11 +1,7 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FullPage3DElements } from '../components/FullPage3DElements';
 import { SiteLogo } from '../components/SiteLogo';
 import styles from './Landing.module.css';
 
-const HERO_OBJECTS_BASE = '/images/hero_objects';
-const HERO_MANIFEST_URL = `${HERO_OBJECTS_BASE}/manifest.json`;
 const ASSETS_BASE = '/assets';
 
 const PILLARS = [
@@ -17,30 +13,9 @@ const PILLARS = [
   { key: 'quality', label: 'Quality Assurance', img: 'pillar-quality.png' },
 ] as const;
 
-type HeroManifest = { environment?: string; robot: string | null; objects: string[] } | null;
-
 export function Landing() {
-  const [heroManifest, setHeroManifest] = useState<HeroManifest>(null);
-  const [heroManifestLoaded, setHeroManifestLoaded] = useState(false);
-
-  useEffect(() => {
-    fetch(HERO_MANIFEST_URL)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: HeroManifest) => {
-        setHeroManifest(data ?? null);
-        setHeroManifestLoaded(true);
-      })
-      .catch(() => setHeroManifestLoaded(true));
-  }, []);
-
-  const useExtracted = heroManifestLoaded && heroManifest && heroManifest.robot;
-  const robotSrc = useExtracted ? `${HERO_OBJECTS_BASE}/${heroManifest!.robot}` : null;
-  const envSrc = useExtracted && heroManifest!.environment ? `${HERO_OBJECTS_BASE}/${heroManifest!.environment}` : null;
-  const objectFiles = useExtracted ? heroManifest!.objects : [];
-
   return (
     <div className={`${styles.page} page-landing`}>
-      <FullPage3DElements />
       <div className={styles.pageContent}>
       <header className={styles.header}>
         <SiteLogo className={styles.logoWrap} />
@@ -52,45 +27,14 @@ export function Landing() {
 
       <main className={styles.main}>
         <section className={styles.hero}>
-          <div className={`${styles.heroVisual} ${useExtracted ? styles.heroVisual3d : ''}`}>
-            {/* Only extracted 3D elements (no raw PNGs): environment + objects + robot */}
-            {useExtracted && robotSrc && (
-              <div className={styles.heroScene3d}>
-                {/* Back layer: extracted environment only */}
-                {envSrc && (
-                  <div className={styles.heroLayer3d} data-depth="far">
-                    <img src={envSrc} alt="" aria-hidden className={styles.heroLayerImg} />
-                  </div>
-                )}
-                {objectFiles.map((file, i) => (
-                  <div
-                    key={file}
-                    className={styles.heroLayer3d}
-                    data-depth="mid"
-                    style={{ animationDelay: `${i * 0.4}s` }}
-                  >
-                    <img src={`${HERO_OBJECTS_BASE}/${file}`} alt="" aria-hidden className={styles.heroLayerImg} />
-                  </div>
-                ))}
-                <div className={`${styles.heroLayer3d} ${styles.heroRobotLayer3d}`} data-depth="near">
-                  <img
-                    src={robotSrc}
-                    alt="Boing Network mascot — teal robot in outerspace-oceanic world"
-                    className={styles.heroLayerImg}
-                  />
-                </div>
-              </div>
-            )}
-            {/* When extraction not loaded: official Boing Bot mascot with float */}
-            {heroManifestLoaded && !useExtracted && (
-              <div className={styles.heroMascotWrap}>
-                <img
-                  src={`${ASSETS_BASE}/mascot-excited.png`}
-                  alt="Boing Bot — Boing Network mascot"
-                  className={styles.heroMascotImg}
-                />
-              </div>
-            )}
+          <div className={styles.heroVisual}>
+            <div className={styles.heroMascotWrap}>
+              <img
+                src={`${ASSETS_BASE}/mascot-excited.png`}
+                alt="Boing Bot — Boing Network mascot"
+                className={styles.heroMascotImg}
+              />
+            </div>
           </div>
           <img
             src={`${ASSETS_BASE}/logo-boing-comic.png`}
