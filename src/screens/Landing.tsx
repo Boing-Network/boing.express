@@ -16,13 +16,23 @@ export function Landing() {
       <main className={styles.main}>
         <section className={styles.hero}>
           <div className={styles.heroVisual}>
-            <img
-              src="/images/boing_robot_hero.png"
-              alt="Boing Network mascot — teal robot in outerspace-oceanic world"
-              className={styles.heroRobot}
-              width={280}
-              height={280}
-            />
+            {/* Layer 1: 3D environment (jellyfish, coral, bubbles) — slow motion */}
+            <div className={styles.heroEnv}>
+              <img
+                src="/images/boing_robot_hero.png"
+                alt=""
+                aria-hidden
+                className={styles.heroEnvImg}
+              />
+            </div>
+            {/* Layer 2: Robot hero extracted (circular focus) — float/bob motion */}
+            <div className={styles.heroRobotWrap}>
+              <img
+                src="/images/boing_robot_hero.png"
+                alt="Boing Network mascot — teal robot in outerspace-oceanic world"
+                className={styles.heroRobot}
+              />
+            </div>
           </div>
           <h1 className={styles.heroTitle}>Boing Express</h1>
           <p className={styles.heroTagline}>Authentic. Decentralized. Optimal. Quality-Assured.</p>
