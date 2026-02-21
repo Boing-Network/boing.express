@@ -16,7 +16,9 @@ Official Boing Network design system assets. All are used in the app.
 
 ## Branding
 
-- **logo-boing-comic.png** — “BOING!” comic-style logo. Shown in Landing hero above “Boing Express”.
+- **icon-only-transparent.png** — Boing icon (hexagonal orb + cyan ring). Used for SiteLogo (nav/header), Landing hero badge, and favicon/apple-touch-icon.
+- **logo-light-transparent.png** / **logo-dark-transparent.png** — Full wordmark logos for dark and light backgrounds (optional; app uses icon-only).
+- **logo-boing-comic.png** — “BOING!” comic-style logo (optional alternate for hero).
 
 ## Pillars (six pillars of Boing Network)
 

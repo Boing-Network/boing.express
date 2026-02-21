@@ -37,7 +37,7 @@ export function Landing() {
             </div>
           </div>
           <img
-            src={`${ASSETS_BASE}/logo-boing-comic.png`}
+            src={`${ASSETS_BASE}/icon-only-transparent.png`}
             alt=""
             className={styles.heroComicLogo}
             aria-hidden

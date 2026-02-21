@@ -25,47 +25,23 @@
   transform: scale(1.01);
 }
 
-/* Logo image: light version for dark backgrounds (default), dark version for light mode */
+/* Logo icon: single transparent icon for all backgrounds */
 .logoImgWrap {
-  position: relative;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   height: 2rem;
 }
 
-.logoImg,
-.logoImgDark {
+.logoImg {
   display: block;
   height: 2rem;
-  width: auto;
+  width: 2rem;
   object-fit: contain;
   transition: filter 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
 
-.logoImgDark {
-  position: absolute;
-  left: 0;
-  top: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
-@media (prefers-color-scheme: light) {
-  .logoImg {
-    opacity: 0;
-    position: absolute;
-    pointer-events: none;
-  }
-  .logoImgDark {
-    position: static;
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
-.logo:hover .logoImgWrap .logoImg,
-.logo:hover .logoImgWrap .logoImgDark {
+.logo:hover .logoImgWrap .logoImg {
   filter: brightness(1.15);
   transform: scale(1.03);
 }

@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import styles from './SiteLogo.module.css';
 
-const LOGO_LIGHT = '/assets/logo-light-transparent.png'; // dark backgrounds (default)
-const LOGO_DARK = '/assets/logo-dark-transparent.png';  // light backgrounds
+const LOGO_ICON = '/assets/icon-only-transparent.png';
 
 type Props = {
   href?: string;
@@ -15,17 +14,10 @@ export function SiteLogo({ href = '/', className, asSpan }: Props) {
     <>
       <span className={styles.logoImgWrap}>
         <img
-          src={LOGO_LIGHT}
+          src={LOGO_ICON}
           alt=""
           className={styles.logoImg}
-          width={140}
-          height={32}
-        />
-        <img
-          src={LOGO_DARK}
-          alt=""
-          className={styles.logoImgDark}
-          width={140}
+          width={32}
           height={32}
         />
       </span>
