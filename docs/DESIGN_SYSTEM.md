@@ -66,6 +66,19 @@ Shared across all three: dark base (boing-black, boing-navy), Orbitron + Inter, 
 
 ---
 
+## Page color variants (data-page)
+
+The app sets `data-page` on the main content wrapper from the current route so accents can shift subtly per section:
+
+| Route | data-page | Accent feel |
+|-------|-----------|-------------|
+| `/` | landing | Default Aqua Personal (warm teal-cyan) |
+| `/wallet/*` | wallet | Trust-forward (teal-green `--trust-green`) |
+| `/docs`, `/docs/*` | docs | Cooler cyan (`--express-secondary`) |
+| `/privacy`, `/terms` | legal | Same as docs |
+
+Overrides in `src/index.css` adjust `--express-primary`, `--express-primary-glow`, `--card-border`, and `--express-primary-dashed` so nav, buttons, and cards pick up the variant.
+
 ## Design tokens in code (Express only)
 
 This codebase implements **only the Aqua Personal (Express) variant**. Finance and Network each have their own token sets (e.g. `--finance-primary`, `--network-primary`) in their respective repos; they are not mixed here. All Express tokens are defined in `src/index.css` under `:root`. Key groups:

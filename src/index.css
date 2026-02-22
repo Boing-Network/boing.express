@@ -122,6 +122,24 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --success: var(--trust-green);
   --danger: #ef4444;
+  --express-primary-dashed: rgba(0, 232, 200, 0.5);
+}
+
+/* Page variants (data-page): subtle accent shift per section — design system */
+[data-page="wallet"] {
+  --express-primary: var(--trust-green);
+  --express-primary-glow: var(--trust-green-glow);
+  --express-primary-dashed: rgba(45, 212, 191, 0.5);
+  --card-border: rgba(45, 212, 191, 0.18);
+  --card-border-hover: rgba(45, 212, 191, 0.45);
+}
+[data-page="docs"],
+[data-page="legal"] {
+  --express-primary: var(--express-secondary);
+  --express-primary-glow: rgba(0, 180, 216, 0.25);
+  --express-primary-dashed: rgba(0, 180, 216, 0.5);
+  --card-border: rgba(0, 180, 216, 0.18);
+  --card-border-hover: rgba(0, 180, 216, 0.45);
 }
 
 /* Subtle animations — respect reduced motion */

@@ -36,12 +36,6 @@ export function Landing() {
               />
             </div>
           </div>
-          <img
-            src={`${ASSETS_BASE}/icon-only-transparent.png`}
-            alt=""
-            className={styles.heroComicLogo}
-            aria-hidden
-          />
           <h1 className={styles.heroTitle}>Boing Express</h1>
           <p className={styles.heroTagline}>Authentic. Decentralized. Optimal. Quality-Assured.</p>
           <div className={styles.heroPills}>

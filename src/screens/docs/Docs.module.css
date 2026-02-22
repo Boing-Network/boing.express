@@ -12,7 +12,7 @@
   background: var(--nav-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--nav-border);
   animation: fadeIn 0.4s var(--ease-out);
 }
 
@@ -36,7 +36,7 @@
 
 .nav a:hover,
 .nav a.active {
-  color: var(--accent-teal);
+  color: var(--express-primary);
 }
 
 .nav .active {
@@ -89,7 +89,7 @@
 }
 
 .sidebarActive {
-  color: var(--accent-teal) !important;
+  color: var(--express-primary) !important;
   font-weight: 500;
 }
 

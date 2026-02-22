@@ -2,12 +2,12 @@
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   text-decoration: none;
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   letter-spacing: -0.02em;
-  color: var(--accent-neon);
+  color: var(--express-primary);
   transition: letter-spacing 0.35s var(--ease-out), gap 0.35s var(--ease-out),
     filter 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
@@ -15,7 +15,7 @@
 .logo:hover {
   letter-spacing: 0.04em;
   gap: 0.7rem;
-  color: var(--accent-neon);
+  color: var(--express-primary);
   filter: brightness(1.2);
   transform: scale(1.03);
 }
@@ -30,13 +30,13 @@
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  height: 2rem;
+  height: 2.75rem;
 }
 
 .logoImg {
   display: block;
-  height: 2rem;
-  width: 2rem;
+  height: 2.75rem;
+  width: 2.75rem;
   object-fit: contain;
   transition: filter 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
@@ -48,14 +48,14 @@
 
 /* Title text: aqua/teal; hover = brighter glow + underline sweep */
 .logoText {
-  color: var(--accent-neon);
+  color: var(--express-primary);
   position: relative;
   transition: filter 0.35s var(--ease-out), text-shadow 0.35s var(--ease-out);
 }
 
 .logo:hover .logoText {
-  filter: drop-shadow(0 0 10px var(--glow-cyan));
-  text-shadow: 0 0 16px var(--glow-cyan), 0 0 24px var(--glow-cyan-soft);
+  filter: drop-shadow(0 0 10px var(--express-primary-glow));
+  text-shadow: 0 0 16px var(--express-primary-glow);
 }
 
 .logoText::after {
@@ -65,7 +65,7 @@
   bottom: -3px;
   width: 0;
   height: 2px;
-  background: linear-gradient(to right, var(--accent-neon), var(--blue));
+  background: linear-gradient(to right, var(--express-primary), var(--express-secondary));
   box-shadow: 0 0 8px var(--glow-cyan);
   transition: width 0.4s var(--ease-out);
 }

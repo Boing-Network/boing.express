@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { WalletProvider } from './context/WalletContext';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { WalletNav } from './components/WalletNav';
@@ -37,11 +37,22 @@ function AppContent() {
   );
 }
 
+/** Page key for design-system color variant (data-page). */
+function getPageKey(pathname: string): string {
+  if (pathname === '/') return 'landing';
+  if (pathname.startsWith('/wallet')) return 'wallet';
+  if (pathname.startsWith('/docs')) return 'docs';
+  if (pathname === '/privacy' || pathname === '/terms') return 'legal';
+  return 'landing';
+}
+
 function AppShell() {
+  const location = useLocation();
+  const pageKey = getPageKey(location.pathname);
   return (
     <>
       <AnimatedBackground />
-      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+      <div data-page={pageKey} style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
         <AppContent />
       </div>
     </>

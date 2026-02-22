@@ -17,8 +17,8 @@ export function SiteLogo({ href = '/', className, asSpan }: Props) {
           src={LOGO_ICON}
           alt=""
           className={styles.logoImg}
-          width={32}
-          height={32}
+          width={44}
+          height={44}
         />
       </span>
       <span className={styles.logoText}>Boing Express</span>

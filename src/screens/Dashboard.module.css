@@ -11,7 +11,7 @@
   gap: 1rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--card-border);
   animation: fadeIn 0.35s var(--ease-out);
 }
 
@@ -61,16 +61,16 @@
 }
 
 .section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
   padding: 24px;
   margin-bottom: 1rem;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 30px var(--shadow);
+  box-shadow: var(--shadow-card);
   animation: fadeInUpSoft 0.35s var(--ease-out) both;
-  transition: border-color var(--motion-transition), box-shadow var(--motion-transition);
+  transition: all 0.3s ease;
 }
 
 .section:nth-child(1) { animation-delay: 0.05s; }
@@ -80,8 +80,8 @@
 .section:nth-child(5) { animation-delay: 0.25s; }
 
 .section:hover {
-  border-color: var(--border-hover);
-  box-shadow: 0 4px 30px var(--glow-cyan);
+  border-color: var(--card-border-hover);
+  box-shadow: var(--shadow-teal), var(--shadow-card);
 }
 
 .sectionTitle {
@@ -168,21 +168,21 @@
 
 /* Design system: primary button */
 .primary {
-  padding: 12px 28px;
-  background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
-  color: var(--bg-primary);
+  padding: 14px 28px;
+  background: linear-gradient(135deg, var(--express-primary), var(--express-warm));
+  color: var(--boing-black);
   border: none;
-  border-radius: 8px;
-  font-family: var(--font-sans);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
   font-weight: 700;
   font-size: 1rem;
   transition: all var(--motion-transition);
-  box-shadow: 0 0 16px var(--glow-cyan);
+  box-shadow: 0 0 20px var(--express-primary-glow);
 }
 
 .primary:hover:not(:disabled) {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 0 28px var(--glow-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 0 28px var(--express-primary-glow);
 }
 
 .primary:disabled {
@@ -192,20 +192,20 @@
 
 /* Design system: secondary button */
 .secondary {
-  padding: 12px 28px;
+  padding: 14px 28px;
   background: transparent;
-  color: var(--accent-cyan);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-family: var(--font-sans);
+  color: var(--express-primary);
+  border: 1.5px dashed var(--express-primary-dashed);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
   font-size: 1rem;
   transition: all var(--motion-transition);
 }
 
 .secondary:hover {
-  background-color: var(--accent-cyan-subtle);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 12px var(--glow-blue);
+  background-color: rgba(0, 232, 200, 0.08);
+  border-color: var(--express-primary);
+  box-shadow: 0 0 12px var(--express-primary-glow);
 }
 
 .sendAmountRow {
@@ -228,8 +228,8 @@
   flex-shrink: 0;
 }
 .maxBtn:hover {
-  border-color: var(--accent-neon);
-  color: var(--accent-neon);
+  border-color: var(--express-primary);
+  color: var(--express-primary);
 }
 
 .faucetRow {

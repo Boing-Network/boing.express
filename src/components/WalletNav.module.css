@@ -23,7 +23,7 @@
 .nav .links a {
   color: var(--text-secondary);
   text-decoration: none;
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 0.9375rem;
   font-weight: 500;
   transition: color var(--motion-transition);
@@ -31,7 +31,7 @@
 
 .nav .links a:hover,
 .nav .links a.active {
-  color: var(--accent-teal);
+  color: var(--express-primary);
 }
 
 .nav .links .active {
