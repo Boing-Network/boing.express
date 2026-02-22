@@ -55,20 +55,20 @@ function AppShell() {
   const [introDone, setIntroDone] = useState(false);
   const handleIntroComplete = useCallback(() => setIntroDone(true), []);
 
-  /* Gate: show only the intro until it completes so it always appears on every page load */
-  if (!introDone) {
-    return (
-      <InitialAnimation onComplete={handleIntroComplete} />
-    );
-  }
-
+  /* Background runs from first paint so it’s already animated when intro fades out. */
   return (
-    <div className={styles.appEntrance}>
+    <>
       <AnimatedBackground />
-      <div data-page={pageKey} style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
-        <AppContent />
-      </div>
-    </div>
+      {!introDone ? (
+        <InitialAnimation onComplete={handleIntroComplete} />
+      ) : (
+        <div className={styles.appEntrance}>
+          <div data-page={pageKey} style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+            <AppContent />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
