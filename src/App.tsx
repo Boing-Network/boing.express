@@ -1,6 +1,8 @@
+import { useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { WalletProvider } from './context/WalletContext';
 import { AnimatedBackground } from './components/AnimatedBackground';
+import { InitialAnimation, hasSeenIntro } from './components/InitialAnimation';
 import { WalletNav } from './components/WalletNav';
 import { Landing } from './screens/Landing';
 import { Welcome } from './screens/Welcome';
@@ -49,12 +51,18 @@ function getPageKey(pathname: string): string {
 function AppShell() {
   const location = useLocation();
   const pageKey = getPageKey(location.pathname);
+  const [introDone, setIntroDone] = useState(hasSeenIntro);
+  const handleIntroComplete = useCallback(() => setIntroDone(true), []);
+
   return (
     <>
       <AnimatedBackground />
       <div data-page={pageKey} style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
         <AppContent />
       </div>
+      {!introDone && (
+        <InitialAnimation onComplete={handleIntroComplete} />
+      )}
     </>
   );
 }
