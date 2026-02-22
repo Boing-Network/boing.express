@@ -113,6 +113,10 @@ Use classes `.btn-primary`, `.btn-secondary`, `.btn-ghost` or `data-variant="pri
 
 ---
 
+## Animated background
+
+The landing and app backgrounds use the **Boing Background Engine** (Aquatic-Space v2) instead of a static image. Implemented in `src/lib/boing-bg-engine.js` and `src/components/AnimatedBackground.tsx`. Config is route-based: `/` → landing (full scene), `/wallet/*` → wallet (calmer), `/docs` and legal pages → docs (minimal stars + nebula). `prefers-reduced-motion: reduce` switches to a minimal config (stars + nebula only, no jellyfish/coral/bubbles/shooting stars). Reference: external `boing-animated-backgrounds` folder and ELEMENT_LIBRARY.md.
+
 ## Maintenance
 
 - When adding or changing global styles, prefer design tokens from `src/index.css` over hard-coded colors or spacing.
