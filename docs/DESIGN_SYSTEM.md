@@ -1,15 +1,31 @@
 # Boing Design System — Express (Aqua Personal)
 
-This document describes the design system used for **boing.express** and how it fits into the broader Boing ecosystem. It is the single reference for tokens, typography, components, and layout when building or updating the Express UI.
+This document describes the **Boing Design System** as it applies to **boing.express**: one shared foundation plus three site-specific variants, with this repo implementing the **Aqua Personal** variant. It is the single reference for tokens, typography, components, and layout when building or updating the Express UI.
 
 ---
 
 ## Overview
 
-The **Boing Design System** defines a shared visual language across three Boing properties (boing.express, boing.finance, boing.network), with each site using a **variant** tuned to its use case. Boing Express uses the **Aqua Personal** variant: personal, secure, approachable, and trustworthy.
+The Boing Design System is **one foundational theme with three variants** — one per official Boing property. All three share the same structural and brand rules; each variant applies a distinct accent palette, background character, and component personality suited to its product.
 
-- **Reference assets:** External design theme files (e.g. `boing-design-themes/express/index.html`) and PDFs: *Boing Design System — Site Variants*, *design_strategy.md*, *audit_notes.md*.
-- **Implementation:** Tokens and base styles live in `src/index.css`. Component patterns follow the Aqua Personal theme (glassmorphism cards, teal-cyan accents, Orbitron + Inter).
+- **Reference assets:** External design theme files (e.g. `boing-design-themes/express/index.html`, `finance/index.html`, `network/index.html`) and PDFs: *Boing Design System — Site Variants*, *design_strategy.md*, *audit_notes.md*.
+- **This repo:** Implements only the **Express** variant. Tokens and base styles live in `src/index.css`; component patterns follow Aqua Personal (glassmorphism, warm teal-cyan, Orbitron + Inter).
+
+---
+
+## Three variants (one per Boing property)
+
+| Site | Variant name | Personality | Primary accent(s) |
+|------|----------------|-------------|--------------------|
+| **boing.express** | **Aqua Personal** | Personal · Secure · Approachable · Trustworthy | #00e8c8 warm teal-cyan |
+| **boing.finance** | **Deep Trade** | Professional · Data-driven · Dynamic · Powerful | #00e5ff electric cyan + #00ff88 profit green |
+| **boing.network** | **Cosmic Foundation** | Authoritative · Technical · Epic · Foundational | #7c3aed deep violet + #06b6d4 cosmic cyan |
+
+- **Express (this app):** Wallet and explorer; warmer, trust-forward palette; underwater caustics; security badges prominent.
+- **Finance:** DeFi platform; data-forward; grid background; green/red for P&L; JetBrains Mono for numbers; ticker, charts, swap widget.
+- **Network:** L1 protocol site; cosmic/nebula feel; violet primary; roadmap/ecosystem/status systems; largest hero; developer-focused.
+
+Shared across all three: dark base (boing-black, boing-navy), Orbitron + Inter, glassmorphism cards, section structure (eyebrow → title → subtitle), six pillars, tagline, and breakpoints (1024px, 640px). Only **accent palette** and **background character** (caustics vs grid vs nebula) differ by variant.
 
 ---
 
@@ -50,9 +66,9 @@ The **Boing Design System** defines a shared visual language across three Boing 
 
 ---
 
-## Design tokens in code
+## Design tokens in code (Express only)
 
-All Express tokens are defined in `src/index.css` under `:root`. Key groups:
+This codebase implements **only the Aqua Personal (Express) variant**. Finance and Network each have their own token sets (e.g. `--finance-primary`, `--network-primary`) in their respective repos; they are not mixed here. All Express tokens are defined in `src/index.css` under `:root`. Key groups:
 
 - **Backgrounds:** `--boing-black`, `--boing-navy`, `--boing-navy-mid`, `--boing-navy-light`, `--card-bg`, `--glass-bg`, `--nav-bg`.
 - **Text:** `--text-primary`, `--text-secondary`, `--text-muted`, `--text-accent`.
