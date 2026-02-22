@@ -289,15 +289,15 @@
     rgba(0, 180, 216, 0.08) 50%,
     transparent 70%
   );
-  transform: translateZ(-100px) scale(0.2);
+  transform: translateZ(-100px) scale(0.04);
   animation: coreIgnite 2.2s var(--cinema-ease-out) 0.6s both;
   pointer-events: none;
 }
 
 @keyframes coreIgnite {
   0% {
-    opacity: 0;
-    transform: translateZ(-100px) scale(0.1);
+    opacity: 0.6;
+    transform: translateZ(-100px) scale(0.04);
   }
   35% {
     opacity: 1;
@@ -341,7 +341,7 @@
   }
 }
 
-/* ─── Impact ring: expands once when mascot appears ─── */
+/* ─── Impact ring: starts as a dot, expands to circle around mascot ─── */
 .impactRing {
   position: absolute;
   width: 20vmin;
@@ -353,7 +353,7 @@
   border-radius: 50%;
   border: 2px solid rgba(0, 232, 200, 0.6);
   box-shadow: 0 0 40px rgba(0, 232, 200, 0.4);
-  transform: translateZ(20px) scale(0.3);
+  transform: translateZ(20px) scale(0.06);
   animation: impactExpand 1.6s var(--cinema-ease-out) 1.4s both;
   pointer-events: none;
 }
@@ -361,7 +361,7 @@
 @keyframes impactExpand {
   0% {
     opacity: 1;
-    transform: translateZ(20px) scale(0.3);
+    transform: translateZ(20px) scale(0.06);
   }
   100% {
     opacity: 0;
@@ -388,8 +388,8 @@
   margin-left: -2px;
   margin-top: -2px;
   border-radius: 50%;
-  background: rgba(0, 232, 200, 0.7);
-  box-shadow: 0 0 8px rgba(0, 232, 200, 0.5);
+  background: rgba(0, 232, 200, 0.95);
+  box-shadow: 0 0 12px rgba(0, 232, 200, 0.9), 0 0 24px rgba(0, 232, 200, 0.4);
   --angle: calc(var(--spiral-i, 0) * 15deg);
   transform: rotate(var(--angle)) translateY(-28vmin) rotate(calc(-1 * var(--angle)));
   animation: spiralRun 2.4s var(--cinema-ease-in-out) calc(1.6s + var(--spiral-i) * 0.04s) both;
@@ -407,10 +407,10 @@
     transform: rotate(var(--angle)) translateY(-8vmin) rotate(calc(-1 * var(--angle))) scale(0.5);
   }
   15% {
-    opacity: 0.9;
+    opacity: 1;
   }
   85% {
-    opacity: 0.9;
+    opacity: 1;
   }
   100% {
     opacity: 0;

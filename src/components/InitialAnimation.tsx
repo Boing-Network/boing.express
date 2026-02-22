@@ -4,6 +4,9 @@
  * camera, step into light); Act 3 — Acknowledge (subtle nod, ring greets);
  * Act 4 — Ready (hold, brand in). Lighting and angles are synced to the story.
  * Shown on every page load; respects prefers-reduced-motion. Skip anytime.
+ *
+ * Future: consider a plot beat tied to wallet/transaction (e.g. secure handoff,
+ * exchange, or “ready to send”) to align the intro with Boing Express as a wallet.
  */
 import { useEffect, useState, useCallback } from 'react';
 import styles from './InitialAnimation.module.css';
