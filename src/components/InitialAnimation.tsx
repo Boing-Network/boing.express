@@ -1,7 +1,9 @@
 /**
- * Cinematic 3D initial animation: "Portal arrival" — tunnel, core ignition,
- * mascot emergence, then smooth transition into the app. Unique, personalized.
- * Shown on every page load; respects prefers-reduced-motion.
+ * Cinematic 3D initial animation with a ~3–5s plot starring the Boing mascot:
+ * Act 1 — In the dark (silhouette, angled away); Act 2 — Light finds them (turn to
+ * camera, step into light); Act 3 — Acknowledge (subtle nod, ring greets);
+ * Act 4 — Ready (hold, brand in). Lighting and angles are synced to the story.
+ * Shown on every page load; respects prefers-reduced-motion. Skip anytime.
  */
 import { useEffect, useState, useCallback } from 'react';
 import styles from './InitialAnimation.module.css';
@@ -72,6 +74,9 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
 
       {/* Layer 3: Core glow — ignites then softens behind mascot */}
       <div className={styles.core} aria-hidden />
+
+      {/* Spotlight on mascot — "key light" finds them (plot-synced) */}
+      <div className={styles.mascotSpotlight} aria-hidden />
 
       {/* Layer 4: Impact ring — expands once when mascot appears */}
       <div className={styles.impactRing} aria-hidden />
