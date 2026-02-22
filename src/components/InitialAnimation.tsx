@@ -50,16 +50,25 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
       role="img"
       aria-label="Boing Express loading"
     >
-      {/* Layer 1: Void / tunnel — radial convergence */}
+      {/* Cinematic vignette (edges darken, subtle pulse) */}
+      <div className={styles.vignette} aria-hidden />
+
+      {/* Layer 1: Void / tunnel — radial convergence + subtle drift */}
       <div className={styles.tunnel} aria-hidden />
 
-      {/* Layer 2: Deep space gradient + starfield (parallax) */}
+      {/* Layer 2: Deep space gradient + starfield (parallax motion) */}
       <div className={styles.bg}>
         <div className={styles.bgGradient} />
         <div className={styles.starfield} aria-hidden />
         <div className={styles.starfieldFar} aria-hidden />
         <div className={styles.caustics} aria-hidden />
       </div>
+
+      {/* Rim light / key light from top-left */}
+      <div className={styles.rimLight} aria-hidden />
+
+      {/* Lens flare — shifts subtly for living light */}
+      <div className={styles.lensFlare} aria-hidden />
 
       {/* Layer 3: Core glow — ignites then softens behind mascot */}
       <div className={styles.core} aria-hidden />

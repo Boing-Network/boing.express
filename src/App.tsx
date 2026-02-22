@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { WalletProvider } from './context/WalletContext';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { InitialAnimation } from './components/InitialAnimation';
+import styles from './App.module.css';
 import { WalletNav } from './components/WalletNav';
 import { Landing } from './screens/Landing';
 import { Welcome } from './screens/Welcome';
@@ -62,12 +63,12 @@ function AppShell() {
   }
 
   return (
-    <>
+    <div className={styles.appEntrance}>
       <AnimatedBackground />
       <div data-page={pageKey} style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
         <AppContent />
       </div>
-    </>
+    </div>
   );
 }
 
