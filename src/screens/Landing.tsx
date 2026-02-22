@@ -63,7 +63,11 @@ export function Landing() {
         </section>
 
         <section className={styles.features}>
-          <h2 className={styles.sectionTitle}>Why Boing Express</h2>
+          <div className="section-header">
+            <span className="section-eyebrow">Why Boing Express</span>
+            <h2 className="section-title">Your Wallet, Your Rules</h2>
+            <p className="section-subtitle">Everything you need to interact with the Boing Network, with nothing you don&apos;t.</p>
+          </div>
           <div className={styles.featureGrid}>
             <div className={styles.card}>
               <img src={`${ASSETS_BASE}/pillar-security.png`} alt="" className={styles.cardIconImg} aria-hidden />

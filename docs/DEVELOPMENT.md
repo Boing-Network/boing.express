@@ -4,6 +4,12 @@ This document combines integration details, GitHub/CI setup, and SEO/deployment 
 
 ---
 
+## Design system
+
+Boing Express uses the **Boing Design System** variant **Aqua Personal** (personal, secure, approachable, trustworthy). Design tokens, typography, and component patterns are documented in **[docs/DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)**. When adding or changing UI, use the tokens and section/button patterns from `src/index.css` and refer to DESIGN_SYSTEM.md for consistency with the rest of the Boing ecosystem.
+
+---
+
 ## 1. Boing Network integration & Chrome Web Store checklist
 
 Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `crates/boing-primitives` (types, signature.rs).

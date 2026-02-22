@@ -1,94 +1,126 @@
-/* Boing Network theme — outerspace-oceanic (promo video / official sites) */
+/* Boing Express — Aqua Personal theme (Design System variant)
+   See docs/DESIGN_SYSTEM.md and boing-design-themes/express/index.html
+   Breakpoints: >1024px full desktop, ≤1024px reduced columns, ≤640px single column / compact nav
+*/
 
-@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ============================================================
-   BOING NETWORK — OFFICIAL DESIGN TOKENS
-   Source: BOING_DESIGN_SYSTEM.md, Section 10
+   BOING EXPRESS — AQUA PERSONAL DESIGN TOKENS
+   Source: docs/DESIGN_SYSTEM.md, Boing Design System — Site Variants
    ============================================================ */
 :root {
-  /* === BACKGROUNDS === */
-  --bg-primary: #0A0E1A;
-  --bg-secondary: #121829;
-  --bg-tertiary: #1A2235;
-  --bg-card: rgba(18, 24, 41, 0.7);
-  --nav-bg: rgba(10, 14, 26, 0.85);
+  /* Core brand (shared with all Boing sites) */
+  --boing-black: #050c18;
+  --boing-navy: #0a1628;
+  --boing-navy-mid: #0d1f3c;
+  --boing-navy-light: #122244;
 
-  /* === TEXT === */
-  --text-primary: #F0FFFE;
-  --text-secondary: #B8E6E3;
-  --text-tertiary: #7EB8B5;
+  /* Express accent palette — warm teal-cyan, trust-forward */
+  --express-primary: #00e8c8;
+  --express-primary-glow: rgba(0, 232, 200, 0.25);
+  --express-secondary: #00b4d8;
+  --express-accent: #48cae4;
+  --express-warm: #0096c7;
+  --express-soft: #90e0ef;
+  --trust-green: #2dd4bf;
+  --trust-green-glow: rgba(45, 212, 191, 0.2);
+  --shield-gold: #fbbf24;
+  --purple-mid: #7c3aed;
+  --purple-light: #a78bfa;
+  --neon-green: #00ff88;
 
-  /* === ACCENTS === */
-  --accent-teal: #00E5CC;
-  --accent-cyan: #00B4FF;
-  --accent-gold: #FACC15;
-  --accent-gold-dim: #EAB308;
-  --accent-purple: #9B59B6;
-  --mascot-yellow: #FFE000;
+  /* Text */
+  --text-primary: #f0f9ff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-accent: var(--express-primary);
 
-  /* === BORDERS === */
-  --border-color: rgba(0, 229, 204, 0.2);
-  --border-hover: rgba(0, 229, 204, 0.5);
+  /* Cards & surfaces */
+  --card-bg: rgba(10, 22, 40, 0.72);
+  --card-border: rgba(0, 232, 200, 0.18);
+  --card-border-hover: rgba(0, 232, 200, 0.45);
+  --card-glow: rgba(0, 232, 200, 0.08);
+  --glass-bg: rgba(13, 31, 60, 0.6);
+  --glass-border: rgba(0, 180, 216, 0.22);
+  --nav-bg: rgba(5, 12, 24, 0.85);
+  --nav-border: rgba(0, 232, 200, 0.12);
 
-  /* === GLOWS (for box-shadow / text-shadow) === */
-  --glow-cyan: rgba(0, 229, 204, 0.4);
-  --glow-cyan-subtle: rgba(0, 229, 204, 0.08);
-  --hex-grid-stroke: rgba(0, 229, 204, 0.06);
-  --glow-cyan-soft: rgba(0, 229, 204, 0.15);
-  --glow-blue: rgba(0, 180, 255, 0.35);
-  --accent-cyan-subtle: rgba(0, 180, 255, 0.1);
-  --overlay-from: rgba(10, 14, 26, 0.3);
-  --overlay-to: rgba(10, 14, 26, 0.6);
-  --overlay-mid: rgba(10, 14, 26, 0.4);
-  --overlay-light: rgba(10, 14, 26, 0.25);
-  --overlay-heavy: rgba(10, 14, 26, 0.5);
-  --overlay-radial: rgba(20, 30, 60, 0.15);
-  --glow-gold: rgba(250, 204, 21, 0.35);
-  --glow-purple: rgba(155, 89, 182, 0.35);
+  /* Shadows */
+  --shadow-teal: 0 0 24px rgba(0, 232, 200, 0.18);
+  --shadow-card: 0 4px 32px rgba(0, 0, 0, 0.4);
 
-  /* === SHADOWS === */
-  --shadow: rgba(0, 0, 0, 0.35);
-  --shadow-hover: rgba(0, 0, 0, 0.45);
-
-  /* === TYPOGRAPHY === */
-  --font-sans: 'Comfortaa', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Typography */
   --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* === MOTION === */
+  /* Spacing / radius (design system scale) */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* Motion */
   --motion-float-duration: 9s;
   --motion-glow-duration: 5s;
   --motion-transition: 0.3s ease;
   --motion-easing: ease-in-out;
 
-  /* === LEGACY ALIASES (reference tokens above; refactor to token names in Step 5) === */
+  /* Legacy aliases (map to Aqua Personal tokens for backward compatibility) */
+  --bg-primary: var(--boing-black);
+  --bg-secondary: var(--boing-navy);
+  --bg-tertiary: var(--boing-navy-mid);
+  --bg-card: var(--card-bg);
+  --border-color: var(--card-border);
+  --border-hover: var(--card-border-hover);
+  --text-tertiary: var(--text-muted);
+  --accent-teal: var(--express-primary);
+  --accent-cyan: var(--express-secondary);
+  --accent-gold: var(--shield-gold);
+  --accent-gold-dim: #eab308;
+  --accent-purple: var(--purple-mid);
+  --mascot-yellow: #ffe000;
+  --glow-cyan: var(--express-primary-glow);
+  --glow-cyan-subtle: var(--card-glow);
+  --hex-grid-stroke: rgba(0, 232, 200, 0.06);
+  --glow-cyan-soft: rgba(0, 232, 200, 0.15);
+  --glow-blue: rgba(0, 180, 216, 0.35);
+  --accent-cyan-subtle: rgba(0, 180, 216, 0.1);
+  --overlay-from: rgba(5, 12, 24, 0.3);
+  --overlay-to: rgba(5, 12, 24, 0.6);
+  --overlay-mid: rgba(5, 12, 24, 0.4);
+  --overlay-light: rgba(5, 12, 24, 0.25);
+  --overlay-heavy: rgba(5, 12, 24, 0.5);
+  --overlay-radial: rgba(13, 31, 60, 0.15);
+  --glow-gold: rgba(251, 191, 36, 0.35);
+  --glow-purple: rgba(124, 58, 237, 0.35);
+  --shadow: rgba(0, 0, 0, 0.35);
+  --shadow-hover: rgba(0, 0, 0, 0.45);
+  --font-sans: var(--font-body);
   --bg: var(--bg-primary);
   --bg-subtle: var(--bg-secondary);
-  --bg-tertiary: var(--bg-card);
   --surface: var(--bg-card);
-  --surface-elevated: var(--bg-tertiary);
-  --border: var(--border-color);
-  --border-subtle: var(--border-color);
+  --surface-elevated: var(--boing-navy-mid);
+  --border: var(--card-border);
+  --border-subtle: var(--card-border);
   --text: var(--text-primary);
-  --muted: var(--text-tertiary);
-  --primary-color: var(--accent-teal);
-  --secondary-color: var(--accent-cyan);
-  --accent-neon: var(--accent-teal);
-  --accent: var(--accent-teal);
-  --accent-hover: var(--accent-cyan);
-  --accent-glow: var(--glow-cyan);
-  --cyan: var(--accent-teal);
-  --cyan-light: var(--accent-teal);
-  --blue: var(--accent-cyan);
-  --teal: var(--accent-teal);
-  --radius: 1rem;
-  --radius-sm: 0.5rem;
-  --radius-pill: 9999px;
-  --font: var(--font-sans);
+  --muted: var(--text-muted);
+  --primary-color: var(--express-primary);
+  --secondary-color: var(--express-secondary);
+  --accent-neon: var(--neon-green);
+  --accent: var(--express-primary);
+  --accent-hover: var(--express-accent);
+  --accent-glow: var(--express-primary-glow);
+  --cyan: var(--express-primary);
+  --cyan-light: var(--express-soft);
+  --blue: var(--express-secondary);
+  --teal: var(--express-primary);
+  --radius: var(--radius-lg);
   --transition: var(--motion-transition);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --success: #10b981;
+  --success: var(--trust-green);
   --danger: #ef4444;
 }
 
@@ -170,16 +202,16 @@
 }
 
 body {
-  background-color: var(--bg-primary);
+  background-color: var(--boing-black);
   color: var(--text-primary);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
   padding: 0;
   min-height: 100vh;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.65;
 }
 
 #root {
@@ -239,65 +271,115 @@ button {
   transition: border-color var(--motion-transition), color var(--motion-transition), background-color var(--motion-transition), transform var(--motion-transition), box-shadow var(--motion-transition);
 }
 
-/* === PRIMARY BUTTON === */
+/* Focus visible — accessibility (design system) */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--express-primary);
+  outline-offset: 2px;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--express-primary);
+  outline-offset: 2px;
+}
+
+/* Section header pattern (design system: eyebrow → title → subtitle) */
+.section-eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--express-primary);
+  margin-bottom: 12px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+.section-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  max-width: 520px;
+  margin: 0 auto;
+}
+.section-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.section-header .section-subtitle {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* === PRIMARY BUTTON (Aqua Personal) === */
 .btn-primary,
 button[data-variant="primary"] {
-  background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
-  color: var(--bg-primary);
-  font-family: var(--font-sans);
+  background: linear-gradient(135deg, var(--express-primary), var(--express-warm));
+  color: var(--boing-black);
+  font-family: var(--font-body);
   font-weight: 700;
   border: none;
-  border-radius: 8px;
-  padding: 12px 28px;
+  border-radius: var(--radius-pill);
+  padding: 14px 28px;
   cursor: pointer;
   transition: all var(--motion-transition);
-  box-shadow: 0 0 16px var(--glow-cyan);
+  box-shadow: 0 0 20px var(--express-primary-glow), 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .btn-primary:hover,
 button[data-variant="primary"]:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 0 28px var(--glow-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 0 32px rgba(0, 232, 200, 0.55), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
-/* === SECONDARY BUTTON === */
+/* === SECONDARY BUTTON (Aqua Personal) === */
 .btn-secondary,
 button[data-variant="secondary"] {
   background-color: transparent;
-  color: var(--accent-cyan);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 12px 28px;
+  color: var(--express-primary);
+  border: 1.5px dashed rgba(0, 232, 200, 0.5);
+  border-radius: var(--radius-pill);
+  padding: 14px 28px;
   cursor: pointer;
   transition: all var(--motion-transition);
 }
 
 .btn-secondary:hover,
 button[data-variant="secondary"]:hover {
-  background-color: var(--accent-cyan-subtle);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 12px var(--glow-blue);
+  background-color: rgba(0, 232, 200, 0.08);
+  border-color: var(--express-primary);
+  box-shadow: 0 0 12px var(--express-primary-glow);
 }
 
-/* === STANDARD GLASSMORPHISM CARD === */
+/* === STANDARD GLASSMORPHISM CARD (Aqua Personal) === */
 .card,
 [class*="card-"],
 [class*="-card"] {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
   padding: 24px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 30px var(--shadow);
-  transition: border-color var(--motion-transition), box-shadow var(--motion-transition);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
 }
 
 .card:hover,
 [class*="card-"]:hover,
 [class*="-card"]:hover {
-  border-color: var(--border-hover);
-  box-shadow: 0 4px 30px var(--glow-cyan);
+  border-color: var(--card-border-hover);
+  box-shadow: var(--shadow-teal), var(--shadow-card);
 }
 
 /* === NAVIGATION BAR === */
@@ -325,7 +407,7 @@ nav a:hover,
 .navbar a:hover,
 nav a.active,
 .navbar a.active {
-  color: var(--accent-teal);
+  color: var(--express-primary);
   text-shadow: none;
 }
 
@@ -346,9 +428,14 @@ select {
 input:focus,
 textarea:focus,
 select:focus {
-  outline: none;
-  border-color: var(--accent-teal);
-  box-shadow: 0 0 8px var(--glow-cyan);
+  border-color: var(--express-primary);
+  box-shadow: 0 0 0 3px rgba(0, 232, 200, 0.12);
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--express-primary);
+  outline-offset: 2px;
 }
 
 input::placeholder,

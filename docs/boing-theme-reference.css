@@ -1,27 +1,29 @@
-/* Boing Network — outerspace-oceanic theme (promo video / official sites)
+/* Boing Express — Aqua Personal theme reference
  * Use these values to align boing.express and extension UI.
+ * Full system: docs/DESIGN_SYSTEM.md
  *
  * Element              Value
- * Primary Accent       #00E5CC (Teal/Cyan)
- * Secondary Accent     #00B4FF (Electric Blue)
- * Dark Background      #0A0E1A (Deep Navy)
- * Light Background     #F0FFFE (Soft White-Teal)
- * Typography           Comfortaa (Light, Regular, Medium, SemiBold, Bold)
- * Theme                Outerspace-oceanic: hex grid, bioluminescent orbs, cosmic depth
+ * Primary Accent       #00e8c8 (--express-primary)
+ * Secondary            #00b4d8 (--express-secondary)
+ * Trust / Security     #2dd4bf (--trust-green), #fbbf24 (--shield-gold)
+ * Dark Background      #050c18 (--boing-black), #0a1628 (--boing-navy)
+ * Typography           Orbitron (display), Inter (body), JetBrains Mono (code)
+ * Theme                Aqua Personal: warm teal-cyan, trust-forward, caustics
  * Tagline              "Authentic. Decentralized. Optimal. Quality-Assured."
  *
- * Hero title gradient: linear-gradient(to right, #00E5CC, #00B4FF)
- * Pills/cards: border rgba(0, 229, 204, 0.2); hover rgba(0, 229, 204, 0.4)
- * Primary btn: linear-gradient(var(--primary-color), var(--secondary-color))
- * Cards: background var(--surface); border 1px solid var(--border)
+ * Primary btn: linear-gradient(--express-primary, --express-warm)
+ * Cards: background var(--card-bg); border 1px solid var(--card-border)
+ * Breakpoints: 1024px, 640px
  */
 
 :root {
-  --primary-color: #00E5CC;
-  --secondary-color: #00B4FF;
-  --bg: #0A0E1A;
-  --bg-light: #F0FFFE;
-  --border: rgba(0, 229, 204, 0.2);
-  --accent-glow: rgba(0, 229, 204, 0.4);
-  --font: 'Comfortaa', system-ui, sans-serif;
+  --express-primary: #00e8c8;
+  --express-secondary: #00b4d8;
+  --express-warm: #0096c7;
+  --trust-green: #2dd4bf;
+  --shield-gold: #fbbf24;
+  --boing-black: #050c18;
+  --boing-navy: #0a1628;
+  --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
 }

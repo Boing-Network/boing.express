@@ -420,6 +420,7 @@
   transform: translateY(0);
 }
 
+/* Section titles: prefer global .section-header + .section-eyebrow + .section-title + .section-subtitle (see DESIGN_SYSTEM.md) */
 .sectionTitle {
   margin: 0 0 2rem;
   font-size: 1.5rem;
