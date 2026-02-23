@@ -221,8 +221,8 @@
 
 html {
   overflow-x: hidden;
-  /* Reserve space for scrollbar so intro→landing transition doesn’t shift layout left/right */
-  scrollbar-gutter: stable;
+  /* Keep vertical scrollbar slot always so intro→landing doesn’t shift layout (no extra gutter) */
+  overflow-y: scroll;
 }
 
 body {
