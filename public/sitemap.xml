@@ -50,7 +50,25 @@
   </url>
   <url>
     <loc>https://boing.express/docs/links</loc>
-    <lastmod>2025-02-19</lastmod>
+    <lastmod>2025-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://boing.express/support</loc>
+    <lastmod>2025-02-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://boing.express/privacy</loc>
+    <lastmod>2025-02-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://boing.express/terms</loc>
+    <lastmod>2025-02-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

@@ -11,6 +11,7 @@ import { Dashboard } from './screens/Dashboard';
 import { DocsLayout } from './screens/docs/DocsLayout';
 import { DocPage } from './screens/docs/DocPage';
 import { Privacy } from './screens/Privacy';
+import { Support } from './screens/Support';
 import { Terms } from './screens/Terms';
 import { useWallet } from './context/WalletContext';
 
@@ -34,6 +35,7 @@ function AppContent() {
         <Route path=":slug" element={<DocPage />} />
       </Route>
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/support" element={<Support />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -45,7 +47,7 @@ function getPageKey(pathname: string): string {
   if (pathname === '/') return 'landing';
   if (pathname.startsWith('/wallet')) return 'wallet';
   if (pathname.startsWith('/docs')) return 'docs';
-  if (pathname === '/privacy' || pathname === '/terms') return 'legal';
+  if (pathname === '/privacy' || pathname === '/support' || pathname === '/terms') return 'legal';
   return 'landing';
 }
 

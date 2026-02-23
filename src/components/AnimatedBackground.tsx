@@ -11,7 +11,7 @@ import styles from './AnimatedBackground.module.css';
 function getConfigKey(pathname: string): keyof typeof EXPRESS_BG_CONFIGS {
   if (pathname === '/') return 'landing';
   if (pathname.startsWith('/wallet')) return 'wallet';
-  if (pathname.startsWith('/docs') || pathname === '/privacy' || pathname === '/terms')
+  if (pathname.startsWith('/docs') || pathname === '/privacy' || pathname === '/support' || pathname === '/terms')
     return 'docs';
   return 'landing';
 }

@@ -23,6 +23,7 @@ export function DocsLayout() {
           <Link to="/">Home</Link>
           <Link to="/docs" className={styles.active}>Docs</Link>
           <Link to="/wallet">Wallet</Link>
+          <Link to="/support">Support</Link>
         </nav>
       </header>
 

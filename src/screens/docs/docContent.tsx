@@ -134,6 +134,7 @@ export const DOCS: Record<string, Doc> = {
           <li><Link to="/">Home</Link> — Landing page</li>
           <li><Link to="/wallet">Wallet</Link> — Create, import, or unlock</li>
           <li><Link to="/docs">Documentation</Link> — This docs section</li>
+          <li><Link to="/support">Support</Link> — Help, FAQ, testnet, contact</li>
         </ul>
         <h2>RPC endpoints</h2>
         <p>For reference (used by the wallet):</p>

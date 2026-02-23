@@ -75,7 +75,7 @@ The app sets `data-page` on the main content wrapper from the current route so a
 | `/` | landing | Default Aqua Personal (warm teal-cyan) |
 | `/wallet/*` | wallet | Trust-forward (teal-green `--trust-green`) |
 | `/docs`, `/docs/*` | docs | Cooler cyan (`--express-secondary`) |
-| `/privacy`, `/terms` | legal | Same as docs |
+| `/privacy`, `/support`, `/terms` | legal | Same as docs |
 
 Overrides in `src/index.css` adjust `--express-primary`, `--express-primary-glow`, `--card-border`, and `--express-primary-dashed` so nav, buttons, and cards pick up the variant.
 

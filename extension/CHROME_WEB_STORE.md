@@ -2,6 +2,8 @@
 
 Use this doc to prepare and submit the Boing Express extension to the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole). Replace placeholders if needed.
 
+**Single purpose, permission justification, and data usage:** Ready-to-paste wording for the store form is in [extension/PERMISSIONS_AND_PRIVACY.md](PERMISSIONS_AND_PRIVACY.md). Use it for the Privacy practices tab (single purpose, data usage disclosure) and to justify each permission.
+
 ---
 
 ## Part 1: Is the extension ready to list?
@@ -131,12 +133,12 @@ https://boing.express/privacy
 
 ### Data usage (Privacy tab)
 
-Declare in the dashboard so it matches your policy:
+Declare in the dashboard so it matches your policy. **Full wording is in [PERMISSIONS_AND_PRIVACY.md](PERMISSIONS_AND_PRIVACY.md).**
 
 - **Does your extension collect or share user data?**  
   Select the option that states you do **not** collect or share personal data with the developer (or equivalent).
-- **Data usage:**  
-  Encrypted wallet data is stored only on the user’s device (chrome.storage.local). The extension sends requests to Boing Network RPC endpoints (e.g. for balance and transactions); those providers may log requests per their own policies. No keys, passwords, or personal data are sent to the developer.
+- **Data usage (paste into the form):**  
+  *This extension does not collect personal data. Encrypted wallet data (including key material) is stored only on the user’s device in chrome.storage.local. The extension sends requests to Boing Network RPC endpoints (testnet-rpc.boing.network, rpc.boing.network) to display balance and send transactions; those providers may log requests per their own policies. No keys, passwords, or personal data are sent to the developer. See our privacy policy: https://boing.express/privacy*
 
 ### Test instructions (for reviewers)
 

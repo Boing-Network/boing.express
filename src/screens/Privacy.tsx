@@ -11,6 +11,7 @@ export function Privacy() {
           <Link to="/">Home</Link>
           <Link to="/docs">Docs</Link>
           <Link to="/wallet">Wallet</Link>
+          <Link to="/support">Support</Link>
           <Link to="/terms">Terms of Service</Link>
         </nav>
       </header>
@@ -23,6 +24,14 @@ export function Privacy() {
           <p>
             Boing Express (“we”, “our”, or “the wallet”) is a non-custodial wallet for Boing Network.
             This policy describes how we handle information in the Boing Express web app and browser extension.
+          </p>
+
+          <h2>Data usage disclosure</h2>
+          <p>
+            <strong>This extension does not collect personal data.</strong> Encrypted wallet data is stored only on your device.
+            We do not collect, sell, or share your data with the developer. Requests are sent only to Boing Network RPC
+            endpoints (for balance and transactions); those providers may log requests per their own policies. No keys,
+            passwords, or personal data are sent to us. This disclosure is kept up to date with our extension listing.
           </p>
 
           <h2>We do not collect your keys or passwords</h2>
@@ -73,7 +82,7 @@ export function Privacy() {
 
           <h2>Contact</h2>
           <p>
-            For questions about this privacy policy or Boing Express, you can reach out via{' '}
+            For questions about this privacy policy or Boing Express, see <Link to="/support">Support</Link> or reach out via{' '}
             <a href="https://boing.network" target="_blank" rel="noopener noreferrer">Boing Network</a>.
           </p>
 

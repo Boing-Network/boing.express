@@ -61,12 +61,13 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `crates/boin
 | Item | Status | Notes |
 |------|--------|--------|
 | **Short description** | Dashboard | One line, e.g. "Boing Express — the wallet for Boing Network". |
-| **Detailed description** | Dashboard | What the wallet does: Boing support, create/import, balance, send, testnet faucet, network selector. |
+| **Detailed description** | Dashboard |  |
 | **Screenshots** | Dashboard | At least one; multiple flows recommended. |
 | **Category** | Dashboard | e.g. Productivity or Finance; match single purpose. |
-| **Single purpose** | Dashboard | e.g. "Crypto wallet for Boing Network". |
+| **Single purpose** | Dashboard | See [extension/PERMISSIONS_AND_PRIVACY.md](../extension/PERMISSIONS_AND_PRIVACY.md). |
 | **Privacy policy** | ✅ | https://boing.express/privacy. |
-| **Data usage** | Dashboard | Declare no personal data to developer servers; RPC may see requests per their policy. |
+| **Data usage** | Dashboard | Paste from [extension/PERMISSIONS_AND_PRIVACY.md](../extension/PERMISSIONS_AND_PRIVACY.md); matches policy. |
+| **Support** | ✅ | https://boing.express/support — docs, FAQ, testnet, contact. |
 | **Test instructions** | Dashboard | If requested: e.g. select Testnet, use faucet, send a tx. No real mainnet keys. |
 
 For ready-to-paste store copy and screenshot instructions, see [extension/CHROME_WEB_STORE.md](../extension/CHROME_WEB_STORE.md).
