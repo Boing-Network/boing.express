@@ -233,7 +233,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
   padding: 0;
-  min-height: 100vh;
+  /* Slightly over viewport so scrollbar is always present and no jump when landing loads */
+  min-height: calc(100vh + 1px);
   font-size: 16px;
   line-height: 1.65;
   overflow-x: hidden;
