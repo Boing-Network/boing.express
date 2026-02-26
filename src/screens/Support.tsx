@@ -30,7 +30,9 @@ export function Support() {
           <p>
             Get ready for the Boing Network incentivized testnet with Boing Express: create or import
             a wallet, switch to <strong>Boing Testnet</strong>, use the faucet to receive test BOING,
-            and send transactions. Your keys stay on your device; we never see them.
+            and send transactions. Your keys stay on your device; we never see them. See the{' '}
+            <Link to="/docs/launch-readiness">launch readiness roadmap</Link>{' '}
+            for current status and upcoming features.
           </p>
           <ul>
             <li>

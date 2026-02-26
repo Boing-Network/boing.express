@@ -8,6 +8,7 @@ const DOC_NAV: { slug: string; label: string }[] = [
   { slug: 'browser-extension', label: 'Browser extension' },
   { slug: 'security', label: 'Security' },
   { slug: 'faq', label: 'FAQ' },
+  { slug: 'launch-readiness', label: 'Launch readiness' },
   { slug: 'links', label: 'Links & resources' },
 ];
 

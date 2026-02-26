@@ -119,6 +119,40 @@ export const DOCS: Record<string, Doc> = {
       </>
     ),
   },
+  'launch-readiness': {
+    title: 'Launch readiness',
+    content: (
+      <>
+        <p>
+          Boing Express is prepared for the Boing Network incentivized testnet and mainnet. See the full roadmap in{' '}
+          <a href="https://github.com/chiku524/boing.express/blob/main/docs/LAUNCH_READINESS.md" target="_blank" rel="noopener noreferrer">
+            docs/LAUNCH_READINESS.md
+          </a>{' '}
+          (or the local <code>docs/LAUNCH_READINESS.md</code> file).
+        </p>
+        <h2>Current status</h2>
+        <p>
+          The wallet supports create/import, send/receive, testnet faucet, and network switching. All features use real RPC calls — nothing is simulated. When the Boing testnet RPC is live, the wallet will work without code changes.
+        </p>
+        <h2>VibeMiner vs boing.express</h2>
+        <p>
+          <strong>VibeMiner</strong> runs nodes and stakes (one-click mining/validating). It needs P2P bootnodes to join the public testnet. <strong>boing.express</strong> is the wallet — it needs RPC endpoints for balance and transactions. Both depend on Boing Network infrastructure; the wallet is ready when the RPC is available.
+        </p>
+        <h2>Priorities for testnet launch</h2>
+        <ul>
+          <li>Chrome Web Store listing (screenshots, store copy)</li>
+          <li>Staking UI (Bond/Unbond) for PoS participation</li>
+          <li>Backup reminder for new wallets</li>
+        </ul>
+        <h2>Links</h2>
+        <ul>
+          <li><a href="https://boing.network/network/testnet" target="_blank" rel="noopener noreferrer">Boing Network — Join Testnet</a></li>
+          <li><a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Testnet Faucet</a></li>
+          <li><Link to="/support">Support</Link> — help and contact</li>
+        </ul>
+      </>
+    ),
+  },
   'links': {
     title: 'Links & resources',
     content: (
