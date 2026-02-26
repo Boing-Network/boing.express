@@ -21,11 +21,12 @@ const NETWORKS = createNetworks(BOING_TESTNET_RPC, BOING_MAINNET_RPC);
 const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
 const BOING_DECIMALS = 18;
 
-type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'dashboard';
+type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'backup' | 'dashboard';
 
 let currentScreen: Screen = 'choose';
 let accountId: Uint8Array | null = null;
 let privateKey: Uint8Array | null = null;
+let pendingBackupPassword = '';
 let selectedNetworkId = DEFAULT_NETWORK_ID;
 /** Last displayed balance string (for Max button). */
 let lastDisplayBalance = '0';
@@ -115,6 +116,27 @@ function updateFaucetVisibility(): void {
   if (section) section.classList.toggle('hidden', !net.config.isTestnet);
 }
 
+function updateStakingVisibility(): void {
+  const net = getCurrentNetwork();
+  const section = document.getElementById('staking-section');
+  if (section) section.classList.toggle('hidden', !net.buildBond && !net.buildUnbond);
+}
+
+let lastStakeRaw = '0';
+async function refreshStake(): Promise<void> {
+  if (!accountId) return;
+  const net = getCurrentNetwork();
+  if (!net.getStake) return;
+  try {
+    const s = await net.getStake(accountId);
+    lastStakeRaw = s;
+    const displayStr = (Number(s) / 10 ** BOING_DECIMALS).toLocaleString(undefined, { maximumFractionDigits: 6 });
+    ($('stake') as HTMLElement).textContent = displayStr;
+  } catch {
+    ($('stake') as HTMLElement).textContent = '—';
+  }
+}
+
 async function goDashboard(): Promise<void> {
   if (!accountId || !privateKey) return;
   const network = getDefaultNetwork(NETWORKS);
@@ -127,7 +149,9 @@ async function goDashboard(): Promise<void> {
   ).join('');
 
   await refreshDashboardBalance();
+  await refreshStake();
   updateFaucetVisibility();
+  updateStakingVisibility();
   chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: selectedNetworkId });
   showScreen('dashboard');
 }
@@ -167,13 +191,35 @@ $('form-create').addEventListener('submit', async (e) => {
     return;
   }
   try {
-    await createAndSaveWallet(password);
+    const { privateKeyHex } = await createAndSaveWallet(password);
+    pendingBackupPassword = password;
+    ($('backup-key') as HTMLElement).textContent = privateKeyHex;
+    showScreen('backup');
+  } catch (err) {
+    showError('create-error', err instanceof Error ? err.message : 'Failed to create wallet');
+  }
+});
+
+$('btn-backup-copy').addEventListener('click', async () => {
+  const key = ($('backup-key') as HTMLElement).textContent;
+  if (key) {
+    await navigator.clipboard.writeText(key);
+    const btn = $('btn-backup-copy') as HTMLButtonElement;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  }
+});
+
+$('btn-backup-continue').addEventListener('click', async () => {
+  const password = pendingBackupPassword;
+  pendingBackupPassword = '';
+  try {
     const [pub, priv] = await unlockWallet(password);
     accountId = pub;
     privateKey = priv;
     await goDashboard();
   } catch (err) {
-    showError('create-error', err instanceof Error ? err.message : 'Failed to create wallet');
+    ($('backup-key') as HTMLElement).parentElement?.querySelector('.error')?.classList.remove('hidden');
   }
 });
 $('btn-create-back').addEventListener('click', () => showScreen('choose'));
@@ -214,7 +260,9 @@ $('network-select').addEventListener('change', (e) => {
   selectedNetworkId = (e.target as HTMLSelectElement).value;
   chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: selectedNetworkId });
   refreshDashboardBalance();
+  refreshStake();
   updateFaucetVisibility();
+  updateStakingVisibility();
 });
 
 $('btn-lock').addEventListener('click', () => {
@@ -339,6 +387,90 @@ $('btn-faucet-page').addEventListener('click', () => {
 });
 
 $('btn-balance-retry').addEventListener('click', () => refreshDashboardBalance());
+
+$('form-bond').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!accountId || !privateKey) return;
+  const amountStr = ($('bond-amount') as HTMLInputElement).value;
+  const net = getNetwork(selectedNetworkId, NETWORKS) ?? getDefaultNetwork(NETWORKS);
+  if (!net.buildBond) return;
+  const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
+  ($('bond-error') as HTMLElement).classList.add('hidden');
+  if (amount == null || amount <= 0n) {
+    ($('bond-error') as HTMLElement).textContent = 'Enter a valid amount in BOING';
+    ($('bond-error') as HTMLElement).classList.remove('hidden');
+    return;
+  }
+  if (BigInt(lastBalanceRaw) < amount) {
+    ($('bond-error') as HTMLElement).textContent = 'Insufficient balance';
+    ($('bond-error') as HTMLElement).classList.remove('hidden');
+    return;
+  }
+  const btn = $('btn-bond') as HTMLButtonElement;
+  btn.disabled = true;
+  btn.textContent = 'Bonding…';
+  try {
+    const nonce = await net.getNonce(accountId);
+    const signedHex = await net.buildBond!(accountId, amount, nonce, privateKey);
+    const result = await net.submitTransaction(signedHex);
+    if (result.success) {
+      await refreshDashboardBalance();
+      await refreshStake();
+      ($('bond-amount') as HTMLInputElement).value = '';
+    } else {
+      ($('bond-error') as HTMLElement).textContent = result.error ?? 'Bond failed';
+      ($('bond-error') as HTMLElement).classList.remove('hidden');
+    }
+  } catch (err) {
+    ($('bond-error') as HTMLElement).textContent = err instanceof Error ? err.message : String(err);
+    ($('bond-error') as HTMLElement).classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Bond';
+  }
+});
+
+$('form-unbond').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!accountId || !privateKey) return;
+  const amountStr = ($('unbond-amount') as HTMLInputElement).value;
+  const net = getNetwork(selectedNetworkId, NETWORKS) ?? getDefaultNetwork(NETWORKS);
+  if (!net.buildUnbond) return;
+  const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
+  ($('unbond-error') as HTMLElement).classList.add('hidden');
+  if (amount == null || amount <= 0n) {
+    ($('unbond-error') as HTMLElement).textContent = 'Enter a valid amount in BOING';
+    ($('unbond-error') as HTMLElement).classList.remove('hidden');
+    return;
+  }
+  if (BigInt(lastStakeRaw) < amount) {
+    ($('unbond-error') as HTMLElement).textContent = 'Insufficient staked amount';
+    ($('unbond-error') as HTMLElement).classList.remove('hidden');
+    return;
+  }
+  const btn = $('btn-unbond') as HTMLButtonElement;
+  btn.disabled = true;
+  btn.textContent = 'Unbonding…';
+  try {
+    const nonce = await net.getNonce(accountId);
+    const signedHex = await net.buildUnbond!(accountId, amount, nonce, privateKey);
+    const result = await net.submitTransaction(signedHex);
+    if (result.success) {
+      await refreshDashboardBalance();
+      await refreshStake();
+      ($('unbond-amount') as HTMLInputElement).value = '';
+    } else {
+      ($('unbond-error') as HTMLElement).textContent = result.error ?? 'Unbond failed';
+      ($('unbond-error') as HTMLElement).classList.remove('hidden');
+    }
+  } catch (err) {
+    ($('unbond-error') as HTMLElement).textContent = err instanceof Error ? err.message : String(err);
+    ($('unbond-error') as HTMLElement).classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Unbond';
+  }
+});
 
 // Init: show loading, restore saved network, load wallet from chrome.storage.local, then show choose/unlock
 showLoading();

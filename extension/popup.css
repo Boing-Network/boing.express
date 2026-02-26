@@ -98,7 +98,8 @@ body {
 }
 
 .screen.hidden { display: none; }
-#faucet-section.hidden { display: none; }
+#faucet-section.hidden,
+#staking-section.hidden { display: none; }
 .explorer-link.hidden { display: none; }
 
 .loading-message {
@@ -262,6 +263,18 @@ body {
   font-size: 11px;
   word-break: break-all;
   color: var(--text);
+}
+
+.backup-key {
+  flex: 1;
+  min-width: 0;
+  font-size: 10px;
+  word-break: break-all;
+  color: var(--text);
+  padding: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .balance { margin: 0; font-size: 1.2rem; font-weight: 600; }

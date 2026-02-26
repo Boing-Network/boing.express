@@ -50,9 +50,9 @@ The wallet talks directly to these endpoints. When the Boing testnet has public 
 
 | Gap | Effort | Notes |
 |-----|--------|-------|
-| **Chrome Web Store listing** | 1–2 hrs | Screenshots, store copy, privacy fields. See [extension/CHROME_WEB_STORE.md](../extension/CHROME_WEB_STORE.md). |
-| **Staking UI (Bond / Unbond)** | Medium | Payload types exist in `src/boing/types.ts` and `bincode.ts`; adapter and UI not yet implemented. Needed for users to participate in PoS. |
-| **Backup / export reminder** | Low | One-time prompt after wallet creation to back up private key. |
+| **Chrome Web Store listing** | 1–2 hrs | ✅ In review. See [extension/CHROME_WEB_STORE.md](../extension/CHROME_WEB_STORE.md). |
+| **Staking UI (Bond / Unbond)** | Medium | ✅ Implemented. Bond and Unbond forms in Dashboard and extension; stake display from `boing_getAccount`. |
+| **Backup / export reminder** | Low | ✅ Implemented. Backup step after wallet creation shows private key with copy button before continuing. |
 | **RPC availability handling** | ✅ Done | Timeout, clear errors (“Network unavailable”, “RPC not responding”). |
 | **Faucet rate limit UX** | ✅ Done | -32016 mapped to “Rate limit exceeded. Please try again later.” |
 
@@ -88,10 +88,10 @@ The wallet talks directly to these endpoints. When the Boing testnet has public 
 
 - [ ] Web app deployed and reachable at boing.express
 - [ ] Extension built and ready for Chrome Web Store
-- [ ] Chrome Web Store listing complete (screenshots, copy, privacy)
+- [ ] Chrome Web Store listing complete (screenshots, copy, privacy) — in review
 - [ ] Support page and docs mention incentivized testnet
-- [ ] Staking UI (Bond/Unbond) implemented for PoS participation
-- [ ] Backup reminder for new wallets
+- [x] Staking UI (Bond/Unbond) implemented for PoS participation
+- [x] Backup reminder for new wallets
 
 ### User Onboarding
 
@@ -113,9 +113,9 @@ For mainnet, in addition to testnet items:
 
 ## 6. Suggested Order of Work
 
-1. **Immediate:** Finish Chrome Web Store listing (screenshots, copy) so extension is publishable.
-2. **Pre-testnet:** Add Bond/Unbond staking UI so users can stake on the testnet.
-3. **Pre-testnet:** Add backup reminder after wallet creation.
+1. **Immediate:** Chrome Web Store listing — in review.
+2. **Done:** Bond/Unbond staking UI implemented.
+3. **Done:** Backup reminder after wallet creation.
 4. **Testnet live:** Monitor RPC, faucet, explorer; update Support page with status links.
 5. **Post-testnet:** Transaction history (if explorer API exists) and dApp provider for ecosystem growth.
 

@@ -5,7 +5,7 @@
 
 import { encryptPrivateKey, decryptPrivateKey } from './encrypted';
 import { accountIdToHex } from '../boing/types';
-import { publicKeyFromPrivate, generateKeyPair, privateKeyFromHex } from '../crypto/keys';
+import { publicKeyFromPrivate, generateKeyPair, privateKeyFromHex, privateKeyToHex } from '../crypto/keys';
 
 const STORAGE_KEY = 'boing_wallet_enc';
 
@@ -53,13 +53,14 @@ export async function unlockWallet(password: string): Promise<[Uint8Array, Uint8
   return [publicKey, privateKey];
 }
 
-/** Create new wallet: generate keypair, encrypt with password, save and return address hex. */
-export async function createAndSaveWallet(password: string): Promise<string> {
+/** Create new wallet: generate keypair, encrypt with password, save. Returns address and private key hex for backup. */
+export async function createAndSaveWallet(password: string): Promise<{ addressHex: string; privateKeyHex: string }> {
   const [publicKey, privateKey] = await generateKeyPair();
   const encrypted = await encryptPrivateKey(privateKey, password);
   const addressHex = accountIdToHex(publicKey);
+  const privateKeyHex = privateKeyToHex(privateKey);
   saveWallet(encrypted, addressHex);
-  return addressHex;
+  return { addressHex, privateKeyHex };
 }
 
 /** Import from hex private key (64 hex chars), encrypt and save. */

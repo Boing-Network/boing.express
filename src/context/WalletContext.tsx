@@ -35,7 +35,7 @@ type WalletContextValue = WalletState & {
   storedAddressHint: string | null;
   setNetwork: (id: string) => void;
   unlock: (password: string) => Promise<void>;
-  createWallet: (password: string) => Promise<void>;
+  createWallet: (password: string) => Promise<{ privateKeyHex: string }>;
   importWallet: (password: string, privateKeyHex: string) => Promise<void>;
   lock: () => void;
   logout: () => void;
@@ -70,14 +70,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const createWallet = useCallback(async (password: string) => {
-    await createAndSaveWallet(password);
-    const [publicKey, privateKey] = await unlockWallet(password);
-    setState((s) => ({
-      ...s,
-      accountId: publicKey,
-      privateKey,
-      isUnlocked: true,
-    }));
+    const { privateKeyHex } = await createAndSaveWallet(password);
+    return { privateKeyHex };
   }, []);
 
   const importWallet = useCallback(async (password: string, privateKeyHex: string) => {

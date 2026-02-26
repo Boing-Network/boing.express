@@ -261,3 +261,16 @@
   color: var(--success);
   font-size: 0.9rem;
 }
+
+.stakeLabel {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.stakingHint {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+}

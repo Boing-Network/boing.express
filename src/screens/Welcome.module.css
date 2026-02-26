@@ -154,3 +154,37 @@
   color: var(--danger);
   font-size: 0.9rem;
 }
+
+.backupKeyWrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.backupKey {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  background: var(--bg-tertiary, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  word-break: break-all;
+  color: var(--text-primary);
+}
+
+.copyBtn {
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.copyBtn:hover {
+  border-color: var(--accent-teal);
+  color: var(--accent-teal);
+}

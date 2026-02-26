@@ -40,6 +40,14 @@
       </form>
       <button type="button" id="btn-create-back" class="btn-text" aria-label="Back">Back</button>
     </div>
+    <div id="screen-backup" class="screen hidden">
+      <p class="subtitle">Save this key in a safe place. Anyone with it can control your wallet.</p>
+      <div class="row">
+        <code id="backup-key" class="backup-key"></code>
+        <button type="button" id="btn-backup-copy" class="btn-small" aria-label="Copy private key">Copy</button>
+      </div>
+      <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet">I've backed it up — Continue</button>
+    </div>
     <div id="screen-import" class="screen hidden">
       <p class="subtitle">Enter 64-char hex private key.</p>
       <form id="form-import" class="form">
@@ -82,6 +90,20 @@
           <p id="send-success" class="success hidden" aria-live="polite"></p>
           <a id="send-explorer-link" class="explorer-link hidden" href="#" target="_blank" rel="noopener noreferrer" aria-label="View transaction on explorer">View transaction</a>
           <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING">Send</button>
+        </form>
+      </section>
+      <section id="staking-section" class="card">
+        <h2 class="label">Staking</h2>
+        <p class="balance"><span id="stake">…</span> <span id="stake-symbol">BOING</span> staked</p>
+        <form id="form-bond" class="form">
+          <input type="text" id="bond-amount" placeholder="Amount to bond (e.g. 1.5)" class="input" inputmode="decimal" aria-label="Amount to bond" />
+          <p id="bond-error" class="error hidden"></p>
+          <button type="submit" id="btn-bond" class="btn-primary" aria-label="Bond BOING">Bond</button>
+        </form>
+        <form id="form-unbond" class="form">
+          <input type="text" id="unbond-amount" placeholder="Amount to unbond (e.g. 0.5)" class="input" inputmode="decimal" aria-label="Amount to unbond" />
+          <p id="unbond-error" class="error hidden"></p>
+          <button type="submit" id="btn-unbond" class="btn-secondary" aria-label="Unbond BOING">Unbond</button>
         </form>
       </section>
       <section id="faucet-section" class="card">

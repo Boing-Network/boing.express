@@ -27,6 +27,16 @@ export function Dashboard() {
   const [faucetStatus, setFaucetStatus] = useState<'idle' | 'loading' | 'ok' | 'err'>('idle');
   const [faucetError, setFaucetError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [stake, setStake] = useState<string | null>(null);
+  const [stakeError, setStakeError] = useState<string | null>(null);
+  const [bondAmount, setBondAmount] = useState('');
+  const [bondError, setBondError] = useState('');
+  const [bondSuccess, setBondSuccess] = useState('');
+  const [bonding, setBonding] = useState(false);
+  const [unbondAmount, setUnbondAmount] = useState('');
+  const [unbondError, setUnbondError] = useState('');
+  const [unbondSuccess, setUnbondSuccess] = useState('');
+  const [unbonding, setUnbonding] = useState(false);
 
   const address = accountId ? formatAddress(accountId, false) : '';
 
@@ -46,6 +56,18 @@ export function Dashboard() {
     if (!network.getChainHeight) return;
     network.getChainHeight().then(setChainHeight).catch(() => setChainHeight(null));
   }, [network]);
+
+  useEffect(() => {
+    if (!accountId || !network.getStake) return;
+    setStakeError(null);
+    network
+      .getStake(accountId)
+      .then(setStake)
+      .catch((e) => {
+        setStake(null);
+        setStakeError(e instanceof Error ? e.message : String(e));
+      });
+  }, [accountId, network]);
 
   async function copyAddress() {
     if (!address) return;
@@ -130,6 +152,91 @@ export function Dashboard() {
     }
   }
 
+  async function handleBond(e: React.FormEvent) {
+    e.preventDefault();
+    if (!network.buildBond || !accountId) return;
+    setBondError('');
+    setBondSuccess('');
+    const decimals = balance?.decimals ?? 18;
+    const amount = bondAmount.trim() ? parseDecimalAmount(bondAmount, decimals) : null;
+    if (amount == null || amount <= 0n) {
+      setBondError('Enter a valid amount in BOING (e.g. 1 or 0.5)');
+      return;
+    }
+    if (balance && BigInt(balance.value) < amount) {
+      setBondError('Insufficient balance');
+      return;
+    }
+    const privateKey = getPrivateKey();
+    if (!privateKey) {
+      setBondError('Wallet locked');
+      return;
+    }
+    setBonding(true);
+    try {
+      const nonce = await network.getNonce(accountId);
+      const signedHex = await network.buildBond(accountId, amount, nonce, privateKey);
+      const result = await network.submitTransaction(signedHex);
+      if (result.success) {
+        setBondSuccess(result.txHash ? `Bonded! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
+        setBondAmount('');
+        setBalance(null);
+        setStake(null);
+        network.getBalance(accountId).then(setBalance).catch(() => {});
+        if (network.getStake) network.getStake(accountId).then(setStake).catch(() => {});
+      } else {
+        setBondError(result.error ?? 'Submit failed');
+      }
+    } catch (err) {
+      setBondError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBonding(false);
+    }
+  }
+
+  async function handleUnbond(e: React.FormEvent) {
+    e.preventDefault();
+    if (!network.buildUnbond || !accountId) return;
+    setUnbondError('');
+    setUnbondSuccess('');
+    const decimals = balance?.decimals ?? 18;
+    const amount = unbondAmount.trim() ? parseDecimalAmount(unbondAmount, decimals) : null;
+    if (amount == null || amount <= 0n) {
+      setUnbondError('Enter a valid amount in BOING (e.g. 1 or 0.5)');
+      return;
+    }
+    const staked = stake ? BigInt(stake) : 0n;
+    if (amount > staked) {
+      setUnbondError('Insufficient staked amount');
+      return;
+    }
+    const privateKey = getPrivateKey();
+    if (!privateKey) {
+      setUnbondError('Wallet locked');
+      return;
+    }
+    setUnbonding(true);
+    try {
+      const nonce = await network.getNonce(accountId);
+      const signedHex = await network.buildUnbond(accountId, amount, nonce, privateKey);
+      const result = await network.submitTransaction(signedHex);
+      if (result.success) {
+        setUnbondSuccess(result.txHash ? `Unbonded! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
+        setUnbondAmount('');
+        setBalance(null);
+        setStake(null);
+        network.getBalance(accountId).then(setBalance).catch(() => {});
+        if (network.getStake) network.getStake(accountId).then(setStake).catch(() => {});
+      } else {
+        setUnbondError(result.error ?? 'Submit failed');
+      }
+    } catch (err) {
+      setUnbondError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUnbonding(false);
+    }
+  }
+
   function openFaucetPage() {
     const hex = address;
     const url = network.config.faucetUrl
@@ -139,6 +246,15 @@ export function Dashboard() {
   }
 
   if (!accountId) return null;
+
+  const displayStake =
+    stake != null
+      ? (Number(stake) / 10 ** (balance?.decimals ?? 18)).toLocaleString(undefined, { maximumFractionDigits: 6 })
+      : stakeError
+        ? '—'
+        : network.getStake
+          ? '…'
+          : null;
 
   const displayBalance =
     balance != null
@@ -200,6 +316,56 @@ export function Dashboard() {
           )}
           {balanceError && <p className={styles.error}>{balanceError}</p>}
         </section>
+
+        {(network.buildBond || network.buildUnbond) && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Staking</h2>
+            {displayStake != null && (
+              <p className={styles.balance}>
+                {displayStake} <span className={styles.symbol}>BOING</span> <span className={styles.stakeLabel}>staked</span>
+              </p>
+            )}
+            {network.buildBond && (
+              <form onSubmit={handleBond} className={styles.form}>
+                <input
+                  type="text"
+                  placeholder="Amount to bond (e.g. 1.5)"
+                  value={bondAmount}
+                  onChange={(e) => setBondAmount(e.target.value)}
+                  className={styles.input}
+                  inputMode="decimal"
+                  aria-label="Amount to bond"
+                />
+                {bondError && <p className={styles.error}>{bondError}</p>}
+                {bondSuccess && <p className={styles.success}>{bondSuccess}</p>}
+                <button type="submit" className={styles.primary} disabled={bonding}>
+                  {bonding ? 'Bonding…' : 'Bond'}
+                </button>
+              </form>
+            )}
+            {network.buildUnbond && (
+              <form onSubmit={handleUnbond} className={styles.form}>
+                <input
+                  type="text"
+                  placeholder="Amount to unbond (e.g. 0.5)"
+                  value={unbondAmount}
+                  onChange={(e) => setUnbondAmount(e.target.value)}
+                  className={styles.input}
+                  inputMode="decimal"
+                  aria-label="Amount to unbond"
+                />
+                {unbondError && <p className={styles.error}>{unbondError}</p>}
+                {unbondSuccess && <p className={styles.success}>{unbondSuccess}</p>}
+                <button type="submit" className={styles.secondary} disabled={unbonding}>
+                  {unbonding ? 'Unbonding…' : 'Unbond'}
+                </button>
+              </form>
+            )}
+            <p className={styles.stakingHint}>
+              Bond BOING to stake and participate in PoS validation. Unbond to return staked BOING to your balance.
+            </p>
+          </section>
+        )}
 
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Send</h2>

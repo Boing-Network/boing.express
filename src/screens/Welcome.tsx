@@ -9,9 +9,10 @@ const MASCOT_BY_STEP: Record<string, string> = {
   unlock: 'mascot-thinking.png',
   create: 'mascot-default.png',
   import: 'mascot-default.png',
+  backup: 'mascot-default.png',
 };
 
-type Step = 'choose' | 'create' | 'import' | 'unlock';
+type Step = 'choose' | 'create' | 'import' | 'unlock' | 'backup';
 
 export function Welcome() {
   const {
@@ -26,8 +27,10 @@ export function Welcome() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [privateKeyHex, setPrivateKeyHex] = useState('');
+  const [backupKeyHex, setBackupKeyHex] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [copiedBackup, setCopiedBackup] = useState(false);
 
   async function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
@@ -55,12 +58,33 @@ export function Welcome() {
     }
     setLoading(true);
     try {
-      await createWallet(password);
+      const { privateKeyHex: keyHex } = await createWallet(password);
+      setBackupKeyHex(keyHex);
+      setStep('backup');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create wallet');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleBackupContinue() {
+    setError('');
+    setLoading(true);
+    try {
+      await unlock(password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to unlock');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copyBackupKey() {
+    if (!backupKeyHex) return;
+    await navigator.clipboard.writeText(backupKeyHex);
+    setCopiedBackup(true);
+    setTimeout(() => setCopiedBackup(false), 2000);
   }
 
   async function handleImport(e: React.FormEvent) {
@@ -134,6 +158,35 @@ export function Welcome() {
           </form>
           <button type="button" className={styles.textBtn} onClick={() => setStep('choose')}>
             Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'backup') {
+    return (
+      <div className={`${styles.wrap} page-app`}>
+        <div className={styles.card}>
+          <img src={`${ASSETS}/${MASCOT_BY_STEP.backup}`} alt="" className={styles.mascot} aria-hidden />
+          <h1 className={styles.title}>Back up your private key</h1>
+          <p className={styles.subtitle}>
+            Save this key in a safe place. Anyone with it can control your wallet. You won’t see it again here.
+          </p>
+          <div className={styles.backupKeyWrap}>
+            <code className={styles.backupKey}>{backupKeyHex}</code>
+            <button type="button" className={styles.copyBtn} onClick={copyBackupKey}>
+              {copiedBackup ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          {error && <p className={styles.error}>{error}</p>}
+          <button
+            type="button"
+            className={styles.primary}
+            onClick={handleBackupContinue}
+            disabled={loading}
+          >
+            {loading ? 'Unlocking…' : "I've backed it up — Continue"}
           </button>
         </div>
       </div>

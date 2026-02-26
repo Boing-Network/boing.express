@@ -140,9 +140,9 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>Priorities for testnet launch</h2>
         <ul>
-          <li>Chrome Web Store listing (screenshots, store copy)</li>
-          <li>Staking UI (Bond/Unbond) for PoS participation</li>
-          <li>Backup reminder for new wallets</li>
+          <li>Chrome Web Store listing — in review</li>
+          <li>Staking UI (Bond/Unbond) — implemented</li>
+          <li>Backup reminder for new wallets — implemented</li>
         </ul>
         <h2>Links</h2>
         <ul>

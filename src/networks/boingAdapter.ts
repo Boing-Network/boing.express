@@ -71,6 +71,48 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       return buildSignedTransactionHex(tx, privateKey);
     },
 
+    async buildBond(
+      sender: AccountId,
+      amount: bigint,
+      nonce: bigint,
+      privateKey: Uint8Array
+    ): Promise<string> {
+      const payload: Payload = { tag: 1, amount };
+      const tx: Transaction = {
+        nonce,
+        sender,
+        payload,
+        access_list: emptyAccessList(),
+      };
+      return buildSignedTransactionHex(tx, privateKey);
+    },
+
+    async buildUnbond(
+      sender: AccountId,
+      amount: bigint,
+      nonce: bigint,
+      privateKey: Uint8Array
+    ): Promise<string> {
+      const payload: Payload = { tag: 2, amount };
+      const tx: Transaction = {
+        nonce,
+        sender,
+        payload,
+        access_list: emptyAccessList(),
+      };
+      return buildSignedTransactionHex(tx, privateKey);
+    },
+
+    async getStake(accountId: AccountId): Promise<string> {
+      const hex = accountIdToHex(accountId);
+      try {
+        const account = await rpc.getAccount(rpcUrl, hex);
+        return account.stake ?? '0';
+      } catch {
+        return '0';
+      }
+    },
+
     async submitTransaction(signedTxHex: string): Promise<SubmitResult> {
       try {
         try {

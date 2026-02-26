@@ -53,4 +53,23 @@ export interface NetworkAdapter {
 
   /** Optional: current chain height for sync status. */
   getChainHeight?(): Promise<number>;
+
+  /** Optional: build signed Bond tx (PoS staking). Returns signed tx hex. */
+  buildBond?(
+    sender: AccountId,
+    amount: bigint,
+    nonce: bigint,
+    privateKey: Uint8Array
+  ): Promise<string>;
+
+  /** Optional: build signed Unbond tx (PoS unstaking). Returns signed tx hex. */
+  buildUnbond?(
+    sender: AccountId,
+    amount: bigint,
+    nonce: bigint,
+    privateKey: Uint8Array
+  ): Promise<string>;
+
+  /** Optional: get staked amount for account (decimal string). */
+  getStake?(accountId: AccountId): Promise<string>;
 }
