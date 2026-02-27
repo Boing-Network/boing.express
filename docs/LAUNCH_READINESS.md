@@ -18,7 +18,7 @@ This document tracks readiness of the **boing.express** wallet for the Boing Net
 | Network switch | ✅ | Testnet vs Mainnet |
 | Chain height | ✅ | `boing_chainHeight` (optional) |
 | Transaction simulation | ✅ | `boing_simulateTransaction` before submit |
-| Explorer link | ✅ | View tx at boing.network (when explorer supports `/tx/{hash}`) |
+| Explorer link | ✅ | View tx at boing.observer (testnet) or boing.network |
 | Web app | ✅ | Deployed at boing.express |
 | Browser extension | ✅ | Chrome + Firefox (Manifest V3) |
 
@@ -82,7 +82,7 @@ The wallet talks directly to these endpoints. When the Boing testnet has public 
 - [ ] Public testnet RPC at `https://testnet-rpc.boing.network` responding
 - [ ] Faucet enabled and rate-limited
 - [ ] Bootnodes live (for VibeMiner / node operators)
-- [ ] Explorer available for balance/tx lookups (e.g. `boing.network/tx/{hash}`)
+- [ ] Explorer available for balance/tx lookups (e.g. `boing.observer/tx/{hash}`)
 
 ### Wallet (boing.express)
 
