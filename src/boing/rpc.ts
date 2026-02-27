@@ -154,3 +154,34 @@ export function getNonce(rpcUrl: string, hexAccountId: string): Promise<bigint> 
     .then((n) => (typeof n === 'string' ? BigInt(n) : BigInt(n)))
     .catch(() => BigInt(0));
 }
+
+/**
+ * boing_qaCheck — Pre-flight QA check for contract deployment.
+ * Returns allow | reject | unsure. Optional; returns -32601 when QA not enabled.
+ */
+export interface QaCheckResult {
+  result: 'allow' | 'reject' | 'unsure';
+  rule_id?: string;
+  message?: string;
+}
+
+export function qaCheck(
+  rpcUrl: string,
+  hexBytecode: string,
+  purposeCategory?: string,
+  descriptionHash?: string
+): Promise<QaCheckResult> {
+  const params =
+    purposeCategory != null
+      ? descriptionHash != null
+        ? [hexBytecode, purposeCategory, descriptionHash]
+        : [hexBytecode, purposeCategory]
+      : [hexBytecode];
+  return rpcCall<QaCheckResult>(rpcUrl, 'boing_qaCheck', params).catch((e) => {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('Method not found')) {
+      throw new Error('QA check is not enabled on this network.');
+    }
+    throw e;
+  });
+}

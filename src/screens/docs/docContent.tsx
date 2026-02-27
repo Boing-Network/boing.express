@@ -55,6 +55,10 @@ export const DOCS: Record<string, Doc> = {
         <p>
           <a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Boing Network Faucet →</a>
         </p>
+        <h2>Deploy contract (QA Pillar)</h2>
+        <p>
+          The dashboard includes a contract deployment validator. Paste bytecode (hex) and validate before deploy. See <Link to="/docs/qa-pillar">QA Pillar</Link> for details.
+        </p>
       </>
     ),
   },
@@ -116,6 +120,37 @@ export const DOCS: Record<string, Doc> = {
 
         <h2>Where can I get test BOING?</h2>
         <p>Use the testnet faucet from the wallet (“Request testnet BOING”) or open the <a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Boing Network faucet page</a> and enter your address.</p>
+      </>
+    ),
+  },
+  'qa-pillar': {
+    title: 'QA Pillar — Contract deployment',
+    content: (
+      <>
+        <p>
+          The <strong>Quality Assurance</strong> pillar ensures only safe, well-formed contracts reach the network. The wallet includes a client-side validator and optional <code>boing_qaCheck</code> RPC integration.
+        </p>
+        <h2>Validation flow</h2>
+        <p>
+          Before deployment, contract bytecode is checked and routed to one of three outcomes:
+        </p>
+        <ul>
+          <li><strong>REJECT</strong> — Deployment blocked. Causes: empty bytecode, oversized, invalid or blocklisted opcode, malformed structure, bad purpose.</li>
+          <li><strong>ALLOW</strong> — Deployment permitted. Valid opcodes, well-formed, not blocklisted, valid or no purpose declaration.</li>
+          <li><strong>UNSURE</strong> — Unknown opcodes or edge cases. Referred to the community QA pool for review (pool behavior is protocol-defined).</li>
+        </ul>
+        <h2>Using the validator</h2>
+        <p>
+          In the wallet dashboard, go to <strong>Deploy contract (QA Pillar)</strong>. Paste your contract bytecode (hex, with or without <code>0x</code>). Click <strong>Validate</strong> to run the client-side checks. Optionally enable &quot;Also call boing_qaCheck&quot; to use the protocol RPC when available.
+        </p>
+        <p>
+          Results are shown with clear status (REJECT in red, ALLOW in green, UNSURE in amber) and a rule ID or message when applicable.
+        </p>
+        <h2>References</h2>
+        <ul>
+          <li><a href="https://boing.network/docs/rpc-api" target="_blank" rel="noopener noreferrer">Boing RPC API</a> — includes <code>boing_qaCheck</code></li>
+          <li><a href="https://github.com/chiku524/boing-network/blob/main/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK.md</a> — full QA spec (boing-network repo)</li>
+        </ul>
       </>
     ),
   },

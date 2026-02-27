@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useWallet, NETWORKS } from '../context/WalletContext';
 import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types';
 import { parseDecimalAmount } from '../boing/amount';
+import { validateContractBytecode } from '../boing/qa';
+import * as rpc from '../boing/rpc';
 import type { BalanceResult } from '../networks/types';
 import { SiteLogo } from '../components/SiteLogo';
 import styles from './Dashboard.module.css';
@@ -37,6 +39,10 @@ export function Dashboard() {
   const [unbondError, setUnbondError] = useState('');
   const [unbondSuccess, setUnbondSuccess] = useState('');
   const [unbonding, setUnbonding] = useState(false);
+  const [qaBytecode, setQaBytecode] = useState('');
+  const [qaResult, setQaResult] = useState<{ result: 'allow' | 'reject' | 'unsure'; ruleId?: string; message?: string } | null>(null);
+  const [qaValidating, setQaValidating] = useState(false);
+  const [qaUseRpc, setQaUseRpc] = useState(true);
 
   const address = accountId ? formatAddress(accountId, false) : '';
 
@@ -245,6 +251,40 @@ export function Dashboard() {
     window.open(url, '_blank');
   }
 
+  async function handleQaValidate(e: React.FormEvent) {
+    e.preventDefault();
+    setQaResult(null);
+    const hex = qaBytecode.replace(/\s/g, '').replace(/^0x/i, '');
+    if (!hex) {
+      setQaResult({ result: 'reject', ruleId: 'qa_empty', message: 'Enter contract bytecode (hex).' });
+      return;
+    }
+    setQaValidating(true);
+    try {
+      let result = validateContractBytecode(hex);
+      if (result.result === 'allow' && qaUseRpc) {
+        try {
+          const rpcResult = await rpc.qaCheck(network.config.rpcUrl, hex.startsWith('0x') ? hex : `0x${hex}`);
+          result = {
+            result: rpcResult.result,
+            ruleId: rpcResult.rule_id ?? result.ruleId,
+            message: rpcResult.message ?? result.message,
+          };
+        } catch {
+          // boing_qaCheck not available; keep client result
+        }
+      }
+      setQaResult(result);
+    } catch (err) {
+      setQaResult({
+        result: 'reject',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setQaValidating(false);
+    }
+  }
+
   if (!accountId) return null;
 
   const displayStake =
@@ -399,6 +439,56 @@ export function Dashboard() {
             <button type="submit" className={styles.primary} disabled={sending}>
               {sending ? 'Sending…' : 'Send'}
             </button>
+          </form>
+        </section>
+
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Deploy contract (QA Pillar)</h2>
+          <p className={styles.faucetHint}>
+            Validate contract bytecode before deployment. REJECT → blocked. ALLOW → deploy. UNSURE → community QA pool.
+          </p>
+          <form onSubmit={handleQaValidate} className={styles.form}>
+            <textarea
+              placeholder="Contract bytecode (hex, e.g. 0x6080604052...)"
+              value={qaBytecode}
+              onChange={(e) => {
+                setQaBytecode(e.target.value);
+                setQaResult(null);
+              }}
+              className={styles.qaTextarea}
+              rows={4}
+              spellCheck={false}
+              aria-label="Contract bytecode"
+            />
+            <label className={styles.qaCheckbox}>
+              <input
+                type="checkbox"
+                checked={qaUseRpc}
+                onChange={(e) => setQaUseRpc(e.target.checked)}
+              />
+              Also call boing_qaCheck (when available)
+            </label>
+            <div className={styles.qaButtonRow}>
+              <button type="submit" className={styles.primary} disabled={qaValidating}>
+                {qaValidating ? 'Validating…' : 'Validate'}
+              </button>
+            </div>
+            {qaResult && (
+              <div
+                className={
+                  qaResult.result === 'allow'
+                    ? styles.qaAllow
+                    : qaResult.result === 'reject'
+                      ? styles.qaReject
+                      : styles.qaUnsure
+                }
+                role="status"
+              >
+                <strong>{qaResult.result.toUpperCase()}</strong>
+                {qaResult.ruleId && <span className={styles.qaRuleId}> ({qaResult.ruleId})</span>}
+                {qaResult.message && <p className={styles.qaMessage}>{qaResult.message}</p>}
+              </div>
+            )}
           </form>
         </section>
 

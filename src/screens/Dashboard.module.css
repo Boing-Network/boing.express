@@ -274,3 +274,85 @@
   color: var(--muted);
   line-height: 1.4;
 }
+
+/* QA Pillar — Deploy contract validation */
+.qaTextarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.qaTextarea:focus {
+  outline: none;
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 8px var(--glow-cyan);
+}
+
+.qaCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.qaCheckbox input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.qaButtonRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.qaAllow {
+  margin-top: 0.75rem;
+  padding: 12px 16px;
+  background: rgba(0, 200, 120, 0.12);
+  border: 1px solid var(--success);
+  border-radius: 8px;
+  color: var(--success);
+  font-size: 0.9rem;
+}
+
+.qaReject {
+  margin-top: 0.75rem;
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.qaUnsure {
+  margin-top: 0.75rem;
+  padding: 12px 16px;
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid var(--accent-gold);
+  border-radius: 8px;
+  color: var(--accent-gold);
+  font-size: 0.9rem;
+}
+
+.qaRuleId {
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.qaMessage {
+  margin: 0.5rem 0 0;
+  font-weight: 400;
+  opacity: 0.95;
+  line-height: 1.4;
+}

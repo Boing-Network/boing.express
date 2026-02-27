@@ -19,6 +19,7 @@ This document tracks readiness of the **boing.express** wallet for the Boing Net
 | Chain height | ✅ | `boing_chainHeight` (optional) |
 | Transaction simulation | ✅ | `boing_simulateTransaction` before submit |
 | Explorer link | ✅ | View tx at boing.observer (testnet) or boing.network |
+| QA Pillar (ContractDeploy) | ✅ | Client-side validation + boing_qaCheck RPC; REJECT/ALLOW/UNSURE flow |
 | Web app | ✅ | Deployed at boing.express |
 | Browser extension | ✅ | Chrome + Firefox (Manifest V3) |
 
