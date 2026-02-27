@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useWallet, NETWORKS } from '../context/WalletContext';
 import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types';
 import { parseDecimalAmount } from '../boing/amount';
-import { validateContractBytecode } from '../boing/qa';
+import { validateContractBytecode, VALID_PURPOSE_CATEGORIES } from '../boing/qa';
 import * as rpc from '../boing/rpc';
 import type { BalanceResult } from '../networks/types';
 import { SiteLogo } from '../components/SiteLogo';
@@ -40,6 +40,7 @@ export function Dashboard() {
   const [unbondSuccess, setUnbondSuccess] = useState('');
   const [unbonding, setUnbonding] = useState(false);
   const [qaBytecode, setQaBytecode] = useState('');
+  const [qaPurpose, setQaPurpose] = useState<string>('');
   const [qaResult, setQaResult] = useState<{ result: 'allow' | 'reject' | 'unsure'; ruleId?: string; message?: string } | null>(null);
   const [qaValidating, setQaValidating] = useState(false);
   const [qaUseRpc, setQaUseRpc] = useState(true);
@@ -256,7 +257,7 @@ export function Dashboard() {
     setQaResult(null);
     const hex = qaBytecode.replace(/\s/g, '').replace(/^0x/i, '');
     if (!hex) {
-      setQaResult({ result: 'reject', ruleId: 'qa_empty', message: 'Enter contract bytecode (hex).' });
+      setQaResult({ result: 'reject', ruleId: 'MALFORMED_BYTECODE', message: 'Enter contract bytecode (hex).' });
       return;
     }
     setQaValidating(true);
@@ -264,7 +265,13 @@ export function Dashboard() {
       let result = validateContractBytecode(hex);
       if (result.result === 'allow' && qaUseRpc) {
         try {
-          const rpcResult = await rpc.qaCheck(network.config.rpcUrl, hex.startsWith('0x') ? hex : `0x${hex}`);
+          const hexWithPrefix = hex.startsWith('0x') ? hex : `0x${hex}`;
+          const rpcResult = await rpc.qaCheck(
+            network.config.rpcUrl,
+            hexWithPrefix,
+            qaPurpose.trim() || undefined,
+            undefined
+          );
           result = {
             result: rpcResult.result,
             ruleId: rpcResult.rule_id ?? result.ruleId,
@@ -460,6 +467,21 @@ export function Dashboard() {
               spellCheck={false}
               aria-label="Contract bytecode"
             />
+            <div className={styles.qaPurposeRow}>
+              <label htmlFor="qa-purpose" className={styles.qaLabel}>Purpose (optional, for boing_qaCheck)</label>
+              <select
+                id="qa-purpose"
+                value={qaPurpose}
+                onChange={(e) => setQaPurpose(e.target.value)}
+                className={styles.qaPurposeSelect}
+                aria-label="Purpose category"
+              >
+                <option value="">— None —</option>
+                {VALID_PURPOSE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
             <label className={styles.qaCheckbox}>
               <input
                 type="checkbox"

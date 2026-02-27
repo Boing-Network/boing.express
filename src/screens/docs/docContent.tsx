@@ -128,28 +128,24 @@ export const DOCS: Record<string, Doc> = {
     content: (
       <>
         <p>
-          The <strong>Quality Assurance</strong> pillar ensures only safe, well-formed contracts reach the network. The wallet includes a client-side validator and optional <code>boing_qaCheck</code> RPC integration.
+          The <strong>Quality Assurance</strong> (Pillar 6) ensures only safe, well-formed contracts reach the network. Aligned with <a href="https://github.com/chiku524/boing-network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> and <a href="https://github.com/chiku524/boing-network/blob/main/docs/QA-PASS-GUIDE.md" target="_blank" rel="noopener noreferrer">QA-PASS-GUIDE</a>.
         </p>
         <h2>Validation flow</h2>
         <p>
-          Before deployment, contract bytecode is checked and routed to one of three outcomes:
+          Contract bytecode is checked and routed to: <strong>REJECT</strong> (blocked), <strong>ALLOW</strong> (permitted), or <strong>UNSURE</strong> (community QA pool).
         </p>
-        <ul>
-          <li><strong>REJECT</strong> — Deployment blocked. Causes: empty bytecode, oversized, invalid or blocklisted opcode, malformed structure, bad purpose.</li>
-          <li><strong>ALLOW</strong> — Deployment permitted. Valid opcodes, well-formed, not blocklisted, valid or no purpose declaration.</li>
-          <li><strong>UNSURE</strong> — Unknown opcodes or edge cases. Referred to the community QA pool for review (pool behavior is protocol-defined).</li>
-        </ul>
+        <p>
+          <strong>REJECT</strong>: empty, oversized (&gt;32 KiB), invalid Boing opcode, malformed (truncated PUSH). <strong>ALLOW</strong>: valid Boing VM opcodes, well-formed. Blocklist (bytecode hash) and purpose checks run server-side via <code>boing_qaCheck</code>. Malice categories (scams, phishing, etc.) are defined in <a href="https://github.com/chiku524/boing-network/blob/main/docs/CANONICAL-MALICE-DEFINITION.md" target="_blank" rel="noopener noreferrer">CANONICAL-MALICE-DEFINITION</a>.
+        </p>
         <h2>Using the validator</h2>
         <p>
-          In the wallet dashboard, go to <strong>Deploy contract (QA Pillar)</strong>. Paste your contract bytecode (hex, with or without <code>0x</code>). Click <strong>Validate</strong> to run the client-side checks. Optionally enable &quot;Also call boing_qaCheck&quot; to use the protocol RPC when available.
-        </p>
-        <p>
-          Results are shown with clear status (REJECT in red, ALLOW in green, UNSURE in amber) and a rule ID or message when applicable.
+          In the dashboard, paste bytecode (hex), optionally select a <strong>purpose</strong> (dApp, token, NFT, meme, community, entertainment, tooling, other), and click <strong>Validate</strong>. Enable &quot;Also call boing_qaCheck&quot; for protocol validation when the node supports it.
         </p>
         <h2>References</h2>
         <ul>
-          <li><a href="https://boing.network/docs/rpc-api" target="_blank" rel="noopener noreferrer">Boing RPC API</a> — includes <code>boing_qaCheck</code></li>
-          <li><a href="https://github.com/chiku524/boing-network/blob/main/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK.md</a> — full QA spec (boing-network repo)</li>
+          <li><a href="https://github.com/chiku524/boing-network/blob/main/docs/QA-PASS-GUIDE.md" target="_blank" rel="noopener noreferrer">QA-PASS-GUIDE</a> — Deployer checklist, valid purpose categories</li>
+          <li><a href="https://github.com/chiku524/boing-network/blob/main/docs/CANONICAL-MALICE-DEFINITION.md" target="_blank" rel="noopener noreferrer">CANONICAL-MALICE-DEFINITION</a> — Malice categories for pool review</li>
+          <li><a href="https://github.com/chiku524/boing-network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> — VM opcodes, bytecode limits (32 KiB)</li>
         </ul>
       </>
     ),

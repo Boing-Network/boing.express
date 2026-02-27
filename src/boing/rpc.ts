@@ -20,13 +20,15 @@ export interface JsonRpcResponse<T = unknown> {
   error?: { code: number; message: string };
 }
 
-/** RPC error codes per JSON-RPC 2.0 and Boing spec. */
+/** RPC error codes per RPC-API-SPEC.md and TECHNICAL-SPECIFICATION §11.3. */
 const RPC_ERROR_CODES: Record<number, string> = {
   [-32600]: 'Invalid request',
   [-32601]: 'Method not found',
   [-32602]: 'Invalid parameters',
   [-32000]: 'Server error',
   [-32016]: 'Rate limit exceeded. Please try again later.',
+  [-32050]: 'QA: Deployment rejected by protocol. Check rule_id and message.',
+  [-32051]: 'QA: Deployment referred to community pool (unsure).',
 };
 
 export function rpcErrorToMessage(code: number, message: string): string {

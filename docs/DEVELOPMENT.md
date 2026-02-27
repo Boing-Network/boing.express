@@ -12,7 +12,7 @@ Boing Express uses the **Boing Design System** variant **Aqua Personal** (person
 
 ## 1. Boing Network integration & Chrome Web Store checklist
 
-Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `crates/boing-primitives` (types, signature.rs).
+Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNICAL-SPECIFICATION.md`, `docs/QA-PASS-GUIDE.md`, `crates/boing-primitives`.
 
 ### Part 1: Boing Network integration
 
