@@ -61,10 +61,10 @@ The wallet talks directly to these endpoints. When the Boing testnet has public 
 
 | Gap | Effort | Notes |
 |-----|--------|------|
-| **Transaction history** | Medium | In-app list of recent txs or link to explorer. Explorer must expose `/tx/{hash}` or equivalent. |
-| **Stake display** | Low | `boing_getAccount` can return `stake`; show in dashboard. |
-| **Onboarding checklist** | Low | “Create wallet → Get testnet BOING → Send a tx” for first-time users. |
-| **Local RPC override** | Low | Env or UI option for `http://localhost:8545` for dev/testing. |
+| **Transaction history** | Medium | ✅ Implemented. Recent txs stored locally; links to explorer `/tx/{hash}`. |
+| **Stake display** | Low | ✅ Already shown in Staking section from `boing_getAccount`. |
+| **Onboarding checklist** | Low | Implemented. “Create wallet → Get testnet BOING → Send a tx” Implemented; dismissible. |
+| **Local RPC override** | Low | ✅ Implemented. Collapsible "RPC override (dev)" section; e.g. `http://localhost:8545`. |
 
 ### Lower Priority (Mainnet / Post-Launch)
 
@@ -96,6 +96,7 @@ The wallet talks directly to these endpoints. When the Boing testnet has public 
 
 ### User Onboarding
 
+- [x] In-app onboarding checklist (create wallet → get testnet BOING → send tx)
 - [ ] Docs: create wallet → switch to testnet → faucet → send tx
 - [ ] Support links: boing.network/network/testnet, faucet, RUNBOOK
 

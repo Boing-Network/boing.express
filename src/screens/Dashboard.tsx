@@ -4,6 +4,14 @@ import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types'
 import { parseDecimalAmount } from '../boing/amount';
 import { validateContractBytecode, VALID_PURPOSE_CATEGORIES } from '../boing/qa';
 import * as rpc from '../boing/rpc';
+import { addTxHistory, getTxHistory } from '../storage/txHistory';
+import {
+  getOnboardingState,
+  markWalletCreated,
+  markGotTestnetBoing,
+  markSentTx,
+  dismissOnboarding,
+} from '../storage/onboarding';
 import type { BalanceResult } from '../networks/types';
 import { SiteLogo } from '../components/SiteLogo';
 import styles from './Dashboard.module.css';
@@ -16,6 +24,8 @@ export function Dashboard() {
     lock,
     logout,
     getPrivateKey,
+    rpcOverrides,
+    setRpcOverride,
   } = useWallet();
 
   const [balance, setBalance] = useState<BalanceResult | null>(null);
@@ -44,8 +54,14 @@ export function Dashboard() {
   const [qaResult, setQaResult] = useState<{ result: 'allow' | 'reject' | 'unsure'; ruleId?: string; message?: string } | null>(null);
   const [qaValidating, setQaValidating] = useState(false);
   const [qaUseRpc, setQaUseRpc] = useState(true);
+  const [onboarding, setOnboarding] = useState(getOnboardingState);
+  const [txHistory, setTxHistory] = useState<ReturnType<typeof getTxHistory>>([]);
+  const [showRpcOverride, setShowRpcOverride] = useState(false);
+  const [rpcOverrideInput, setRpcOverrideInput] = useState('');
+  const [lastTxHash, setLastTxHash] = useState<string | null>(null);
 
   const address = accountId ? formatAddress(accountId, false) : '';
+  const addressHint = address ? `${address.slice(0, 8)}…${address.slice(-8)}` : '';
 
   useEffect(() => {
     if (!accountId) return;
@@ -75,6 +91,23 @@ export function Dashboard() {
         setStakeError(e instanceof Error ? e.message : String(e));
       });
   }, [accountId, network]);
+
+  useEffect(() => {
+    markWalletCreated();
+  }, []);
+
+  useEffect(() => {
+    if (addressHint && accountId) {
+      setTxHistory(getTxHistory(addressHint, network.config.id));
+      setRpcOverrideInput(rpcOverrides[network.config.id] ?? '');
+    }
+  }, [addressHint, accountId, network.config.id, rpcOverrides]);
+
+  function refreshTxHistory() {
+    if (addressHint && accountId) {
+      setTxHistory(getTxHistory(addressHint, network.config.id));
+    }
+  }
 
   async function copyAddress() {
     if (!address) return;
@@ -124,6 +157,13 @@ export function Dashboard() {
       );
       const result = await network.submitTransaction(signedHex);
       if (result.success) {
+        if (result.txHash) {
+          addTxHistory(addressHint, network.config.id, result.txHash, 'send');
+          refreshTxHistory();
+          markSentTx();
+          setOnboarding(getOnboardingState());
+          setLastTxHash(result.txHash);
+        }
         setSendSuccess(result.txHash ? `Sent! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
         setSendAmount('');
         setSendTo('');
@@ -146,6 +186,8 @@ export function Dashboard() {
     try {
       const result = await network.faucetRequest(accountId);
       if (result.success) {
+        markGotTestnetBoing();
+        setOnboarding(getOnboardingState());
         setFaucetStatus('ok');
         setBalance(null);
         network.getBalance(accountId).then(setBalance).catch(() => {});
@@ -185,6 +227,11 @@ export function Dashboard() {
       const signedHex = await network.buildBond(accountId, amount, nonce, privateKey);
       const result = await network.submitTransaction(signedHex);
       if (result.success) {
+        if (result.txHash) {
+          addTxHistory(addressHint, network.config.id, result.txHash, 'bond');
+          refreshTxHistory();
+          setLastTxHash(result.txHash);
+        }
         setBondSuccess(result.txHash ? `Bonded! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
         setBondAmount('');
         setBalance(null);
@@ -228,6 +275,11 @@ export function Dashboard() {
       const signedHex = await network.buildUnbond(accountId, amount, nonce, privateKey);
       const result = await network.submitTransaction(signedHex);
       if (result.success) {
+        if (result.txHash) {
+          addTxHistory(addressHint, network.config.id, result.txHash, 'unbond');
+          refreshTxHistory();
+          setLastTxHash(result.txHash);
+        }
         setUnbondSuccess(result.txHash ? `Unbonded! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
         setUnbondAmount('');
         setBalance(null);
@@ -338,6 +390,26 @@ export function Dashboard() {
       </header>
 
       <main className={styles.main}>
+        {!onboarding.dismissed && (
+          <section className={styles.onboardingSection}>
+            <h2 className={styles.sectionTitle}>Getting started</h2>
+            <ul className={styles.onboardingList}>
+              <li className={onboarding.walletCreated ? styles.onboardingDone : ''}>
+                {onboarding.walletCreated ? '✓' : '○'} Create wallet
+              </li>
+              <li className={onboarding.gotTestnetBoing ? styles.onboardingDone : ''}>
+                {onboarding.gotTestnetBoing ? '✓' : '○'} Get testnet BOING
+              </li>
+              <li className={onboarding.sentTx ? styles.onboardingDone : ''}>
+                {onboarding.sentTx ? '✓' : '○'} Send a transaction
+              </li>
+            </ul>
+            <button type="button" className={styles.onboardingDismiss} onClick={() => { dismissOnboarding(); setOnboarding(getOnboardingState()); }}>
+              Dismiss
+            </button>
+          </section>
+        )}
+
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Address</h2>
           <div className={styles.addressRow}>
@@ -384,7 +456,16 @@ export function Dashboard() {
                   aria-label="Amount to bond"
                 />
                 {bondError && <p className={styles.error}>{bondError}</p>}
-                {bondSuccess && <p className={styles.success}>{bondSuccess}</p>}
+                {bondSuccess && (
+                  <p className={styles.success}>
+                    {bondSuccess}
+                    {network.config.explorerUrl && lastTxHash && (
+                      <> {' '}
+                        <a href={`${network.config.explorerUrl.replace(/\/$/, '')}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>View on explorer</a>
+                      </>
+                    )}
+                  </p>
+                )}
                 <button type="submit" className={styles.primary} disabled={bonding}>
                   {bonding ? 'Bonding…' : 'Bond'}
                 </button>
@@ -402,7 +483,16 @@ export function Dashboard() {
                   aria-label="Amount to unbond"
                 />
                 {unbondError && <p className={styles.error}>{unbondError}</p>}
-                {unbondSuccess && <p className={styles.success}>{unbondSuccess}</p>}
+                {unbondSuccess && (
+                  <p className={styles.success}>
+                    {unbondSuccess}
+                    {network.config.explorerUrl && lastTxHash && (
+                      <> {' '}
+                        <a href={`${network.config.explorerUrl.replace(/\/$/, '')}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>View on explorer</a>
+                      </>
+                    )}
+                  </p>
+                )}
                 <button type="submit" className={styles.secondary} disabled={unbonding}>
                   {unbonding ? 'Unbonding…' : 'Unbond'}
                 </button>
@@ -442,7 +532,23 @@ export function Dashboard() {
               </button>
             </div>
             {sendError && <p className={styles.error}>{sendError}</p>}
-            {sendSuccess && <p className={styles.success}>{sendSuccess}</p>}
+            {sendSuccess && (
+              <p className={styles.success}>
+                {sendSuccess}
+                {network.config.explorerUrl && lastTxHash && (
+                  <> {' '}
+                    <a
+                      href={`${network.config.explorerUrl.replace(/\/$/, '')}/tx/${lastTxHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.explorerLink}
+                    >
+                      View on explorer
+                    </a>
+                  </>
+                )}
+              </p>
+            )}
             <button type="submit" className={styles.primary} disabled={sending}>
               {sending ? 'Sending…' : 'Send'}
             </button>
@@ -539,6 +645,73 @@ export function Dashboard() {
             </button>
           </div>
           {faucetError && <p className={styles.error}>{faucetError}</p>}
+        </section>
+
+        {txHistory.length > 0 && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Recent transactions</h2>
+            <ul className={styles.txHistoryList}>
+              {txHistory.slice(0, 10).map((entry) => (
+                <li key={entry.txHash} className={styles.txHistoryItem}>
+                  <span className={styles.txType}>{entry.type}</span>
+                  <code className={styles.txHash}>{entry.txHash.slice(0, 16)}…</code>
+                  {network.config.explorerUrl && (
+                    <a
+                      href={`${network.config.explorerUrl.replace(/\/$/, '')}/tx/${entry.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.explorerLink}
+                    >
+                      View
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section className={styles.section}>
+          <button
+            type="button"
+            className={styles.rpcToggle}
+            onClick={() => setShowRpcOverride(!showRpcOverride)}
+            aria-expanded={showRpcOverride}
+          >
+            {showRpcOverride ? '−' : '+'} RPC override (dev)
+          </button>
+          {showRpcOverride && (
+            <div className={styles.rpcOverrideForm}>
+              <p className={styles.faucetHint}>
+                Override RPC URL for the current network (e.g. http://localhost:8545 for local node). Leave empty to use default.
+              </p>
+              <div className={styles.rpcOverrideRow}>
+                <label htmlFor="rpc-override" className={styles.qaLabel}>
+                  {network.config.name} RPC URL
+                </label>
+                <input
+                  id="rpc-override"
+                  type="text"
+                  placeholder={network.config.rpcUrl}
+                  value={rpcOverrideInput}
+                  onChange={(e) => setRpcOverrideInput(e.target.value)}
+                  className={styles.input}
+                />
+                <button
+                  type="button"
+                  className={styles.secondary}
+                  onClick={() => {
+                    setRpcOverride(network.config.id, rpcOverrideInput);
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+              {rpcOverrides[network.config.id] && (
+                <p className={styles.success}>Using override: {rpcOverrides[network.config.id]}</p>
+              )}
+            </div>
+          )}
         </section>
       </main>
     </div>

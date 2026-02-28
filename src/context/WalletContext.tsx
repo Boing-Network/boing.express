@@ -7,6 +7,8 @@ import {
   NETWORKS,
   DEFAULT_NETWORK_ID,
 } from '../networks';
+import { createBoingAdapter } from '../networks/boingAdapter';
+import { getRpcOverrides, setRpcOverride as saveRpcOverride } from '../storage/rpcOverride';
 import {
   hasStoredWallet,
   unlockWallet,
@@ -33,7 +35,10 @@ const defaultState: WalletState = {
 type WalletContextValue = WalletState & {
   hasWallet: boolean;
   storedAddressHint: string | null;
+  network: NetworkAdapter; // resolved (with RPC override if set)
   setNetwork: (id: string) => void;
+  rpcOverrides: Record<string, string>;
+  setRpcOverride: (networkId: string, url: string) => void;
   unlock: (password: string) => Promise<void>;
   createWallet: (password: string) => Promise<{ privateKeyHex: string }>;
   importWallet: (password: string, privateKeyHex: string) => Promise<void>;
@@ -44,11 +49,27 @@ type WalletContextValue = WalletState & {
 
 const WalletContext = createContext<WalletContextValue | null>(null);
 
+function resolveNetwork(base: NetworkAdapter, overrides: Record<string, string>): NetworkAdapter {
+  const url = overrides[base.config.id];
+  if (url) {
+    return createBoingAdapter({ ...base.config, rpcUrl: url });
+  }
+  return base;
+}
+
 export function WalletProvider({ children }: { children: React.ReactNode }) {
+  const [rpcOverrides, setRpcOverridesState] = useState<Record<string, string>>(() => getRpcOverrides());
   const [state, setState] = useState<WalletState>(() => ({
     ...defaultState,
     network: getDefaultNetwork(),
   }));
+
+  const resolvedNetwork = resolveNetwork(state.network, rpcOverrides);
+
+  const setRpcOverride = useCallback((networkId: string, url: string) => {
+    saveRpcOverride(networkId, url);
+    setRpcOverridesState({ ...getRpcOverrides() });
+  }, []);
 
   const hasWallet = hasStoredWallet();
   const stored = getStoredWallet();
@@ -106,9 +127,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const value: WalletContextValue = {
     ...state,
+    network: resolvedNetwork,
     hasWallet,
     storedAddressHint,
     setNetwork,
+    rpcOverrides,
+    setRpcOverride,
     unlock,
     createWallet,
     importWallet,

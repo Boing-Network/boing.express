@@ -55,9 +55,21 @@ export const DOCS: Record<string, Doc> = {
         <p>
           <a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Boing Network Faucet →</a>
         </p>
+        <h2>Getting started checklist</h2>
+        <p>
+          First-time users see an onboarding checklist: Create wallet → Get testnet BOING → Send a transaction. Complete each step to get familiar with the wallet.
+        </p>
         <h2>Deploy contract (QA Pillar)</h2>
         <p>
           The dashboard includes a contract deployment validator. Paste bytecode (hex) and validate before deploy. See <Link to="/docs/qa-pillar">QA Pillar</Link> for details.
+        </p>
+        <h2>Recent transactions</h2>
+        <p>
+          After you send, bond, or unbond, the dashboard shows recent transactions with links to the explorer.
+        </p>
+        <h2>RPC override (dev)</h2>
+        <p>
+          For development, you can override the RPC URL (e.g. <code>http://localhost:8545</code> for a local node) in the collapsible &quot;RPC override (dev)&quot; section.
         </p>
       </>
     ),
