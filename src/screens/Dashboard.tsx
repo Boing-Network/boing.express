@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useWallet, NETWORKS } from '../context/WalletContext';
 import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types';
 import { parseDecimalAmount } from '../boing/amount';
@@ -59,38 +59,55 @@ export function Dashboard() {
   const [showRpcOverride, setShowRpcOverride] = useState(false);
   const [rpcOverrideInput, setRpcOverrideInput] = useState('');
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [txHashCopied, setTxHashCopied] = useState(false);
 
   const address = accountId ? formatAddress(accountId, false) : '';
   const addressHint = address ? `${address.slice(0, 8)}…${address.slice(-8)}` : '';
 
+  const refreshData = useCallback(async () => {
+    if (!accountId) return;
+    setRefreshing(true);
+    setBalanceError(null);
+    setStakeError(null);
+    try {
+      const [bal, h, st] = await Promise.all([
+        network.getBalance(accountId).catch((e) => {
+          setBalanceError(e instanceof Error ? e.message : String(e));
+          return null;
+        }),
+        network.getChainHeight?.().catch(() => null) ?? Promise.resolve(null),
+        network.getStake ? network.getStake(accountId).catch((e) => {
+          setStakeError(e instanceof Error ? e.message : String(e));
+          return null;
+        }) : Promise.resolve(null),
+      ]);
+      if (bal) setBalance(bal);
+      if (h != null) setChainHeight(h);
+      if (st != null) setStake(st);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [accountId, network]);
+
   useEffect(() => {
     if (!accountId) return;
-    setBalanceError(null);
-    network
-      .getBalance(accountId)
-      .then(setBalance)
-      .catch((e) => {
-        setBalance(null);
-        setBalanceError(e instanceof Error ? e.message : String(e));
-      });
-  }, [accountId, network]);
+    refreshData();
+  }, [accountId, refreshData]);
 
   useEffect(() => {
-    if (!network.getChainHeight) return;
-    network.getChainHeight().then(setChainHeight).catch(() => setChainHeight(null));
-  }, [network]);
+    const handler = () => {
+      if (document.visibilityState === 'visible' && accountId) refreshData();
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [accountId, refreshData]);
 
   useEffect(() => {
-    if (!accountId || !network.getStake) return;
-    setStakeError(null);
-    network
-      .getStake(accountId)
-      .then(setStake)
-      .catch((e) => {
-        setStake(null);
-        setStakeError(e instanceof Error ? e.message : String(e));
-      });
-  }, [accountId, network]);
+    if (!accountId) return;
+    const id = setInterval(refreshData, 45_000);
+    return () => clearInterval(id);
+  }, [accountId, refreshData]);
 
   useEffect(() => {
     markWalletCreated();
@@ -115,6 +132,16 @@ export function Dashboard() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
+
+  async function copyTxHash() {
+    if (!lastTxHash) return;
+    await navigator.clipboard.writeText(lastTxHash);
+    setTxHashCopied(true);
+    setTimeout(() => setTxHashCopied(false), 2000);
+  }
+
+  const explorerBase = network.config.explorerUrl?.replace(/\/$/, '') ?? '';
+  const isMainnet = !network.config.isTestnet;
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -417,6 +444,17 @@ export function Dashboard() {
             <button type="button" className={styles.copyBtn} onClick={copyAddress}>
               {copied ? 'Copied' : 'Copy'}
             </button>
+            {explorerBase && (
+              <a
+                href={`${explorerBase}/address/${address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.explorerLink}
+                aria-label="View address on explorer"
+              >
+                View on explorer
+              </a>
+            )}
           </div>
           <p className={styles.addressHint}>
             Use this address to receive BOING and in the faucet.
@@ -424,7 +462,18 @@ export function Dashboard() {
         </section>
 
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Balance</h2>
+          <div className={styles.balanceHeader}>
+            <h2 className={styles.sectionTitle}>Balance</h2>
+            <button
+              type="button"
+              className={styles.refreshBtn}
+              onClick={refreshData}
+              disabled={refreshing || !accountId}
+              aria-label="Refresh balance and chain data"
+            >
+              {refreshing ? '…' : '↻'}
+            </button>
+          </div>
           <p className={styles.balance}>
             {displayBalance} <span className={styles.symbol}>{balance?.symbol ?? 'BOING'}</span>
           </p>
@@ -433,7 +482,14 @@ export function Dashboard() {
               Block #{chainHeight.toLocaleString()}
             </p>
           )}
-          {balanceError && <p className={styles.error}>{balanceError}</p>}
+          {balanceError && (
+            <p className={styles.error}>
+              {balanceError}
+              <button type="button" className={styles.retryBtn} onClick={refreshData}>
+                Retry
+              </button>
+            </p>
+          )}
         </section>
 
         {(network.buildBond || network.buildUnbond) && (
@@ -459,9 +515,12 @@ export function Dashboard() {
                 {bondSuccess && (
                   <p className={styles.success}>
                     {bondSuccess}
-                    {network.config.explorerUrl && lastTxHash && (
-                      <> {' '}
-                        <a href={`${network.config.explorerUrl.replace(/\/$/, '')}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>View on explorer</a>
+                    {explorerBase && lastTxHash && (
+                      <>
+                        {' '}
+                        <a href={`${explorerBase}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>View on explorer</a>
+                        {' · '}
+                        <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>{txHashCopied ? 'Copied' : 'Copy tx hash'}</button>
                       </>
                     )}
                   </p>
@@ -486,9 +545,12 @@ export function Dashboard() {
                 {unbondSuccess && (
                   <p className={styles.success}>
                     {unbondSuccess}
-                    {network.config.explorerUrl && lastTxHash && (
-                      <> {' '}
-                        <a href={`${network.config.explorerUrl.replace(/\/$/, '')}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>View on explorer</a>
+                    {explorerBase && lastTxHash && (
+                      <>
+                        {' '}
+                        <a href={`${explorerBase}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>View on explorer</a>
+                        {' · '}
+                        <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>{txHashCopied ? 'Copied' : 'Copy tx hash'}</button>
                       </>
                     )}
                   </p>
@@ -506,6 +568,11 @@ export function Dashboard() {
 
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Send</h2>
+          {isMainnet && sendAmount.trim() && (
+            <div className={styles.mainnetWarning} role="alert">
+              You are on Mainnet. Real BOING is at risk. Double-check the amount and recipient.
+            </div>
+          )}
           <form onSubmit={handleSend} className={styles.form}>
             <input
               type="text"
@@ -535,16 +602,16 @@ export function Dashboard() {
             {sendSuccess && (
               <p className={styles.success}>
                 {sendSuccess}
-                {network.config.explorerUrl && lastTxHash && (
-                  <> {' '}
-                    <a
-                      href={`${network.config.explorerUrl.replace(/\/$/, '')}/tx/${lastTxHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.explorerLink}
-                    >
+                {explorerBase && lastTxHash && (
+                  <>
+                    {' '}
+                    <a href={`${explorerBase}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
                       View on explorer
                     </a>
+                    {' · '}
+                    <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>
+                      {txHashCopied ? 'Copied' : 'Copy tx hash'}
+                    </button>
                   </>
                 )}
               </p>
@@ -655,9 +722,9 @@ export function Dashboard() {
                 <li key={entry.txHash} className={styles.txHistoryItem}>
                   <span className={styles.txType}>{entry.type}</span>
                   <code className={styles.txHash}>{entry.txHash.slice(0, 16)}…</code>
-                  {network.config.explorerUrl && (
+                  {explorerBase && (
                     <a
-                      href={`${network.config.explorerUrl.replace(/\/$/, '')}/tx/${entry.txHash}`}
+                      href={`${explorerBase}/tx/${entry.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.explorerLink}

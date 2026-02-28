@@ -38,15 +38,15 @@ export const DOCS: Record<string, Doc> = {
       <>
         <h2>Address</h2>
         <p>
-          Your address is a 64-character hex string (32-byte Ed25519 public key). Use it to receive BOING and when requesting from the testnet faucet. You can copy it from the wallet dashboard.
+          Your address is a 64-character hex string (32-byte Ed25519 public key). Use it to receive BOING and when requesting from the testnet faucet. Copy it from the dashboard or open it on the explorer.
         </p>
         <h2>Balance</h2>
         <p>
-          The dashboard shows your balance for the selected network (Testnet or Mainnet). Balances are fetched from the network RPC; small delays can occur after sending or using the faucet.
+          The dashboard shows your balance for the selected network (Testnet or Mainnet). Use the refresh button (↻) to sync with the chain. Balance auto-refreshes when you return to the tab and every 45 seconds. If the fetch fails, use Retry.
         </p>
         <h2>Send</h2>
         <p>
-          To send BOING, enter the recipient’s address (64 hex characters or 0x…) and the amount in BOING (e.g. 1 or 0.5). Use “Max” to send your full balance. Submit the transaction; you’ll see a success message and optional transaction hash.
+          To send BOING, enter the recipient’s address (64 hex characters or 0x…) and the amount in BOING (e.g. 1 or 0.5). Use “Max” to send your full balance. On Mainnet, a warning appears when you enter an amount — real BOING is at risk. After a successful send, use “View on explorer” or “Copy tx hash” to inspect the transaction.
         </p>
         <h2>Testnet faucet</h2>
         <p>
