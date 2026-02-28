@@ -136,3 +136,20 @@ The landing and app backgrounds use the **Boing Background Engine** (Aquatic-Spa
 - For new sections, use the section-eyebrow / section-title / section-subtitle pattern.
 - Keep the six pillars and tagline consistent with other Boing properties.
 - For full Aqua Personal reference (all components, wallet preview, tokens showcase), see the external theme file: `express/index.html` in the boing-design-themes package.
+
+---
+
+## Compliance & assets (merged from design-system-compliance-and-assets.md)
+
+**Reviewed against:** Boing_Network_Official_Visual_Design_System.pdf and related design docs.
+
+### Implementation status
+
+- **Colors, typography, components:** Aligned with Official Visual Design System. Tokens in `:root`; hex grid stroke 0.06; H1/H2/H3 type scale per spec.
+- **Backgrounds:** Landing uses Boing Background Engine (canvas), not static images. App pages use hex-grid.svg over `--bg-primary`.
+- **Motion:** Float, glow pulse, fade-in-up, shooting stars; `prefers-reduced-motion` respected.
+
+### Optional assets
+
+- **Boing Bot mascot:** For landing, onboarding, empty states; see [docs/ASSETS.md](ASSETS.md).
+- **Pillar illustrations:** Already in `public/assets/`; used in Landing pills.

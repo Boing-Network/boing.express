@@ -168,10 +168,10 @@ export const DOCS: Record<string, Doc> = {
       <>
         <p>
           Boing Express is prepared for the Boing Network incentivized testnet and mainnet. See the full roadmap in{' '}
-          <a href="https://github.com/chiku524/boing.express/blob/main/docs/LAUNCH_READINESS.md" target="_blank" rel="noopener noreferrer">
-            docs/LAUNCH_READINESS.md
+          <a href="https://github.com/chiku524/boing.express/blob/main/docs/DEVELOPMENT.md" target="_blank" rel="noopener noreferrer">
+            docs/DEVELOPMENT.md
           </a>{' '}
-          (or the local <code>docs/LAUNCH_READINESS.md</code> file).
+          (Launch readiness section).
         </p>
         <h2>Current status</h2>
         <p>

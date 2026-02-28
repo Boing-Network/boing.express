@@ -64,13 +64,13 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNI
 | **Detailed description** | Dashboard |  |
 | **Screenshots** | Dashboard | At least one; multiple flows recommended. |
 | **Category** | Dashboard | e.g. Productivity or Finance; match single purpose. |
-| **Single purpose** | Dashboard | See [extension/PERMISSIONS_AND_PRIVACY.md](../extension/PERMISSIONS_AND_PRIVACY.md). |
+| **Single purpose** | Dashboard | See [extension/EXTENSION_STORE.md](../extension/EXTENSION_STORE.md). |
 | **Privacy policy** | ✅ | https://boing.express/privacy. |
-| **Data usage** | Dashboard | Paste from [extension/PERMISSIONS_AND_PRIVACY.md](../extension/PERMISSIONS_AND_PRIVACY.md); matches policy. |
+| **Data usage** | Dashboard | Paste from [extension/EXTENSION_STORE.md](../extension/EXTENSION_STORE.md); matches policy. |
 | **Support** | ✅ | https://boing.express/support — docs, FAQ, testnet, contact. |
 | **Test instructions** | Dashboard | If requested: e.g. select Testnet, use faucet, send a tx. No real mainnet keys. |
 
-For ready-to-paste store copy and screenshot instructions, see [extension/CHROME_WEB_STORE.md](../extension/CHROME_WEB_STORE.md).
+For ready-to-paste store copy and screenshot instructions, see [extension/EXTENSION_STORE.md](../extension/EXTENSION_STORE.md).
 
 ### RPC methods used
 
@@ -144,3 +144,39 @@ If these variables are **not** set, the app uses the same defaults at build time
   - [Bing Webmaster Tools](https://www.bing.com/webmasters): add site, submit sitemap.
   - Optional: [IndexNow](https://www.indexnow.org/) for faster indexing.
 - **Analytics (optional):** Add Google Analytics, Plausible, or similar and link from the same docs if you use them.
+
+---
+
+## 4. Launch readiness (merged from LAUNCH_READINESS.md)
+
+Tracks readiness for Boing Network incentivized testnet and mainnet.
+
+### Current state
+
+| Feature | Status |
+|---------|--------|
+| Create/import wallet | ✅ |
+| Send BOING, view balance | ✅ |
+| Testnet faucet, network switch | ✅ |
+| Staking (Bond/Unbond) | ✅ |
+| Transaction history, backup reminder | ✅ |
+| Web app + browser extension | ✅ |
+
+**RPC endpoints:** Testnet `https://testnet-rpc.boing.network`; Mainnet `https://rpc.boing.network`.
+
+### VibeMiner vs boing.express
+
+- **VibeMiner:** One-click mining/validating (run node, stake). Depends on P2P bootnodes.
+- **boing.express:** Non-custodial wallet. Depends on RPC endpoints. Both need Boing Network infrastructure live for incentivized testnet.
+
+### Testnet checklist
+
+- [ ] Public testnet RPC responding
+- [ ] Faucet enabled
+- [ ] Extension built, Chrome Web Store listing complete (see [extension/EXTENSION_STORE.md](../extension/EXTENSION_STORE.md))
+- [x] Staking UI, backup reminder, onboarding checklist
+
+### Mainnet
+
+- [ ] Mainnet RPC at `https://rpc.boing.network`
+- [ ] Security review; clear mainnet send warning
