@@ -383,7 +383,7 @@ $('btn-faucet-page').addEventListener('click', () => {
   if (!accountId) return;
   const addr = formatAddress(accountId, false);
   const url = `https://boing.network/network/faucet?address=${encodeURIComponent(addr)}`;
-  chrome.tabs.create({ url });
+  window.open(url, '_blank');
 });
 
 $('btn-balance-retry').addEventListener('click', () => refreshDashboardBalance());

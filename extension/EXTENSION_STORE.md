@@ -19,7 +19,6 @@ This document combines **permissions & privacy** (for the store form) and the **
 | Permission | Justification |
 |------------|---------------|
 | **storage** | Save encrypted wallet data and selected network in `chrome.storage.local`. |
-| **tabs** | Open the Boing Network faucet page in a new tab with address pre-filled. Does not read or modify tab content. |
 | **Host permissions** | RPC (testnet-rpc.boing.network, rpc.boing.network) for balance/send; boing.network for faucet link only. |
 
 ### Data usage (store disclosure)
