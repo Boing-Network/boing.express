@@ -257,6 +257,14 @@ body {
   flex-wrap: wrap;
 }
 
+.backup-checkbox {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.backup-checkbox input { margin: 0; accent-color: var(--primary-color); }
+.backup-checkbox span { margin-left: 4px; }
+
 .address {
   flex: 1;
   min-width: 0;

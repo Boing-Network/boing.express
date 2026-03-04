@@ -194,6 +194,10 @@ $('form-create').addEventListener('submit', async (e) => {
     const { privateKeyHex } = await createAndSaveWallet(password);
     pendingBackupPassword = password;
     ($('backup-key') as HTMLElement).textContent = privateKeyHex;
+    const ack = document.getElementById('backup-acknowledged') as HTMLInputElement;
+    const btnContinue = $('btn-backup-continue') as HTMLButtonElement;
+    if (ack) ack.checked = false;
+    btnContinue.disabled = true;
     showScreen('backup');
   } catch (err) {
     showError('create-error', err instanceof Error ? err.message : 'Failed to create wallet');
@@ -208,6 +212,12 @@ $('btn-backup-copy').addEventListener('click', async () => {
     btn.textContent = 'Copied';
     setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
   }
+});
+
+document.getElementById('backup-acknowledged')?.addEventListener('change', () => {
+  const ack = document.getElementById('backup-acknowledged') as HTMLInputElement;
+  const btnContinue = $('btn-backup-continue') as HTMLButtonElement;
+  btnContinue.disabled = !ack?.checked;
 });
 
 $('btn-backup-continue').addEventListener('click', async () => {

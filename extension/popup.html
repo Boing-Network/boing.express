@@ -46,7 +46,11 @@
         <code id="backup-key" class="backup-key"></code>
         <button type="button" id="btn-backup-copy" class="btn-small" aria-label="Copy private key">Copy</button>
       </div>
-      <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet">I've backed it up — Continue</button>
+      <label class="row backup-checkbox">
+        <input type="checkbox" id="backup-acknowledged" aria-label="I have saved my private key" />
+        <span>I have saved my private key in a safe place</span>
+      </label>
+      <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet" disabled>I've backed it up — Continue</button>
     </div>
     <div id="screen-import" class="screen hidden">
       <p class="subtitle">Enter 64-char hex private key.</p>

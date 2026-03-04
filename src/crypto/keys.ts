@@ -1,8 +1,17 @@
 /**
  * Ed25519 key generation and derivation. Client-only; keys never leave the device.
+ * In browser/extension, @noble/ed25519 needs a sync SHA-512; we set it from @noble/hashes.
  */
 
 import * as ed from '@noble/ed25519';
+import { sha512 } from '@noble/hashes/sha2';
+
+// Required in environments without Node crypto (e.g. Chrome extension). Without this,
+// getPublicKey() throws "hashes.sha512Sync not set".
+if (typeof ed.etc.sha512Sync !== 'function') {
+  ed.etc.sha512Sync = (...messages: Uint8Array[]) =>
+    sha512(ed.etc.concatBytes(...messages));
+}
 
 /** Generate a new Ed25519 keypair. Returns [publicKey 32 bytes, privateKey 32 bytes]. */
 export async function generateKeyPair(): Promise<[Uint8Array, Uint8Array]> {

@@ -28,6 +28,7 @@ export function Welcome() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [privateKeyHex, setPrivateKeyHex] = useState('');
   const [backupKeyHex, setBackupKeyHex] = useState('');
+  const [backupAcknowledged, setBackupAcknowledged] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [copiedBackup, setCopiedBackup] = useState(false);
@@ -61,6 +62,7 @@ export function Welcome() {
       const { privateKeyHex: keyHex } = await createWallet(password);
       setBackupKeyHex(keyHex);
       setStep('backup');
+      setBackupAcknowledged(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create wallet');
     } finally {
@@ -179,12 +181,21 @@ export function Welcome() {
               {copiedBackup ? 'Copied' : 'Copy'}
             </button>
           </div>
+          <label className={styles.checkboxWrap}>
+            <input
+              type="checkbox"
+              checked={backupAcknowledged}
+              onChange={(e) => setBackupAcknowledged(e.target.checked)}
+              className={styles.checkbox}
+            />
+            <span>I have saved my private key in a safe place</span>
+          </label>
           {error && <p className={styles.error}>{error}</p>}
           <button
             type="button"
             className={styles.primary}
             onClick={handleBackupContinue}
-            disabled={loading}
+            disabled={loading || !backupAcknowledged}
           >
             {loading ? 'Unlocking…' : "I've backed it up — Continue"}
           </button>
