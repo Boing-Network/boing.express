@@ -3,6 +3,9 @@
  * Build with: pnpm run build:extension
  */
 
+// Ensure Ed25519 SHA-512 shim is set before any wallet code (create/import/unlock/sign).
+import '../src/crypto/keys';
+
 import {
   initExtensionWalletStorage,
   hasStoredWallet,
@@ -223,13 +226,14 @@ document.getElementById('backup-acknowledged')?.addEventListener('change', () =>
 $('btn-backup-continue').addEventListener('click', async () => {
   const password = pendingBackupPassword;
   pendingBackupPassword = '';
+  hideError('backup-error');
   try {
     const [pub, priv] = await unlockWallet(password);
     accountId = pub;
     privateKey = priv;
     await goDashboard();
   } catch (err) {
-    ($('backup-key') as HTMLElement).parentElement?.querySelector('.error')?.classList.remove('hidden');
+    showError('backup-error', err instanceof Error ? err.message : 'Failed to unlock');
   }
 });
 $('btn-create-back').addEventListener('click', () => showScreen('choose'));
@@ -253,6 +257,12 @@ $('form-import').addEventListener('submit', async (e) => {
     showError('import-error', 'Passwords do not match');
     return;
   }
+  const importBtn = document.querySelector('#form-import button[type="submit"]') as HTMLButtonElement;
+  const originalImportText = importBtn?.textContent ?? 'Import wallet';
+  if (importBtn) {
+    importBtn.disabled = true;
+    importBtn.textContent = 'Importing…';
+  }
   try {
     await importAndSaveWallet(password, hex);
     const [pub, priv] = await unlockWallet(password);
@@ -261,6 +271,11 @@ $('form-import').addEventListener('submit', async (e) => {
     await goDashboard();
   } catch (err) {
     showError('import-error', err instanceof Error ? err.message : 'Failed to import wallet');
+  } finally {
+    if (importBtn) {
+      importBtn.disabled = false;
+      importBtn.textContent = originalImportText;
+    }
   }
 });
 $('btn-import-back').addEventListener('click', () => showScreen('choose'));

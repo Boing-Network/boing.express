@@ -27,7 +27,7 @@ export function signableHash(tx: Transaction): Uint8Array {
 /** Sign a transaction with Ed25519 private key (32 bytes). Returns 64-byte signature. */
 export async function signTransaction(tx: Transaction, privateKey: Uint8Array): Promise<Uint8Array> {
   const message = signableHash(tx);
-  const sig = await ed.sign(message, privateKey);
+  const sig = await ed.signAsync(message, privateKey);
   return sig;
 }
 
