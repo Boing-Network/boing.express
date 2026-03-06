@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Boing Express",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The non-custodial wallet for Boing Network. Your keys, your BOING — use the DeFi that always bounces back, right from your browser.",
   "author": "Boing Express",
   "homepage_url": "https://boing.express",
@@ -19,6 +19,24 @@
     },
     "default_title": "Boing Express"
   },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["inpage.js"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ],
   "permissions": ["storage"],
   "host_permissions": [
     "https://testnet-rpc.boing.network/*",

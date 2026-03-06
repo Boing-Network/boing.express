@@ -7,10 +7,15 @@ export default defineConfig({
     emptyOutDir: false,
     lib: undefined,
     rollupOptions: {
-      input: resolve(__dirname, 'extension/popup.ts'),
+      input: {
+        popup: resolve(__dirname, 'extension/popup.ts'),
+        background: resolve(__dirname, 'extension/background.ts'),
+        content: resolve(__dirname, 'extension/content.ts'),
+      },
       output: {
-        entryFileNames: 'popup.js',
+        entryFileNames: '[name].js',
         format: 'es',
+        chunkFileNames: '[name]-[hash].js',
       },
     },
     sourcemap: true,

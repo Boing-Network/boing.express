@@ -42,3 +42,11 @@ export function privateKeyToHex(privateKey: Uint8Array): string {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
+
+/** Sign an arbitrary message (e.g. for personal_sign). Returns 0x-prefixed hex signature (64 bytes = 128 hex chars). */
+export async function signMessage(message: Uint8Array, privateKey: Uint8Array): Promise<string> {
+  const sig = await ed.signAsync(message, privateKey);
+  return '0x' + Array.from(sig)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}

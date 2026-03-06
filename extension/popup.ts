@@ -22,6 +22,7 @@ import { BOING_TESTNET_RPC, BOING_MAINNET_RPC } from './config';
 
 const NETWORKS = createNetworks(BOING_TESTNET_RPC, BOING_MAINNET_RPC);
 const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
+const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
 const BOING_DECIMALS = 18;
 
 type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'backup' | 'dashboard';
@@ -116,13 +117,97 @@ async function refreshDashboardBalance(): Promise<void> {
 function updateFaucetVisibility(): void {
   const net = getCurrentNetwork();
   const section = document.getElementById('faucet-section');
+  const tabBtn = document.getElementById('tab-faucet');
   if (section) section.classList.toggle('hidden', !net.config.isTestnet);
+  if (tabBtn) tabBtn.classList.toggle('hidden', !net.config.isTestnet);
 }
 
 function updateStakingVisibility(): void {
   const net = getCurrentNetwork();
   const section = document.getElementById('staking-section');
+  const tabBtn = document.getElementById('tab-stake');
   if (section) section.classList.toggle('hidden', !net.buildBond && !net.buildUnbond);
+  if (tabBtn) tabBtn.classList.toggle('hidden', !net.buildBond && !net.buildUnbond);
+}
+
+function getConnectedSitesFromStorage(): Promise<string[]> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY_CONNECTED_SITES], (result) => {
+      try {
+        const raw = result[STORAGE_KEY_CONNECTED_SITES];
+        if (!raw) {
+          resolve([]);
+          return;
+        }
+        const arr = JSON.parse(raw) as unknown;
+        resolve(Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : []);
+      } catch {
+        resolve([]);
+      }
+    });
+  });
+}
+
+function setConnectedSitesInStorage(origins: string[]): Promise<void> {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [STORAGE_KEY_CONNECTED_SITES]: JSON.stringify(origins) }, resolve);
+  });
+}
+
+async function refreshConnectedSites(): Promise<void> {
+  const listEl = document.getElementById('connected-sites-list');
+  const emptyEl = document.getElementById('connected-sites-empty');
+  if (!listEl || !emptyEl) return;
+  const sites = await getConnectedSitesFromStorage();
+  listEl.innerHTML = '';
+  if (sites.length === 0) {
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+  emptyEl.classList.add('hidden');
+  for (const origin of sites) {
+    const li = document.createElement('li');
+    li.className = 'connected-site-row';
+    const originSpan = document.createElement('span');
+    originSpan.className = 'connected-site-origin';
+    originSpan.textContent = origin;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-small btn-disconnect';
+    btn.textContent = 'Disconnect';
+    btn.setAttribute('aria-label', `Disconnect ${origin}`);
+    btn.addEventListener('click', async () => {
+      const updated = (await getConnectedSitesFromStorage()).filter((o) => o !== origin);
+      await setConnectedSitesInStorage(updated);
+      refreshConnectedSites();
+    });
+    li.appendChild(originSpan);
+    li.appendChild(btn);
+    listEl.appendChild(li);
+  }
+}
+
+type TabId = 'wallet' | 'stake' | 'faucet';
+
+function switchTab(tabId: TabId): void {
+  document.querySelectorAll('.tab-btn').forEach((el) => {
+    el.classList.remove('active');
+    el.setAttribute('aria-selected', 'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach((el) => {
+    el.classList.remove('active');
+    el.setAttribute('hidden', '');
+  });
+  const btn = document.getElementById(`tab-${tabId}`);
+  const panel = document.getElementById(`panel-${tabId}`);
+  if (btn) {
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+  }
+  if (panel) {
+    panel.classList.add('active');
+    panel.removeAttribute('hidden');
+  }
 }
 
 let lastStakeRaw = '0';
@@ -157,6 +242,8 @@ async function goDashboard(): Promise<void> {
   updateStakingVisibility();
   chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: selectedNetworkId });
   showScreen('dashboard');
+  switchTab('wallet');
+  refreshConnectedSites();
 }
 
 // --- Choose
@@ -172,6 +259,11 @@ $('form-unlock').addEventListener('submit', async (e) => {
     const [pub, priv] = await unlockWallet(password);
     accountId = pub;
     privateKey = priv;
+    chrome.runtime.sendMessage({
+      type: 'WALLET_UNLOCK',
+      accountHex: accountIdToHex(pub),
+      privateKey: Array.from(priv),
+    });
     await goDashboard();
   } catch (err) {
     showError('unlock-error', err instanceof Error ? err.message : 'Invalid password');
@@ -231,6 +323,11 @@ $('btn-backup-continue').addEventListener('click', async () => {
     const [pub, priv] = await unlockWallet(password);
     accountId = pub;
     privateKey = priv;
+    chrome.runtime.sendMessage({
+      type: 'WALLET_UNLOCK',
+      accountHex: accountIdToHex(pub),
+      privateKey: Array.from(priv),
+    });
     await goDashboard();
   } catch (err) {
     showError('backup-error', err instanceof Error ? err.message : 'Failed to unlock');
@@ -268,6 +365,11 @@ $('form-import').addEventListener('submit', async (e) => {
     const [pub, priv] = await unlockWallet(password);
     accountId = pub;
     privateKey = priv;
+    chrome.runtime.sendMessage({
+      type: 'WALLET_UNLOCK',
+      accountHex: accountIdToHex(pub),
+      privateKey: Array.from(priv),
+    });
     await goDashboard();
   } catch (err) {
     showError('import-error', err instanceof Error ? err.message : 'Failed to import wallet');
@@ -281,6 +383,13 @@ $('form-import').addEventListener('submit', async (e) => {
 $('btn-import-back').addEventListener('click', () => showScreen('choose'));
 
 // --- Dashboard
+document.querySelectorAll('.tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const tabId = (btn as HTMLElement).getAttribute('data-tab');
+    if (tabId === 'wallet' || tabId === 'stake' || tabId === 'faucet') switchTab(tabId);
+  });
+});
+
 $('network-select').addEventListener('change', (e) => {
   selectedNetworkId = (e.target as HTMLSelectElement).value;
   chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: selectedNetworkId });
@@ -293,6 +402,7 @@ $('network-select').addEventListener('change', (e) => {
 $('btn-lock').addEventListener('click', () => {
   accountId = null;
   privateKey = null;
+  chrome.runtime.sendMessage({ type: 'WALLET_LOCK' });
   renderChoose();
 });
 

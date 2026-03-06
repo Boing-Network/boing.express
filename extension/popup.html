@@ -65,58 +65,93 @@
       <button type="button" id="btn-import-back" class="btn-text" aria-label="Back">Back</button>
     </div>
     <div id="screen-dashboard" class="screen hidden">
-      <div class="row">
-        <select id="network-select" class="select" aria-label="Select network"></select>
-        <button type="button" id="btn-lock" class="btn-small" aria-label="Lock wallet">Lock</button>
+      <div class="dashboard-header">
+        <div class="header-row">
+          <select id="network-select" class="select select-network" aria-label="Select network"></select>
+          <button type="button" id="btn-lock" class="btn-icon" aria-label="Lock wallet" title="Lock wallet">
+            <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </button>
+        </div>
       </div>
-      <section class="card">
-        <h2 class="label">Address</h2>
-        <div class="row">
-          <code id="address" class="address"></code>
-          <button type="button" id="btn-copy" class="btn-small" aria-label="Copy address">Copy</button>
-        </div>
-      </section>
-      <section class="card">
-        <h2 class="label">Balance</h2>
-        <p class="balance"><span id="balance">…</span> <span id="symbol">BOING</span></p>
-        <p id="balance-error" class="error hidden"></p>
-        <button type="button" id="btn-balance-retry" class="btn-small btn-retry hidden" aria-label="Retry loading balance">Retry</button>
-      </section>
-      <section class="card">
-        <h2 class="label">Send</h2>
-        <form id="form-send" class="form">
-          <input type="text" id="send-to" placeholder="To (64 hex or 0x…)" class="input" aria-label="Recipient address" />
-          <p class="send-hint" aria-hidden="true">64 hex characters or 0x…</p>
-          <div class="row">
-          <input type="text" id="send-amount" placeholder="Amount in BOING (e.g. 1.5)" class="input" aria-label="Amount to send" inputmode="decimal" />
-          <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
-        </div>
-          <p id="send-error" class="error hidden"></p>
-          <p id="send-success" class="success hidden" aria-live="polite"></p>
-          <a id="send-explorer-link" class="explorer-link hidden" href="#" target="_blank" rel="noopener noreferrer" aria-label="View transaction on explorer">View transaction</a>
-          <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING">Send</button>
-        </form>
-      </section>
-      <section id="staking-section" class="card">
-        <h2 class="label">Staking</h2>
-        <p class="balance"><span id="stake">…</span> <span id="stake-symbol">BOING</span> staked</p>
-        <form id="form-bond" class="form">
-          <input type="text" id="bond-amount" placeholder="Amount to bond (e.g. 1.5)" class="input" inputmode="decimal" aria-label="Amount to bond" />
-          <p id="bond-error" class="error hidden"></p>
-          <button type="submit" id="btn-bond" class="btn-primary" aria-label="Bond BOING">Bond</button>
-        </form>
-        <form id="form-unbond" class="form">
-          <input type="text" id="unbond-amount" placeholder="Amount to unbond (e.g. 0.5)" class="input" inputmode="decimal" aria-label="Amount to unbond" />
-          <p id="unbond-error" class="error hidden"></p>
-          <button type="submit" id="btn-unbond" class="btn-secondary" aria-label="Unbond BOING">Unbond</button>
-        </form>
-      </section>
-      <section id="faucet-section" class="card">
-        <h2 class="label">Faucet</h2>
-        <button type="button" id="btn-faucet" class="btn-primary" aria-label="Request testnet BOING from faucet">Request testnet BOING</button>
-        <button type="button" id="btn-faucet-page" class="btn-secondary" aria-label="Open faucet page in new tab">Open faucet page</button>
-        <p id="faucet-error" class="error hidden"></p>
-      </section>
+      <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
+        <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet">Wallet</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
+      </nav>
+      <div class="tab-panels">
+        <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
+          <div class="balance-hero card">
+            <div class="balance-hero-row">
+              <div class="balance-hero-left">
+                <p class="balance-label">Available balance</p>
+                <p class="balance"><span id="balance">…</span> <span id="symbol" class="balance-symbol">BOING</span></p>
+                <p id="balance-error" class="error hidden"></p>
+              </div>
+              <button type="button" id="btn-balance-retry" class="btn-icon btn-retry hidden" aria-label="Retry loading balance" title="Retry">
+                <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="card card-address">
+            <h2 class="label">Address</h2>
+            <div class="row">
+              <code id="address" class="address"></code>
+              <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
+            </div>
+          </div>
+          <div class="card card-connected-sites">
+            <h2 class="label">Connected sites</h2>
+            <p class="hint" id="connected-sites-hint">Sites that can see your address and request signatures.</p>
+            <ul id="connected-sites-list" class="connected-sites-list" aria-label="List of connected sites"></ul>
+            <p id="connected-sites-empty" class="connected-sites-empty hidden">No sites connected.</p>
+          </div>
+          <div class="card">
+            <h2 class="label">Send BOING</h2>
+            <form id="form-send" class="form">
+              <input type="text" id="send-to" placeholder="e.g. 7f3a2b1c4d5e6f7890abcdef... (64 hex)" class="input" aria-label="Recipient address" />
+              <p class="send-hint" aria-hidden="true">64 hex characters. 0x prefix optional.</p>
+              <div class="row row-amount">
+                <input type="text" id="send-amount" placeholder="Amount (e.g. 1.5)" class="input" aria-label="Amount to send" inputmode="decimal" />
+                <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
+              </div>
+              <p id="send-error" class="error hidden"></p>
+              <p id="send-success" class="success hidden" aria-live="polite"></p>
+              <a id="send-explorer-link" class="explorer-link hidden" href="#" target="_blank" rel="noopener noreferrer" aria-label="View transaction on explorer">View transaction</a>
+              <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING">Send</button>
+            </form>
+          </div>
+        </section>
+        <section id="panel-stake" class="tab-panel" role="tabpanel" aria-labelledby="tab-stake" hidden>
+          <div id="staking-section" class="staking-panel">
+            <div class="card balance-card">
+              <p class="balance-label">Staked</p>
+              <p class="balance"><span id="stake">…</span> <span id="stake-symbol" class="balance-symbol">BOING</span></p>
+            </div>
+            <form id="form-bond" class="form card">
+              <h2 class="label">Bond</h2>
+              <input type="text" id="bond-amount" placeholder="Amount to bond (e.g. 1.5)" class="input" inputmode="decimal" aria-label="Amount to bond" />
+              <p id="bond-error" class="error hidden"></p>
+              <button type="submit" id="btn-bond" class="btn-primary" aria-label="Bond BOING">Bond</button>
+            </form>
+            <form id="form-unbond" class="form card">
+              <h2 class="label">Unbond</h2>
+              <input type="text" id="unbond-amount" placeholder="Amount to unbond (e.g. 0.5)" class="input" inputmode="decimal" aria-label="Amount to unbond" />
+              <p id="unbond-error" class="error hidden"></p>
+              <button type="submit" id="btn-unbond" class="btn-secondary" aria-label="Unbond BOING">Unbond</button>
+            </form>
+          </div>
+        </section>
+        <section id="panel-faucet" class="tab-panel" role="tabpanel" aria-labelledby="tab-faucet" hidden>
+          <section id="faucet-section" class="faucet-panel">
+            <div class="card card-faucet">
+              <p class="subtitle">Get testnet BOING for development and testing.</p>
+              <button type="button" id="btn-faucet" class="btn-primary btn-faucet" aria-label="Request testnet BOING from faucet">Request testnet BOING</button>
+              <button type="button" id="btn-faucet-page" class="btn-secondary" aria-label="Open faucet page in new tab">Open faucet page</button>
+              <p id="faucet-error" class="error hidden"></p>
+            </div>
+          </section>
+        </section>
+      </div>
     </div>
     <footer class="popup-footer" aria-label="Legal and support">
       <a href="https://boing.express/support" target="_blank" rel="noopener noreferrer" id="link-support">Support</a>
