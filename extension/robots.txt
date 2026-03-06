@@ -1,0 +1,6 @@
+# https://boing.express/robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap (absolute URL recommended)
+Sitemap: https://boing.express/sitemap.xml
