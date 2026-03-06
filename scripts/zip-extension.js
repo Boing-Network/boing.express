@@ -14,6 +14,7 @@ const extDir = path.join(root, 'extension');
 const outZip = path.join(root, 'boing-wallet-extension.zip');
 
 const isWin = process.platform === 'win32';
+execSync('pnpm build:extension', { cwd: root, stdio: 'inherit' });
 const bundledEntries = readdirSync(extDir).filter((name) => {
   if (name.endsWith('.map') || name.endsWith('.ts')) return false;
   const fullPath = path.join(extDir, name);

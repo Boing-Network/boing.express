@@ -8,7 +8,7 @@ This document combines **permissions & privacy** (for the store form), **loading
 
 You can run and test the extension **without submitting to the Chrome Web Store**:
 
-1. **Build** the extension (writes `popup.js` into the `extension/` folder):
+1. **Build** the extension (regenerates `manifest.json`, writes `popup.js`, and refreshes the `extension/` folder):
    ```bash
    pnpm run build:extension
    ```
@@ -37,7 +37,7 @@ Steps: Navigate to your project, **open** the `extension` folder (double-click) 
   pnpm run build:extension
   dir extension
   ```
-  (or `ls extension` on Mac/Linux). You should see `manifest.json`, `popup.html`, `popup.js`, `popup.css`. If those files are missing, run `git checkout -- extension/` then `pnpm run build:extension` again, and try Load unpacked on the `extension` folder.
+  (or `ls extension` on Mac/Linux). You should see `manifest.json`, `popup.html`, `popup.js`, `popup.css`. If those files are missing, run `pnpm run build:extension` again, and try Load unpacked on the `extension` folder.
 
 ### Cloud-synced folders (OneDrive, Desktop sync, etc.)
 
@@ -75,7 +75,7 @@ After every code change, run `pnpm run build:extension` then `pnpm run prepare:e
 | Permission | Justification |
 |------------|---------------|
 | **storage** | Save encrypted wallet data and selected network in `chrome.storage.local`. |
-| **Host permissions** | RPC (testnet-rpc.boing.network and the official public mainnet RPC when published) for balance/send; boing.network for faucet link only. |
+| **Host permissions** | Generated per build: testnet RPC and boing.network by default; mainnet RPC is added only when `VITE_BOING_MAINNET_RPC` is explicitly configured. |
 
 ### Data usage (store disclosure)
 

@@ -12,6 +12,7 @@ import {
   mkdirSync,
   existsSync,
   readdirSync,
+  rmSync,
   writeFileSync,
   copyFileSync,
   statSync,
@@ -28,6 +29,8 @@ const isWin = process.platform === 'win32';
 const outDir = isWin
   ? path.join(process.env.LOCALAPPDATA || 'C:\\Users\\Public', 'boing-extension')
   : path.join(process.env.HOME || '/tmp', 'boing-extension');
+
+execSync('pnpm build:extension', { cwd: root, stdio: 'inherit' });
 
 /** Copy directory contents recursively (file-by-file for reliable behavior on Windows). */
 function copyDirContentsSync(srcDir, destDir) {
@@ -51,7 +54,8 @@ function shouldCopyRootEntry(name) {
   return ['.html', '.js', '.css', '.json'].includes(path.extname(name));
 }
 
-// Ensure output dir exists
+// Start from a clean output dir so stale build artifacts do not linger.
+rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
 
 for (const name of readdirSync(extDir)) {

@@ -20,9 +20,10 @@ This note records the Boing Network synchronization pass performed in `boing.exp
 
 ## Still documented, not fully changed yet
 
-- The wallet still carries a provisional default mainnet RPC in source/config so existing chain-selection and provider behavior continue to work. This should be revisited once `boing.network` publishes the official public mainnet endpoint.
-- The wallet provider still supports both testnet and mainnet chain IDs (`0x1b01`, `0x1b02`). This review did not narrow provider chain support, only the user-facing copy and explorer/faucet behavior.
-- The extension build artifacts were not regenerated as part of this sync pass. Source files were updated; rebuild the extension bundle when you want the packaged `extension/*.js` outputs refreshed.
+- Mainnet now requires explicit build-time configuration in both the web app and extension. If `VITE_BOING_MAINNET_RPC` is unset, Boing Express exposes only testnet and the generated extension manifest omits mainnet host permissions.
+- The wallet provider still supports both Boing chain IDs (`0x1b01`, `0x1b02`), but `0x1b02` now returns an unsupported-chain error unless mainnet is enabled in the current build.
+- Extension packaging/load scripts rebuild the extension bundle before preparing or zipping it, reducing source/build drift risk for release and local load flows.
+- Added automated tests covering RPC error handling, adapter fallback behavior, and build-time network configuration.
 
 ## Files updated in this sync pass
 
@@ -40,6 +41,8 @@ This note records the Boing Network synchronization pass performed in `boing.exp
 - `docs/BOING_NETWORK_SYNC_HANDOFF.md`
 - `docs/EXTENSION_STORE.md`
 - `extension/config.ts`
+- `extension/manifest.base.json`
 - `extension/popup.ts`
 - `extension/popup.html`
+- `scripts/generate-extension-manifest.js`
 - `vite.extension.config.ts`

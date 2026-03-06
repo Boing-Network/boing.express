@@ -18,7 +18,7 @@ import {
 import { createNetworks, getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
 import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
-import { BOING_TESTNET_RPC, BOING_MAINNET_RPC } from './config';
+import { BOING_TESTNET_RPC, BOING_MAINNET_RPC, normalizeBoingNetworkId } from './config';
 
 const NETWORKS = createNetworks(BOING_TESTNET_RPC, BOING_MAINNET_RPC);
 const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
@@ -88,6 +88,14 @@ function getCurrentNetwork() {
   return getNetwork(selectedNetworkId, NETWORKS) ?? network;
 }
 
+function applyBalance(balance: { value: string; decimals: number; symbol: string }): void {
+  const displayStr = formatBalance(balance.value, balance.decimals);
+  lastDisplayBalance = displayStr;
+  lastBalanceRaw = balance.value;
+  ($('balance') as HTMLElement).textContent = displayStr;
+  ($('symbol') as HTMLElement).textContent = balance.symbol;
+}
+
 async function refreshDashboardBalance(): Promise<void> {
   if (!accountId) return;
   const net = getCurrentNetwork();
@@ -97,11 +105,7 @@ async function refreshDashboardBalance(): Promise<void> {
   if (retryBtn) retryBtn.classList.add('hidden');
   try {
     const balance = await net.getBalance(accountId);
-    const displayStr = formatBalance(balance.value, balance.decimals);
-    lastDisplayBalance = displayStr;
-    lastBalanceRaw = balance.value;
-    ($('balance') as HTMLElement).textContent = displayStr;
-    ($('symbol') as HTMLElement).textContent = balance.symbol;
+    applyBalance(balance);
     ($('balance-error') as HTMLElement).classList.add('hidden');
     if (retryBtn) retryBtn.classList.add('hidden');
   } catch (e) {
@@ -389,7 +393,7 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
 });
 
 $('network-select').addEventListener('change', (e) => {
-  selectedNetworkId = (e.target as HTMLSelectElement).value;
+  selectedNetworkId = normalizeBoingNetworkId((e.target as HTMLSelectElement).value);
   chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: selectedNetworkId });
   refreshDashboardBalance();
   refreshStake();
@@ -459,7 +463,7 @@ $('form-send').addEventListener('submit', async (e) => {
       ($('send-amount') as HTMLInputElement).value = '';
       ($('send-to') as HTMLInputElement).value = '';
       const balance = await net.getBalance(accountId);
-      ($('balance') as HTMLElement).textContent = formatBalance(balance.value, balance.decimals);
+      applyBalance(balance);
       ($('send-amount') as HTMLInputElement).focus();
     } else {
       showError('send-error', result.error ?? 'Submit failed');
@@ -487,7 +491,7 @@ $('btn-faucet').addEventListener('click', async () => {
     const result = await net.faucetRequest(accountId);
     if (result.success) {
       const balance = await net.getBalance(accountId);
-      ($('balance') as HTMLElement).textContent = formatBalance(balance.value, balance.decimals);
+      applyBalance(balance);
     } else {
       ($('faucet-error') as HTMLElement).textContent = result.error ?? 'Faucet failed';
       ($('faucet-error') as HTMLElement).classList.remove('hidden');
@@ -597,7 +601,9 @@ $('form-unbond').addEventListener('submit', async (e) => {
 // Init: show loading, restore saved network, load wallet from chrome.storage.local, then show choose/unlock
 showLoading();
 chrome.storage.local.get([STORAGE_KEY_NETWORK], (result) => {
-  const saved = result[STORAGE_KEY_NETWORK];
+  const saved = normalizeBoingNetworkId(
+    typeof result[STORAGE_KEY_NETWORK] === 'string' ? result[STORAGE_KEY_NETWORK] : DEFAULT_NETWORK_ID
+  );
   if (saved && NETWORKS.some((n) => n.config.id === saved)) selectedNetworkId = saved;
   initExtensionWalletStorage().then(() => renderChoose());
 });

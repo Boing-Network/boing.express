@@ -47,13 +47,13 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNI
 
 | Item | Status | Notes |
 |------|--------|--------|
-| **Manifest V3** | ✅ | `manifest.json`: `"manifest_version": 3`. |
+| **Manifest V3** | ✅ | Generated `manifest.json` (from `manifest.base.json`) uses `"manifest_version": 3`. |
 | **Required fields** | ✅ | name, version, description; clear and accurate. |
 | **Icons** | ✅ | 16, 48, 128 from package (`extension/icons/`), generated from favicon SVG. |
 | **Service worker** | ✅ | background.js — wallet connection (window.boing), connected sites, provider handlers. |
 | **No remote code** | ✅ | No eval(); only packaged code; remote data (RPC, config) allowed. |
 | **Storage** | ✅ | `chrome.storage.local` for wallet blob and selected network. |
-| **Minimal permissions** | ✅ | `storage` only. Host permissions only for RPC and boing.network. |
+| **Minimal permissions** | ✅ | `storage` only. Generated host permissions include testnet RPC, boing.network, and mainnet only when a mainnet RPC is configured at build time. |
 | **CSP** | ✅ | No relaxation of CSP for unsafe-inline or remote script. |
 
 ### Part 3: Chrome Web Store listing
@@ -106,14 +106,14 @@ Add these under **Variables** if you want to override RPC endpoints in the GitHu
 | Variable | Value | Description |
 |----------|--------|-------------|
 | `VITE_BOING_TESTNET_RPC` | `https://testnet-rpc.boing.network` | Boing testnet JSON-RPC URL. Confirm the official URL from the Boing testnet docs or status pages. |
-| `VITE_BOING_MAINNET_RPC` | Set when published | Boing mainnet JSON-RPC URL. Treat this as configurable until the official public mainnet endpoint is published in `boing.network`. |
+| `VITE_BOING_MAINNET_RPC` | Optional | Boing mainnet JSON-RPC URL. Mainnet is disabled unless this is explicitly set at build time. |
 
-If these variables are **not** set, the app uses the same defaults at build time. Setting them in GitHub is useful if Boing provides different public RPC URLs later.
+If these variables are **not** set, the app defaults to the official testnet RPC and keeps mainnet disabled. Setting them in GitHub is useful if Boing provides different public RPC URLs later.
 
 ### Summary — copy-paste for GitHub Variables
 
 - **Name:** `VITE_BOING_TESTNET_RPC` → **Value:** `https://testnet-rpc.boing.network`
-- **Name:** `VITE_BOING_MAINNET_RPC` → **Value:** official public mainnet RPC when published
+- **Name:** `VITE_BOING_MAINNET_RPC` → **Value:** official public mainnet RPC when published (leave unset until then)
 
 ---
 

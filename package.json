@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:extension": "node scripts/generate-extension-icons.js && vite build --config vite.extension.config.ts && vite build --config vite.extension.inpage.config.ts",
+    "build:extension": "node scripts/clean-extension-build.js && node scripts/generate-extension-manifest.js && node scripts/generate-extension-icons.js && vite build --config vite.extension.config.ts && vite build --config vite.extension.inpage.config.ts",
     "zip:extension": "node scripts/zip-extension.js",
     "prepare:extension": "node scripts/prepare-extension-for-load.js",
     "build:extension:load": "pnpm run build:extension && pnpm run prepare:extension",
+    "test": "vitest run",
     "preview": "vite preview",
     "pages:deploy": "pnpm build && wrangler pages deploy dist --project-name=boing-wallet",
     "pages:dev": "vite"
@@ -28,6 +29,7 @@
     "sharp": "^0.34.5",
     "typescript": "~5.6.2",
     "vite": "^5.4.10",
+    "vitest": "^4.0.18",
     "wrangler": "^3.91.0"
   }
 }

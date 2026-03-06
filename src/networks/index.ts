@@ -4,40 +4,46 @@
 
 import type { NetworkAdapter } from './types';
 import { createBoingAdapter } from './boingAdapter';
+import { DEFAULT_TESTNET_RPC, resolveMainnetRpcUrl, resolveTestnetRpcUrl } from './rpcConfig';
 
-const defaultTestnetRpc = 'https://testnet-rpc.boing.network';
-// Provisional default until the official public mainnet RPC is published.
-const defaultMainnetRpc = 'https://rpc.boing.network';
+const defaultTestnetRpc = DEFAULT_TESTNET_RPC;
+const defaultMainnetRpc = '';
 
 /** Build network list from RPC URLs (for app: use env; for extension: pass URLs). */
 export function createNetworks(
   testnetRpc: string = defaultTestnetRpc,
   mainnetRpc: string = defaultMainnetRpc
 ): NetworkAdapter[] {
-  return [
+  const networks: NetworkAdapter[] = [
     createBoingAdapter({
       id: 'boing-testnet',
       name: 'Boing Testnet',
-      rpcUrl: testnetRpc,
+      rpcUrl: resolveTestnetRpcUrl(testnetRpc),
       isTestnet: true,
       faucetUrl: 'https://boing.network/network/faucet',
       explorerUrl: 'https://boing.observer',
     }),
-    createBoingAdapter({
+  ];
+
+  const configuredMainnetRpc = resolveMainnetRpcUrl(mainnetRpc);
+  if (configuredMainnetRpc) {
+    networks.push(createBoingAdapter({
       id: 'boing-mainnet',
-      name: 'Boing Mainnet (configurable)',
-      rpcUrl: mainnetRpc,
+      name: 'Boing Mainnet',
+      rpcUrl: configuredMainnetRpc,
       isTestnet: false,
       explorerUrl: 'https://boing.observer',
-    }),
-  ];
+    }));
+  }
+
+  return networks;
 }
 
 const testnetRpc = typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOING_TESTNET_RPC
-  ? import.meta.env.VITE_BOING_TESTNET_RPC
+  ? resolveTestnetRpcUrl(import.meta.env.VITE_BOING_TESTNET_RPC)
   : defaultTestnetRpc;
 const mainnetRpc = typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOING_MAINNET_RPC
-  ? import.meta.env.VITE_BOING_MAINNET_RPC
+  ? resolveMainnetRpcUrl(import.meta.env.VITE_BOING_MAINNET_RPC)
   : defaultMainnetRpc;
 
 export const NETWORKS: NetworkAdapter[] = createNetworks(testnetRpc, mainnetRpc);

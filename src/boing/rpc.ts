@@ -6,6 +6,16 @@
 
 const JSON_RPC_VERSION = '2.0';
 
+export class RpcClientError extends Error {
+  code?: number;
+
+  constructor(message: string, code?: number) {
+    super(message);
+    this.name = 'RpcClientError';
+    this.code = code;
+  }
+}
+
 export interface JsonRpcRequest {
   jsonrpc: string;
   id: number | string;
@@ -35,6 +45,12 @@ export function rpcErrorToMessage(code: number, message: string): string {
   const mapped = RPC_ERROR_CODES[code];
   if (mapped) return mapped;
   return message || `RPC error ${code}`;
+}
+
+export function isMethodNotFoundError(error: unknown): boolean {
+  return error instanceof RpcClientError
+    ? error.code === -32601
+    : error instanceof Error && error.message.includes('Method not found');
 }
 
 let rpcId = 0;
@@ -70,24 +86,24 @@ export async function rpcCall<T>(
   } catch (e) {
     clearTimeout(timeoutId);
     if (e instanceof Error && e.name === 'AbortError') {
-      throw new Error('Request timed out. The network may be slow — try again.');
+      throw new RpcClientError('Request timed out. The network may be slow — try again.');
     }
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
-      throw new Error('Network unavailable or RPC not responding. Check your connection and try again.');
+      throw new RpcClientError('Network unavailable or RPC not responding. Check your connection and try again.');
     }
     throw e;
   }
   clearTimeout(timeoutId);
   if (!res.ok) {
-    if (res.status === 404) throw new Error('RPC endpoint not available. The network may not be running.');
-    throw new Error(`RPC HTTP ${res.status}: ${res.statusText}`);
+    if (res.status === 404) throw new RpcClientError('RPC endpoint not available. The network may not be running.');
+    throw new RpcClientError(`RPC HTTP ${res.status}: ${res.statusText}`);
   }
   const data = (await res.json()) as JsonRpcResponse<T>;
   if (data.error) {
-    throw new Error(rpcErrorToMessage(data.error.code, data.error.message || ''));
+    throw new RpcClientError(rpcErrorToMessage(data.error.code, data.error.message || ''), data.error.code);
   }
-  if (data.result === undefined) throw new Error('RPC response missing result');
+  if (data.result === undefined) throw new RpcClientError('RPC response missing result');
   return data.result as T;
 }
 
@@ -147,14 +163,13 @@ export function getAccount(rpcUrl: string, hexAccountId: string): Promise<BoingA
  * Returns balance as decimal string (u128).
  */
 export function getBalance(rpcUrl: string, hexAccountId: string): Promise<string> {
-  return rpcCall<string>(rpcUrl, 'boing_getBalance', [hexAccountId]).catch(() => '0');
+  return rpcCall<string>(rpcUrl, 'boing_getBalance', [hexAccountId]);
 }
 
 /** boing_getNonce([hex_account_id]) — fallback when getAccount is not available. */
 export function getNonce(rpcUrl: string, hexAccountId: string): Promise<bigint> {
   return rpcCall<string | number>(rpcUrl, 'boing_getNonce', [hexAccountId])
-    .then((n) => (typeof n === 'string' ? BigInt(n) : BigInt(n)))
-    .catch(() => BigInt(0));
+    .then((n) => (typeof n === 'string' ? BigInt(n) : BigInt(n)));
 }
 
 /**

@@ -33,7 +33,8 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
           symbol: BOING_SYMBOL,
           decimals: BOING_DECIMALS,
         };
-      } catch {
+      } catch (error) {
+        if (!rpc.isMethodNotFoundError(error)) throw error;
         const raw = await rpc.getBalance(rpcUrl, hex);
         return {
           value: raw,
@@ -48,7 +49,8 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       try {
         const account = await rpc.getAccount(rpcUrl, hex);
         return BigInt(account.nonce);
-      } catch {
+      } catch (error) {
+        if (!rpc.isMethodNotFoundError(error)) throw error;
         return rpc.getNonce(rpcUrl, hex);
       }
     },
@@ -107,7 +109,8 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       try {
         const account = await rpc.getAccount(rpcUrl, hex);
         return account.stake ?? '0';
-      } catch {
+      } catch (error) {
+        if (!rpc.isMethodNotFoundError(error)) throw error;
         return '0';
       }
     },

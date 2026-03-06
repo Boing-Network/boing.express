@@ -1,18 +1,26 @@
 /**
  * Boing Express background service worker.
- * - Holds in-memory unlocked key when user unlocks in popup (cleared on lock).
+ * - Keeps the unlocked key in extension session storage so MV3 worker restarts do not break signing.
  * - Tracks connected origins (sites allowed to see accounts / request signing).
  * - Enforces per-signature approval.
  * - Broadcasts provider events to connected pages.
  */
 
 import { signMessage } from '../src/crypto/keys';
-import { BOING_MAINNET_CHAIN_ID, BOING_TESTNET_CHAIN_ID } from './config';
+import {
+  BOING_MAINNET_CHAIN_ID,
+  BOING_MAINNET_NETWORK_ID,
+  BOING_TESTNET_CHAIN_ID,
+  BOING_TESTNET_NETWORK_ID,
+  isBoingMainnetConfigured,
+  normalizeBoingNetworkId,
+} from './config';
 
 const STORAGE_KEY_WALLET = 'boing_wallet_enc';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
 const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
-const DEFAULT_NETWORK_ID = 'boing-testnet';
+const STORAGE_KEY_UNLOCKED_SESSION = 'boing_unlocked_session';
+const DEFAULT_NETWORK_ID = BOING_TESTNET_NETWORK_ID;
 const APPROVAL_WINDOW_WIDTH = 420;
 const APPROVAL_WINDOW_HEIGHT = 640;
 const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000;
@@ -88,6 +96,54 @@ function providerError(code: number, boingCode: string, message: string): BoingP
   return new BoingProviderError(code, boingCode, message);
 }
 
+function persistUnlockedSession(state: UnlockedState | null): Promise<void> {
+  return new Promise((resolve) => {
+    if (!chrome.storage.session) {
+      resolve();
+      return;
+    }
+    if (!state) {
+      chrome.storage.session.remove([STORAGE_KEY_UNLOCKED_SESSION], () => resolve());
+      return;
+    }
+    chrome.storage.session.set(
+      {
+        [STORAGE_KEY_UNLOCKED_SESSION]: {
+          accountHex: state.accountHex,
+          privateKey: Array.from(state.privateKey),
+        },
+      },
+      () => resolve()
+    );
+  });
+}
+
+async function getUnlockedState(): Promise<UnlockedState | null> {
+  if (unlocked) return unlocked;
+  if (!chrome.storage.session) return null;
+
+  return new Promise((resolve) => {
+    chrome.storage.session.get([STORAGE_KEY_UNLOCKED_SESSION], (result) => {
+      const raw = result[STORAGE_KEY_UNLOCKED_SESSION];
+      if (
+        raw &&
+        typeof raw === 'object' &&
+        typeof raw.accountHex === 'string' &&
+        Array.isArray(raw.privateKey) &&
+        raw.privateKey.length === 32
+      ) {
+        unlocked = {
+          accountHex: raw.accountHex.replace(/^0x/i, '').toLowerCase(),
+          privateKey: new Uint8Array(raw.privateKey),
+        };
+        resolve(unlocked);
+        return;
+      }
+      resolve(null);
+    });
+  });
+}
+
 function serializeProviderError(error: unknown): { code: number; message: string; data: { boingCode: string } } {
   if (error instanceof BoingProviderError) {
     return { code: error.code, message: error.message, data: error.data };
@@ -159,13 +215,13 @@ function getSelectedNetworkId(): Promise<string> {
   return new Promise((resolve) => {
     chrome.storage.local.get([STORAGE_KEY_NETWORK], (result) => {
       const value = result[STORAGE_KEY_NETWORK];
-      resolve(value === 'boing-mainnet' || value === 'boing-testnet' ? value : DEFAULT_NETWORK_ID);
+      resolve(normalizeBoingNetworkId(typeof value === 'string' ? value : DEFAULT_NETWORK_ID));
     });
   });
 }
 
 function chainIdForNetwork(networkId: string): string {
-  return networkId === 'boing-mainnet' ? BOING_MAINNET_CHAIN_ID : BOING_TESTNET_CHAIN_ID;
+  return networkId === BOING_MAINNET_NETWORK_ID ? BOING_MAINNET_CHAIN_ID : BOING_TESTNET_CHAIN_ID;
 }
 
 function hexToBytes(hex: string): Uint8Array {
@@ -319,7 +375,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 
   if (changes[STORAGE_KEY_NETWORK]) {
     const newValue = changes[STORAGE_KEY_NETWORK].newValue;
-    const networkId = typeof newValue === 'string' ? newValue : DEFAULT_NETWORK_ID;
+    const networkId = normalizeBoingNetworkId(typeof newValue === 'string' ? newValue : DEFAULT_NETWORK_ID);
     broadcastProviderEvent({
       type: 'BOING_PROVIDER_EVENT',
       event: 'chainChanged',
@@ -369,7 +425,7 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
         accountHex: accountHex.replace(/^0x/i, '').toLowerCase(),
         privateKey: new Uint8Array(privateKey),
       };
-      getConnectedSites().then((origins) => {
+      persistUnlockedSession(unlocked).then(() => getConnectedSites()).then((origins) => {
         if (origins.length > 0) {
           broadcastProviderEvent({
             type: 'BOING_PROVIDER_EVENT',
@@ -385,7 +441,7 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
 
   if (msg.type === 'WALLET_LOCK') {
     unlocked = null;
-    getConnectedSites().then((origins) => {
+    persistUnlockedSession(null).then(() => getConnectedSites()).then((origins) => {
       if (origins.length > 0) {
         broadcastProviderEvent({
           type: 'BOING_PROVIDER_EVENT',
@@ -494,7 +550,8 @@ async function handleProviderRequest(method: string, params: unknown[], origin: 
           'No wallet found. Create or import a wallet in Boing Express.'
         );
       }
-      if (!unlocked) {
+      const unlockedState = await getUnlockedState();
+      if (!unlockedState) {
         throw providerError(
           PROVIDER_ERROR_CODES.UNAUTHORIZED,
           'BOING_WALLET_LOCKED',
@@ -522,7 +579,7 @@ async function handleProviderRequest(method: string, params: unknown[], origin: 
       });
 
       const messageBytes = messageToBytes(messageParam);
-      return signMessage(messageBytes, unlocked.privateKey);
+      return signMessage(messageBytes, unlockedState.privateKey);
     }
 
     case BOING_METHODS.CHAIN_ID: {
@@ -549,14 +606,21 @@ async function handleProviderRequest(method: string, params: unknown[], origin: 
 
       const normalized = chainId.replace(/^0x/i, '').toLowerCase();
       if (normalized === BOING_MAINNET_CHAIN_ID.replace(/^0x/i, '')) {
+        if (!isBoingMainnetConfigured()) {
+          throw providerError(
+            PROVIDER_ERROR_CODES.UNSUPPORTED_CHAIN,
+            'BOING_UNSUPPORTED_CHAIN',
+            'Mainnet is not enabled in this Boing Express build.'
+          );
+        }
         await new Promise<void>((resolve) => {
-          chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: 'boing-mainnet' }, resolve);
+          chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: BOING_MAINNET_NETWORK_ID }, resolve);
         });
         return null;
       }
       if (normalized === BOING_TESTNET_CHAIN_ID.replace(/^0x/i, '')) {
         await new Promise<void>((resolve) => {
-          chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: 'boing-testnet' }, resolve);
+          chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: BOING_TESTNET_NETWORK_ID }, resolve);
         });
         return null;
       }

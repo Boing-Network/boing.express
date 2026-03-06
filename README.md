@@ -36,7 +36,7 @@ Output is in `dist/`.
 | Variable | Description |
 |----------|-------------|
 | `VITE_BOING_TESTNET_RPC` | Boing testnet JSON-RPC URL (default: `https://testnet-rpc.boing.network`) |
-| `VITE_BOING_MAINNET_RPC` | Boing mainnet JSON-RPC URL. Treat as configurable until the official public mainnet endpoint is published in `boing.network`. |
+| `VITE_BOING_MAINNET_RPC` | Optional Boing mainnet JSON-RPC URL. Mainnet stays disabled in the web app and extension unless this is explicitly set at build time. |
 
 Set these in Cloudflare Pages **Build** → **Environment variables** (or in `.env` for local dev). They are baked in at build time via Vite.
 
@@ -45,7 +45,7 @@ Set these in Cloudflare Pages **Build** → **Environment variables** (or in `.e
 - [ ] **Create a Cloudflare Pages project** linked to this repo (GitHub/GitLab).
 - [ ] **Build**: Build command: `pnpm build` (or `npm run build`). Build output directory: `dist`. Install command: `pnpm install` (or `npm install`).
 - [ ] **Custom domain**: In **Pages** → **Your project** → **Custom domains**, add **boing.express**. Point your domain’s DNS to Cloudflare (nameservers or CNAME to the Pages URL).
-- [ ] **Env vars**: In Pages → **Settings** → **Environment variables**, add `VITE_BOING_TESTNET_RPC` and `VITE_BOING_MAINNET_RPC` for Production (and Preview if you want).
+- [ ] **Env vars**: In Pages → **Settings** → **Environment variables**, add `VITE_BOING_TESTNET_RPC` and optionally `VITE_BOING_MAINNET_RPC` for Production (and Preview if you want). Leave mainnet unset until the official public endpoint is published.
 - [ ] **(Optional) Workers**: To run API routes (e.g. RPC proxy, rate limiting) under `boing.express/api/*`, create a Worker and bind it to that route in the dashboard. The wallet app itself does not require a Worker.
 
 ### GitHub Actions (auto-deploy)
@@ -64,7 +64,7 @@ Optional: set repo **variables** so the GitHub build uses the correct RPC endpoi
 | Variable | Value |
 |----------|--------|
 | `VITE_BOING_TESTNET_RPC` | `https://testnet-rpc.boing.network` |
-| `VITE_BOING_MAINNET_RPC` | Set this to the official public mainnet RPC when Boing mainnet metadata is published |
+| `VITE_BOING_MAINNET_RPC` | Set this to the official public mainnet RPC when Boing mainnet metadata is published; otherwise mainnet remains disabled |
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#2-github-repository-variables-and-secrets) for details.
 
@@ -95,7 +95,8 @@ src/               # Shared wallet core (used by web app and extension)
   context/         # React wallet context (web only)
   screens/         # Welcome & Dashboard (web only)
 extension/         # Browser extension (Chrome + Firefox)
-  manifest.json    # Manifest V3; browser_specific_settings for Firefox
+  manifest.base.json  # Source manifest used to generate manifest.json per build
+  manifest.json       # Generated Manifest V3; browser_specific_settings for Firefox
   popup.html, popup.css, popup.ts → popup.js
   background.ts    # Service worker: wallet connection (window.boing), connected sites
   content.ts       # Content script: injects inpage.js, bridges to background
@@ -121,6 +122,8 @@ docs/              # DEVELOPMENT.md, DESIGN_SYSTEM.md, EXTENSION_STORE.md, WALLE
 ```bash
 pnpm run build:extension
 ```
+
+This regenerates `extension/manifest.json`, refreshes icons, and rebuilds the packaged extension scripts. If `VITE_BOING_MAINNET_RPC` is not set, the generated extension build exposes only testnet.
 
 Then in **Chrome**: open `chrome://extensions`, enable “Developer mode”, “Load unpacked”, and select the `extension` folder.  
 In **Firefox**: open `about:debugging` → “This Firefox” → “Load Temporary Add-on” and select `extension/manifest.json`.

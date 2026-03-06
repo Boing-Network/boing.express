@@ -25,39 +25,23 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ],
-      "js": [
-        "content.js"
-      ],
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
       "run_at": "document_start",
       "all_frames": false
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": [
-        "inpage.js"
-      ],
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ]
+      "resources": ["inpage.js"],
+      "matches": ["http://*/*", "https://*/*"]
     }
   ],
-  "permissions": [
-    "storage"
-  ],
+  "permissions": ["storage"],
   "browser_specific_settings": {
     "gecko": {
       "id": "wallet@boing.express",
       "strict_min_version": "109.0"
     }
-  },
-  "host_permissions": [
-    "https://testnet-rpc.boing.network/*",
-    "https://boing.network/*"
-  ]
+  }
 }
