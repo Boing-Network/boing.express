@@ -64,11 +64,11 @@ After every code change, run `pnpm run build:extension` then `pnpm run prepare:e
 
 ### Single purpose
 
-> Boing Express is the wallet for Boing Network: create or import a wallet, view address and balance, send BOING, and use the testnet faucet. Non-custodial; keys stay on device.
+> Boing Express is the wallet for Boing Network: create or import a wallet, view address and balance, send and stake BOING, use the testnet faucet, and connect dApps via window.boing. Non-custodial; keys stay on device.
 
 **Short variant (if character limit):**
 
-> Crypto wallet for Boing Network — create/import wallet, send BOING, testnet faucet. Keys stay on device.
+> Crypto wallet for Boing Network — create/import wallet, send BOING, stake, testnet faucet. Connect dApps. Keys stay on device.
 
 ### Permission justification
 
@@ -111,8 +111,10 @@ What you can do:
 • View your address (64-char hex, Ed25519) and copy it for receiving BOING
 • See your balance for the selected network (Testnet or Mainnet)
 • Send BOING to any valid address; enter amounts in BOING (e.g. 1 or 0.5)
+• Stake (Bond/Unbond) on the network; manage your stake from the extension
 • On Testnet: request testnet BOING from the built-in faucet or open the Boing Network faucet page with your address pre-filled
 • Switch between Boing Testnet and Mainnet; your selection is saved
+• Connect dApps: the extension injects window.boing so sites can offer "Connect wallet"; manage connected sites in the popup
 
 Security & privacy:
 • Private keys are generated and stored only on your device, encrypted with your password (AES-GCM). They are never sent to any server.

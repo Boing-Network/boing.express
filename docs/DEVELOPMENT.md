@@ -50,10 +50,10 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNI
 | **Manifest V3** | ✅ | `manifest.json`: `"manifest_version": 3`. |
 | **Required fields** | ✅ | name, version, description; clear and accurate. |
 | **Icons** | ✅ | 16, 48, 128 from package (`extension/icons/`), generated from favicon SVG. |
-| **Service worker** | N/A | Extension is popup-only; no background script. |
+| **Service worker** | ✅ | background.js — wallet connection (window.boing), connected sites, provider handlers. |
 | **No remote code** | ✅ | No eval(); only packaged code; remote data (RPC, config) allowed. |
 | **Storage** | ✅ | `chrome.storage.local` for wallet blob and selected network. |
-| **Minimal permissions** | ✅ | `storage`, `tabs`. Host permissions only for RPC and boing.network. |
+| **Minimal permissions** | ✅ | `storage` only. Host permissions only for RPC and boing.network. |
 | **CSP** | ✅ | No relaxation of CSP for unsafe-inline or remote script. |
 
 ### Part 3: Chrome Web Store listing

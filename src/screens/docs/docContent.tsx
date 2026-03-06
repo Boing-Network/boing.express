@@ -79,12 +79,16 @@ export const DOCS: Record<string, Doc> = {
     content: (
       <>
         <p>
-          Boing Wallet is also available as a browser extension for Chrome and Firefox, with the same flows: create/import wallet, view address and balance, send BOING, use the faucet, and switch networks.
+          Boing Wallet is also available as a browser extension for Chrome and Firefox, with the same flows: create/import wallet, view address and balance, send BOING, use the faucet, switch networks, and stake (Bond/Unbond). The extension also provides <code>window.boing</code> for dApp &quot;Connect wallet&quot; and a Connected sites list in the popup.
         </p>
         <h2>Building the extension</h2>
         <p>From the project root:</p>
         <pre><code>pnpm run build:extension</code></pre>
-        <p>Output is in <code>dist-extension/</code>. Load that folder as an unpacked extension in Chrome (chrome://extensions) or Firefox (about:debugging → This Firefox → Load Temporary Add-on).</p>
+        <p>Output is written to the <code>extension/</code> folder (popup.js, background.js, content.js, inpage.js). Load that folder as an unpacked extension in Chrome (chrome://extensions) or Firefox (about:debugging → This Firefox → Load Temporary Add-on).</p>
+        <h2>Wallet connection for dApps</h2>
+        <p>
+          The extension injects <code>window.boing</code> so sites can offer &quot;Connect wallet&quot;. dApps call <code>boing_requestAccounts</code> to connect and <code>boing_signMessage</code> for sign-in. In the popup, the <strong>Connected sites</strong> list lets you revoke access per origin. See <a href="https://github.com/chiku524/boing.express/blob/main/docs/WALLET_CONNECTION_AND_API.md" target="_blank" rel="noopener noreferrer">docs/WALLET_CONNECTION_AND_API.md</a> for the full API and implementation notes.
+        </p>
         <h2>Extension vs web</h2>
         <p>
           The extension uses the same core logic as the website but runs in an isolated context. Wallets created on the web are not automatically available in the extension (and vice versa); you can import the same private key into both if you want the same address in each.
