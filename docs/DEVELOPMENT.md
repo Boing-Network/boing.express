@@ -64,13 +64,13 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNI
 | **Detailed description** | Dashboard |  |
 | **Screenshots** | Dashboard | At least one; multiple flows recommended. |
 | **Category** | Dashboard | e.g. Productivity or Finance; match single purpose. |
-| **Single purpose** | Dashboard | See [extension/EXTENSION_STORE.md](../extension/EXTENSION_STORE.md). |
+| **Single purpose** | Dashboard | See [EXTENSION_STORE.md](EXTENSION_STORE.md). |
 | **Privacy policy** | ✅ | https://boing.express/privacy. |
-| **Data usage** | Dashboard | Paste from [extension/EXTENSION_STORE.md](../extension/EXTENSION_STORE.md); matches policy. |
+| **Data usage** | Dashboard | Paste from [EXTENSION_STORE.md](EXTENSION_STORE.md); matches policy. |
 | **Support** | ✅ | https://boing.express/support — docs, FAQ, testnet, contact. |
 | **Test instructions** | Dashboard | If requested: e.g. select Testnet, use faucet, send a tx. No real mainnet keys. |
 
-For ready-to-paste store copy and screenshot instructions, see [extension/EXTENSION_STORE.md](../extension/EXTENSION_STORE.md).
+For ready-to-paste store copy and screenshot instructions, see [EXTENSION_STORE.md](EXTENSION_STORE.md).
 
 ### RPC methods used
 
@@ -173,10 +173,50 @@ Tracks readiness for Boing Network incentivized testnet and mainnet.
 
 - [ ] Public testnet RPC responding
 - [ ] Faucet enabled
-- [ ] Extension built, Chrome Web Store listing complete (see [extension/EXTENSION_STORE.md](../extension/EXTENSION_STORE.md))
+- [ ] Extension built, Chrome Web Store listing complete (see [EXTENSION_STORE.md](EXTENSION_STORE.md))
 - [x] Staking UI, backup reminder, onboarding checklist
 
 ### Mainnet
 
 - [ ] Mainnet RPC at `https://rpc.boing.network`
 - [ ] Security review; clear mainnet send warning
+
+---
+
+## 5. Alignment with Boing Network specs
+
+This section summarizes how boing.express aligns with the six reference documents in the boing-network repository.
+
+### Reference documents
+
+| Document | Purpose |
+|----------|---------|
+| [SIX-PILLARS-READINESS.md](https://github.com/chiku524/boing-network/blob/main/docs/SIX-PILLARS-READINESS.md) | Six pillars assessment |
+| [TECHNICAL-SPECIFICATION.md](https://github.com/chiku524/boing-network/blob/main/docs/TECHNICAL-SPECIFICATION.md) | Cryptography, data formats, VM, RPC |
+| [CANONICAL-MALICE-DEFINITION.md](https://github.com/chiku524/boing-network/blob/main/docs/CANONICAL-MALICE-DEFINITION.md) | Malice categories for QA pool |
+| [QA-PASS-GUIDE.md](https://github.com/chiku524/boing-network/blob/main/docs/QA-PASS-GUIDE.md) | Deployer checklist, purpose categories |
+| [RUNBOOK.md](https://github.com/chiku524/boing-network/blob/main/docs/RUNBOOK.md) | Node ops, RPC, incident response |
+| [SECURITY-STANDARDS.md](https://github.com/chiku524/boing-network/blob/main/docs/SECURITY-STANDARDS.md) | Security requirements, contacts |
+
+### Alignment summary
+
+**Pillar 1: Security (SIX-PILLARS, SECURITY-STANDARDS)** — Ed25519 signatures ✓ (`@noble/ed25519`); BLAKE3 hashing ✓ (`@noble/hashes/blake3`); keys never sent to server ✓; password-derived encryption ✓ (PBKDF2 + AES-GCM).
+
+**Pillars 2–4: Scalability, Decentralization, Authenticity** — Apply primarily to the network and node layer. The wallet uses the RPC interface and does not implement consensus, P2P, or VM execution.
+
+**Pillar 5: Transparency** — Open docs ✓ (/docs, /privacy, /support); QA rejection details ✓ (rule_id, message in RPC errors); canonical malice reference ✓; QA-PASS-GUIDE reference ✓.
+
+**Pillar 6: True Quality Assurance** — Max bytecode 32 KiB ✓; Boing VM opcodes ✓; PUSH encoding ✓; Rule IDs ✓; boing_qaCheck RPC ✓; purpose categories ✓; error codes -32050, -32051 ✓.
+
+**Data structures** — AccountId 32 bytes/64 hex ✓; Transaction, Payload, Signable message, SignedTransaction per TECHNICAL-SPECIFICATION ✓ (signing.ts, bincode.ts).
+
+**RPC methods** — boing_submitTransaction, boing_chainHeight, boing_getBalance, boing_getAccount, boing_getNonce, boing_simulateTransaction, boing_faucetRequest, boing_qaCheck ✓.
+
+**Incident response** — Wallet directs users to RUNBOOK and SECURITY-STANDARDS for incident response and security contacts.
+
+### Gaps (out of scope or deferred)
+
+- ContractDeploy / ContractDeployWithPurpose bincode: placeholder payloads; full deploy tx building pending boing-primitives layout confirmation.
+- ContractCall: placeholder; not implemented.
+- boing_qaMetrics: optional RPC; not used by wallet.
+- Blocklist check: enforced server-side via boing_qaCheck; client cannot check.
