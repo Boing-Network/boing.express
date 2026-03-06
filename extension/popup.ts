@@ -17,7 +17,7 @@ import {
 } from '../src/storage/walletStore.extension';
 import { createNetworks, getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
-import { parseDecimalAmount } from '../src/boing/amount';
+import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
 import { BOING_TESTNET_RPC, BOING_MAINNET_RPC } from './config';
 
 const NETWORKS = createNetworks(BOING_TESTNET_RPC, BOING_MAINNET_RPC);
@@ -97,9 +97,7 @@ async function refreshDashboardBalance(): Promise<void> {
   if (retryBtn) retryBtn.classList.add('hidden');
   try {
     const balance = await net.getBalance(accountId);
-    const displayStr = (
-      Number(balance.value) / 10 ** balance.decimals
-    ).toLocaleString(undefined, { maximumFractionDigits: 6 });
+    const displayStr = formatBalance(balance.value, balance.decimals);
     lastDisplayBalance = displayStr;
     lastBalanceRaw = balance.value;
     ($('balance') as HTMLElement).textContent = displayStr;
@@ -218,7 +216,7 @@ async function refreshStake(): Promise<void> {
   try {
     const s = await net.getStake(accountId);
     lastStakeRaw = s;
-    const displayStr = (Number(s) / 10 ** BOING_DECIMALS).toLocaleString(undefined, { maximumFractionDigits: 6 });
+    const displayStr = formatBalance(s, BOING_DECIMALS);
     ($('stake') as HTMLElement).textContent = displayStr;
   } catch {
     ($('stake') as HTMLElement).textContent = '—';
@@ -427,8 +425,6 @@ $('form-send').addEventListener('submit', async (e) => {
   const amountStr = ($('send-amount') as HTMLInputElement).value;
   hideError('send-error');
   ($('send-success') as HTMLElement).classList.add('hidden');
-  const explorerLink = document.getElementById('send-explorer-link') as HTMLAnchorElement;
-  if (explorerLink) explorerLink.classList.add('hidden');
   if (toHex.length !== 64 || !/^[0-9a-fA-F]+$/.test(toHex)) {
     showError('send-error', 'Invalid address: 64 hex chars required');
     return;
@@ -460,17 +456,10 @@ $('form-send').addEventListener('submit', async (e) => {
     const result = await net.submitTransaction(signedHex);
     if (result.success) {
       showSuccess('send-success', result.txHash ? `Sent! ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
-      const baseUrl = net.config.explorerUrl;
-      if (result.txHash && baseUrl && explorerLink) {
-        explorerLink.href = `${baseUrl.replace(/\/$/, '')}/tx/${result.txHash}`;
-        explorerLink.classList.remove('hidden');
-      }
       ($('send-amount') as HTMLInputElement).value = '';
       ($('send-to') as HTMLInputElement).value = '';
       const balance = await net.getBalance(accountId);
-      ($('balance') as HTMLElement).textContent = (
-        Number(balance.value) / 10 ** balance.decimals
-      ).toLocaleString(undefined, { maximumFractionDigits: 6 });
+      ($('balance') as HTMLElement).textContent = formatBalance(balance.value, balance.decimals);
       ($('send-amount') as HTMLInputElement).focus();
     } else {
       showError('send-error', result.error ?? 'Submit failed');
@@ -498,9 +487,7 @@ $('btn-faucet').addEventListener('click', async () => {
     const result = await net.faucetRequest(accountId);
     if (result.success) {
       const balance = await net.getBalance(accountId);
-      ($('balance') as HTMLElement).textContent = (
-        Number(balance.value) / 10 ** balance.decimals
-      ).toLocaleString(undefined, { maximumFractionDigits: 6 });
+      ($('balance') as HTMLElement).textContent = formatBalance(balance.value, balance.decimals);
     } else {
       ($('faucet-error') as HTMLElement).textContent = result.error ?? 'Faucet failed';
       ($('faucet-error') as HTMLElement).classList.remove('hidden');

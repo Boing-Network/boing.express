@@ -165,20 +165,30 @@ export interface QaCheckResult {
   result: 'allow' | 'reject' | 'unsure';
   rule_id?: string;
   message?: string;
+  doc_url?: string;
 }
 
 export function qaCheck(
   rpcUrl: string,
   hexBytecode: string,
   purposeCategory?: string,
-  descriptionHash?: string
+  descriptionHash?: string,
+  assetName?: string,
+  assetSymbol?: string
 ): Promise<QaCheckResult> {
-  const params =
-    purposeCategory != null
-      ? descriptionHash != null
-        ? [hexBytecode, purposeCategory, descriptionHash]
-        : [hexBytecode, purposeCategory]
-      : [hexBytecode];
+  const params: string[] = [hexBytecode];
+  if (purposeCategory != null) {
+    params.push(purposeCategory);
+    if (descriptionHash != null) {
+      params.push(descriptionHash);
+      if (assetName != null) {
+        params.push(assetName);
+        if (assetSymbol != null) {
+          params.push(assetSymbol);
+        }
+      }
+    }
+  }
   return rpcCall<QaCheckResult>(rpcUrl, 'boing_qaCheck', params).catch((e) => {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes('Method not found')) {

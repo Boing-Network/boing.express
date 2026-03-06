@@ -75,7 +75,7 @@ After every code change, run `pnpm run build:extension` then `pnpm run prepare:e
 | Permission | Justification |
 |------------|---------------|
 | **storage** | Save encrypted wallet data and selected network in `chrome.storage.local`. |
-| **Host permissions** | RPC (testnet-rpc.boing.network, rpc.boing.network) for balance/send; boing.network for faucet link only. |
+| **Host permissions** | RPC (testnet-rpc.boing.network and the official public mainnet RPC when published) for balance/send; boing.network for faucet link only. |
 
 ### Data usage (store disclosure)
 

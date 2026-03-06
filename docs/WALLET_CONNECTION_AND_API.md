@@ -25,13 +25,28 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
 |--------|--------|--------|--------------|
 | **boing_requestAccounts** | `[]` | `string[]` | Connects the current origin to the wallet and returns the current account address (32-byte hex with `0x`). Fails if no wallet exists. |
 | **boing_accounts** | `[]` | `string[]` | Returns the current account if the site is already connected; otherwise `[]`. No side effects. |
-| **boing_signMessage** | `[messageHex, address?]` | `string` | Signs the message (0x-prefixed hex). Optional second param is the account to sign with (default: current account). Returns 0x + 128-char hex (Ed25519). Requires site to be connected and wallet unlocked. |
+| **boing_signMessage** | `[message, address?]` | `string` | Signs the **exact UTF-8 message** with the account’s **Ed25519** key (Boing account ID = public key). **Message:** pass a **plain UTF-8 string** (recommended) such as the current portal nonce-backed multiline message, or 0x-prefixed hex of UTF-8 bytes. **No Keccak256, no secp256k1.** Returns a 64-byte Ed25519 signature as 128 hex chars (with or without `0x`). Optional second param: address to sign with (default: current account). Requires site connected and wallet unlocked. |
 | **boing_chainId** | `[]` | `string` | Returns the current chain id: `0x1b01` (testnet) or `0x1b02` (mainnet). |
 | **boing_switchChain** | `[{ chainId }]` or `[chainId]` | `null` | Switches the wallet’s active network. Supported: `0x1b01`, `0x1b02`. Throws if chain is unsupported. |
 
 ### Account format
 
 - **Address:** 32-byte account id as 64 hex characters, with optional `0x` prefix (e.g. `0x7f3a2b1c4d5e6f7890abcdef...`).
+
+### Message signing (boing_signMessage / personal_sign)
+
+- **Input:** The message is the **exact UTF-8** string to sign. The wallet accepts:
+- **Plain UTF-8 string** (recommended for portal), for example:
+  ```txt
+  Sign in to Boing Portal
+  Origin: https://boing.network
+  Timestamp: 2026-03-06T12:00:00.000Z
+  Nonce: <server nonce>
+  ```
+  The wallet encodes the exact text to UTF-8 bytes and signs those bytes. **No extra libraries needed on the network side.**
+  - **0x-prefixed hex:** if the string looks like hex, the wallet decodes it to bytes and signs those bytes.
+- **Signing:** The wallet signs the UTF-8 message bytes with the account’s **Ed25519** private key (Boing account ID = Ed25519 public key). **No Keccak256 hash, no secp256k1** — portal verifies with Ed25519 only.
+- **Output:** 64-byte Ed25519 signature as **128 hex characters**, with or without `0x` prefix (Boing Express returns with `0x`).
 
 ### Chain IDs
 
@@ -120,42 +135,72 @@ if (typeof window.boing !== 'undefined') {
 
 Do **not** treat “I have the address” as proof of control. Always verify with a **signature**.
 
-- **Flow:**
-  1. User has connected (you have `address` from `boing_requestAccounts` or `boing_accounts`).
-  2. Build a sign-in message, e.g. `Sign in to Boing Portal at ${origin} at ${timestamp}` (or similar; include origin and a nonce/timestamp).
-  3. Encode the message as **0x-prefixed hex** (UTF-8 bytes → hex).
-  4. Call `await window.boing.request({ method: 'boing_signMessage', params: [messageHex, address] })`.
-  5. Send `{ account_id_hex, message, signature }` to your backend.
-  6. Backend recovers the signer from `message` + `signature` (Ed25519), checks it matches `account_id_hex`, and if the account is registered, creates a session (e.g. JWT or cookie).
+**Boing wallet behavior (boing.express):** `boing_signMessage` / `personal_sign` takes the **exact UTF-8 message string**, signs it with the account’s **Ed25519** key (Boing account ID = public key), and returns the **64-byte Ed25519 signature as hex** (128 hex chars, with or without 0x). **No Keccak256 hash, no secp256k1** — so the portal can verify with Ed25519 only, without any extra libraries on the network side.
 
-Example (message to hex and sign):
+- **Current portal flow:**
+  1. User connects and you obtain `address` from `boing_requestAccounts` or `boing_accounts`.
+  2. Frontend calls `GET /api/portal/auth/nonce?origin=${encodeURIComponent(window.location.origin)}`.
+  3. Frontend builds the nonce-backed multiline message from the returned nonce plus the current timestamp.
+  4. Frontend calls `boing_signMessage` with the **plain UTF-8 string** (recommended) or with 0x-prefixed hex of UTF-8 bytes.
+  5. Frontend sends `{ account_id_hex, message, signature }` to `POST /api/portal/auth/sign-in`.
+  6. Backend verifies Ed25519 plus nonce validity, origin match, expiry, and one-time use before creating a session.
+
+**Example — pass the UTF-8 string directly (no hex encoding needed):**
+
+```js
+const nonceResponse = await fetch(
+  `/api/portal/auth/nonce?origin=${encodeURIComponent(window.location.origin)}`
+).then((res) => res.json());
+
+const message =
+  `Sign in to Boing Portal\n` +
+  `Origin: ${window.location.origin}\n` +
+  `Timestamp: ${new Date().toISOString()}\n` +
+  `Nonce: ${nonceResponse.nonce}`;
+
+const signature = await window.boing.request({
+  method: 'boing_signMessage',
+  params: [message, address],  // plain string; wallet signs UTF-8 bytes with Ed25519
+});
+// POST to backend: { account_id_hex: address, message, signature }
+```
+
+**Example — alternative with hex (if you prefer):**
 
 ```js
 function utf8ToHex(s) {
   const bytes = new TextEncoder().encode(s);
   return '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+const nonceResponse = await fetch(
+  `/api/portal/auth/nonce?origin=${encodeURIComponent(window.location.origin)}`
+).then((res) => res.json());
 
-const message = `Sign in to Boing Portal at ${window.location.origin} at ${Date.now()}`;
-const messageHex = utf8ToHex(message);
+const message =
+  `Sign in to Boing Portal\n` +
+  `Origin: ${window.location.origin}\n` +
+  `Timestamp: ${new Date().toISOString()}\n` +
+  `Nonce: ${nonceResponse.nonce}`;
+
 const signature = await window.boing.request({
   method: 'boing_signMessage',
-  params: [messageHex, address],
+  params: [utf8ToHex(message), address],
 });
-// POST to your backend: { account_id_hex: address, message, signature }
+// POST to backend: { account_id_hex: address, message, signature }
 ```
 
 ### Backend: Verify signature and create session
 
-- **New endpoint (e.g. `POST /api/portal/auth/sign-in`):**  
-  Body: `{ account_id_hex, message, signature }`.
-- **Verification:**
+- **Current portal endpoint:** `POST /api/portal/auth/sign-in`  
+  Body: `{ account_id_hex, message, signature }`. The `message` is the exact UTF-8 string the user signed, using the nonce-backed multiline format above.
+- **Verification (Ed25519 only; no Keccak256, no secp256k1):**
   - Decode `account_id_hex` to 32-byte public key (64 hex chars, optional 0x).
   - Decode `signature` to 64-byte Ed25519 signature (128 hex chars, optional 0x).
-  - Verify Ed25519: `signature` is valid for `message` (UTF-8 or raw bytes as used on frontend) under the given public key.
+  - Encode `message` as UTF-8 bytes (same as signed by the wallet).
+  - Verify Ed25519: `signature` is valid for those message bytes under the given public key.
 - If valid and the account is registered (developer / user / node_operator), create a session (JWT or session cookie) and return success. Otherwise return 401 or 400.
 
-The portal’s existing “address-only” flow (e.g. `GET /api/portal/me?account_id_hex=...`) does not prove control; the new sign-in flow should replace or supplement it for production/mainnet so that only someone who holds the private key can sign in.
+The portal’s legacy “address-only” flow (e.g. `GET /api/portal/me?account_id_hex=...`) does not prove control. The nonce-backed wallet sign-in flow is now the preferred contract and should be treated as the primary secure path.
 
 ### Optional: Chain and network
 
@@ -170,7 +215,7 @@ The portal’s existing “address-only” flow (e.g. `GET /api/portal/me?accoun
 |-------|---------------------|----------------------|
 | **Provider** | Injects `window.boing`, Boing methods + optional eth aliases | Detect `window.boing`, call `boing_requestAccounts` for Connect |
 | **Connect** | Adds origin to connected list, returns address | Show “Connect wallet”, call API, store address for session |
-| **Sign-in / auth** | `boing_signMessage` returns Ed25519 signature | Build message (origin + nonce), get signature, send to backend; backend verifies Ed25519 and creates session |
+| **Sign-in / auth** | `boing_signMessage` returns Ed25519 signature | Fetch backend nonce, build nonce-backed multiline message, get signature, send to backend; backend verifies Ed25519 and creates session |
 | **Disconnect** | User removes site in extension “Connected sites” | Optional: “Disconnect” in UI clears local session; next visit must call `boing_requestAccounts` again |
 | **Spec** | This document | Adopt same method names for portal and any other Boing dApps |
 

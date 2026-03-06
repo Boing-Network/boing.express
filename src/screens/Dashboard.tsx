@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useWallet, NETWORKS } from '../context/WalletContext';
 import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types';
-import { parseDecimalAmount } from '../boing/amount';
+import { formatBalance, parseDecimalAmount } from '../boing/amount';
 import { validateContractBytecode, VALID_PURPOSE_CATEGORIES } from '../boing/qa';
 import * as rpc from '../boing/rpc';
 import { addTxHistory, getTxHistory } from '../storage/txHistory';
@@ -51,7 +51,8 @@ export function Dashboard() {
   const [unbonding, setUnbonding] = useState(false);
   const [qaBytecode, setQaBytecode] = useState('');
   const [qaPurpose, setQaPurpose] = useState<string>('');
-  const [qaResult, setQaResult] = useState<{ result: 'allow' | 'reject' | 'unsure'; ruleId?: string; message?: string } | null>(null);
+  const [qaDescriptionHash, setQaDescriptionHash] = useState('');
+  const [qaResult, setQaResult] = useState<{ result: 'allow' | 'reject' | 'unsure'; ruleId?: string; message?: string; docUrl?: string } | null>(null);
   const [qaValidating, setQaValidating] = useState(false);
   const [qaUseRpc, setQaUseRpc] = useState(true);
   const [onboarding, setOnboarding] = useState(getOnboardingState);
@@ -142,6 +143,7 @@ export function Dashboard() {
 
   const explorerBase = network.config.explorerUrl?.replace(/\/$/, '') ?? '';
   const isMainnet = !network.config.isTestnet;
+  const accountExplorerUrl = explorerBase ? `${explorerBase}/account/${address}` : '';
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -349,12 +351,13 @@ export function Dashboard() {
             network.config.rpcUrl,
             hexWithPrefix,
             qaPurpose.trim() || undefined,
-            undefined
+            qaDescriptionHash.trim() || undefined
           );
           result = {
             result: rpcResult.result,
             ruleId: rpcResult.rule_id ?? result.ruleId,
             message: rpcResult.message ?? result.message,
+            docUrl: rpcResult.doc_url,
           };
         } catch {
           // boing_qaCheck not available; keep client result
@@ -375,7 +378,7 @@ export function Dashboard() {
 
   const displayStake =
     stake != null
-      ? (Number(stake) / 10 ** (balance?.decimals ?? 18)).toLocaleString(undefined, { maximumFractionDigits: 6 })
+      ? formatBalance(stake, balance?.decimals ?? 18)
       : stakeError
         ? '—'
         : network.getStake
@@ -384,9 +387,7 @@ export function Dashboard() {
 
   const displayBalance =
     balance != null
-      ? (Number(balance.value) / 10 ** balance.decimals).toLocaleString(undefined, {
-          maximumFractionDigits: 6,
-        })
+      ? formatBalance(balance.value, balance.decimals)
       : balanceError
         ? '—'
         : '…';
@@ -425,7 +426,7 @@ export function Dashboard() {
                 {onboarding.walletCreated ? '✓' : '○'} Create wallet
               </li>
               <li className={onboarding.gotTestnetBoing ? styles.onboardingDone : ''}>
-                {onboarding.gotTestnetBoing ? '✓' : '○'} Get testnet BOING
+                {onboarding.gotTestnetBoing ? '✓' : '○'} Get testnet BOING (testnet)
               </li>
               <li className={onboarding.sentTx ? styles.onboardingDone : ''}>
                 {onboarding.sentTx ? '✓' : '○'} Send a transaction
@@ -446,7 +447,7 @@ export function Dashboard() {
             </button>
             {explorerBase && (
               <a
-                href={`${explorerBase}/address/${address}`}
+                href={accountExplorerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.explorerLink}
@@ -457,7 +458,7 @@ export function Dashboard() {
             )}
           </div>
           <p className={styles.addressHint}>
-            Use this address to receive BOING and in the faucet.
+            Use this address to receive BOING. On testnet, you can also use it with the faucet.
           </p>
         </section>
 
@@ -515,10 +516,8 @@ export function Dashboard() {
                 {bondSuccess && (
                   <p className={styles.success}>
                     {bondSuccess}
-                    {explorerBase && lastTxHash && (
+                    {lastTxHash && (
                       <>
-                        {' '}
-                        <a href={`${explorerBase}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>View on explorer</a>
                         {' · '}
                         <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>{txHashCopied ? 'Copied' : 'Copy tx hash'}</button>
                       </>
@@ -545,10 +544,8 @@ export function Dashboard() {
                 {unbondSuccess && (
                   <p className={styles.success}>
                     {unbondSuccess}
-                    {explorerBase && lastTxHash && (
+                    {lastTxHash && (
                       <>
-                        {' '}
-                        <a href={`${explorerBase}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>View on explorer</a>
                         {' · '}
                         <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>{txHashCopied ? 'Copied' : 'Copy tx hash'}</button>
                       </>
@@ -602,12 +599,8 @@ export function Dashboard() {
             {sendSuccess && (
               <p className={styles.success}>
                 {sendSuccess}
-                {explorerBase && lastTxHash && (
+                {lastTxHash && (
                   <>
-                    {' '}
-                    <a href={`${explorerBase}/tx/${lastTxHash}`} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
-                      View on explorer
-                    </a>
                     {' · '}
                     <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>
                       {txHashCopied ? 'Copied' : 'Copy tx hash'}
@@ -655,6 +648,18 @@ export function Dashboard() {
                 ))}
               </select>
             </div>
+            <div className={styles.qaPurposeRow}>
+              <label htmlFor="qa-description-hash" className={styles.qaLabel}>Description hash (optional)</label>
+              <input
+                id="qa-description-hash"
+                type="text"
+                placeholder="0x..."
+                value={qaDescriptionHash}
+                onChange={(e) => setQaDescriptionHash(e.target.value)}
+                className={styles.input}
+                aria-label="Description hash"
+              />
+            </div>
             <label className={styles.qaCheckbox}>
               <input
                 type="checkbox"
@@ -682,37 +687,46 @@ export function Dashboard() {
                 <strong>{qaResult.result.toUpperCase()}</strong>
                 {qaResult.ruleId && <span className={styles.qaRuleId}> ({qaResult.ruleId})</span>}
                 {qaResult.message && <p className={styles.qaMessage}>{qaResult.message}</p>}
+                {qaResult.docUrl && (
+                  <p className={styles.qaMessage}>
+                    <a href={qaResult.docUrl} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
+                      Open canonical QA guidance
+                    </a>
+                  </p>
+                )}
               </div>
             )}
           </form>
         </section>
 
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Testnet faucet</h2>
-          <p className={styles.faucetHint}>
-            Request testnet BOING for this address.
-          </p>
-          <div className={styles.faucetRow}>
-            {network.faucetRequest ? (
-              <button
-                type="button"
-                className={styles.primary}
-                onClick={handleFaucet}
-                disabled={faucetStatus === 'loading'}
-              >
-                {faucetStatus === 'loading'
-                  ? 'Requesting…'
-                  : faucetStatus === 'ok'
-                    ? 'Requested'
-                    : 'Request testnet BOING'}
+        {network.config.isTestnet && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Testnet faucet</h2>
+            <p className={styles.faucetHint}>
+              Request testnet BOING for this address.
+            </p>
+            <div className={styles.faucetRow}>
+              {network.faucetRequest ? (
+                <button
+                  type="button"
+                  className={styles.primary}
+                  onClick={handleFaucet}
+                  disabled={faucetStatus === 'loading'}
+                >
+                  {faucetStatus === 'loading'
+                    ? 'Requesting…'
+                    : faucetStatus === 'ok'
+                      ? 'Requested'
+                      : 'Request testnet BOING'}
+                </button>
+              ) : null}
+              <button type="button" className={styles.secondary} onClick={openFaucetPage}>
+                Open faucet page
               </button>
-            ) : null}
-            <button type="button" className={styles.secondary} onClick={openFaucetPage}>
-              Open faucet page
-            </button>
-          </div>
-          {faucetError && <p className={styles.error}>{faucetError}</p>}
-        </section>
+            </div>
+            {faucetError && <p className={styles.error}>{faucetError}</p>}
+          </section>
+        )}
 
         {txHistory.length > 0 && (
           <section className={styles.section}>
@@ -722,16 +736,6 @@ export function Dashboard() {
                 <li key={entry.txHash} className={styles.txHistoryItem}>
                   <span className={styles.txType}>{entry.type}</span>
                   <code className={styles.txHash}>{entry.txHash.slice(0, 16)}…</code>
-                  {explorerBase && (
-                    <a
-                      href={`${explorerBase}/tx/${entry.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.explorerLink}
-                    >
-                      View
-                    </a>
-                  )}
                 </li>
               ))}
             </ul>

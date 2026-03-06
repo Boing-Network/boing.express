@@ -4,6 +4,7 @@
  */
 
 import { execSync } from 'child_process';
+import { readdirSync, statSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,15 +14,22 @@ const extDir = path.join(root, 'extension');
 const outZip = path.join(root, 'boing-wallet-extension.zip');
 
 const isWin = process.platform === 'win32';
+const bundledEntries = readdirSync(extDir).filter((name) => {
+  if (name.endsWith('.map') || name.endsWith('.ts')) return false;
+  const fullPath = path.join(extDir, name);
+  if (statSync(fullPath).isDirectory()) return ['icons', 'fonts'].includes(name);
+  return ['.html', '.js', '.css', '.json'].includes(path.extname(name));
+});
+const archiveEntries = bundledEntries.join(', ');
 
 if (isWin) {
   execSync(
-    `powershell -Command "Compress-Archive -Path manifest.json, popup.html, popup.js, popup.css, icons, fonts -DestinationPath '${outZip.replace(/'/g, "''")}' -Force"`,
+    `powershell -Command "Compress-Archive -Path ${archiveEntries} -DestinationPath '${outZip.replace(/'/g, "''")}' -Force"`,
     { cwd: extDir }
   );
 } else {
   execSync(
-    `zip -r '${outZip}' manifest.json popup.html popup.js popup.css icons fonts -x "*.map"`,
+    `zip -r '${outZip}' ${bundledEntries.map((entry) => `'${entry}'`).join(' ')} -x "*.map"`,
     { cwd: extDir }
   );
 }

@@ -1,7 +1,15 @@
 /**
- * Boing Express EIP-1193 provider — runs in the page context (injected by content script).
- * Exposes window.boing for dApps to connect and request accounts/signing.
- * Communicates with the content script via postMessage.
+ * Boing Express provider — runs in the page context (injected by content script).
+ * Exposes window.boing for dApps. Prefer Boing-native methods (no dependency on Ethereum naming):
+ *
+ *   boing_requestAccounts  — connect and get current account
+ *   boing_accounts        — get account if site already connected
+ *   boing_signMessage      — sign hex message (e.g. for auth)
+ *   boing_chainId         — current chain (0x1b01 testnet, 0x1b02 mainnet)
+ *   boing_switchChain     — switch network
+ *
+ * Aliases eth_requestAccounts, eth_accounts, personal_sign, eth_chainId, wallet_switchEthereumChain
+ * are supported for compatibility but are not required for Boing development.
  */
 
 const BOING_PROVIDER_SOURCE = 'boing-inpage';
@@ -9,6 +17,12 @@ const BOING_CONTENT_SOURCE = 'boing-content';
 
 let nextId = 1;
 const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+
+type SerializedProviderError = {
+  code?: number;
+  message?: string;
+  data?: unknown;
+};
 
 function sendToExtension(method: string, params: unknown[]): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -32,6 +46,20 @@ function sendToExtension(method: string, params: unknown[]): Promise<unknown> {
       }
     }, 60000);
   });
+}
+
+function createProviderError(error: unknown): Error & { code?: number; data?: unknown } {
+  if (error && typeof error === 'object') {
+    const serialized = error as SerializedProviderError;
+    const wrapped = new Error(serialized.message ?? 'Boing Express request failed') as Error & {
+      code?: number;
+      data?: unknown;
+    };
+    wrapped.code = serialized.code;
+    wrapped.data = serialized.data;
+    return wrapped;
+  }
+  return new Error(typeof error === 'string' ? error : 'Boing Express request failed');
 }
 
 function createProvider(): unknown {
@@ -77,18 +105,50 @@ function createProvider(): unknown {
 }
 
 const provider = createProvider();
+const eip6963Info = Object.freeze({
+  uuid: 'boing-express-6963',
+  name: 'Boing Express',
+  icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>',
+  rdns: 'express.boing',
+});
+
+function announceEip6963Provider(): void {
+  const event = new CustomEvent('eip6963:announceProvider', {
+    detail: Object.freeze({ info: eip6963Info, provider }),
+  });
+  window.dispatchEvent(event);
+}
 
 window.addEventListener('message', (event: MessageEvent) => {
   if (event.source !== window || !event.data || event.data.source !== BOING_CONTENT_SOURCE) return;
-  const { type, id, result, error } = event.data;
-  if (type !== 'response' || id == null) return;
-  const p = pending.get(id);
-  if (!p) return;
-  pending.delete(id);
-  if (error != null) {
-    p.reject(new Error(String(error)));
-  } else {
-    p.resolve(result);
+  const { type, id, result, error, event: eventName, payload } = event.data;
+  if (type === 'response' && id != null) {
+    const p = pending.get(id);
+    if (!p) return;
+    pending.delete(id);
+    if (error != null) {
+      p.reject(createProviderError(error));
+    } else {
+      p.resolve(result);
+    }
+    return;
+  }
+
+  if (type === 'event' && typeof eventName === 'string') {
+    const emitter = provider as { emit: (event: string, ...args: unknown[]) => void };
+    if (eventName === 'accountsChanged') {
+      emitter.emit(eventName, Array.isArray(payload?.accounts) ? payload.accounts : []);
+      return;
+    }
+    if (eventName === 'chainChanged') {
+      emitter.emit(eventName, typeof payload?.chainId === 'string' ? payload.chainId : undefined);
+      return;
+    }
+    if (eventName === 'disconnect') {
+      emitter.emit(eventName, payload);
+      return;
+    }
+    emitter.emit(eventName, payload);
   }
 });
 
@@ -97,14 +157,6 @@ window.addEventListener('message', (event: MessageEvent) => {
 
 // EIP-6963: announce provider so dApps can discover multiple wallets (optional but improves compatibility)
 try {
-  const info = {
-    uuid: 'boing-express-6963',
-    name: 'Boing Express',
-    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>',
-    rdns: 'express.boing',
-  };
-  const event = new CustomEvent('eip6963:announceProvider', {
-    detail: Object.freeze({ info, provider }),
-  });
-  window.dispatchEvent(event);
+  window.addEventListener('eip6963:requestProvider', announceEip6963Provider);
+  announceEip6963Provider();
 } catch (_) {}

@@ -36,7 +36,7 @@ Output is in `dist/`.
 | Variable | Description |
 |----------|-------------|
 | `VITE_BOING_TESTNET_RPC` | Boing testnet JSON-RPC URL (default: `https://testnet-rpc.boing.network`) |
-| `VITE_BOING_MAINNET_RPC` | Boing mainnet JSON-RPC URL (default: `https://rpc.boing.network`) |
+| `VITE_BOING_MAINNET_RPC` | Boing mainnet JSON-RPC URL. Treat as configurable until the official public mainnet endpoint is published in `boing.network`. |
 
 Set these in Cloudflare Pages **Build** → **Environment variables** (or in `.env` for local dev). They are baked in at build time via Vite.
 
@@ -64,7 +64,7 @@ Optional: set repo **variables** so the GitHub build uses the correct RPC endpoi
 | Variable | Value |
 |----------|--------|
 | `VITE_BOING_TESTNET_RPC` | `https://testnet-rpc.boing.network` |
-| `VITE_BOING_MAINNET_RPC` | `https://rpc.boing.network` |
+| `VITE_BOING_MAINNET_RPC` | Set this to the official public mainnet RPC when Boing mainnet metadata is published |
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#2-github-repository-variables-and-secrets) for details.
 
@@ -82,6 +82,7 @@ Create the Pages project in the Cloudflare dashboard first so `project-name` mat
 - **Address**: 32-byte AccountId = Ed25519 public key, shown as 64-character hex (with or without `0x`).
 - **Signing**: Signable message = BLAKE3(nonce_LE \|\| sender \|\| bincode(payload) \|\| bincode(access_list)); signature = Ed25519(signable_message). Submitted as `hex(bincode(SignedTransaction))` via `boing_submitTransaction`.
 - **RPC**: JSON-RPC 2.0. Prefers `boing_getAccount` for balance+nonce; falls back to `boing_getBalance`/`boing_getNonce`. Submit via `boing_submitTransaction`; optional `boing_simulateTransaction` before submit. See `boing-network` repo `docs/RPC-API-SPEC.md`. Full integration and Chrome Web Store checklist: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#1-boing-network-integration--chrome-web-store-checklist). Wallet connection and provider API: [docs/WALLET_CONNECTION_AND_API.md](docs/WALLET_CONNECTION_AND_API.md).
+- **Explorer links**: Canonical explorer deep links should target `https://boing.observer/account/<address>`. Transaction-detail deep links should be treated as future-facing until Boing Observer publishes a stable tx route contract.
 
 ## Project structure
 

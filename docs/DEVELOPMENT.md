@@ -12,7 +12,7 @@ Boing Express uses the **Boing Design System** variant **Aqua Personal** (person
 
 ## 1. Boing Network integration & Chrome Web Store checklist
 
-Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNICAL-SPECIFICATION.md`, `docs/QA-PASS-GUIDE.md`, `crates/boing-primitives`.
+Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNICAL-SPECIFICATION.md`, `docs/QUALITY-ASSURANCE-NETWORK.md`, `crates/boing-primitives`.
 
 ### Part 1: Boing Network integration
 
@@ -105,15 +105,15 @@ Add these under **Variables** if you want to override RPC endpoints in the GitHu
 
 | Variable | Value | Description |
 |----------|--------|-------------|
-| `VITE_BOING_TESTNET_RPC` | `https://testnet-rpc.boing.network` | Boing testnet JSON-RPC URL. When testnet is live, confirm the official URL from [Boing Network status](https://boing.network/network/status) or [RPC API docs](https://boing.network/docs/rpc-api). |
-| `VITE_BOING_MAINNET_RPC` | `https://rpc.boing.network` | Boing mainnet JSON-RPC URL. Confirm from Boing docs when mainnet is live. |
+| `VITE_BOING_TESTNET_RPC` | `https://testnet-rpc.boing.network` | Boing testnet JSON-RPC URL. Confirm the official URL from the Boing testnet docs or status pages. |
+| `VITE_BOING_MAINNET_RPC` | Set when published | Boing mainnet JSON-RPC URL. Treat this as configurable until the official public mainnet endpoint is published in `boing.network`. |
 
 If these variables are **not** set, the app uses the same defaults at build time. Setting them in GitHub is useful if Boing provides different public RPC URLs later.
 
 ### Summary — copy-paste for GitHub Variables
 
 - **Name:** `VITE_BOING_TESTNET_RPC` → **Value:** `https://testnet-rpc.boing.network`
-- **Name:** `VITE_BOING_MAINNET_RPC` → **Value:** `https://rpc.boing.network`
+- **Name:** `VITE_BOING_MAINNET_RPC` → **Value:** official public mainnet RPC when published
 
 ---
 
@@ -162,7 +162,7 @@ Tracks readiness for Boing Network incentivized testnet and mainnet.
 | Transaction history, backup reminder | ✅ |
 | Web app + browser extension | ✅ |
 
-**RPC endpoints:** Testnet `https://testnet-rpc.boing.network`; Mainnet `https://rpc.boing.network`.
+**RPC endpoints:** Testnet `https://testnet-rpc.boing.network`; Mainnet should be treated as configurable until the official public endpoint is published.
 
 ### VibeMiner vs boing.express
 
@@ -178,7 +178,7 @@ Tracks readiness for Boing Network incentivized testnet and mainnet.
 
 ### Mainnet
 
-- [ ] Mainnet RPC at `https://rpc.boing.network`
+- [ ] Official public mainnet RPC published in `boing.network`
 - [ ] Security review; clear mainnet send warning
 
 ---
@@ -193,8 +193,7 @@ This section summarizes how boing.express aligns with the six reference document
 |----------|---------|
 | [SIX-PILLARS-READINESS.md](https://github.com/chiku524/boing-network/blob/main/docs/SIX-PILLARS-READINESS.md) | Six pillars assessment |
 | [TECHNICAL-SPECIFICATION.md](https://github.com/chiku524/boing-network/blob/main/docs/TECHNICAL-SPECIFICATION.md) | Cryptography, data formats, VM, RPC |
-| [CANONICAL-MALICE-DEFINITION.md](https://github.com/chiku524/boing-network/blob/main/docs/CANONICAL-MALICE-DEFINITION.md) | Malice categories for QA pool |
-| [QA-PASS-GUIDE.md](https://github.com/chiku524/boing-network/blob/main/docs/QA-PASS-GUIDE.md) | Deployer checklist, purpose categories |
+| [QUALITY-ASSURANCE-NETWORK.md](https://github.com/boing-network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md) | QA policy, deployer guidance, and canonical malice definition |
 | [RUNBOOK.md](https://github.com/chiku524/boing-network/blob/main/docs/RUNBOOK.md) | Node ops, RPC, incident response |
 | [SECURITY-STANDARDS.md](https://github.com/chiku524/boing-network/blob/main/docs/SECURITY-STANDARDS.md) | Security requirements, contacts |
 
@@ -204,7 +203,7 @@ This section summarizes how boing.express aligns with the six reference document
 
 **Pillars 2–4: Scalability, Decentralization, Authenticity** — Apply primarily to the network and node layer. The wallet uses the RPC interface and does not implement consensus, P2P, or VM execution.
 
-**Pillar 5: Transparency** — Open docs ✓ (/docs, /privacy, /support); QA rejection details ✓ (rule_id, message in RPC errors); canonical malice reference ✓; QA-PASS-GUIDE reference ✓.
+**Pillar 5: Transparency** — Open docs ✓ (/docs, /privacy, /support); QA rejection details ✓ (rule_id, message in RPC errors); canonical QA reference ✓.
 
 **Pillar 6: True Quality Assurance** — Max bytecode 32 KiB ✓; Boing VM opcodes ✓; PUSH encoding ✓; Rule IDs ✓; boing_qaCheck RPC ✓; purpose categories ✓; error codes -32050, -32051 ✓.
 

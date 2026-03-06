@@ -53,7 +53,7 @@ export function Privacy() {
           <h2>Network and RPC communication</h2>
           <p>
             To show balances and send transactions, the wallet sends requests to Boing Network RPC
-            endpoints (for example <code>testnet-rpc.boing.network</code> and <code>rpc.boing.network</code>).
+            endpoints (for example <code>testnet-rpc.boing.network</code> and an official public mainnet RPC when published).
             These requests include your public address (account ID) and transaction data as needed.
             Private keys are never sent. RPC providers may log requests according to their own policies.
           </p>
@@ -61,9 +61,8 @@ export function Privacy() {
           <h2>Extension permissions</h2>
           <p>
             The browser extension requests only the permissions it needs: <strong>storage</strong> (to
-            save encrypted wallet data locally), <strong>tabs</strong> (to open the faucet or other
-            pages in a new tab), and <strong>host permissions</strong> for Boing Network RPC and
-            boing.network. The extension does not read or modify your browsing history or other sites.
+            save encrypted wallet data locally) and <strong>host permissions</strong> for Boing Network
+            RPC and boing.network. The extension does not read or modify your browsing history or other sites.
           </p>
 
           <h2>No off-device collection</h2>

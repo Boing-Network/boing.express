@@ -1,6 +1,6 @@
 /**
  * QA Pillar — Contract deployment validation (client-side).
- * Aligned with TECHNICAL-SPECIFICATION.md §7 (VM & Bytecode) and QA-PASS-GUIDE.md.
+ * Aligned with TECHNICAL-SPECIFICATION.md §7 (VM & Bytecode) and QUALITY-ASSURANCE-NETWORK.md.
  * REJECT | ALLOW | UNSURE per QUALITY-ASSURANCE-NETWORK.
  */
 
@@ -10,6 +10,7 @@ export interface QaResult {
   result: QaResultStatus;
   ruleId?: string;
   message?: string;
+  docUrl?: string;
 }
 
 /** Max contract size: 32 KiB per TECHNICAL-SPECIFICATION §7.4 */
@@ -156,7 +157,7 @@ export function validateContractBytecode(
   };
 }
 
-/** Valid purpose categories per QA-PASS-GUIDE (ContractDeployWithPurpose) */
+/** Valid purpose categories per QUALITY-ASSURANCE-NETWORK (ContractDeployWithPurpose) */
 export const VALID_PURPOSE_CATEGORIES = [
   'dApp', 'dapp', 'token', 'NFT', 'nft', 'meme', 'community',
   'entertainment', 'tooling', 'other',

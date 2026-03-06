@@ -21,8 +21,7 @@ function emptyAccessList(): AccessList {
 
 export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
   const rpcUrl = config.rpcUrl;
-
-  return {
+  const adapter: NetworkAdapter = {
     config,
 
     async getBalance(accountId: AccountId): Promise<BalanceResult> {
@@ -135,7 +134,13 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       }
     },
 
-    async faucetRequest(accountId: AccountId): Promise<{ success: boolean; error?: string }> {
+    async getChainHeight(): Promise<number> {
+      return rpc.chainHeight(rpcUrl);
+    },
+  };
+
+  if (config.isTestnet) {
+    adapter.faucetRequest = async (accountId: AccountId): Promise<{ success: boolean; error?: string }> => {
       try {
         const hex = accountIdToHex(accountId);
         await rpc.faucetRequest(rpcUrl, hex);
@@ -146,10 +151,8 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
           error: e instanceof Error ? e.message : String(e),
         };
       }
-    },
+    };
+  }
 
-    async getChainHeight(): Promise<number> {
-      return rpc.chainHeight(rpcUrl);
-    },
-  };
+  return adapter;
 }

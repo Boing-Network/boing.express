@@ -6,6 +6,7 @@ import type { NetworkAdapter } from './types';
 import { createBoingAdapter } from './boingAdapter';
 
 const defaultTestnetRpc = 'https://testnet-rpc.boing.network';
+// Provisional default until the official public mainnet RPC is published.
 const defaultMainnetRpc = 'https://rpc.boing.network';
 
 /** Build network list from RPC URLs (for app: use env; for extension: pass URLs). */
@@ -24,10 +25,10 @@ export function createNetworks(
     }),
     createBoingAdapter({
       id: 'boing-mainnet',
-      name: 'Boing Mainnet',
+      name: 'Boing Mainnet (configurable)',
       rpcUrl: mainnetRpc,
       isTestnet: false,
-      explorerUrl: 'https://boing.network',
+      explorerUrl: 'https://boing.observer',
     }),
   ];
 }

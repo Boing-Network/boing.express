@@ -21,7 +21,7 @@ export const DOCS: Record<string, Doc> = {
         </ol>
         <h2>Networks</h2>
         <p>
-          You can switch between <strong>Testnet</strong> and <strong>Mainnet</strong> in the wallet header. Testnet is for trying things out; use the faucet to get test BOING.
+          You can switch between <strong>Testnet</strong> and <strong>Mainnet</strong> in the wallet header. Testnet is the current public onboarding network; mainnet support should be treated as configurable until official mainnet RPC metadata is published in <strong>boing.network</strong>.
         </p>
         <h2>Next steps</h2>
         <ul>
@@ -46,7 +46,7 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>Send</h2>
         <p>
-          To send BOING, enter the recipient’s address (64 hex characters or 0x…) and the amount in BOING (e.g. 1 or 0.5). Use “Max” to send your full balance. On Mainnet, a warning appears when you enter an amount — real BOING is at risk. After a successful send, use “View on explorer” or “Copy tx hash” to inspect the transaction.
+          To send BOING, enter the recipient’s address (64 hex characters or 0x…) and the amount in BOING (e.g. 1 or 0.5). Use “Max” to send your full balance. On Mainnet, a warning appears when you enter an amount — real BOING may be at risk. After a successful send, copy the tx hash for support or future explorer deep links.
         </p>
         <h2>Testnet faucet</h2>
         <p>
@@ -65,7 +65,7 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>Recent transactions</h2>
         <p>
-          After you send, bond, or unbond, the dashboard shows recent transactions with links to the explorer.
+          After you send, bond, or unbond, the dashboard shows recent transactions with tx hashes. Canonical explorer account pages use <code>boing.observer/account/&lt;address&gt;</code>; transaction-detail deep links should be treated as future-facing until Boing Observer publishes a stable tx route contract.
         </p>
         <h2>RPC override (dev)</h2>
         <p>
@@ -144,14 +144,14 @@ export const DOCS: Record<string, Doc> = {
     content: (
       <>
         <p>
-          The <strong>Quality Assurance</strong> (Pillar 6) ensures only safe, well-formed contracts reach the network. Aligned with <a href="https://github.com/chiku524/boing-network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> and <a href="https://github.com/chiku524/boing-network/blob/main/docs/QA-PASS-GUIDE.md" target="_blank" rel="noopener noreferrer">QA-PASS-GUIDE</a>.
+          The <strong>Quality Assurance</strong> (Pillar 6) ensures only safe, well-formed contracts reach the network. Aligned with <a href="https://github.com/boing-network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> and <a href="https://github.com/boing-network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a>.
         </p>
         <h2>Validation flow</h2>
         <p>
           Contract bytecode is checked and routed to: <strong>REJECT</strong> (blocked), <strong>ALLOW</strong> (permitted), or <strong>UNSURE</strong> (community QA pool).
         </p>
         <p>
-          <strong>REJECT</strong>: empty, oversized (&gt;32 KiB), invalid Boing opcode, malformed (truncated PUSH). <strong>ALLOW</strong>: valid Boing VM opcodes, well-formed. Blocklist (bytecode hash) and purpose checks run server-side via <code>boing_qaCheck</code>. Malice categories (scams, phishing, etc.) are defined in <a href="https://github.com/chiku524/boing-network/blob/main/docs/CANONICAL-MALICE-DEFINITION.md" target="_blank" rel="noopener noreferrer">CANONICAL-MALICE-DEFINITION</a>.
+          <strong>REJECT</strong>: empty, oversized (&gt;32 KiB), invalid Boing opcode, malformed (truncated PUSH). <strong>ALLOW</strong>: valid Boing VM opcodes, well-formed. <strong>UNSURE</strong> cases go to the community QA pool. Blocklist (bytecode hash) and purpose checks run server-side via <code>boing_qaCheck</code>. The canonical malice definition also lives in <a href="https://github.com/boing-network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a>.
         </p>
         <h2>Using the validator</h2>
         <p>
@@ -159,9 +159,8 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>References</h2>
         <ul>
-          <li><a href="https://github.com/chiku524/boing-network/blob/main/docs/QA-PASS-GUIDE.md" target="_blank" rel="noopener noreferrer">QA-PASS-GUIDE</a> — Deployer checklist, valid purpose categories</li>
-          <li><a href="https://github.com/chiku524/boing-network/blob/main/docs/CANONICAL-MALICE-DEFINITION.md" target="_blank" rel="noopener noreferrer">CANONICAL-MALICE-DEFINITION</a> — Malice categories for pool review</li>
-          <li><a href="https://github.com/chiku524/boing-network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> — VM opcodes, bytecode limits (32 KiB)</li>
+          <li><a href="https://github.com/boing-network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a> — QA policy, deployer guidance, and canonical malice definition</li>
+          <li><a href="https://github.com/boing-network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> — VM opcodes, bytecode limits (32 KiB)</li>
         </ul>
       </>
     ),
@@ -179,7 +178,7 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>Current status</h2>
         <p>
-          The wallet supports create/import, send/receive, testnet faucet, and network switching. All features use real RPC calls — nothing is simulated. When the Boing testnet RPC is live, the wallet will work without code changes.
+          The wallet supports create/import, send/receive, testnet faucet, and network switching. All features use real RPC calls — nothing is simulated. Testnet is the current public rollout path; mainnet should be treated as configurable until official launch metadata is published.
         </p>
         <h2>VibeMiner vs boing.express</h2>
         <p>
@@ -208,6 +207,7 @@ export const DOCS: Record<string, Doc> = {
         <ul>
           <li><a href="https://boing.network" target="_blank" rel="noopener noreferrer">Boing Network</a> — Official site</li>
           <li><a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Faucet</a> — Testnet BOING</li>
+          <li><a href="https://boing.observer" target="_blank" rel="noopener noreferrer">Boing Observer</a> — Explorer</li>
           <li><a href="https://boing.network/docs/rpc-api" target="_blank" rel="noopener noreferrer">RPC API</a> — Network API docs</li>
         </ul>
         <h2>Boing Wallet (Boing Express)</h2>
@@ -221,7 +221,7 @@ export const DOCS: Record<string, Doc> = {
         <p>For reference (used by the wallet):</p>
         <ul>
           <li>Testnet: <code>https://testnet-rpc.boing.network</code></li>
-          <li>Mainnet: <code>https://rpc.boing.network</code></li>
+          <li>Mainnet: configure the official public RPC here when it is published</li>
         </ul>
       </>
     ),

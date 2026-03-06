@@ -63,3 +63,26 @@ window.addEventListener('message', (event: MessageEvent) => {
     }
   );
 });
+
+chrome.runtime.onMessage.addListener((message: unknown) => {
+  if (!message || typeof message !== 'object' || !('type' in message)) return;
+  const payload = message as {
+    type: string;
+    event?: string;
+    payload?: { origins?: string[]; [key: string]: unknown };
+  };
+  if (payload.type !== 'BOING_PROVIDER_EVENT' || !payload.event) return;
+
+  const allowedOrigins = Array.isArray(payload.payload?.origins) ? payload.payload.origins : null;
+  if (allowedOrigins && !allowedOrigins.includes(window.location.origin)) return;
+
+  window.postMessage(
+    {
+      source: BOING_CONTENT_SOURCE,
+      type: 'event',
+      event: payload.event,
+      payload: payload.payload ?? {},
+    },
+    '*'
+  );
+});

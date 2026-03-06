@@ -11,6 +11,7 @@ export default defineConfig({
         popup: resolve(__dirname, 'extension/popup.ts'),
         background: resolve(__dirname, 'extension/background.ts'),
         content: resolve(__dirname, 'extension/content.ts'),
+        approval: resolve(__dirname, 'extension/approval.ts'),
       },
       output: {
         entryFileNames: '[name].js',
@@ -24,6 +25,7 @@ export default defineConfig({
   },
   define: {
     'import.meta.env.VITE_BOING_TESTNET_RPC': JSON.stringify('https://testnet-rpc.boing.network'),
+    // Provisional default until the official public mainnet RPC is published.
     'import.meta.env.VITE_BOING_MAINNET_RPC': JSON.stringify('https://rpc.boing.network'),
   },
   resolve: {

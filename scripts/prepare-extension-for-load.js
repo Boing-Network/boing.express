@@ -44,19 +44,26 @@ function copyDirContentsSync(srcDir, destDir) {
   }
 }
 
+function shouldCopyRootEntry(name) {
+  if (name.endsWith('.map') || name.endsWith('.ts')) return false;
+  const fullPath = path.join(extDir, name);
+  if (statSync(fullPath).isDirectory()) return name === 'icons' || name === 'fonts';
+  return ['.html', '.js', '.css', '.json'].includes(path.extname(name));
+}
+
 // Ensure output dir exists
 mkdirSync(outDir, { recursive: true });
 
-// Copy single files
-const files = ['manifest.json', 'popup.html', 'popup.js', 'popup.css'];
-for (const f of files) {
-  const src = path.join(extDir, f);
-  if (existsSync(src)) cpSync(src, path.join(outDir, f), { force: true });
+for (const name of readdirSync(extDir)) {
+  if (!shouldCopyRootEntry(name)) continue;
+  const src = path.join(extDir, name);
+  const dest = path.join(outDir, name);
+  if (statSync(src).isDirectory()) {
+    copyDirContentsSync(src, dest);
+  } else {
+    cpSync(src, dest, { force: true });
+  }
 }
-
-// Copy icons and fonts (file-by-file so Windows/Explorer reliably shows contents)
-copyDirContentsSync(path.join(extDir, 'icons'), path.join(outDir, 'icons'));
-copyDirContentsSync(path.join(extDir, 'fonts'), path.join(outDir, 'fonts'));
 
 // Verify and write a marker file so you can confirm the folder in Explorer
 const listed = readdirSync(outDir);

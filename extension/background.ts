@@ -2,26 +2,109 @@
  * Boing Express background service worker.
  * - Holds in-memory unlocked key when user unlocks in popup (cleared on lock).
  * - Tracks connected origins (sites allowed to see accounts / request signing).
- * - Handles EIP-1193 provider requests from content script: eth_requestAccounts, eth_accounts, personal_sign, eth_chainId, wallet_switchEthereumChain.
+ * - Enforces per-signature approval.
+ * - Broadcasts provider events to connected pages.
  */
 
 import { signMessage } from '../src/crypto/keys';
-import {
-  BOING_TESTNET_CHAIN_ID,
-  BOING_MAINNET_CHAIN_ID,
-} from './config';
+import { BOING_MAINNET_CHAIN_ID, BOING_TESTNET_CHAIN_ID } from './config';
 
 const STORAGE_KEY_WALLET = 'boing_wallet_enc';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
 const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
 const DEFAULT_NETWORK_ID = 'boing-testnet';
+const APPROVAL_WINDOW_WIDTH = 420;
+const APPROVAL_WINDOW_HEIGHT = 640;
+const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000;
+
+const BOING_METHODS = {
+  REQUEST_ACCOUNTS: 'boing_requestAccounts',
+  ACCOUNTS: 'boing_accounts',
+  SIGN_MESSAGE: 'boing_signMessage',
+  CHAIN_ID: 'boing_chainId',
+  SWITCH_CHAIN: 'boing_switchChain',
+} as const;
+
+const METHOD_ALIASES: Record<string, string> = {
+  eth_requestAccounts: BOING_METHODS.REQUEST_ACCOUNTS,
+  eth_accounts: BOING_METHODS.ACCOUNTS,
+  personal_sign: BOING_METHODS.SIGN_MESSAGE,
+  eth_chainId: BOING_METHODS.CHAIN_ID,
+  wallet_switchEthereumChain: BOING_METHODS.SWITCH_CHAIN,
+};
+
+const PROVIDER_ERROR_CODES = {
+  USER_REJECTED: 4001,
+  UNAUTHORIZED: 4100,
+  UNSUPPORTED_METHOD: 4200,
+  UNSUPPORTED_CHAIN: 4901,
+  INVALID_PARAMS: -32602,
+  INTERNAL_ERROR: -32603,
+} as const;
 
 type UnlockedState = {
   accountHex: string;
   privateKey: Uint8Array;
 };
 
+type ProviderEventMessage =
+  | { type: 'BOING_PROVIDER_EVENT'; event: 'accountsChanged'; payload: { accounts: string[]; origins?: string[] } }
+  | { type: 'BOING_PROVIDER_EVENT'; event: 'chainChanged'; payload: { chainId: string } }
+  | { type: 'BOING_PROVIDER_EVENT'; event: 'disconnect'; payload: { origins?: string[]; code?: number; message: string } };
+
+type PendingSignatureApproval = {
+  requestId: string;
+  origin: string;
+  chainId: string;
+  address: string;
+  message: string;
+  resolve: () => void;
+  reject: (error: BoingProviderError) => void;
+  timeoutId: number;
+  windowId?: number;
+};
+
+type ApprovalRecord = Pick<PendingSignatureApproval, 'requestId' | 'origin' | 'chainId' | 'address' | 'message'>;
+
+class BoingProviderError extends Error {
+  code: number;
+  data: { boingCode: string };
+
+  constructor(code: number, boingCode: string, message: string) {
+    super(message);
+    this.code = code;
+    this.data = { boingCode };
+    this.name = 'BoingProviderError';
+  }
+}
+
 let unlocked: UnlockedState | null = null;
+let nextApprovalId = 1;
+
+const pendingSignatureApprovals = new Map<string, PendingSignatureApproval>();
+const approvalRequestIdsByWindowId = new Map<number, string>();
+
+function providerError(code: number, boingCode: string, message: string): BoingProviderError {
+  return new BoingProviderError(code, boingCode, message);
+}
+
+function serializeProviderError(error: unknown): { code: number; message: string; data: { boingCode: string } } {
+  if (error instanceof BoingProviderError) {
+    return { code: error.code, message: error.message, data: error.data };
+  }
+  if (error instanceof Error) {
+    return {
+      code: PROVIDER_ERROR_CODES.INTERNAL_ERROR,
+      message: error.message,
+      data: { boingCode: 'BOING_INTERNAL_ERROR' },
+    };
+  }
+  return {
+    code: PROVIDER_ERROR_CODES.INTERNAL_ERROR,
+    message: 'Internal wallet error.',
+    data: { boingCode: 'BOING_INTERNAL_ERROR' },
+  };
+}
 
 function getAddressHexFromStorage(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -32,8 +115,8 @@ function getAddressHexFromStorage(): Promise<string | null> {
           resolve(null);
           return;
         }
-        const w = JSON.parse(raw) as { addressHex?: string };
-        resolve(w?.addressHex ?? null);
+        const parsed = JSON.parse(raw) as { addressHex?: string };
+        resolve(parsed.addressHex ?? null);
       } catch {
         resolve(null);
       }
@@ -50,8 +133,8 @@ function getConnectedSites(): Promise<string[]> {
           resolve([]);
           return;
         }
-        const arr = JSON.parse(raw) as unknown;
-        resolve(Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : []);
+        const parsed = JSON.parse(raw) as unknown;
+        resolve(Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string') : []);
       } catch {
         resolve([]);
       }
@@ -59,33 +142,24 @@ function getConnectedSites(): Promise<string[]> {
   });
 }
 
-async function setConnectedSites(origins: string[]): Promise<void> {
+function setConnectedSites(origins: string[]): Promise<void> {
   return new Promise((resolve) => {
-    chrome.storage.local.set(
-      { [STORAGE_KEY_CONNECTED_SITES]: JSON.stringify(origins) },
-      resolve
-    );
+    chrome.storage.local.set({ [STORAGE_KEY_CONNECTED_SITES]: JSON.stringify(origins) }, resolve);
   });
 }
 
 async function addConnectedSite(origin: string): Promise<void> {
   const sites = await getConnectedSites();
-  if (sites.includes(origin)) return;
-  await setConnectedSites([...sites, origin]);
-}
-
-async function removeConnectedSite(origin: string): Promise<void> {
-  const sites = await getConnectedSites();
-  await setConnectedSites(sites.filter((o) => o !== origin));
+  if (!sites.includes(origin)) {
+    await setConnectedSites([...sites, origin]);
+  }
 }
 
 function getSelectedNetworkId(): Promise<string> {
   return new Promise((resolve) => {
     chrome.storage.local.get([STORAGE_KEY_NETWORK], (result) => {
-      const id = result[STORAGE_KEY_NETWORK];
-      resolve(
-        id === 'boing-mainnet' || id === 'boing-testnet' ? id : DEFAULT_NETWORK_ID
-      );
+      const value = result[STORAGE_KEY_NETWORK];
+      resolve(value === 'boing-mainnet' || value === 'boing-testnet' ? value : DEFAULT_NETWORK_ID);
     });
   });
 }
@@ -94,174 +168,411 @@ function chainIdForNetwork(networkId: string): string {
   return networkId === 'boing-mainnet' ? BOING_MAINNET_CHAIN_ID : BOING_TESTNET_CHAIN_ID;
 }
 
-/** Decode 0x-prefixed hex string to Uint8Array. */
 function hexToBytes(hex: string): Uint8Array {
-  const h = hex.replace(/^0x/i, '');
-  if (h.length % 2 !== 0) throw new Error('Invalid hex length');
-  const out = new Uint8Array(h.length / 2);
+  const normalized = hex.replace(/^0x/i, '');
+  if (normalized.length % 2 !== 0) {
+    throw providerError(PROVIDER_ERROR_CODES.INVALID_PARAMS, 'BOING_INVALID_HEX', 'Invalid hex length.');
+  }
+  const out = new Uint8Array(normalized.length / 2);
   for (let i = 0; i < out.length; i++) {
-    out[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+    out[i] = parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
   }
   return out;
 }
 
-/** Normalize address to 0x + 64 hex (lowercase). */
-function normalizeAddress(hex: string): string {
-  const h = hex.replace(/^0x/i, '').toLowerCase();
-  if (h.length !== 64 || !/^[0-9a-f]+$/.test(h)) throw new Error('Invalid address');
-  return '0x' + h;
+function messageToBytes(message: unknown): Uint8Array {
+  if (typeof message !== 'string') {
+    throw providerError(
+      PROVIDER_ERROR_CODES.INVALID_PARAMS,
+      'BOING_INVALID_MESSAGE',
+      'boing_signMessage requires a UTF-8 string or 0x-prefixed hex string.'
+    );
+  }
+  const trimmed = message.trim();
+  if (trimmed.startsWith('0x') && /^0x[0-9a-fA-F]+$/.test(trimmed) && trimmed.length > 2) {
+    return hexToBytes(trimmed);
+  }
+  return new TextEncoder().encode(message);
 }
 
-chrome.runtime.onMessage.addListener(
-  (
-    message: unknown,
-    _sender: chrome.runtime.MessageSender,
-    sendResponse: (r: unknown) => void
-  ) => {
-    if (!message || typeof message !== 'object' || !('type' in message)) {
-      sendResponse(undefined);
-      return true;
-    }
+function normalizeAddress(hex: string): string {
+  const normalized = hex.replace(/^0x/i, '').toLowerCase();
+  if (normalized.length !== 64 || !/^[0-9a-f]+$/.test(normalized)) {
+    throw providerError(PROVIDER_ERROR_CODES.INVALID_PARAMS, 'BOING_ADDRESS_MISMATCH', 'Address must be 0x + 64 hex characters.');
+  }
+  return '0x' + normalized;
+}
 
-    const msg = message as { type: string; [k: string]: unknown };
+function broadcastProviderEvent(message: ProviderEventMessage): void {
+  try {
+    chrome.runtime.sendMessage(message, () => {
+      void chrome.runtime.lastError;
+    });
+  } catch {
+    // Ignore broadcast failures when no extension contexts are listening.
+  }
+}
 
-    // From popup: unlock / lock
-    if (msg.type === 'WALLET_UNLOCK') {
-      const { accountHex, privateKey } = msg as {
-        type: 'WALLET_UNLOCK';
-        accountHex: string;
-        privateKey: number[];
-      };
-      if (
-        typeof accountHex === 'string' &&
-        Array.isArray(privateKey) &&
-        privateKey.length === 32
-      ) {
-        unlocked = {
-          accountHex: accountHex.replace(/^0x/i, '').toLowerCase(),
-          privateKey: new Uint8Array(privateKey),
-        };
+function toApprovalRecord(pending: PendingSignatureApproval): ApprovalRecord {
+  return {
+    requestId: pending.requestId,
+    origin: pending.origin,
+    chainId: pending.chainId,
+    address: pending.address,
+    message: pending.message,
+  };
+}
+
+function clearPendingApproval(requestId: string): PendingSignatureApproval | null {
+  const pending = pendingSignatureApprovals.get(requestId);
+  if (!pending) return null;
+  pendingSignatureApprovals.delete(requestId);
+  clearTimeout(pending.timeoutId);
+  if (pending.windowId != null) {
+    approvalRequestIdsByWindowId.delete(pending.windowId);
+  }
+  return pending;
+}
+
+function rejectPendingApproval(requestId: string, error: BoingProviderError): void {
+  const pending = clearPendingApproval(requestId);
+  if (!pending) return;
+  if (pending.windowId != null) {
+    chrome.windows.remove(pending.windowId, () => {
+      void chrome.runtime.lastError;
+    });
+  }
+  pending.reject(error);
+}
+
+function resolvePendingApproval(requestId: string): void {
+  const pending = clearPendingApproval(requestId);
+  if (!pending) return;
+  if (pending.windowId != null) {
+    chrome.windows.remove(pending.windowId, () => {
+      void chrome.runtime.lastError;
+    });
+  }
+  pending.resolve();
+}
+
+async function requestSignatureApproval(data: { origin: string; chainId: string; address: string; message: string }): Promise<void> {
+  const requestId = `sign-${Date.now()}-${nextApprovalId++}`;
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      rejectPendingApproval(
+        requestId,
+        providerError(PROVIDER_ERROR_CODES.USER_REJECTED, 'BOING_SIGNATURE_APPROVAL_TIMEOUT', 'Signature approval timed out.')
+      );
+    }, APPROVAL_TIMEOUT_MS) as unknown as number;
+
+    pendingSignatureApprovals.set(requestId, {
+      requestId,
+      origin: data.origin,
+      chainId: data.chainId,
+      address: data.address,
+      message: data.message,
+      resolve,
+      reject,
+      timeoutId,
+    });
+
+    chrome.windows.create(
+      {
+        url: chrome.runtime.getURL(`approval.html?requestId=${encodeURIComponent(requestId)}`),
+        type: 'popup',
+        width: APPROVAL_WINDOW_WIDTH,
+        height: APPROVAL_WINDOW_HEIGHT,
+      },
+      (createdWindow) => {
+        if (chrome.runtime.lastError || !createdWindow?.id) {
+          rejectPendingApproval(
+            requestId,
+            providerError(
+              PROVIDER_ERROR_CODES.INTERNAL_ERROR,
+              'BOING_APPROVAL_UI_UNAVAILABLE',
+              'Unable to open the signature approval window.'
+            )
+          );
+          return;
+        }
+        const pending = pendingSignatureApprovals.get(requestId);
+        if (!pending) return;
+        pending.windowId = createdWindow.id;
+        approvalRequestIdsByWindowId.set(createdWindow.id, requestId);
       }
-      sendResponse({ ok: true });
-      return true;
-    }
+    );
+  });
+}
 
-    if (msg.type === 'WALLET_LOCK') {
-      unlocked = null;
-      sendResponse({ ok: true });
-      return true;
-    }
+chrome.windows.onRemoved.addListener((windowId) => {
+  const requestId = approvalRequestIdsByWindowId.get(windowId);
+  if (!requestId) return;
+  rejectPendingApproval(
+    requestId,
+    providerError(PROVIDER_ERROR_CODES.USER_REJECTED, 'BOING_USER_REJECTED_SIGNING', 'User rejected signing request.')
+  );
+});
 
-    // From content script: provider request
-    if (msg.type === 'BOING_PROVIDER_REQUEST') {
-      const { id, method, params, origin } = msg as {
-        type: 'BOING_PROVIDER_REQUEST';
-        id: number | string;
-        method: string;
-        params: unknown[];
-        origin: string;
-      };
-      handleProviderRequest(id, method, params ?? [], origin)
-        .then((result) => sendResponse({ type: 'BOING_PROVIDER_RESPONSE', id, result, error: undefined }))
-        .catch((err) =>
-          sendResponse({
-            type: 'BOING_PROVIDER_RESPONSE',
-            id,
-            result: undefined,
-            error: err instanceof Error ? err.message : String(err),
-          })
-        );
-      return true; // keep channel open for async sendResponse
-    }
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local') return;
 
+  if (changes[STORAGE_KEY_NETWORK]) {
+    const newValue = changes[STORAGE_KEY_NETWORK].newValue;
+    const networkId = typeof newValue === 'string' ? newValue : DEFAULT_NETWORK_ID;
+    broadcastProviderEvent({
+      type: 'BOING_PROVIDER_EVENT',
+      event: 'chainChanged',
+      payload: { chainId: chainIdForNetwork(networkId) },
+    });
+  }
+
+  if (changes[STORAGE_KEY_CONNECTED_SITES]) {
+    let oldOrigins: string[] = [];
+    let newOrigins: string[] = [];
+    try {
+      oldOrigins = changes[STORAGE_KEY_CONNECTED_SITES].oldValue ? JSON.parse(changes[STORAGE_KEY_CONNECTED_SITES].oldValue) : [];
+      newOrigins = changes[STORAGE_KEY_CONNECTED_SITES].newValue ? JSON.parse(changes[STORAGE_KEY_CONNECTED_SITES].newValue) : [];
+    } catch {
+      oldOrigins = [];
+      newOrigins = [];
+    }
+    const removedOrigins = oldOrigins.filter((origin) => !newOrigins.includes(origin));
+    if (removedOrigins.length > 0) {
+      broadcastProviderEvent({
+        type: 'BOING_PROVIDER_EVENT',
+        event: 'accountsChanged',
+        payload: { accounts: [], origins: removedOrigins },
+      });
+      broadcastProviderEvent({
+        type: 'BOING_PROVIDER_EVENT',
+        event: 'disconnect',
+        payload: { origins: removedOrigins, code: PROVIDER_ERROR_CODES.UNAUTHORIZED, message: 'Site disconnected in Boing Express.' },
+      });
+    }
+  }
+});
+
+chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
+  if (!message || typeof message !== 'object' || !('type' in message)) {
     sendResponse(undefined);
     return true;
   }
-);
 
-async function handleProviderRequest(
-  _id: number | string,
-  method: string,
-  params: unknown[],
-  origin: string
-): Promise<unknown> {
+  const msg = message as { type: string; [key: string]: unknown };
+
+  if (msg.type === 'WALLET_UNLOCK') {
+    const accountHex = typeof msg.accountHex === 'string' ? msg.accountHex : null;
+    const privateKey = Array.isArray(msg.privateKey) ? msg.privateKey : null;
+    if (accountHex && privateKey && privateKey.length === 32) {
+      unlocked = {
+        accountHex: accountHex.replace(/^0x/i, '').toLowerCase(),
+        privateKey: new Uint8Array(privateKey),
+      };
+      getConnectedSites().then((origins) => {
+        if (origins.length > 0) {
+          broadcastProviderEvent({
+            type: 'BOING_PROVIDER_EVENT',
+            event: 'accountsChanged',
+            payload: { accounts: ['0x' + unlocked!.accountHex], origins },
+          });
+        }
+      });
+    }
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (msg.type === 'WALLET_LOCK') {
+    unlocked = null;
+    getConnectedSites().then((origins) => {
+      if (origins.length > 0) {
+        broadcastProviderEvent({
+          type: 'BOING_PROVIDER_EVENT',
+          event: 'accountsChanged',
+          payload: { accounts: [], origins },
+        });
+        broadcastProviderEvent({
+          type: 'BOING_PROVIDER_EVENT',
+          event: 'disconnect',
+          payload: { origins, code: PROVIDER_ERROR_CODES.UNAUTHORIZED, message: 'Wallet locked in Boing Express.' },
+        });
+      }
+    });
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (msg.type === 'GET_SIGN_APPROVAL') {
+    const requestId = typeof msg.requestId === 'string' ? msg.requestId : '';
+    const pending = pendingSignatureApprovals.get(requestId);
+    sendResponse({ ok: !!pending, approval: pending ? toApprovalRecord(pending) : null });
+    return true;
+  }
+
+  if (msg.type === 'RESOLVE_SIGN_APPROVAL') {
+    const requestId = typeof msg.requestId === 'string' ? msg.requestId : '';
+    const approved = msg.approved === true;
+    if (approved) {
+      resolvePendingApproval(requestId);
+    } else {
+      rejectPendingApproval(
+        requestId,
+        providerError(PROVIDER_ERROR_CODES.USER_REJECTED, 'BOING_USER_REJECTED_SIGNING', 'User rejected signing request.')
+      );
+    }
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (msg.type === 'BOING_PROVIDER_REQUEST') {
+    const id = msg.id as number | string;
+    const method = typeof msg.method === 'string' ? msg.method : '';
+    const params = Array.isArray(msg.params) ? msg.params : [];
+    const origin = typeof msg.origin === 'string' ? msg.origin : '';
+    handleProviderRequest(method, params, origin)
+      .then((result) => sendResponse({ type: 'BOING_PROVIDER_RESPONSE', id, result, error: undefined }))
+      .catch((error) => sendResponse({ type: 'BOING_PROVIDER_RESPONSE', id, result: undefined, error: serializeProviderError(error) }));
+    return true;
+  }
+
+  sendResponse(undefined);
+  return true;
+});
+
+async function handleProviderRequest(method: string, params: unknown[], origin: string): Promise<unknown> {
+  const normalizedMethod = METHOD_ALIASES[method] ?? method;
   const addressHex = await getAddressHexFromStorage();
-  const connected = await getConnectedSites();
-  const isConnected = connected.includes(origin);
+  const connectedOrigins = await getConnectedSites();
+  const isConnected = connectedOrigins.includes(origin);
 
-  switch (method) {
-    case 'eth_requestAccounts': {
+  switch (normalizedMethod) {
+    case BOING_METHODS.REQUEST_ACCOUNTS: {
       if (!addressHex) {
-        throw new Error('No wallet. Create or import a wallet in Boing Express.');
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_NO_WALLET',
+          'No wallet found. Create or import a wallet in Boing Express.'
+        );
       }
       await addConnectedSite(origin);
-      const addr = addressHex.startsWith('0x') ? addressHex : '0x' + addressHex;
-      return [addr];
+      const account = addressHex.startsWith('0x') ? addressHex : '0x' + addressHex;
+      broadcastProviderEvent({
+        type: 'BOING_PROVIDER_EVENT',
+        event: 'accountsChanged',
+        payload: { accounts: [account], origins: [origin] },
+      });
+      return [account];
     }
 
-    case 'eth_accounts': {
+    case BOING_METHODS.ACCOUNTS: {
       if (!isConnected || !addressHex) return [];
-      const addr = addressHex.startsWith('0x') ? addressHex : '0x' + addressHex;
-      return [addr];
+      return [addressHex.startsWith('0x') ? addressHex : '0x' + addressHex];
     }
 
-    case 'personal_sign': {
-      // params: [messageHex, address] or [messageHex, address, password] (we ignore password)
-      const messageHex = params[0];
+    case BOING_METHODS.SIGN_MESSAGE: {
+      const messageParam = params[0];
       const requestedAddress = params[1];
-      if (typeof messageHex !== 'string') {
-        throw new Error('personal_sign: message (hex string) required');
+      if (messageParam === undefined || messageParam === null) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.INVALID_PARAMS,
+          'BOING_INVALID_MESSAGE',
+          'boing_signMessage requires a message string.'
+        );
       }
       if (!isConnected) {
-        throw new Error('Site not connected. Call eth_requestAccounts first.');
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
       }
       if (!addressHex) {
-        throw new Error('No wallet.');
-      }
-      const ourAddr = normalizeAddress(addressHex);
-      const requested = requestedAddress != null ? normalizeAddress(String(requestedAddress)) : ourAddr;
-      if (requested !== ourAddr) {
-        throw new Error('Address does not match the wallet account.');
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_NO_WALLET',
+          'No wallet found. Create or import a wallet in Boing Express.'
+        );
       }
       if (!unlocked) {
-        throw new Error('Wallet is locked. Unlock Boing Express to sign.');
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_WALLET_LOCKED',
+          'Wallet is locked. Unlock Boing Express to sign messages.'
+        );
       }
-      const messageBytes = hexToBytes(messageHex);
-      const signature = await signMessage(messageBytes, unlocked.privateKey);
-      return signature;
+      const activeAddress = normalizeAddress(addressHex);
+      const requested = requestedAddress != null ? normalizeAddress(String(requestedAddress)) : activeAddress;
+      if (requested !== activeAddress) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.INVALID_PARAMS,
+          'BOING_ADDRESS_MISMATCH',
+          'Requested address does not match the active wallet account.'
+        );
+      }
+
+      const networkId = await getSelectedNetworkId();
+      const chainId = chainIdForNetwork(networkId);
+      const message = typeof messageParam === 'string' ? messageParam : String(messageParam);
+      await requestSignatureApproval({
+        origin,
+        chainId,
+        address: activeAddress,
+        message,
+      });
+
+      const messageBytes = messageToBytes(messageParam);
+      return signMessage(messageBytes, unlocked.privateKey);
     }
 
-    case 'eth_chainId': {
+    case BOING_METHODS.CHAIN_ID: {
       const networkId = await getSelectedNetworkId();
       return chainIdForNetwork(networkId);
     }
 
-    case 'wallet_switchEthereumChain': {
+    case BOING_METHODS.SWITCH_CHAIN: {
       const payload = params[0];
       const chainId =
         payload && typeof payload === 'object' && 'chainId' in payload
           ? String((payload as { chainId: string }).chainId)
-          : null;
+          : typeof payload === 'string'
+            ? payload
+            : null;
+
       if (!chainId) {
-        throw new Error('wallet_switchEthereumChain: chainId required');
+        throw providerError(
+          PROVIDER_ERROR_CODES.INVALID_PARAMS,
+          'BOING_INVALID_CHAIN',
+          'boing_switchChain requires a chainId, e.g. { chainId: "0x1b01" }.'
+        );
       }
+
       const normalized = chainId.replace(/^0x/i, '').toLowerCase();
       if (normalized === BOING_MAINNET_CHAIN_ID.replace(/^0x/i, '')) {
         await new Promise<void>((resolve) => {
-          chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: 'boing-mainnet' }, () => resolve());
+          chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: 'boing-mainnet' }, resolve);
         });
         return null;
       }
       if (normalized === BOING_TESTNET_CHAIN_ID.replace(/^0x/i, '')) {
         await new Promise<void>((resolve) => {
-          chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: 'boing-testnet' }, () => resolve());
+          chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: 'boing-testnet' }, resolve);
         });
         return null;
       }
-      throw new Error('Unsupported chain. Boing Express supports Boing Testnet and Mainnet.');
+
+      throw providerError(
+        PROVIDER_ERROR_CODES.UNSUPPORTED_CHAIN,
+        'BOING_UNSUPPORTED_CHAIN',
+        'Unsupported chain. Boing Express supports 0x1b01 (testnet) and 0x1b02 (mainnet).'
+      );
     }
 
     default:
-      throw new Error(`Unsupported method: ${method}`);
+      throw providerError(
+        PROVIDER_ERROR_CODES.UNSUPPORTED_METHOD,
+        'BOING_UNSUPPORTED_METHOD',
+        `Unsupported provider method: ${method}`
+      );
   }
 }

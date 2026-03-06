@@ -1,5 +1,6 @@
 /** RPC URLs for extension (no import.meta.env in extension context). */
 export const BOING_TESTNET_RPC = 'https://testnet-rpc.boing.network';
+/** Provisional default until the official public mainnet RPC is published. */
 export const BOING_MAINNET_RPC = 'https://rpc.boing.network';
 
 /** EIP-155–style chain IDs for wallet connection (dApps use these). */

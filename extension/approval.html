@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Approve Signature</title>
+  <link rel="stylesheet" href="approval.css" />
+</head>
+<body>
+  <main class="approval-shell">
+    <section class="approval-card">
+      <p class="eyebrow">Boing Express</p>
+      <h1 class="title">Approve Signature</h1>
+      <p class="subtitle">Review this message carefully before approving.</p>
+
+      <dl class="details">
+        <div class="detail">
+          <dt>Origin</dt>
+          <dd id="approval-origin">Loading…</dd>
+        </div>
+        <div class="detail">
+          <dt>Chain</dt>
+          <dd id="approval-chain">Loading…</dd>
+        </div>
+        <div class="detail">
+          <dt>Address</dt>
+          <dd id="approval-address">Loading…</dd>
+        </div>
+      </dl>
+
+      <div class="message-block">
+        <p class="message-label">Message</p>
+        <pre id="approval-message" class="message-text">Loading…</pre>
+      </div>
+
+      <p id="approval-error" class="error hidden"></p>
+
+      <div class="actions">
+        <button type="button" id="btn-reject" class="btn btn-secondary">Reject</button>
+        <button type="button" id="btn-approve" class="btn btn-primary">Approve</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="approval.js" type="module"></script>
+</body>
+</html>
