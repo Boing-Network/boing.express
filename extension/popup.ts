@@ -189,7 +189,7 @@ async function refreshConnectedSites(): Promise<void> {
   }
 }
 
-type TabId = 'wallet' | 'stake' | 'faucet';
+type TabId = 'wallet' | 'transactions' | 'stake' | 'faucet';
 
 function switchTab(tabId: TabId): void {
   document.querySelectorAll('.tab-btn').forEach((el) => {
@@ -233,6 +233,8 @@ async function goDashboard(): Promise<void> {
   const net = getNetwork(selectedNetworkId, NETWORKS) ?? network;
 
   ($('address') as HTMLElement).textContent = formatAddress(accountId, false);
+  const addressTxEl = document.getElementById('address-tx-tab');
+  if (addressTxEl) addressTxEl.textContent = formatAddress(accountId, false);
   ($('balance') as HTMLElement).textContent = '…';
   ($('network-select') as HTMLSelectElement).innerHTML = NETWORKS.map(
     (n) => `<option value="${n.config.id}" ${n.config.id === selectedNetworkId ? 'selected' : ''}>${n.config.name}</option>`
@@ -388,7 +390,7 @@ $('btn-import-back').addEventListener('click', () => showScreen('choose'));
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     const tabId = (btn as HTMLElement).getAttribute('data-tab');
-    if (tabId === 'wallet' || tabId === 'stake' || tabId === 'faucet') switchTab(tabId);
+    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'stake' || tabId === 'faucet') switchTab(tabId);
   });
 });
 
@@ -413,6 +415,15 @@ $('btn-copy').addEventListener('click', async () => {
   const addr = formatAddress(accountId, false);
   await navigator.clipboard.writeText(addr);
   const btn = $('btn-copy');
+  btn.textContent = 'Copied';
+  setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+});
+
+$('btn-copy-tx-tab').addEventListener('click', async () => {
+  if (!accountId) return;
+  const addr = formatAddress(accountId, false);
+  await navigator.clipboard.writeText(addr);
+  const btn = $('btn-copy-tx-tab');
   btn.textContent = 'Copied';
   setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
 });

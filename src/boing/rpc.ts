@@ -97,7 +97,12 @@ export async function rpcCall<T>(
   clearTimeout(timeoutId);
   if (!res.ok) {
     if (res.status === 404) throw new RpcClientError('RPC endpoint not available. The network may not be running.');
-    throw new RpcClientError(`RPC HTTP ${res.status}: ${res.statusText}`);
+    const friendly = res.status >= 500
+      ? 'Network temporarily unavailable. Check your connection or try again later.'
+      : res.status === 403 || res.status === 401
+        ? 'Access denied. The RPC may not allow this request.'
+        : null;
+    throw new RpcClientError(friendly ?? `RPC HTTP ${res.status}: ${res.statusText || 'Error'}`);
   }
   const data = (await res.json()) as JsonRpcResponse<T>;
   if (data.error) {

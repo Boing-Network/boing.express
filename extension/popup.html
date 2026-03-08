@@ -75,6 +75,7 @@
       </div>
       <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
         <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet">Wallet</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions">Transactions</button>
         <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
         <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>
@@ -104,6 +105,16 @@
             <p class="hint" id="connected-sites-hint">Sites that can see your address and request signatures.</p>
             <ul id="connected-sites-list" class="connected-sites-list" aria-label="List of connected sites"></ul>
             <p id="connected-sites-empty" class="connected-sites-empty hidden">No sites connected.</p>
+          </div>
+        </section>
+        <section id="panel-transactions" class="tab-panel" role="tabpanel" aria-labelledby="tab-transactions" hidden>
+          <div class="card">
+            <h2 class="label">Receive</h2>
+            <p class="hint">Share your address to receive BOING.</p>
+            <div class="row">
+              <code id="address-tx-tab" class="address address-tx"></code>
+              <button type="button" id="btn-copy-tx-tab" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
+            </div>
           </div>
           <div class="card">
             <h2 class="label">Send BOING</h2>
