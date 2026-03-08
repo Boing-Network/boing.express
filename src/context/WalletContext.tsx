@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, useRef } from 'react';
 import type { AccountId } from '../boing/types';
 import type { NetworkAdapter } from '../networks/types';
 import {
@@ -17,6 +17,12 @@ import {
   clearWallet,
   getStoredWallet,
 } from '../storage/walletStore';
+import { saveSession, clearSession, getSession } from '../storage/sessionStore';
+import {
+  getLockAfterMinutes,
+  setLockAfterMinutes as persistLockAfterMinutes,
+  type LockAfterMinutes,
+} from '../storage/lockSettings';
 
 interface WalletState {
   accountId: AccountId | null;
@@ -45,6 +51,8 @@ type WalletContextValue = WalletState & {
   lock: () => void;
   logout: () => void;
   getPrivateKey: () => Uint8Array | null;
+  lockAfterMinutes: LockAfterMinutes;
+  setLockAfterMinutes: (value: LockAfterMinutes) => void;
 };
 
 const WalletContext = createContext<WalletContextValue | null>(null);
@@ -63,6 +71,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     ...defaultState,
     network: getDefaultNetwork(),
   }));
+  const [lockAfterMinutes, setLockAfterMinutesState] = useState<LockAfterMinutes>(() => getLockAfterMinutes());
+  const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Restore session from sessionStorage on mount (same-tab refresh/navigation).
+  useEffect(() => {
+    const session = getSession();
+    if (session && hasStoredWallet()) {
+      setState((s) => ({
+        ...s,
+        accountId: session.publicKey,
+        privateKey: session.privateKey,
+        isUnlocked: true,
+      }));
+    }
+  }, []);
 
   const resolvedNetwork = resolveNetwork(state.network, rpcOverrides);
 
@@ -82,6 +105,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const unlock = useCallback(async (password: string) => {
     const [publicKey, privateKey] = await unlockWallet(password);
+    saveSession(publicKey, privateKey);
     setState((s) => ({
       ...s,
       accountId: publicKey,
@@ -98,6 +122,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const importWallet = useCallback(async (password: string, privateKeyHex: string) => {
     await importAndSaveWallet(password, privateKeyHex);
     const [publicKey, privateKey] = await unlockWallet(password);
+    saveSession(publicKey, privateKey);
     setState((s) => ({
       ...s,
       accountId: publicKey,
@@ -106,7 +131,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const setLockAfterMinutes = useCallback((value: LockAfterMinutes) => {
+    persistLockAfterMinutes(value);
+    setLockAfterMinutesState(value);
+  }, []);
+
   const lock = useCallback(() => {
+    clearSession();
     setState((s) => ({
       ...s,
       accountId: null,
@@ -115,7 +146,38 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  // Inactivity timeout: auto-lock after N minutes when unlocked. Reset on user activity.
+  useEffect(() => {
+    if (!state.isUnlocked || lockAfterMinutes === 0) {
+      if (inactivityTimeoutRef.current) {
+        clearTimeout(inactivityTimeoutRef.current);
+        inactivityTimeoutRef.current = null;
+      }
+      return;
+    }
+    const scheduleLock = () => {
+      if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
+      inactivityTimeoutRef.current = setTimeout(() => {
+        inactivityTimeoutRef.current = null;
+        lock();
+      }, lockAfterMinutes * 60 * 1000);
+    };
+    scheduleLock();
+    const onActivity = () => scheduleLock();
+    document.addEventListener('click', onActivity);
+    document.addEventListener('keydown', onActivity);
+    return () => {
+      document.removeEventListener('click', onActivity);
+      document.removeEventListener('keydown', onActivity);
+      if (inactivityTimeoutRef.current) {
+        clearTimeout(inactivityTimeoutRef.current);
+        inactivityTimeoutRef.current = null;
+      }
+    };
+  }, [state.isUnlocked, lockAfterMinutes, lock]);
+
   const logout = useCallback(() => {
+    clearSession();
     clearWallet();
     setState({
       ...defaultState,
@@ -139,6 +201,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     lock,
     logout,
     getPrivateKey,
+    lockAfterMinutes,
+    setLockAfterMinutes,
   };
 
   return (

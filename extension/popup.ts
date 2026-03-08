@@ -598,12 +598,31 @@ $('form-unbond').addEventListener('submit', async (e) => {
   }
 });
 
-// Init: show loading, restore saved network, load wallet from chrome.storage.local, then show choose/unlock
+// Init: show loading, restore saved network, load wallet from chrome.storage.local, then show choose/unlock or restore session
 showLoading();
 chrome.storage.local.get([STORAGE_KEY_NETWORK], (result) => {
   const saved = normalizeBoingNetworkId(
     typeof result[STORAGE_KEY_NETWORK] === 'string' ? result[STORAGE_KEY_NETWORK] : DEFAULT_NETWORK_ID
   );
   if (saved && NETWORKS.some((n) => n.config.id === saved)) selectedNetworkId = saved;
-  initExtensionWalletStorage().then(() => renderChoose());
+  initExtensionWalletStorage().then(() => {
+    if (!hasStoredWallet()) {
+      renderChoose();
+      return;
+    }
+    chrome.runtime.sendMessage({ type: 'GET_SESSION_RESTORE' }, (response: { unlocked?: boolean; accountHex?: string; privateKey?: number[] } | undefined) => {
+      if (
+        response?.unlocked &&
+        typeof response.accountHex === 'string' &&
+        Array.isArray(response.privateKey) &&
+        response.privateKey.length === 32
+      ) {
+        accountId = accountIdFromHex(response.accountHex);
+        privateKey = new Uint8Array(response.privateKey);
+        goDashboard();
+      } else {
+        renderChoose();
+      }
+    });
+  });
 });

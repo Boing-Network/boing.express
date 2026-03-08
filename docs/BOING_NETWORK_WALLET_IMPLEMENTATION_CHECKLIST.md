@@ -119,9 +119,16 @@ When a site requests signing and the wallet is locked, the wallet now returns a 
 - stable `boingCode`
 - no ambiguous generic failure
 
+### 5. Session-based lock and unlock
+
+Status: implemented.
+
+- **Web app:** Unlock once per session; session persists in `sessionStorage` across page refresh/navigation within the same tab. Optional inactivity timeout (5 / 15 / 30 min or Never) with configurable setting in Dashboard. "Lock" button clears session and requires password again.
+- **Extension:** Unlock once; session survives popup close/reopen within the same browser session via `chrome.storage.session`. When locked, `boing_requestAccounts` and `boing_accounts` return a clear "Wallet is locked" error or `[]`; dApp requests do not get account data until the user unlocks Boing Express.
+
 ## Priority 2: Next Phase
 
-### 5. Public dApp transaction API
+### 6. Public dApp transaction API
 
 Expose transaction operations through the provider, not just through the popup UI.
 
@@ -138,7 +145,7 @@ Expected direction:
 - wallet signs with Ed25519
 - wallet optionally submits to the selected RPC
 
-### 6. Multi-account support
+### 7. Multi-account support
 
 Add support for:
 

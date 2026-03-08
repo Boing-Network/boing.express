@@ -12,6 +12,7 @@ import {
   markSentTx,
   dismissOnboarding,
 } from '../storage/onboarding';
+import { getLockAfterLabel } from '../storage/lockSettings';
 import type { BalanceResult } from '../networks/types';
 import { SiteLogo } from '../components/SiteLogo';
 import styles from './Dashboard.module.css';
@@ -26,6 +27,8 @@ export function Dashboard() {
     getPrivateKey,
     rpcOverrides,
     setRpcOverride,
+    lockAfterMinutes,
+    setLockAfterMinutes,
   } = useWallet();
 
   const [balance, setBalance] = useState<BalanceResult | null>(null);
@@ -408,6 +411,20 @@ export function Dashboard() {
               </option>
             ))}
           </select>
+          <label className={styles.lockAfterLabel}>
+            Lock after:
+            <select
+              value={lockAfterMinutes}
+              onChange={(e) => setLockAfterMinutes(Number(e.target.value) as 0 | 5 | 15 | 30)}
+              className={styles.lockAfterSelect}
+              aria-label="Auto-lock after inactivity"
+            >
+              <option value={0}>{getLockAfterLabel(0)}</option>
+              <option value={5}>{getLockAfterLabel(5)}</option>
+              <option value={15}>{getLockAfterLabel(15)}</option>
+              <option value={30}>{getLockAfterLabel(30)}</option>
+            </select>
+          </label>
           <button type="button" className={styles.lockBtn} onClick={lock}>
             Lock
           </button>

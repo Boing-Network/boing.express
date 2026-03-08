@@ -459,6 +459,21 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
     return true;
   }
 
+  if (msg.type === 'GET_SESSION_RESTORE') {
+    getUnlockedState().then((state) => {
+      if (state && state.accountHex && state.privateKey && state.privateKey.length === 32) {
+        sendResponse({
+          unlocked: true,
+          accountHex: state.accountHex,
+          privateKey: Array.from(state.privateKey),
+        });
+      } else {
+        sendResponse({ unlocked: false });
+      }
+    });
+    return true;
+  }
+
   if (msg.type === 'GET_SIGN_APPROVAL') {
     const requestId = typeof msg.requestId === 'string' ? msg.requestId : '';
     const pending = pendingSignatureApprovals.get(requestId);
@@ -511,6 +526,14 @@ async function handleProviderRequest(method: string, params: unknown[], origin: 
           'No wallet found. Create or import a wallet in Boing Express.'
         );
       }
+      const unlockedState = await getUnlockedState();
+      if (!unlockedState) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_WALLET_LOCKED',
+          'Wallet is locked. Unlock Boing Express to connect.'
+        );
+      }
       await addConnectedSite(origin);
       const account = addressHex.startsWith('0x') ? addressHex : '0x' + addressHex;
       broadcastProviderEvent({
@@ -522,7 +545,8 @@ async function handleProviderRequest(method: string, params: unknown[], origin: 
     }
 
     case BOING_METHODS.ACCOUNTS: {
-      if (!isConnected || !addressHex) return [];
+      const unlockedState = await getUnlockedState();
+      if (!unlockedState || !isConnected || !addressHex) return [];
       return [addressHex.startsWith('0x') ? addressHex : '0x' + addressHex];
     }
 
