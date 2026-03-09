@@ -1,10 +1,12 @@
 /**
  * Ed25519 key generation and derivation. Client-only; keys never leave the device.
  * In browser/extension, @noble/ed25519 needs a sync SHA-512; we set it from @noble/hashes.
+ * Message signing uses BLAKE3(message) then Ed25519 (Boing convention, matches portal verification).
  */
 
 import * as ed from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha2';
+import { blake3 } from '@noble/hashes/blake3';
 
 // Required in environments without Node crypto (e.g. Chrome extension). Without this,
 // getPublicKey() throws "hashes.sha512Sync not set".
@@ -43,9 +45,18 @@ export function privateKeyToHex(privateKey: Uint8Array): string {
     .join('');
 }
 
-/** Sign an arbitrary message (e.g. for personal_sign). Returns 0x-prefixed hex signature (64 bytes = 128 hex chars). */
+/**
+ * Sign message for dApp/auth (e.g. boing_signMessage).
+ * Uses BLAKE3(message) then Ed25519 so verification matches Boing portal and Boing tx convention.
+ * Returns 0x-prefixed hex signature (64 bytes = 128 hex chars).
+ */
 export async function signMessage(message: Uint8Array, privateKey: Uint8Array): Promise<string> {
-  const sig = await ed.signAsync(message, privateKey);
+  const hash = blake3(message);
+  try {
+    const hex = Array.from(hash).map((b) => b.toString(16).padStart(2, '0')).join('');
+    console.log('[Boing Express] BLAKE3(message) hex (compare with portal 401 debug):', hex);
+  } catch (_) {}
+  const sig = await ed.signAsync(hash, privateKey);
   return '0x' + Array.from(sig)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
