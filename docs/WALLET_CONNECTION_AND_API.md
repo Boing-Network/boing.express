@@ -25,7 +25,7 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
 |--------|--------|--------|--------------|
 | **boing_requestAccounts** | `[]` | `string[]` | Connects the current origin to the wallet and returns the current account address (32-byte hex with `0x`). Fails if no wallet exists. |
 | **boing_accounts** | `[]` | `string[]` | Returns the current account if the site is already connected; otherwise `[]`. No side effects. |
-| **boing_signMessage** | `[message, address?]` | `string` | Signs the **exact UTF-8 message** with the account’s **Ed25519** key (Boing account ID = public key). **Message:** pass a **plain UTF-8 string** (recommended) such as the current portal nonce-backed multiline message, or 0x-prefixed hex of UTF-8 bytes. **No Keccak256, no secp256k1.** Returns a 64-byte Ed25519 signature as 128 hex chars (with or without `0x`). Optional second param: address to sign with (default: current account). Requires site connected and wallet unlocked. |
+| **boing_signMessage** | `[message, address?]` | `string` | Signs **BLAKE3(UTF-8 message)** with the account’s **Ed25519** key (Boing convention; matches portal and tx signing). **Message:** pass a **plain UTF-8 string** (e.g. the portal’s nonce-backed multiline message) or 0x-prefixed hex of UTF-8 bytes. Returns a 64-byte Ed25519 signature as 128 hex chars (with or without `0x`). Optional second param: address to sign with (default: current account). Requires site connected and wallet unlocked. |
 | **boing_chainId** | `[]` | `string` | Returns the current chain id: `0x1b01` (testnet) or `0x1b02` (mainnet). |
 | **boing_switchChain** | `[{ chainId }]` or `[chainId]` | `null` | Switches the wallet’s active network. Supported: `0x1b01`, `0x1b02`. Throws if chain is unsupported. |
 
@@ -45,7 +45,7 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
   ```
   The wallet encodes the exact text to UTF-8 bytes and signs those bytes. **No extra libraries needed on the network side.**
   - **0x-prefixed hex:** if the string looks like hex, the wallet decodes it to bytes and signs those bytes.
-- **Signing:** The wallet signs the UTF-8 message bytes with the account’s **Ed25519** private key (Boing account ID = Ed25519 public key). **No Keccak256 hash, no secp256k1** — portal verifies with Ed25519 only.
+- **Signing:** The wallet hashes the message with **BLAKE3** and signs the 32-byte hash with the account’s **Ed25519** private key (same as Boing transaction signing). **No Keccak256, no secp256k1** — portal verifies Ed25519 over BLAKE3(message).
 - **Output:** 64-byte Ed25519 signature as **128 hex characters**, with or without `0x` prefix (Boing Express returns with `0x`).
 
 ### Chain IDs
