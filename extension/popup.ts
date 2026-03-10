@@ -77,6 +77,21 @@ async function renderChoose(): void {
     const w = getStoredWallet();
     const hint = w ? `${w.addressHex.slice(0, 8)}…${w.addressHex.slice(-8)}` : '';
     ($('unlock-hint') as HTMLParagraphElement).textContent = hint ? `Address: ${hint}` : '';
+    const pendingEl = document.getElementById('unlock-pending-hint');
+    if (pendingEl) {
+      const params = new URLSearchParams(window.location.search);
+      const pending = params.get('pending');
+      if (pending === 'connect') {
+        pendingEl.textContent = 'A site is waiting to connect. Unlock to continue.';
+        pendingEl.classList.remove('hidden');
+      } else if (pending === 'sign') {
+        pendingEl.textContent = 'A site is waiting for your signature. Unlock to continue.';
+        pendingEl.classList.remove('hidden');
+      } else {
+        pendingEl.textContent = '';
+        pendingEl.classList.add('hidden');
+      }
+    }
     showScreen('unlock');
   } else {
     showScreen('choose');

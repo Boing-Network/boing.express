@@ -24,6 +24,16 @@ const DEFAULT_NETWORK_ID = BOING_TESTNET_NETWORK_ID;
 const APPROVAL_WINDOW_WIDTH = 420;
 const APPROVAL_WINDOW_HEIGHT = 640;
 const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000;
+const PENDING_UNLOCK_TIMEOUT_MS = 2 * 60 * 1000;
+
+type PendingUnlockItem = {
+  id: number | string;
+  method: string;
+  params: unknown[];
+  origin: string;
+  sendResponse: (response: object) => void;
+  timeoutId: number;
+};
 
 const BOING_METHODS = {
   REQUEST_ACCOUNTS: 'boing_requestAccounts',
@@ -86,8 +96,18 @@ class BoingProviderError extends Error {
   }
 }
 
+/** Thrown when a request is queued for after-unlock; listener must not call sendResponse. */
+class QueuedForUnlock extends Error {
+  constructor() {
+    super('Queued for unlock');
+    this.name = 'QueuedForUnlock';
+  }
+}
+
 let unlocked: UnlockedState | null = null;
 let nextApprovalId = 1;
+let unlockWindowId: number | null = null;
+const pendingUnlockQueue: PendingUnlockItem[] = [];
 
 const pendingSignatureApprovals = new Map<string, PendingSignatureApproval>();
 const approvalRequestIdsByWindowId = new Map<number, string>();
@@ -301,6 +321,122 @@ function rejectPendingApproval(requestId: string, error: BoingProviderError): vo
   pending.reject(error);
 }
 
+function rejectPendingUnlockItem(item: PendingUnlockItem, error: BoingProviderError): void {
+  clearTimeout(item.timeoutId);
+  try {
+    item.sendResponse({
+      type: 'BOING_PROVIDER_RESPONSE',
+      id: item.id,
+      result: undefined,
+      error: serializeProviderError(error),
+    });
+  } catch {
+    // sendResponse may be invalid if context disconnected
+  }
+}
+
+function rejectAllPendingUnlockRequests(reason: BoingProviderError): void {
+  while (pendingUnlockQueue.length > 0) {
+    const item = pendingUnlockQueue.shift();
+    if (item) rejectPendingUnlockItem(item, reason);
+  }
+  unlockWindowId = null;
+}
+
+function openUnlockWindow(pendingAction?: 'connect' | 'sign'): void {
+  if (unlockWindowId != null) return;
+  const qs = pendingAction ? `?pending=${pendingAction}` : '';
+  chrome.windows.create(
+    {
+      url: chrome.runtime.getURL('popup.html' + qs),
+      type: 'popup',
+      width: APPROVAL_WINDOW_WIDTH,
+      height: APPROVAL_WINDOW_HEIGHT,
+    },
+    (createdWindow) => {
+      if (createdWindow?.id != null) {
+        unlockWindowId = createdWindow.id;
+      }
+    }
+  );
+}
+
+async function processPendingUnlockQueue(): Promise<void> {
+  const addressHex = await getAddressHexFromStorage();
+  const account = addressHex ? (addressHex.startsWith('0x') ? addressHex : '0x' + addressHex) : null;
+  const unlockedState = await getUnlockedState();
+
+  while (pendingUnlockQueue.length > 0 && unlockedState) {
+    const item = pendingUnlockQueue.shift();
+    if (!item) break;
+
+    clearTimeout(item.timeoutId);
+
+    const sendResp = (result: unknown, error?: { code: number; message: string; data: { boingCode: string } }) => {
+      try {
+        item.sendResponse({
+          type: 'BOING_PROVIDER_RESPONSE',
+          id: item.id,
+          result: error ? undefined : result,
+          error,
+        });
+      } catch {
+        // ignore
+      }
+    };
+
+    if (item.method === BOING_METHODS.REQUEST_ACCOUNTS || (METHOD_ALIASES[item.method] === BOING_METHODS.REQUEST_ACCOUNTS)) {
+      if (!account) {
+        sendResp(undefined, serializeProviderError(providerError(PROVIDER_ERROR_CODES.UNAUTHORIZED, 'BOING_NO_WALLET', 'No wallet found.')));
+      } else {
+        await addConnectedSite(item.origin);
+        broadcastProviderEvent({
+          type: 'BOING_PROVIDER_EVENT',
+          event: 'accountsChanged',
+          payload: { accounts: [account], origins: [item.origin] },
+        });
+        sendResp([account]);
+      }
+      continue;
+    }
+
+    if (item.method === BOING_METHODS.SIGN_MESSAGE || METHOD_ALIASES[item.method] === BOING_METHODS.SIGN_MESSAGE) {
+      const messageParam = item.params[0];
+      const requestedAddress = item.params[1];
+      try {
+        if (messageParam === undefined || messageParam === null) {
+          sendResp(undefined, serializeProviderError(providerError(PROVIDER_ERROR_CODES.INVALID_PARAMS, 'BOING_INVALID_MESSAGE', 'boing_signMessage requires a message string.')));
+          continue;
+        }
+        if (!addressHex) {
+          sendResp(undefined, serializeProviderError(providerError(PROVIDER_ERROR_CODES.UNAUTHORIZED, 'BOING_NO_WALLET', 'No wallet found.')));
+          continue;
+        }
+        const activeAddress = normalizeAddress(addressHex);
+        const requested = requestedAddress != null ? normalizeAddress(String(requestedAddress)) : activeAddress;
+        if (requested !== activeAddress) {
+          sendResp(undefined, serializeProviderError(providerError(PROVIDER_ERROR_CODES.INVALID_PARAMS, 'BOING_ADDRESS_MISMATCH', 'Requested address does not match the active wallet account.')));
+          continue;
+        }
+        const networkId = await getSelectedNetworkId();
+        const chainId = chainIdForNetwork(networkId);
+        const message = typeof messageParam === 'string' ? messageParam : String(messageParam);
+        await requestSignatureApproval({
+          origin: item.origin,
+          chainId,
+          address: activeAddress,
+          message,
+        });
+        const messageBytes = messageToBytes(messageParam);
+        const signature = signMessage(messageBytes, unlockedState.privateKey);
+        sendResp(signature);
+      } catch (err) {
+        sendResp(undefined, serializeProviderError(err instanceof BoingProviderError ? err : providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_INTERNAL_ERROR', err instanceof Error ? err.message : 'Sign failed.')));
+      }
+    }
+  }
+}
+
 function resolvePendingApproval(requestId: string): void {
   const pending = clearPendingApproval(requestId);
   if (!pending) return;
@@ -362,6 +498,12 @@ async function requestSignatureApproval(data: { origin: string; chainId: string;
 }
 
 chrome.windows.onRemoved.addListener((windowId) => {
+  if (windowId === unlockWindowId) {
+    rejectAllPendingUnlockRequests(
+      providerError(PROVIDER_ERROR_CODES.USER_REJECTED, 'BOING_USER_REJECTED', 'Wallet window closed. Unlock Boing Express to connect or sign.')
+    );
+    return;
+  }
   const requestId = approvalRequestIdsByWindowId.get(windowId);
   if (!requestId) return;
   rejectPendingApproval(
@@ -434,6 +576,8 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
           });
         }
       });
+      unlockWindowId = null;
+      processPendingUnlockQueue();
     }
     sendResponse({ ok: true });
     return true;
@@ -501,9 +645,12 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
     const method = typeof msg.method === 'string' ? msg.method : '';
     const params = Array.isArray(msg.params) ? msg.params : [];
     const origin = typeof msg.origin === 'string' ? msg.origin : '';
-    handleProviderRequest(method, params, origin)
+    handleProviderRequest(id, method, params, origin, sendResponse)
       .then((result) => sendResponse({ type: 'BOING_PROVIDER_RESPONSE', id, result, error: undefined }))
-      .catch((error) => sendResponse({ type: 'BOING_PROVIDER_RESPONSE', id, result: undefined, error: serializeProviderError(error) }));
+      .catch((error) => {
+        if (error instanceof QueuedForUnlock) return;
+        sendResponse({ type: 'BOING_PROVIDER_RESPONSE', id, result: undefined, error: serializeProviderError(error) });
+      });
     return true;
   }
 
@@ -511,7 +658,13 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
   return true;
 });
 
-async function handleProviderRequest(method: string, params: unknown[], origin: string): Promise<unknown> {
+async function handleProviderRequest(
+  id: number | string,
+  method: string,
+  params: unknown[],
+  origin: string,
+  sendResponse: (response: object) => void
+): Promise<unknown> {
   const normalizedMethod = METHOD_ALIASES[method] ?? method;
   const addressHex = await getAddressHexFromStorage();
   const connectedOrigins = await getConnectedSites();
@@ -528,11 +681,19 @@ async function handleProviderRequest(method: string, params: unknown[], origin: 
       }
       const unlockedState = await getUnlockedState();
       if (!unlockedState) {
-        throw providerError(
-          PROVIDER_ERROR_CODES.UNAUTHORIZED,
-          'BOING_WALLET_LOCKED',
-          'Wallet is locked. Unlock Boing Express to connect.'
-        );
+        openUnlockWindow('connect');
+        const timeoutId = setTimeout(() => {
+          const idx = pendingUnlockQueue.findIndex((p) => p.id === id);
+          if (idx !== -1) {
+            const [item] = pendingUnlockQueue.splice(idx, 1);
+            rejectPendingUnlockItem(
+              item,
+              providerError(PROVIDER_ERROR_CODES.USER_REJECTED, 'BOING_UNLOCK_TIMEOUT', 'Unlock timed out. Please try again.')
+            );
+          }
+        }, PENDING_UNLOCK_TIMEOUT_MS) as unknown as number;
+        pendingUnlockQueue.push({ id, method, params, origin, sendResponse, timeoutId });
+        throw new QueuedForUnlock();
       }
       await addConnectedSite(origin);
       const account = addressHex.startsWith('0x') ? addressHex : '0x' + addressHex;
@@ -576,11 +737,19 @@ async function handleProviderRequest(method: string, params: unknown[], origin: 
       }
       const unlockedState = await getUnlockedState();
       if (!unlockedState) {
-        throw providerError(
-          PROVIDER_ERROR_CODES.UNAUTHORIZED,
-          'BOING_WALLET_LOCKED',
-          'Wallet is locked. Unlock Boing Express to sign messages.'
-        );
+        openUnlockWindow('sign');
+        const timeoutId = setTimeout(() => {
+          const idx = pendingUnlockQueue.findIndex((p) => p.id === id);
+          if (idx !== -1) {
+            const [item] = pendingUnlockQueue.splice(idx, 1);
+            rejectPendingUnlockItem(
+              item,
+              providerError(PROVIDER_ERROR_CODES.USER_REJECTED, 'BOING_UNLOCK_TIMEOUT', 'Unlock timed out. Please try again.')
+            );
+          }
+        }, PENDING_UNLOCK_TIMEOUT_MS) as unknown as number;
+        pendingUnlockQueue.push({ id, method, params, origin, sendResponse, timeoutId });
+        throw new QueuedForUnlock();
       }
       const activeAddress = normalizeAddress(addressHex);
       const requested = requestedAddress != null ? normalizeAddress(String(requestedAddress)) : activeAddress;
