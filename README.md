@@ -123,6 +123,8 @@ docs/              # DEVELOPMENT.md, DESIGN_SYSTEM.md, EXTENSION_STORE.md, WALLE
 pnpm run build:extension
 ```
 
+**Note:** Extension build outputs (e.g. `config-*.js` chunks) are not committed. You must run `pnpm run build:extension` before **Load unpacked** so the `extension/` folder contains all required files.
+
 This regenerates `extension/manifest.json`, refreshes icons, and rebuilds the packaged extension scripts. If `VITE_BOING_MAINNET_RPC` is not set, the generated extension build exposes only testnet.
 
 Then in **Chrome**: open `chrome://extensions`, enable “Developer mode”, “Load unpacked”, and select the `extension` folder.  
