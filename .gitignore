@@ -4,6 +4,9 @@ node_modules/
 # Build
 dist/
 boing-wallet-extension.zip
+# Extension build chunks (hash changes each build; run pnpm run build:extension before Load unpacked)
+extension/config-*.js
+extension/config-*.js.map
 *.local
 *.tsbuildinfo
 vite.config.d.ts
