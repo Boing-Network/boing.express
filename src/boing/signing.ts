@@ -4,7 +4,7 @@
  * Signature = Ed25519(signable_hash). Submit hex(bincode(SignedTransaction)).
  */
 
-import { blake3 } from '@noble/hashes/blake3';
+import { blake3 } from '@noble/hashes/blake3.js';
 import * as ed from '@noble/ed25519';
 import type { Transaction, SignedTransaction } from './types';
 import { encodePayload, encodeAccessList, encodeSignedTransaction } from './bincode';
