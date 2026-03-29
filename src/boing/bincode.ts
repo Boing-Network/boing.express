@@ -1,9 +1,22 @@
 /**
- * Bincode-compatible encoding for Boing types (little-endian, Rust serde layout).
- * Matches boing-primitives so the node accepts transactions.
+ * Bincode-compatible encoding for Boing types (Rust serde + bincode 1.3).
+ * Must match crates/boing-primitives (TransactionPayload order and SignedTransaction layout).
  */
 
 import type { Payload, AccessList, Transaction, SignedTransaction } from './types';
+
+const VARIANT_TRANSFER = 0;
+const VARIANT_CONTRACT_CALL = 1;
+const VARIANT_CONTRACT_DEPLOY = 2;
+const VARIANT_CONTRACT_DEPLOY_PURPOSE = 3;
+const VARIANT_CONTRACT_DEPLOY_META = 4;
+const VARIANT_BOND = 5;
+const VARIANT_UNBOND = 6;
+
+function writeU32LE(buf: Uint8Array, offset: number, value: number): void {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  view.setUint32(offset, value >>> 0, true);
+}
 
 function writeU64LE(buf: Uint8Array, offset: number, value: bigint): void {
   const lo = Number(value & 0xffff_ffffn);
@@ -21,37 +34,104 @@ function writeU128LE(buf: Uint8Array, offset: number, value: bigint): void {
   view.setBigUint64(offset + 8, hi, true);
 }
 
-/** Encode Payload (enum: tag u8 then fields). */
-export function encodePayload(p: Payload): Uint8Array {
-  if (p.tag === 0) {
-    const buf = new Uint8Array(1 + 32 + 16);
-    buf[0] = 0;
-    buf.set(p.to, 1);
-    writeU128LE(buf, 1 + 32, p.amount);
-    return buf;
+function concatBytes(chunks: Uint8Array[]): Uint8Array {
+  const len = chunks.reduce((a, c) => a + c.length, 0);
+  const out = new Uint8Array(len);
+  let o = 0;
+  for (const c of chunks) {
+    out.set(c, o);
+    o += c.length;
   }
-  if (p.tag === 1) {
-    const buf = new Uint8Array(1 + 16);
-    buf[0] = 1;
-    writeU128LE(buf, 1, p.amount);
-    return buf;
-  }
-  if (p.tag === 2) {
-    const buf = new Uint8Array(1 + 16);
-    buf[0] = 2;
-    writeU128LE(buf, 1, p.amount);
-    return buf;
-  }
-  if (p.tag === 3) {
-    return new Uint8Array([3]);
-  }
-  if (p.tag === 4) {
-    return new Uint8Array([4]);
-  }
-  throw new Error('Unknown payload tag');
+  return out;
 }
 
-/** Encode AccessList (read vec then write vec; bincode uses u64 length). */
+/** Vec<u8>: u64 LE length + bytes */
+export function encodeVecU8(bytes: Uint8Array): Uint8Array {
+  const hdr = new Uint8Array(8);
+  writeU64LE(hdr, 0, BigInt(bytes.length));
+  return concatBytes([hdr, bytes]);
+}
+
+/** String: Vec<u8> UTF-8 */
+function encodeString(s: string): Uint8Array {
+  return encodeVecU8(new TextEncoder().encode(s));
+}
+
+function encodeOptionVecU8(v: Uint8Array | null | undefined): Uint8Array {
+  if (v == null || v.length === 0) {
+    return new Uint8Array([0]);
+  }
+  return concatBytes([new Uint8Array([1]), encodeVecU8(v)]);
+}
+
+function encodeOptionString(s: string | null | undefined): Uint8Array {
+  if (s == null || s === '') {
+    return new Uint8Array([0]);
+  }
+  return concatBytes([new Uint8Array([1]), encodeString(s)]);
+}
+
+function enumTag(tag: number): Uint8Array {
+  const b = new Uint8Array(4);
+  writeU32LE(b, 0, tag);
+  return b;
+}
+
+/** Encode TransactionPayload (u32 variant index + fields, per Rust enum order). */
+export function encodePayload(p: Payload): Uint8Array {
+  switch (p.kind) {
+    case 'transfer': {
+      const body = new Uint8Array(4 + 32 + 16);
+      writeU32LE(body, 0, VARIANT_TRANSFER);
+      body.set(p.to, 4);
+      writeU128LE(body, 4 + 32, p.amount);
+      return body;
+    }
+    case 'contract_call': {
+      const calldataEnc = encodeVecU8(p.calldata);
+      return concatBytes([enumTag(VARIANT_CONTRACT_CALL), p.contract, calldataEnc]);
+    }
+    case 'contract_deploy': {
+      return concatBytes([enumTag(VARIANT_CONTRACT_DEPLOY), encodeVecU8(p.bytecode)]);
+    }
+    case 'contract_deploy_purpose': {
+      return concatBytes([
+        enumTag(VARIANT_CONTRACT_DEPLOY_PURPOSE),
+        encodeVecU8(p.bytecode),
+        encodeString(p.purpose_category),
+        encodeOptionVecU8(p.description_hash),
+      ]);
+    }
+    case 'contract_deploy_meta': {
+      return concatBytes([
+        enumTag(VARIANT_CONTRACT_DEPLOY_META),
+        encodeVecU8(p.bytecode),
+        encodeString(p.purpose_category),
+        encodeOptionVecU8(p.description_hash),
+        encodeOptionString(p.asset_name),
+        encodeOptionString(p.asset_symbol),
+      ]);
+    }
+    case 'bond': {
+      const body = new Uint8Array(4 + 16);
+      writeU32LE(body, 0, VARIANT_BOND);
+      writeU128LE(body, 4, p.amount);
+      return body;
+    }
+    case 'unbond': {
+      const body = new Uint8Array(4 + 16);
+      writeU32LE(body, 0, VARIANT_UNBOND);
+      writeU128LE(body, 4, p.amount);
+      return body;
+    }
+    default: {
+      const _exhaustive: never = p;
+      return _exhaustive;
+    }
+  }
+}
+
+/** Encode AccessList: u64 read len + accounts + u64 write len + accounts */
 export function encodeAccessList(a: AccessList): Uint8Array {
   const readLen = a.read.length;
   const writeLen = a.write.length;
@@ -72,30 +152,26 @@ export function encodeAccessList(a: AccessList): Uint8Array {
   return buf;
 }
 
-/** Encode Transaction. */
+/** Encode Transaction (nonce u64 LE, sender, payload, access_list). */
 export function encodeTransaction(tx: Transaction): Uint8Array {
-  const nonce = 8;
-  const sender = 32;
   const payloadBytes = encodePayload(tx.payload);
   const accessBytes = encodeAccessList(tx.access_list);
-  const total = nonce + sender + payloadBytes.length + accessBytes.length;
+  const total = 8 + 32 + payloadBytes.length + accessBytes.length;
   const buf = new Uint8Array(total);
-  let offset = 0;
-  writeU64LE(buf, offset, tx.nonce);
-  offset += 8;
-  buf.set(tx.sender, offset);
-  offset += 32;
-  buf.set(payloadBytes, offset);
-  offset += payloadBytes.length;
-  buf.set(accessBytes, offset);
+  writeU64LE(buf, 0, tx.nonce);
+  buf.set(tx.sender, 8);
+  buf.set(payloadBytes, 40);
+  buf.set(accessBytes, 40 + payloadBytes.length);
   return buf;
 }
 
-/** Encode SignedTransaction (tx then 64-byte signature). */
+/** Signature serializes as byte vec: u64(64) + 64 bytes (serde_bytes on Rust). */
+export function encodeSignature(sig: Uint8Array): Uint8Array {
+  if (sig.length !== 64) throw new Error('Ed25519 signature must be 64 bytes');
+  return encodeVecU8(sig);
+}
+
+/** SignedTransaction: bincode(tx) || bincode(signature) */
 export function encodeSignedTransaction(st: SignedTransaction): Uint8Array {
-  const txBytes = encodeTransaction(st.tx);
-  const buf = new Uint8Array(txBytes.length + 64);
-  buf.set(txBytes, 0);
-  buf.set(st.signature, txBytes.length);
-  return buf;
+  return concatBytes([encodeTransaction(st.tx), encodeSignature(st.signature)]);
 }

@@ -1,17 +1,31 @@
 /**
- * Boing Network types — layout matches Rust boing-primitives for bincode compatibility.
+ * Boing Network types — bincode layout matches Rust boing-primitives (see src/boing/bincode.ts).
  * AccountId = 32 bytes (Ed25519 public key).
  */
 
 export type AccountId = Uint8Array; // 32 bytes
 
-/** Payload variants; variant index matches Rust enum order. */
+/** Payload variants — `kind` maps to Rust TransactionPayload enum order (u32 discriminant). */
 export type Payload =
-  | { tag: 0; to: AccountId; amount: bigint } // Transfer
-  | { tag: 1; amount: bigint }                 // Bond
-  | { tag: 2; amount: bigint }                 // Unbond
-  | { tag: 3 }                                // ContractCall (placeholder)
-  | { tag: 4 };                               // ContractDeploy (placeholder)
+  | { kind: 'transfer'; to: AccountId; amount: bigint }
+  | { kind: 'contract_call'; contract: AccountId; calldata: Uint8Array }
+  | { kind: 'contract_deploy'; bytecode: Uint8Array }
+  | {
+      kind: 'contract_deploy_purpose';
+      bytecode: Uint8Array;
+      purpose_category: string;
+      description_hash: Uint8Array | null;
+    }
+  | {
+      kind: 'contract_deploy_meta';
+      bytecode: Uint8Array;
+      purpose_category: string;
+      description_hash: Uint8Array | null;
+      asset_name: string | null;
+      asset_symbol: string | null;
+    }
+  | { kind: 'bond'; amount: bigint }
+  | { kind: 'unbond'; amount: bigint };
 
 export interface AccessList {
   read: AccountId[];
@@ -19,7 +33,7 @@ export interface AccessList {
 }
 
 export interface Transaction {
-  nonce: bigint;   // u64
+  nonce: bigint; // u64
   sender: AccountId;
   payload: Payload;
   access_list: AccessList;

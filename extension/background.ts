@@ -7,11 +7,27 @@
  */
 
 import { signMessage } from '../src/crypto/keys';
+import { buildSignedTransactionHex } from '../src/boing/signing';
+import { accountIdFromHex } from '../src/boing/types';
+import {
+  assertFromMatchesSender,
+  transactionFromDappJson,
+  transactionSummary,
+} from '../src/boing/dappTxRequest';
+import {
+  getAccount,
+  getNonce,
+  RpcClientError,
+  simulateTransaction,
+  submitTransaction,
+} from '../src/boing/rpc';
 import {
   BOING_MAINNET_CHAIN_ID,
   BOING_MAINNET_NETWORK_ID,
+  BOING_MAINNET_RPC,
   BOING_TESTNET_CHAIN_ID,
   BOING_TESTNET_NETWORK_ID,
+  BOING_TESTNET_RPC,
   isBoingMainnetConfigured,
   normalizeBoingNetworkId,
 } from './config';
@@ -39,6 +55,8 @@ const BOING_METHODS = {
   REQUEST_ACCOUNTS: 'boing_requestAccounts',
   ACCOUNTS: 'boing_accounts',
   SIGN_MESSAGE: 'boing_signMessage',
+  SIGN_TRANSACTION: 'boing_signTransaction',
+  SEND_TRANSACTION: 'boing_sendTransaction',
   CHAIN_ID: 'boing_chainId',
   SWITCH_CHAIN: 'boing_switchChain',
 } as const;
@@ -279,6 +297,116 @@ function normalizeAddress(hex: string): string {
   return '0x' + normalized;
 }
 
+async function rpcUrlForSelectedNetwork(): Promise<string> {
+  const networkId = await getSelectedNetworkId();
+  if (networkId === BOING_MAINNET_NETWORK_ID && isBoingMainnetConfigured()) {
+    return BOING_MAINNET_RPC;
+  }
+  return BOING_TESTNET_RPC;
+}
+
+async function signOrSendBoingTransaction(
+  method: string,
+  params: unknown[],
+  origin: string,
+  unlockedState: UnlockedState,
+  addressHex: string
+): Promise<unknown> {
+  const connectedOrigins = await getConnectedSites();
+  if (!connectedOrigins.includes(origin)) {
+    throw providerError(
+      PROVIDER_ERROR_CODES.UNAUTHORIZED,
+      'BOING_ORIGIN_NOT_CONNECTED',
+      'Origin is not connected. Call boing_requestAccounts first.'
+    );
+  }
+  const txReq = params[0];
+  if (txReq == null || typeof txReq !== 'object') {
+    throw providerError(
+      PROVIDER_ERROR_CODES.INVALID_PARAMS,
+      'BOING_INVALID_TX',
+      'Pass one argument: a transaction object (type: transfer | bond | unbond | contract_call | contract_deploy_purpose | contract_deploy_meta | …). Deployments must declare a valid purpose_category (protocol QA).'
+    );
+  }
+
+  const normalizedAddr = normalizeAddress(addressHex.startsWith('0x') ? addressHex : '0x' + addressHex);
+  assertFromMatchesSender(txReq, normalizedAddr.slice(2));
+
+  const sender = accountIdFromHex(normalizedAddr);
+  const rpcUrl = await rpcUrlForSelectedNetwork();
+  const hexForRpc = normalizedAddr;
+
+  const req = txReq as Record<string, unknown>;
+  const hasExplicitNonce =
+    Object.prototype.hasOwnProperty.call(req, 'nonce') &&
+    req.nonce !== undefined &&
+    req.nonce !== null &&
+    String(req.nonce).trim() !== '';
+
+  let nonceDefault = 0n;
+  if (!hasExplicitNonce) {
+    try {
+      const acc = await getAccount(rpcUrl, hexForRpc);
+      nonceDefault = BigInt(acc.nonce);
+    } catch {
+      try {
+        nonceDefault = await getNonce(rpcUrl, hexForRpc);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_RPC_NONCE', `Could not load nonce: ${msg}`);
+      }
+    }
+  }
+
+  const tx = transactionFromDappJson(txReq, sender, nonceDefault);
+  const networkId = await getSelectedNetworkId();
+  const chainId = chainIdForNetwork(networkId);
+
+  await requestSignatureApproval({
+    origin,
+    chainId,
+    address: normalizedAddr,
+    message: transactionSummary(tx),
+  });
+
+  const signedHexNoPrefix = await buildSignedTransactionHex(tx, unlockedState.privateKey);
+  const rpcHex = signedHexNoPrefix.startsWith('0x') ? signedHexNoPrefix : `0x${signedHexNoPrefix}`;
+
+  const isSend = method === BOING_METHODS.SEND_TRANSACTION;
+  if (!isSend) {
+    return rpcHex;
+  }
+
+  try {
+    try {
+      const sim = (await simulateTransaction(rpcUrl, rpcHex)) as { success?: boolean; error?: string };
+      if (sim && typeof sim === 'object' && sim.success === false) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.INTERNAL_ERROR,
+          'BOING_SIMULATION_FAILED',
+          sim.error ?? 'Simulation reported failure.'
+        );
+      }
+    } catch (e) {
+      if (e instanceof BoingProviderError) throw e;
+      const msg = e instanceof Error ? e.message : String(e);
+      const notFound =
+        msg.includes('Method not found') ||
+        msg.includes('-32601') ||
+        (e instanceof RpcClientError && e.code === -32601);
+      if (!notFound) {
+        throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_SIMULATION_ERROR', msg);
+      }
+    }
+
+    return await submitTransaction(rpcUrl, rpcHex);
+  } catch (e) {
+    if (e instanceof BoingProviderError) throw e;
+    const msg = e instanceof Error ? e.message : String(e);
+    throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_SUBMIT_FAILED', msg);
+  }
+}
+
 function broadcastProviderEvent(message: ProviderEventMessage): void {
   try {
     chrome.runtime.sendMessage(message, () => {
@@ -433,6 +561,38 @@ async function processPendingUnlockQueue(): Promise<void> {
       } catch (err) {
         sendResp(undefined, serializeProviderError(err instanceof BoingProviderError ? err : providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_INTERNAL_ERROR', err instanceof Error ? err.message : 'Sign failed.')));
       }
+      continue;
+    }
+
+    if (item.method === BOING_METHODS.SIGN_TRANSACTION || item.method === BOING_METHODS.SEND_TRANSACTION) {
+      try {
+        if (!addressHex) {
+          sendResp(undefined, serializeProviderError(providerError(PROVIDER_ERROR_CODES.UNAUTHORIZED, 'BOING_NO_WALLET', 'No wallet found.')));
+          continue;
+        }
+        const result = await signOrSendBoingTransaction(
+          item.method,
+          item.params,
+          item.origin,
+          unlockedState,
+          addressHex
+        );
+        sendResp(result);
+      } catch (err) {
+        sendResp(
+          undefined,
+          serializeProviderError(
+            err instanceof BoingProviderError
+              ? err
+              : providerError(
+                  PROVIDER_ERROR_CODES.INTERNAL_ERROR,
+                  'BOING_INTERNAL_ERROR',
+                  err instanceof Error ? err.message : 'Transaction failed.'
+                )
+          )
+        );
+      }
+      continue;
     }
   }
 }
@@ -773,6 +933,41 @@ async function handleProviderRequest(
 
       const messageBytes = messageToBytes(messageParam);
       return signMessage(messageBytes, unlockedState.privateKey);
+    }
+
+    case BOING_METHODS.SIGN_TRANSACTION:
+    case BOING_METHODS.SEND_TRANSACTION: {
+      if (!isConnected) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
+      }
+      if (!addressHex) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_NO_WALLET',
+          'No wallet found. Create or import a wallet in Boing Express.'
+        );
+      }
+      const unlockedStateTx = await getUnlockedState();
+      if (!unlockedStateTx) {
+        openUnlockWindow('sign');
+        const timeoutId = setTimeout(() => {
+          const idx = pendingUnlockQueue.findIndex((p) => p.id === id);
+          if (idx !== -1) {
+            const [item] = pendingUnlockQueue.splice(idx, 1);
+            rejectPendingUnlockItem(
+              item,
+              providerError(PROVIDER_ERROR_CODES.USER_REJECTED, 'BOING_UNLOCK_TIMEOUT', 'Unlock timed out. Please try again.')
+            );
+          }
+        }, PENDING_UNLOCK_TIMEOUT_MS) as unknown as number;
+        pendingUnlockQueue.push({ id, method, params, origin, sendResponse, timeoutId });
+        throw new QueuedForUnlock();
+      }
+      return signOrSendBoingTransaction(normalizedMethod, params, origin, unlockedStateTx, addressHex);
     }
 
     case BOING_METHODS.CHAIN_ID: {

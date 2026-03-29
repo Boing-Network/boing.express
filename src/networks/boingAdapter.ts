@@ -63,7 +63,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      const payload: Payload = { tag: 0, to, amount };
+      const payload: Payload = { kind: 'transfer', to, amount };
       const tx: Transaction = {
         nonce,
         sender,
@@ -79,7 +79,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      const payload: Payload = { tag: 1, amount };
+      const payload: Payload = { kind: 'bond', amount };
       const tx: Transaction = {
         nonce,
         sender,
@@ -95,7 +95,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      const payload: Payload = { tag: 2, amount };
+      const payload: Payload = { kind: 'unbond', amount };
       const tx: Transaction = {
         nonce,
         sender,
