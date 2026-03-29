@@ -12,12 +12,19 @@ You can run and test the extension **without submitting to the Chrome Web Store*
    ```bash
    pnpm run build:extension
    ```
+   **Optional — pre-review unpacked copy:** To test a **clean tree** that matches what you’ll zip for the store (and avoid loading the live `extension/` dev folder), run:
+   ```bash
+   pnpm run build:extension:unpacked
+   ```
+   This creates **`extension-unpacked/`** at the repo root (gitignored). Use **Load unpacked** on that folder; it includes `README-UNPACKED.txt` with instructions.
 2. Open **Chrome** and go to `chrome://extensions`.
 3. Turn **Developer mode** on (toggle top-right).
-4. Click **Load unpacked** and select the repo's **`extension`** folder (the one that contains `manifest.json`, `popup.html`, `popup.js`, `icons/`, `fonts/`).
+4. Click **Load unpacked** and select either:
+   - **`extension-unpacked`** if you ran `build:extension:unpacked`, or
+   - the repo's **`extension`** folder (contains `manifest.json`, `popup.html`, `popup.js`, `icons/`, `fonts/`).
 5. The extension appears in your toolbar. Use it like the published version.
 
-**After code changes:** run `pnpm run build:extension` again, then on `chrome://extensions` click the **reload** (circular arrow) icon on the Boing Express card. No zip, no store upload, no review.
+**After code changes:** run `pnpm run build:extension` (or `pnpm run build:extension:unpacked`) again, then on `chrome://extensions` click the **reload** (circular arrow) icon on the Boing Express card. No zip, no store upload, no review.
 
 ### Load unpacked — select the right folder
 

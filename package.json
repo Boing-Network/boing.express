@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:extension": "node scripts/clean-extension-build.js && node scripts/generate-extension-manifest.js && node scripts/generate-extension-icons.js && vite build --config vite.extension.config.ts && vite build --config vite.extension.inpage.config.ts",
+    "copy:extension:unpacked": "node scripts/copy-extension-unpacked.js",
+    "build:extension:unpacked": "pnpm run build:extension && pnpm run copy:extension:unpacked",
     "zip:extension": "node scripts/zip-extension.js",
     "prepare:extension": "node scripts/prepare-extension-for-load.js",
     "build:extension:load": "pnpm run build:extension && pnpm run prepare:extension",

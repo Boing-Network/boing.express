@@ -127,7 +127,24 @@ pnpm run build:extension
 
 This regenerates `extension/manifest.json`, refreshes icons, and rebuilds the packaged extension scripts. If `VITE_BOING_MAINNET_RPC` is not set, the generated extension build exposes only testnet.
 
-Then in **Chrome**: open `chrome://extensions`, enable “Developer mode”, “Load unpacked”, and select the `extension` folder.  
+#### Pre-review: dedicated unpacked folder (recommended)
+
+For testing before **Chrome Web Store re-review**, use a clean copy under **`extension-unpacked/`** (gitignored):
+
+```bash
+pnpm run build:extension:unpacked
+```
+
+Then in **Chrome**: `chrome://extensions` → Developer mode → **Load unpacked** → select the repo’s **`extension-unpacked`** folder (not `extension/`). That folder includes **`README-UNPACKED.txt`** with the same instructions.
+
+- Re-run `pnpm run build:extension:unpacked` after code changes to refresh the copy.
+- For store upload, use **`pnpm run zip:extension`** → `boing-wallet-extension.zip` (same bundled files as `extension/`).
+
+If the project lives in **OneDrive/cloud** and Chrome’s picker shows an empty folder, use **`pnpm run build:extension:load`** instead — it copies the built extension to a local path under `%LOCALAPPDATA%\boing-extension` (Windows) or `$HOME/boing-extension` (macOS/Linux).
+
+#### Load directly from `extension/` (development)
+
+In **Chrome**: open `chrome://extensions`, enable “Developer mode”, “Load unpacked”, and select the **`extension`** folder.  
 In **Firefox**: open `about:debugging` → “This Firefox” → “Load Temporary Add-on” and select `extension/manifest.json`.
 
 For **Chrome Web Store** submission (icons, privacy policy, listing assets), see [docs/EXTENSION_STORE.md](docs/EXTENSION_STORE.md).

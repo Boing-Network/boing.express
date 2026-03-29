@@ -4,6 +4,8 @@ node_modules/
 # Build
 dist/
 boing-wallet-extension.zip
+# Generated copy for Chrome "Load unpacked" (pnpm run build:extension:unpacked)
+extension-unpacked/
 # Extension build chunks (hash changes each build; run pnpm run build:extension before Load unpacked)
 extension/config-*.js
 extension/config-*.js.map
