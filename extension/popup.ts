@@ -23,7 +23,7 @@ import { BOING_TESTNET_RPC, BOING_MAINNET_RPC, normalizeBoingNetworkId } from '.
 const NETWORKS = createNetworks(BOING_TESTNET_RPC, BOING_MAINNET_RPC);
 const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
-const BOING_DECIMALS = 18;
+const BOING_DECIMALS = 0;
 
 type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'backup' | 'dashboard';
 

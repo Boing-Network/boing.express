@@ -1,12 +1,12 @@
 /**
  * Parse human-readable token amount (e.g. "1.5") to smallest-unit bigint.
- * Avoids float precision issues; use for BOING (18 decimals) and similar.
+ * Avoids float precision issues; native BOING uses whole units (decimals 0).
  */
 
 /**
  * Parse a decimal amount string to bigint in smallest units.
  * @param str - e.g. "1", "1.5", "0.001"
- * @param decimals - token decimals (e.g. 18 for BOING)
+ * @param decimals - token decimals (0 for native BOING)
  * @returns bigint in smallest units, or null if invalid
  */
 export function parseDecimalAmount(str: string, decimals: number): bigint | null {

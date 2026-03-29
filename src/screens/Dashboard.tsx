@@ -161,7 +161,7 @@ export function Dashboard() {
       setSendError('Cannot send to yourself');
       return;
     }
-    const decimals = balance?.decimals ?? 18;
+    const decimals = balance?.decimals ?? 0;
     const amount = sendAmount.trim() ? parseDecimalAmount(sendAmount, decimals) : null;
     if (amount == null || amount <= 0n) {
       setSendError('Enter a valid amount in BOING (e.g. 1 or 0.5)');
@@ -238,7 +238,7 @@ export function Dashboard() {
     if (!network.buildBond || !accountId) return;
     setBondError('');
     setBondSuccess('');
-    const decimals = balance?.decimals ?? 18;
+    const decimals = balance?.decimals ?? 0;
     const amount = bondAmount.trim() ? parseDecimalAmount(bondAmount, decimals) : null;
     if (amount == null || amount <= 0n) {
       setBondError('Enter a valid amount in BOING (e.g. 1 or 0.5)');
@@ -285,7 +285,7 @@ export function Dashboard() {
     if (!network.buildUnbond || !accountId) return;
     setUnbondError('');
     setUnbondSuccess('');
-    const decimals = balance?.decimals ?? 18;
+    const decimals = balance?.decimals ?? 0;
     const amount = unbondAmount.trim() ? parseDecimalAmount(unbondAmount, decimals) : null;
     if (amount == null || amount <= 0n) {
       setUnbondError('Enter a valid amount in BOING (e.g. 1 or 0.5)');
@@ -381,7 +381,7 @@ export function Dashboard() {
 
   const displayStake =
     stake != null
-      ? formatBalance(stake, balance?.decimals ?? 18)
+      ? formatBalance(stake, balance?.decimals ?? 0)
       : stakeError
         ? '—'
         : network.getStake

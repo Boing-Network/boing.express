@@ -12,7 +12,8 @@ import type { NetworkAdapter, BalanceResult, SubmitResult } from './types';
 import type { NetworkConfig } from './types';
 import type { Transaction, Payload, AccessList } from '../boing/types';
 
-const BOING_DECIMALS = 18;
+/** Native BOING uses whole on-chain units (RPC u128 strings); not 10^-18. */
+const BOING_DECIMALS = 0;
 const BOING_SYMBOL = 'BOING';
 
 function emptyAccessList(): AccessList {
