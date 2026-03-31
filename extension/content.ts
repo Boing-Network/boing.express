@@ -37,7 +37,9 @@ window.addEventListener('message', (event: MessageEvent) => {
       origin,
     },
     (response: unknown) => {
-      const data = response as { type?: string; id?: number | string; result?: unknown; error?: string } | undefined;
+      const data = response as
+        | { type?: string; id?: number | string; result?: unknown; error?: { code: number; message: string; data?: unknown } | string }
+        | undefined;
       if (!data || data.type !== 'BOING_PROVIDER_RESPONSE') {
         window.postMessage(
           {

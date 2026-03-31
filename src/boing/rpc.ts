@@ -8,11 +8,14 @@ const JSON_RPC_VERSION = '2.0';
 
 export class RpcClientError extends Error {
   code?: number;
+  /** JSON-RPC `error.data` from the node (e.g. QA `rule_id` / `doc_url`). */
+  data?: unknown;
 
-  constructor(message: string, code?: number) {
+  constructor(message: string, code?: number, data?: unknown) {
     super(message);
     this.name = 'RpcClientError';
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -27,7 +30,7 @@ export interface JsonRpcResponse<T = unknown> {
   jsonrpc: string;
   id: number | string;
   result?: T;
-  error?: { code: number; message: string };
+  error?: { code: number; message: string; data?: unknown };
 }
 
 /** RPC error codes per RPC-API-SPEC.md and TECHNICAL-SPECIFICATION §11.3. */
@@ -106,7 +109,10 @@ export async function rpcCall<T>(
   }
   const data = (await res.json()) as JsonRpcResponse<T>;
   if (data.error) {
-    throw new RpcClientError(rpcErrorToMessage(data.error.code, data.error.message || ''), data.error.code);
+    const nodeMsg = data.error.message != null ? String(data.error.message).trim() : '';
+    const message =
+      nodeMsg || rpcErrorToMessage(data.error.code, '');
+    throw new RpcClientError(message, data.error.code, data.error.data);
   }
   if (data.result === undefined) throw new RpcClientError('RPC response missing result');
   return data.result as T;

@@ -102,9 +102,20 @@ type PendingSignatureApproval = {
 
 type ApprovalRecord = Pick<PendingSignatureApproval, 'requestId' | 'origin' | 'chainId' | 'address' | 'message'>;
 
+/** Serialized on the wire to dApps (`window.boing.request`). */
+type ProviderErrorPayload = {
+  code: number;
+  message: string;
+  data: {
+    boingCode: string;
+    /** Original node JSON-RPC error when `boingCode === 'BOING_NODE_JSONRPC'`. */
+    rpc?: { code: number; message: string; data?: unknown };
+  };
+};
+
 class BoingProviderError extends Error {
   code: number;
-  data: { boingCode: string };
+  data: ProviderErrorPayload['data'];
 
   constructor(code: number, boingCode: string, message: string) {
     super(message);
@@ -182,7 +193,21 @@ async function getUnlockedState(): Promise<UnlockedState | null> {
   });
 }
 
-function serializeProviderError(error: unknown): { code: number; message: string; data: { boingCode: string } } {
+function serializeProviderError(error: unknown): ProviderErrorPayload {
+  if (error instanceof RpcClientError && error.code !== undefined) {
+    return {
+      code: error.code,
+      message: error.message,
+      data: {
+        boingCode: 'BOING_NODE_JSONRPC',
+        rpc: {
+          code: error.code,
+          message: error.message,
+          data: error.data,
+        },
+      },
+    };
+  }
   if (error instanceof BoingProviderError) {
     return { code: error.code, message: error.message, data: error.data };
   }
@@ -377,31 +402,30 @@ async function signOrSendBoingTransaction(
     return rpcHex;
   }
 
-  try {
     try {
-      const sim = (await simulateTransaction(rpcUrl, rpcHex)) as { success?: boolean; error?: string };
-      if (sim && typeof sim === 'object' && sim.success === false) {
-        throw providerError(
-          PROVIDER_ERROR_CODES.INTERNAL_ERROR,
-          'BOING_SIMULATION_FAILED',
-          sim.error ?? 'Simulation reported failure.'
-        );
+      try {
+        const sim = (await simulateTransaction(rpcUrl, rpcHex)) as { success?: boolean; error?: string };
+        if (sim && typeof sim === 'object' && sim.success === false) {
+          throw providerError(
+            PROVIDER_ERROR_CODES.INTERNAL_ERROR,
+            'BOING_SIMULATION_FAILED',
+            sim.error ?? 'Simulation reported failure.'
+          );
+        }
+      } catch (e) {
+        if (e instanceof BoingProviderError) throw e;
+        if (e instanceof RpcClientError) throw e;
+        const msg = e instanceof Error ? e.message : String(e);
+        const notFound = msg.includes('Method not found') || msg.includes('-32601');
+        if (!notFound) {
+          throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_SIMULATION_ERROR', msg);
+        }
       }
-    } catch (e) {
-      if (e instanceof BoingProviderError) throw e;
-      const msg = e instanceof Error ? e.message : String(e);
-      const notFound =
-        msg.includes('Method not found') ||
-        msg.includes('-32601') ||
-        (e instanceof RpcClientError && e.code === -32601);
-      if (!notFound) {
-        throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_SIMULATION_ERROR', msg);
-      }
-    }
 
     return await submitTransaction(rpcUrl, rpcHex);
   } catch (e) {
     if (e instanceof BoingProviderError) throw e;
+    if (e instanceof RpcClientError) throw e;
     const msg = e instanceof Error ? e.message : String(e);
     throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_SUBMIT_FAILED', msg);
   }
@@ -500,7 +524,7 @@ async function processPendingUnlockQueue(): Promise<void> {
 
     clearTimeout(item.timeoutId);
 
-    const sendResp = (result: unknown, error?: { code: number; message: string; data: { boingCode: string } }) => {
+    const sendResp = (result: unknown, error?: ProviderErrorPayload) => {
       try {
         item.sendResponse({
           type: 'BOING_PROVIDER_RESPONSE',
@@ -582,7 +606,7 @@ async function processPendingUnlockQueue(): Promise<void> {
         sendResp(
           undefined,
           serializeProviderError(
-            err instanceof BoingProviderError
+            err instanceof BoingProviderError || err instanceof RpcClientError
               ? err
               : providerError(
                   PROVIDER_ERROR_CODES.INTERNAL_ERROR,
