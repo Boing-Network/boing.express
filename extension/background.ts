@@ -580,7 +580,7 @@ async function processPendingUnlockQueue(): Promise<void> {
           message,
         });
         const messageBytes = messageToBytes(messageParam);
-        const signature = signMessage(messageBytes, unlockedState.privateKey);
+        const signature = await signMessage(messageBytes, unlockedState.privateKey);
         sendResp(signature);
       } catch (err) {
         sendResp(undefined, serializeProviderError(err instanceof BoingProviderError ? err : providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_INTERNAL_ERROR', err instanceof Error ? err.message : 'Sign failed.')));
@@ -956,7 +956,7 @@ async function handleProviderRequest(
       });
 
       const messageBytes = messageToBytes(messageParam);
-      return signMessage(messageBytes, unlockedState.privateKey);
+      return await signMessage(messageBytes, unlockedState.privateKey);
     }
 
     case BOING_METHODS.SIGN_TRANSACTION:

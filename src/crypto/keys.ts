@@ -52,10 +52,6 @@ export function privateKeyToHex(privateKey: Uint8Array): string {
  */
 export async function signMessage(message: Uint8Array, privateKey: Uint8Array): Promise<string> {
   const hash = blake3(message);
-  try {
-    const hex = Array.from(hash).map((b) => b.toString(16).padStart(2, '0')).join('');
-    console.log('[Boing Express] BLAKE3(message) hex (compare with portal 401 debug):', hex);
-  } catch (_) {}
   const sig = await ed.signAsync(hash, privateKey);
   return '0x' + Array.from(sig)
     .map((b) => b.toString(16).padStart(2, '0'))
