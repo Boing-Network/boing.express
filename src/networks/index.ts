@@ -4,6 +4,10 @@
 
 import type { NetworkAdapter } from './types';
 import { createBoingAdapter } from './boingAdapter';
+import {
+  BOING_MAINNET_CHAIN_ID_HEX,
+  BOING_TESTNET_CHAIN_ID_HEX,
+} from './chainIds';
 import { DEFAULT_TESTNET_RPC, resolveMainnetRpcUrl, resolveTestnetRpcUrl } from './rpcConfig';
 
 const defaultTestnetRpc = DEFAULT_TESTNET_RPC;
@@ -19,6 +23,7 @@ export function createNetworks(
       id: 'boing-testnet',
       name: 'Boing Testnet',
       rpcUrl: resolveTestnetRpcUrl(testnetRpc),
+      chainId: BOING_TESTNET_CHAIN_ID_HEX,
       isTestnet: true,
       faucetUrl: 'https://boing.network/network/faucet',
       explorerUrl: 'https://boing.observer',
@@ -31,6 +36,7 @@ export function createNetworks(
       id: 'boing-mainnet',
       name: 'Boing Mainnet',
       rpcUrl: configuredMainnetRpc,
+      chainId: BOING_MAINNET_CHAIN_ID_HEX,
       isTestnet: false,
       explorerUrl: 'https://boing.observer',
     }));

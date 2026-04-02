@@ -5,7 +5,7 @@
  *   boing_requestAccounts  — connect and get current account
  *   boing_accounts        — get account if site already connected
  *   boing_signMessage        — sign hex message (e.g. for auth)
- *   boing_signTransaction    — sign native Boing tx; params: [txObject]; returns 0x + hex(bincode SignedTransaction). Deploy: use contract_deploy_purpose or contract_deploy_meta + valid purpose_category (protocol QA).
+ *   boing_signTransaction    — sign native Boing tx; params: [txObject]; returns 0x + hex(bincode SignedTransaction). Deploy: contract_deploy_purpose needs purpose_category; contract_deploy_meta defaults purpose_category to "token" when asset_name or asset_symbol is set.
  *   boing_sendTransaction    — sign + simulate + submit; params: [txObject]; returns tx hash string (mempool QA still runs on deploy)
  *   boing_chainId           — current chain (0x1b01 testnet, 0x1b02 mainnet)
  *   boing_switchChain       — switch network

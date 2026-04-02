@@ -14,6 +14,7 @@ import {
 } from '../storage/onboarding';
 import { getLockAfterLabel } from '../storage/lockSettings';
 import type { BalanceResult } from '../networks/types';
+import { chainIdHexToDecimal } from '../networks/chainIds';
 import { SiteLogo } from '../components/SiteLogo';
 import styles from './Dashboard.module.css';
 
@@ -500,6 +501,17 @@ export function Dashboard() {
               Block #{chainHeight.toLocaleString()}
             </p>
           )}
+          {network.config.chainId && (
+            <p className={styles.chainHeight} aria-label="Chain ID for dApps">
+              Chain ID {network.config.chainId}{' '}
+              <span className={styles.chainIdDecimal}>(decimal {chainIdHexToDecimal(network.config.chainId)})</span>
+            </p>
+          )}
+          <p className={styles.chainIdNote}>
+            This is the ID Boing Express reports to sites like boing.finance. Block headers on Boing L1 do not carry
+            chain ID — private devnets often still use <code className={styles.inlineCode}>6913</code> for compatibility;
+            confirm with your operator if unsure.
+          </p>
           {balanceError && (
             <p className={styles.error}>
               {balanceError}
@@ -772,6 +784,9 @@ export function Dashboard() {
             <div className={styles.rpcOverrideForm}>
               <p className={styles.faucetHint}>
                 Override RPC URL for the current network (e.g. http://localhost:8545 for local node). Leave empty to use default.
+                Chain ID above does not change — it stays the testnet/mainnet value Boing Express uses for{' '}
+                <code className={styles.inlineCode}>boing_chainId</code>. Custom RPC must still match that network (same
+                genesis / operator expectations).
               </p>
               <div className={styles.rpcOverrideRow}>
                 <label htmlFor="rpc-override" className={styles.qaLabel}>

@@ -149,9 +149,6 @@ export function transactionFromDappJson(
     }
     case 'contract_deploy_meta': {
       const bytecode = hexToBytesFlexible(String(o.bytecode ?? '0x'), 'bytecode');
-      const purpose_category = String(o.purpose_category ?? o.purposeCategory ?? '').trim();
-      if (!purpose_category) throw new Error('purpose_category is required');
-      assertValidQaPurposeCategory(purpose_category);
       let description_hash: Uint8Array | null = null;
       const dh = o.description_hash ?? o.descriptionHash;
       if (dh != null && dh !== '') {
@@ -169,6 +166,17 @@ export function transactionFromDappJson(
           : o.assetSymbol != null && o.assetSymbol !== ''
             ? String(o.assetSymbol)
             : null;
+      let purpose_category = String(o.purpose_category ?? o.purposeCategory ?? '').trim();
+      if (!purpose_category) {
+        if (asset_name != null || asset_symbol != null) {
+          purpose_category = 'token';
+        } else {
+          throw new Error(
+            'purpose_category is required for contract_deploy_meta (or set asset_name / asset_symbol to default purpose to "token")'
+          );
+        }
+      }
+      assertValidQaPurposeCategory(purpose_category);
       payload = {
         kind: 'contract_deploy_meta',
         bytecode,

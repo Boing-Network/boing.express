@@ -1,3 +1,4 @@
+import { BOING_MAINNET_CHAIN_ID_HEX, BOING_TESTNET_CHAIN_ID_HEX } from '../src/networks/chainIds';
 import { resolveMainnetRpcUrl, resolveTestnetRpcUrl } from '../src/networks/rpcConfig';
 
 /** RPC URLs for extension (injected at build time via Vite define). */
@@ -18,6 +19,6 @@ export function normalizeBoingNetworkId(networkId: string | null | undefined): s
   return BOING_TESTNET_NETWORK_ID;
 }
 
-/** EIP-155–style chain IDs for wallet connection (dApps use these). */
-export const BOING_TESTNET_CHAIN_ID = '0x1b01';   // 6913
-export const BOING_MAINNET_CHAIN_ID = '0x1b02';   // 6914
+/** EIP-155–style chain IDs for wallet connection (dApps use these). Same as `src/networks/chainIds.ts`. */
+export const BOING_TESTNET_CHAIN_ID = BOING_TESTNET_CHAIN_ID_HEX;
+export const BOING_MAINNET_CHAIN_ID = BOING_MAINNET_CHAIN_ID_HEX;

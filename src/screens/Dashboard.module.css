@@ -339,6 +339,22 @@
   color: var(--muted);
 }
 
+.chainIdDecimal {
+  font-variant-numeric: tabular-nums;
+}
+
+.chainIdNote {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.inlineCode {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+}
+
 .error {
   margin: 0;
   color: var(--danger);
