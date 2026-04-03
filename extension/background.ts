@@ -27,10 +27,14 @@ import {
   BOING_MAINNET_RPC,
   BOING_TESTNET_CHAIN_ID,
   BOING_TESTNET_NETWORK_ID,
-  BOING_TESTNET_RPC,
   isBoingMainnetConfigured,
   normalizeBoingNetworkId,
 } from './config';
+import {
+  getEffectiveExtensionTestnetRpc,
+  refreshExtensionBoingMetaForce,
+  refreshExtensionBoingMetaIfStale,
+} from './boingMetaExtension';
 
 const STORAGE_KEY_WALLET = 'boing_wallet_enc';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
@@ -327,7 +331,7 @@ async function rpcUrlForSelectedNetwork(): Promise<string> {
   if (networkId === BOING_MAINNET_NETWORK_ID && isBoingMainnetConfigured()) {
     return BOING_MAINNET_RPC;
   }
-  return BOING_TESTNET_RPC;
+  return getEffectiveExtensionTestnetRpc();
 }
 
 async function signOrSendBoingTransaction(
@@ -735,6 +739,14 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
 });
 
+chrome.runtime.onInstalled.addListener(() => {
+  void refreshExtensionBoingMetaIfStale();
+});
+chrome.runtime.onStartup.addListener(() => {
+  void refreshExtensionBoingMetaIfStale();
+});
+void refreshExtensionBoingMetaIfStale();
+
 chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
   if (!message || typeof message !== 'object' || !('type' in message)) {
     sendResponse(undefined);
@@ -742,6 +754,20 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
   }
 
   const msg = message as { type: string; [key: string]: unknown };
+
+  if (msg.type === 'BOING_REFRESH_NETWORK_META') {
+    const force = msg.force === true;
+    void (async () => {
+      try {
+        if (force) await refreshExtensionBoingMetaForce();
+        else await refreshExtensionBoingMetaIfStale();
+        sendResponse({ ok: true });
+      } catch {
+        sendResponse({ ok: false });
+      }
+    })();
+    return true;
+  }
 
   if (msg.type === 'WALLET_UNLOCK') {
     const accountHex = typeof msg.accountHex === 'string' ? msg.accountHex : null;

@@ -616,3 +616,19 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 }
 .popup-footer a:hover { color: var(--accent-neon); }
 .footer-sep { color: var(--muted); margin: 0 6px; }
+
+.network-meta-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-all;
+  line-height: 1.35;
+}
+.network-meta-hint.hidden {
+  display: none;
+}
+.network-meta-sync {
+  margin: 4px 0 0;
+  font-size: 11px;
+  padding: 0;
+}

@@ -5,6 +5,11 @@ import { resolveMainnetRpcUrl, resolveTestnetRpcUrl } from '../src/networks/rpcC
 export const BOING_TESTNET_RPC = resolveTestnetRpcUrl(import.meta.env.VITE_BOING_TESTNET_RPC);
 export const BOING_MAINNET_RPC = resolveMainnetRpcUrl(import.meta.env.VITE_BOING_MAINNET_RPC);
 
+/** When true, testnet RPC was set via VITE_BOING_TESTNET_RPC at build time — do not override from /api/networks. */
+export function isExtensionTestnetRpcPinnedByEnv(): boolean {
+  return import.meta.env.VITE_BOING_TESTNET_RPC_EXPLICIT === 'true';
+}
+
 export const BOING_TESTNET_NETWORK_ID = 'boing-testnet';
 export const BOING_MAINNET_NETWORK_ID = 'boing-mainnet';
 

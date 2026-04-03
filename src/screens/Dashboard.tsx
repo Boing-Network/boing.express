@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useWallet, NETWORKS } from '../context/WalletContext';
+import { useWallet } from '../context/WalletContext';
 import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types';
 import { formatBalance, parseDecimalAmount } from '../boing/amount';
 import { validateContractBytecode, VALID_PURPOSE_CATEGORIES } from '../boing/qa';
@@ -22,6 +22,8 @@ export function Dashboard() {
   const {
     accountId,
     network,
+    availableNetworks,
+    networkDiscovery,
     setNetwork,
     lock,
     logout,
@@ -396,6 +398,16 @@ export function Dashboard() {
         ? '—'
         : '…';
 
+  const showNetworkDiscoveryBar =
+    networkDiscovery.status === 'loading' ||
+    networkDiscovery.status === 'error' ||
+    (networkDiscovery.status === 'ok' &&
+      (networkDiscovery.fetchedLive ||
+        networkDiscovery.usedStaleCache ||
+        networkDiscovery.skippedLiveFetch ||
+        networkDiscovery.officialWebsiteUrl ||
+        !!networkDiscovery.meta?.boing_testnet_download_tag));
+
   return (
     <div className={`${styles.wrap} page-app`}>
       <header className={styles.header}>
@@ -406,7 +418,7 @@ export function Dashboard() {
             onChange={(e) => setNetwork(e.target.value)}
             className={styles.networkSelect}
           >
-            {NETWORKS.map((n) => (
+            {availableNetworks.map((n) => (
               <option key={n.config.id} value={n.config.id}>
                 {n.config.name}
               </option>
@@ -426,6 +438,15 @@ export function Dashboard() {
               <option value={30}>{getLockAfterLabel(30)}</option>
             </select>
           </label>
+          <button
+            type="button"
+            className={styles.networkSyncBtn}
+            onClick={() => void networkDiscovery.refresh()}
+            disabled={networkDiscovery.status === 'loading'}
+            title="Refresh RPC and links from boing.network/api/networks"
+          >
+            {networkDiscovery.status === 'loading' ? 'Syncing…' : 'Sync network'}
+          </button>
           <button type="button" className={styles.lockBtn} onClick={lock}>
             Lock
           </button>
@@ -434,6 +455,48 @@ export function Dashboard() {
           </button>
         </div>
       </header>
+
+      {showNetworkDiscoveryBar && (
+        <aside className={styles.networkDiscoveryBar} aria-live="polite">
+          {networkDiscovery.status === 'loading' && (
+            <span className={styles.networkDiscoveryText}>Checking boing.network for latest endpoints…</span>
+          )}
+          {networkDiscovery.status === 'ok' && networkDiscovery.fetchedLive && !networkDiscovery.usedStaleCache && (
+            <span className={styles.networkDiscoveryText}>Endpoints synced from boing.network</span>
+          )}
+          {networkDiscovery.status === 'ok' && networkDiscovery.usedStaleCache && (
+            <span className={styles.networkDiscoveryText}>
+              Could not refresh live list; using cached endpoints from boing.network.
+            </span>
+          )}
+          {networkDiscovery.status === 'ok' && networkDiscovery.skippedLiveFetch && (
+            <span className={styles.networkDiscoveryText}>
+              Using saved network info (refreshes about every hour)
+              {networkDiscovery.bootnodeCount > 0
+                ? ` · ${networkDiscovery.bootnodeCount} bootnodes in registry`
+                : ''}
+            </span>
+          )}
+          {networkDiscovery.status === 'error' && networkDiscovery.errorMessage && (
+            <span className={styles.networkDiscoveryError}>{networkDiscovery.errorMessage}</span>
+          )}
+          {networkDiscovery.officialWebsiteUrl && (
+            <a
+              href={networkDiscovery.officialWebsiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.networkDiscoveryLink}
+            >
+              Boing Network
+            </a>
+          )}
+          {networkDiscovery.meta?.boing_testnet_download_tag && (
+            <span className={styles.networkDiscoveryTag} title="Official node release tag from /api/networks">
+              Node zip: {networkDiscovery.meta.boing_testnet_download_tag}
+            </span>
+          )}
+        </aside>
+      )}
 
       <main className={styles.main}>
         {!onboarding.dismissed && (

@@ -15,12 +15,34 @@ import {
   importAndSaveWallet,
   clearWallet,
 } from '../src/storage/walletStore.extension';
-import { createNetworks, getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
+import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
 import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
-import { BOING_TESTNET_RPC, BOING_MAINNET_RPC, normalizeBoingNetworkId } from './config';
+import { normalizeBoingNetworkId } from './config';
+import {
+  buildExtensionNetworksCatalog,
+  loadExtensionMetaCacheAsync,
+  refreshExtensionBoingMetaForce,
+  refreshExtensionBoingMetaIfStale,
+} from './boingMetaExtension';
 
-const NETWORKS = createNetworks(BOING_TESTNET_RPC, BOING_MAINNET_RPC);
+let networksCatalog = buildExtensionNetworksCatalog(null);
+
+async function rebuildNetworksCatalog(): Promise<void> {
+  const entry = await loadExtensionMetaCacheAsync();
+  networksCatalog = buildExtensionNetworksCatalog(entry?.meta ?? null);
+}
+
+function repopulateNetworkSelect(): void {
+  const sel = document.getElementById('network-select') as HTMLSelectElement | null;
+  if (!sel) return;
+  sel.innerHTML = networksCatalog
+    .map(
+      (n) =>
+        `<option value="${n.config.id}" ${n.config.id === selectedNetworkId ? 'selected' : ''}>${n.config.name}</option>`
+    )
+    .join('');
+}
 const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
 const BOING_DECIMALS = 0;
@@ -99,8 +121,8 @@ async function renderChoose(): void {
 }
 
 function getCurrentNetwork() {
-  const network = getDefaultNetwork(NETWORKS);
-  return getNetwork(selectedNetworkId, NETWORKS) ?? network;
+  const network = getDefaultNetwork(networksCatalog);
+  return getNetwork(selectedNetworkId, networksCatalog) ?? network;
 }
 
 function applyBalance(balance: { value: string; decimals: number; symbol: string }): void {
@@ -244,21 +266,20 @@ async function refreshStake(): Promise<void> {
 
 async function goDashboard(): Promise<void> {
   if (!accountId || !privateKey) return;
-  const network = getDefaultNetwork(NETWORKS);
-  const net = getNetwork(selectedNetworkId, NETWORKS) ?? network;
+  const network = getDefaultNetwork(networksCatalog);
+  const net = getNetwork(selectedNetworkId, networksCatalog) ?? network;
 
   ($('address') as HTMLElement).textContent = formatAddress(accountId, false);
   const addressTxEl = document.getElementById('address-tx-tab');
   if (addressTxEl) addressTxEl.textContent = formatAddress(accountId, false);
   ($('balance') as HTMLElement).textContent = '…';
-  ($('network-select') as HTMLSelectElement).innerHTML = NETWORKS.map(
-    (n) => `<option value="${n.config.id}" ${n.config.id === selectedNetworkId ? 'selected' : ''}>${n.config.name}</option>`
-  ).join('');
+  repopulateNetworkSelect();
 
   await refreshDashboardBalance();
   await refreshStake();
   updateFaucetVisibility();
   updateStakingVisibility();
+  updateNetworkMetaHint();
   chrome.storage.local.set({ [STORAGE_KEY_NETWORK]: selectedNetworkId });
   showScreen('dashboard');
   switchTab('wallet');
@@ -478,7 +499,7 @@ $('form-send').addEventListener('submit', async (e) => {
     sendBtn.disabled = true;
     sendBtn.textContent = 'Sending…';
   }
-  const net = getNetwork(selectedNetworkId, NETWORKS) ?? getDefaultNetwork(NETWORKS);
+  const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
   try {
     const nonce = await net.getNonce(accountId);
     const toId = accountIdFromHex(toHex);
@@ -506,7 +527,7 @@ $('form-send').addEventListener('submit', async (e) => {
 
 $('btn-faucet').addEventListener('click', async () => {
   if (!accountId) return;
-  const net = getNetwork(selectedNetworkId, NETWORKS) ?? getDefaultNetwork(NETWORKS);
+  const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
   if (!net.faucetRequest) return;
   const faucetBtn = $('btn-faucet') as HTMLButtonElement;
   const originalFaucetText = faucetBtn.textContent ?? 'Request testnet BOING';
@@ -544,7 +565,7 @@ $('form-bond').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!accountId || !privateKey) return;
   const amountStr = ($('bond-amount') as HTMLInputElement).value;
-  const net = getNetwork(selectedNetworkId, NETWORKS) ?? getDefaultNetwork(NETWORKS);
+  const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
   if (!net.buildBond) return;
   const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
   ($('bond-error') as HTMLElement).classList.add('hidden');
@@ -586,7 +607,7 @@ $('form-unbond').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!accountId || !privateKey) return;
   const amountStr = ($('unbond-amount') as HTMLInputElement).value;
-  const net = getNetwork(selectedNetworkId, NETWORKS) ?? getDefaultNetwork(NETWORKS);
+  const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
   if (!net.buildUnbond) return;
   const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
   ($('unbond-error') as HTMLElement).classList.add('hidden');
@@ -624,31 +645,73 @@ $('form-unbond').addEventListener('submit', async (e) => {
   }
 });
 
-// Init: show loading, restore saved network, load wallet from chrome.storage.local, then show choose/unlock or restore session
-showLoading();
-chrome.storage.local.get([STORAGE_KEY_NETWORK], (result) => {
-  const saved = normalizeBoingNetworkId(
-    typeof result[STORAGE_KEY_NETWORK] === 'string' ? result[STORAGE_KEY_NETWORK] : DEFAULT_NETWORK_ID
-  );
-  if (saved && NETWORKS.some((n) => n.config.id === saved)) selectedNetworkId = saved;
-  initExtensionWalletStorage().then(() => {
-    if (!hasStoredWallet()) {
-      renderChoose();
-      return;
-    }
-    chrome.runtime.sendMessage({ type: 'GET_SESSION_RESTORE' }, (response: { unlocked?: boolean; accountHex?: string; privateKey?: number[] } | undefined) => {
-      if (
-        response?.unlocked &&
-        typeof response.accountHex === 'string' &&
-        Array.isArray(response.privateKey) &&
-        response.privateKey.length === 32
-      ) {
-        accountId = accountIdFromHex(response.accountHex);
-        privateKey = new Uint8Array(response.privateKey);
-        goDashboard();
-      } else {
-        renderChoose();
+function updateNetworkMetaHint(): void {
+  const el = document.getElementById('network-meta-hint');
+  if (!el) return;
+  const testnet = networksCatalog.find((n) => n.config.id === 'boing-testnet');
+  if (!testnet?.config.rpcUrl) {
+    el.classList.add('hidden');
+    el.textContent = '';
+    return;
+  }
+  el.textContent = `Testnet RPC: ${testnet.config.rpcUrl}`;
+  el.classList.remove('hidden');
+}
+
+const btnSyncMeta = document.getElementById('btn-sync-network-meta');
+if (btnSyncMeta) {
+  btnSyncMeta.addEventListener('click', async () => {
+    btnSyncMeta.setAttribute('disabled', 'true');
+    try {
+      await refreshExtensionBoingMetaForce();
+      await rebuildNetworksCatalog();
+      repopulateNetworkSelect();
+      updateNetworkMetaHint();
+      if (currentScreen === 'dashboard' && accountId) {
+        await refreshDashboardBalance();
+        await refreshStake();
       }
+    } finally {
+      btnSyncMeta.removeAttribute('disabled');
+    }
+  });
+}
+
+// Init: refresh /api/networks meta, restore saved network, then choose / unlock / dashboard
+showLoading();
+void (async () => {
+  try {
+    await refreshExtensionBoingMetaIfStale();
+    await rebuildNetworksCatalog();
+  } catch {
+    networksCatalog = buildExtensionNetworksCatalog(null);
+  }
+  updateNetworkMetaHint();
+
+  chrome.storage.local.get([STORAGE_KEY_NETWORK], (result) => {
+    const saved = normalizeBoingNetworkId(
+      typeof result[STORAGE_KEY_NETWORK] === 'string' ? result[STORAGE_KEY_NETWORK] : DEFAULT_NETWORK_ID
+    );
+    if (saved && networksCatalog.some((n) => n.config.id === saved)) selectedNetworkId = saved;
+    void initExtensionWalletStorage().then(() => {
+      if (!hasStoredWallet()) {
+        renderChoose();
+        return;
+      }
+      chrome.runtime.sendMessage({ type: 'GET_SESSION_RESTORE' }, (response: { unlocked?: boolean; accountHex?: string; privateKey?: number[] } | undefined) => {
+        if (
+          response?.unlocked &&
+          typeof response.accountHex === 'string' &&
+          Array.isArray(response.privateKey) &&
+          response.privateKey.length === 32
+        ) {
+          accountId = accountIdFromHex(response.accountHex);
+          privateKey = new Uint8Array(response.privateKey);
+          void goDashboard();
+        } else {
+          renderChoose();
+        }
+      });
     });
   });
-});
+})();

@@ -1,13 +1,15 @@
-import React, { createContext, useCallback, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, useRef, useLayoutEffect } from 'react';
 import type { AccountId } from '../boing/types';
 import type { NetworkAdapter } from '../networks/types';
 import {
   getDefaultNetwork,
   getNetwork,
-  NETWORKS,
   DEFAULT_NETWORK_ID,
 } from '../networks';
 import { createBoingAdapter } from '../networks/boingAdapter';
+import type { BoingNetworksMeta } from '../networks/boingMeta';
+import { normalizeHttpsUrl } from '../networks/boingMeta';
+import { getInitialWebNetworkCatalog, refreshWebNetworkCatalog } from '../networks/refreshWebNetworkCatalog';
 import { getRpcOverrides, setRpcOverride as saveRpcOverride } from '../storage/rpcOverride';
 import {
   hasStoredWallet,
@@ -31,17 +33,28 @@ interface WalletState {
   isUnlocked: boolean;
 }
 
-const defaultState: WalletState = {
-  accountId: null,
-  privateKey: null,
-  network: getDefaultNetwork(),
-  isUnlocked: false,
+export type NetworkDiscoveryInfo = {
+  status: 'idle' | 'loading' | 'ok' | 'error';
+  errorMessage: string | null;
+  meta: BoingNetworksMeta | null;
+  updatedAt: number | null;
+  /** True when the latest refresh got a live HTTP response with meta. */
+  fetchedLive: boolean;
+  /** True when live fetch failed or returned empty but an older cache was used. */
+  usedStaleCache: boolean;
+  /** Last refresh skipped HTTP because local cache was still fresh. */
+  skippedLiveFetch: boolean;
+  refresh: () => Promise<void>;
+  bootnodeCount: number;
+  officialWebsiteUrl: string | null;
 };
 
 type WalletContextValue = WalletState & {
   hasWallet: boolean;
   storedAddressHint: string | null;
-  network: NetworkAdapter; // resolved (with RPC override if set)
+  network: NetworkAdapter;
+  /** Networks after Boing /api/networks merge (before per-network RPC overrides). */
+  availableNetworks: NetworkAdapter[];
   setNetwork: (id: string) => void;
   rpcOverrides: Record<string, string>;
   setRpcOverride: (networkId: string, url: string) => void;
@@ -53,6 +66,7 @@ type WalletContextValue = WalletState & {
   getPrivateKey: () => Uint8Array | null;
   lockAfterMinutes: LockAfterMinutes;
   setLockAfterMinutes: (value: LockAfterMinutes) => void;
+  networkDiscovery: NetworkDiscoveryInfo;
 };
 
 const WalletContext = createContext<WalletContextValue | null>(null);
@@ -65,16 +79,100 @@ function resolveNetwork(base: NetworkAdapter, overrides: Record<string, string>)
   return base;
 }
 
+function emptyDiscovery(refresh: () => Promise<void>): NetworkDiscoveryInfo {
+  return {
+    status: 'idle',
+    errorMessage: null,
+    meta: null,
+    updatedAt: null,
+    fetchedLive: false,
+    usedStaleCache: false,
+    skippedLiveFetch: false,
+    refresh,
+    bootnodeCount: 0,
+    officialWebsiteUrl: null,
+  };
+}
+
 export function WalletProvider({ children }: { children: React.ReactNode }) {
+  const [networksCatalog, setNetworksCatalog] = useState<NetworkAdapter[]>(() => getInitialWebNetworkCatalog());
+  const networksCatalogRef = useRef(networksCatalog);
+  networksCatalogRef.current = networksCatalog;
+
+  const refreshNetworkCatalogRef = useRef<() => Promise<void>>(async () => {});
+
+  const [discovery, setDiscovery] = useState<NetworkDiscoveryInfo>(() =>
+    emptyDiscovery(() => refreshNetworkCatalogRef.current())
+  );
+
+  const refreshNetworkCatalog = useCallback(async () => {
+    setDiscovery((d) => ({
+      ...d,
+      status: 'loading',
+      errorMessage: null,
+    }));
+    try {
+      const { catalog, meta, fetchedLive, usedStaleCache, skippedLiveFetch } =
+        await refreshWebNetworkCatalog();
+      setNetworksCatalog(catalog);
+      const website = normalizeHttpsUrl(meta?.ecosystem?.website_url);
+      setDiscovery({
+        status: 'ok',
+        errorMessage: null,
+        meta,
+        updatedAt: Date.now(),
+        fetchedLive,
+        usedStaleCache,
+        skippedLiveFetch,
+        refresh: () => refreshNetworkCatalogRef.current(),
+        bootnodeCount: Array.isArray(meta?.official_bootnodes) ? meta!.official_bootnodes!.length : 0,
+        officialWebsiteUrl: website || null,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setDiscovery((d) => ({
+        ...d,
+        status: 'error',
+        errorMessage: msg,
+        refresh: () => refreshNetworkCatalogRef.current(),
+      }));
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    refreshNetworkCatalogRef.current = refreshNetworkCatalog;
+  });
+
+  useEffect(() => {
+    void refreshNetworkCatalog();
+  }, [refreshNetworkCatalog]);
+
   const [rpcOverrides, setRpcOverridesState] = useState<Record<string, string>>(() => getRpcOverrides());
   const [state, setState] = useState<WalletState>(() => ({
-    ...defaultState,
-    network: getDefaultNetwork(),
+    accountId: null,
+    privateKey: null,
+    network: getDefaultNetwork(getInitialWebNetworkCatalog()),
+    isUnlocked: false,
   }));
   const [lockAfterMinutes, setLockAfterMinutesState] = useState<LockAfterMinutes>(() => getLockAfterMinutes());
   const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Restore session from sessionStorage on mount (same-tab refresh/navigation).
+  useEffect(() => {
+    setState((s) => {
+      const id = s.network.config.id;
+      const fresh = getNetwork(id, networksCatalog) ?? getDefaultNetwork(networksCatalog);
+      if (
+        fresh.config.rpcUrl === s.network.config.rpcUrl &&
+        fresh.config.explorerUrl === s.network.config.explorerUrl &&
+        fresh.config.faucetUrl === s.network.config.faucetUrl &&
+        fresh.config.id === s.network.config.id
+      ) {
+        return s;
+      }
+      return { ...s, network: fresh };
+    });
+  }, [networksCatalog]);
+
   useEffect(() => {
     const session = getSession();
     if (session && hasStoredWallet()) {
@@ -99,7 +197,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const storedAddressHint = stored ? `${stored.addressHex.slice(0, 8)}…${stored.addressHex.slice(-8)}` : null;
 
   const setNetwork = useCallback((id: string) => {
-    const n = getNetwork(id);
+    const n = getNetwork(id, networksCatalogRef.current);
     if (n) setState((s) => ({ ...s, network: n }));
   }, []);
 
@@ -146,7 +244,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  // Inactivity timeout: auto-lock after N minutes when unlocked. Reset on user activity.
   useEffect(() => {
     if (!state.isUnlocked || lockAfterMinutes === 0) {
       if (inactivityTimeoutRef.current) {
@@ -179,11 +276,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     clearSession();
     clearWallet();
-    setState({
-      ...defaultState,
-      network: getNetwork(state.network.config.id) ?? getDefaultNetwork()
+    setState((s) => {
+      const catalog = networksCatalogRef.current;
+      const id = s.network.config.id;
+      return {
+        accountId: null,
+        privateKey: null,
+        isUnlocked: false,
+        network: getNetwork(id, catalog) ?? getDefaultNetwork(catalog),
+      };
     });
-  }, [state.network.config.id]);
+  }, []);
 
   const getPrivateKey = useCallback(() => state.privateKey, [state.privateKey]);
 
@@ -192,6 +295,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     network: resolvedNetwork,
     hasWallet,
     storedAddressHint,
+    availableNetworks: networksCatalog,
     setNetwork,
     rpcOverrides,
     setRpcOverride,
@@ -203,13 +307,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     getPrivateKey,
     lockAfterMinutes,
     setLockAfterMinutes,
+    networkDiscovery: discovery,
   };
 
-  return (
-    <WalletContext.Provider value={value}>
-      {children}
-    </WalletContext.Provider>
-  );
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
 
 export function useWallet(): WalletContextValue {
@@ -218,4 +319,4 @@ export function useWallet(): WalletContextValue {
   return ctx;
 }
 
-export { NETWORKS, DEFAULT_NETWORK_ID };
+export { DEFAULT_NETWORK_ID };

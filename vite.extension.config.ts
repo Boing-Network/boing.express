@@ -1,10 +1,12 @@
 import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
-import { DEFAULT_TESTNET_RPC, resolveMainnetRpcUrl, resolveTestnetRpcUrl } from './src/networks/rpcConfig';
+import { resolveMainnetRpcUrl, resolveTestnetRpcUrl } from './src/networks/rpcConfig';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const testnetRpc = resolveTestnetRpcUrl(env.VITE_BOING_TESTNET_RPC || DEFAULT_TESTNET_RPC);
+  const rawTestnet = env.VITE_BOING_TESTNET_RPC?.trim() ?? '';
+  const testnetRpcExplicit = rawTestnet.length > 0;
+  const testnetRpc = resolveTestnetRpcUrl(rawTestnet || undefined);
   const mainnetRpc = resolveMainnetRpcUrl(env.VITE_BOING_MAINNET_RPC);
 
   return {
@@ -32,6 +34,7 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.VITE_BOING_TESTNET_RPC': JSON.stringify(testnetRpc),
       'import.meta.env.VITE_BOING_MAINNET_RPC': JSON.stringify(mainnetRpc),
+      'import.meta.env.VITE_BOING_TESTNET_RPC_EXPLICIT': JSON.stringify(testnetRpcExplicit ? 'true' : 'false'),
     },
     resolve: {
       alias: {
