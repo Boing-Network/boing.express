@@ -67,7 +67,7 @@ Endpoints: `GET /api/portal/auth/nonce`, `POST /api/portal/auth/sign-in`.
 ## Cross-app link contract
 
 - Explorer: `https://boing.observer`; account deep link: `https://boing.observer/account/<address>`
-- Faucet: `https://boing.network/network/faucet`
+- Faucet: `https://boing.network/faucet`
 - Transaction-detail links: provisional until boing.observer has stable tx route
 
 ## Wallet improvements already done

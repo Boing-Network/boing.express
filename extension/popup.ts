@@ -534,7 +534,7 @@ $('btn-faucet').addEventListener('click', async () => {
 $('btn-faucet-page').addEventListener('click', () => {
   if (!accountId) return;
   const addr = formatAddress(accountId, false);
-  const url = `https://boing.network/network/faucet?address=${encodeURIComponent(addr)}`;
+  const url = `https://boing.network/faucet?address=${encodeURIComponent(addr)}`;
   window.open(url, '_blank');
 });
 

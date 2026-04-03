@@ -36,12 +36,12 @@ export function Support() {
           </p>
           <ul>
             <li>
-              <a href="https://boing.network/network/testnet" target="_blank" rel="noopener noreferrer">
+              <a href="https://boing.network/testnet/join" target="_blank" rel="noopener noreferrer">
                 Boing Network — Join Testnet
               </a>
             </li>
             <li>
-              <a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">
+              <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">
                 Testnet faucet
               </a>{' '}
               — request test BOING (or use the faucet button in the wallet).

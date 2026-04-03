@@ -10,7 +10,7 @@ const baseConfig: NetworkConfig = {
   rpcUrl: 'https://testnet-rpc.boing.network',
   isTestnet: true,
   explorerUrl: 'https://boing.observer',
-  faucetUrl: 'https://boing.network/network/faucet',
+  faucetUrl: 'https://boing.network/faucet',
 };
 
 afterEach(() => {

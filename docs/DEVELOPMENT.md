@@ -24,7 +24,7 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNI
 | **Nonce** | ✅ | From `boing_getAccount` when available; else `boing_getNonce`. Fetched when building the next transaction, not cached across sessions. |
 | **Send** | ✅ | Transfer payload, correct nonce/sender/to/amount, empty access_list. BLAKE3 signable hash + Ed25519 per boing-primitives. Submit `hex(bincode(SignedTransaction))` via `boing_submitTransaction`. |
 | **Simulate before send** | ✅ | `boing_simulateTransaction([hex_signed_tx])` called before submit. If simulation fails (e.g. insufficient balance), error shown and tx not submitted. If node returns "Method not found", submit proceeds. |
-| **Faucet (testnet)** | ✅ | "Get testnet BOING" calls `boing_faucetRequest([hex_account_id])`. Rate limit (-32016) and "method not found" (-32601 → "Faucet is not enabled") mapped to clear messages. Link to boing.network/network/faucet with address pre-filled. |
+| **Faucet (testnet)** | ✅ | "Get testnet BOING" calls `boing_faucetRequest([hex_account_id])`. Rate limit (-32016) and "method not found" (-32601 → "Faucet is not enabled") mapped to clear messages. Link to `https://boing.network/faucet` with `?address=` pre-filled. |
 | **Network switch** | ✅ | User chooses Boing Testnet vs Mainnet. Selection persisted (extension: `chrome.storage.local`; web: context). Correct RPC URL per network; default Testnet. |
 | **Chain height** | ✅ | Optional: `boing_chainHeight` used; web dashboard shows "Block #N". Adapter exposes `getChainHeight()`. |
 | **Errors** | ✅ | RPC codes -32600, -32601, -32602, -32000, -32016 mapped to user-friendly messages in `rpc.ts` (`rpcErrorToMessage`). |

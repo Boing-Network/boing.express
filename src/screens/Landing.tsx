@@ -90,8 +90,8 @@ export function Landing() {
         <footer className={styles.footer}>
           <h3 className={styles.footerTitle}>Resources</h3>
           <div className={styles.footerLinks}>
-            <a href="https://boing.network/network/testnet" target="_blank" rel="noopener noreferrer">Join Testnet</a>
-            <a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Faucet</a>
+            <a href="https://boing.network/testnet/join" target="_blank" rel="noopener noreferrer">Join Testnet</a>
+            <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">Faucet</a>
             <a href="https://boing.network" target="_blank" rel="noopener noreferrer">Boing Network</a>
             <a href="https://boing.network/docs/rpc-api" target="_blank" rel="noopener noreferrer">RPC API</a>
             <Link to="/docs">Documentation</Link>

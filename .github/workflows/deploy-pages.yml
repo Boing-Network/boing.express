@@ -35,7 +35,8 @@ jobs:
         run: pnpm build
         env:
           VITE_BOING_TESTNET_RPC: ${{ vars.VITE_BOING_TESTNET_RPC || 'https://testnet-rpc.boing.network' }}
-          VITE_BOING_MAINNET_RPC: ${{ vars.VITE_BOING_MAINNET_RPC || 'https://rpc.boing.network' }}
+          # Mainnet RPC is TBD until published; set repo variable VITE_BOING_MAINNET_RPC when live (see boing.network THREE-CODEBASE-ALIGNMENT.md).
+          VITE_BOING_MAINNET_RPC: ${{ vars.VITE_BOING_MAINNET_RPC || '' }}
 
       - name: Deploy to Cloudflare Pages
         run: |

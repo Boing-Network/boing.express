@@ -333,7 +333,7 @@ export function Dashboard() {
     const hex = address;
     const url = network.config.faucetUrl
       ? `${network.config.faucetUrl}?address=${encodeURIComponent(hex)}`
-      : `https://boing.network/network/faucet?address=${encodeURIComponent(hex)}`;
+      : `https://boing.network/faucet?address=${encodeURIComponent(hex)}`;
     window.open(url, '_blank');
   }
 

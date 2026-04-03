@@ -53,7 +53,7 @@ export const DOCS: Record<string, Doc> = {
           On Testnet, you can request test BOING for your address. Use the “Request testnet BOING” button in the wallet, or open the Boing Network faucet page and paste your address.
         </p>
         <p>
-          <a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Boing Network Faucet →</a>
+          <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">Boing Network Faucet →</a>
         </p>
         <h2>Getting started checklist</h2>
         <p>
@@ -135,7 +135,7 @@ export const DOCS: Record<string, Doc> = {
         <p>Boing Testnet and Boing Mainnet. You can switch between them in the wallet. More networks may be added later.</p>
 
         <h2>Where can I get test BOING?</h2>
-        <p>Use the testnet faucet from the wallet (“Request testnet BOING”) or open the <a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Boing Network faucet page</a> and enter your address.</p>
+        <p>Use the testnet faucet from the wallet (“Request testnet BOING”) or open the <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">Boing Network faucet page</a> and enter your address.</p>
       </>
     ),
   },
@@ -192,8 +192,8 @@ export const DOCS: Record<string, Doc> = {
         </ul>
         <h2>Links</h2>
         <ul>
-          <li><a href="https://boing.network/network/testnet" target="_blank" rel="noopener noreferrer">Boing Network — Join Testnet</a></li>
-          <li><a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Testnet Faucet</a></li>
+          <li><a href="https://boing.network/testnet/join" target="_blank" rel="noopener noreferrer">Boing Network — Join Testnet</a></li>
+          <li><a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">Testnet Faucet</a></li>
           <li><Link to="/support">Support</Link> — help and contact</li>
         </ul>
       </>
@@ -206,7 +206,7 @@ export const DOCS: Record<string, Doc> = {
         <h2>Boing Network</h2>
         <ul>
           <li><a href="https://boing.network" target="_blank" rel="noopener noreferrer">Boing Network</a> — Official site</li>
-          <li><a href="https://boing.network/network/faucet" target="_blank" rel="noopener noreferrer">Faucet</a> — Testnet BOING</li>
+          <li><a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">Faucet</a> — Testnet BOING</li>
           <li><a href="https://boing.observer" target="_blank" rel="noopener noreferrer">Boing Observer</a> — Explorer</li>
           <li><a href="https://boing.network/docs/rpc-api" target="_blank" rel="noopener noreferrer">RPC API</a> — Network API docs</li>
         </ul>

@@ -25,7 +25,7 @@ export function createNetworks(
       rpcUrl: resolveTestnetRpcUrl(testnetRpc),
       chainId: BOING_TESTNET_CHAIN_ID_HEX,
       isTestnet: true,
-      faucetUrl: 'https://boing.network/network/faucet',
+      faucetUrl: 'https://boing.network/faucet',
       explorerUrl: 'https://boing.observer',
     }),
   ];
