@@ -125,7 +125,7 @@
               <input type="text" id="send-to" placeholder="e.g. 7f3a2b1c4d5e6f7890abcdef... (64 hex)" class="input" aria-label="Recipient address" />
               <p class="send-hint" aria-hidden="true">64 hex characters. 0x prefix optional.</p>
               <div class="row row-amount">
-                <input type="text" id="send-amount" placeholder="Amount (e.g. 1.5)" class="input" aria-label="Amount to send" inputmode="decimal" />
+                <input type="text" id="send-amount" placeholder="Amount (whole BOING, e.g. 100)" class="input" aria-label="Amount to send" inputmode="numeric" />
                 <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
               </div>
               <p id="send-error" class="error hidden"></p>
@@ -142,13 +142,13 @@
             </div>
             <form id="form-bond" class="form card">
               <h2 class="label">Bond</h2>
-              <input type="text" id="bond-amount" placeholder="Amount to bond (e.g. 1.5)" class="input" inputmode="decimal" aria-label="Amount to bond" />
+              <input type="text" id="bond-amount" placeholder="Amount to bond (e.g. 100)" class="input" inputmode="numeric" aria-label="Amount to bond" />
               <p id="bond-error" class="error hidden"></p>
               <button type="submit" id="btn-bond" class="btn-primary" aria-label="Bond BOING">Bond</button>
             </form>
             <form id="form-unbond" class="form card">
               <h2 class="label">Unbond</h2>
-              <input type="text" id="unbond-amount" placeholder="Amount to unbond (e.g. 0.5)" class="input" inputmode="decimal" aria-label="Amount to unbond" />
+              <input type="text" id="unbond-amount" placeholder="Amount to unbond (e.g. 100)" class="input" inputmode="numeric" aria-label="Amount to unbond" />
               <p id="unbond-error" class="error hidden"></p>
               <button type="submit" id="btn-unbond" class="btn-secondary" aria-label="Unbond BOING">Unbond</button>
             </form>

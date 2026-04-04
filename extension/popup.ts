@@ -486,7 +486,7 @@ $('form-send').addEventListener('submit', async (e) => {
   }
   const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
   if (amount == null || amount <= 0n) {
-    showError('send-error', 'Enter a valid amount in BOING (e.g. 1 or 0.5)');
+    showError('send-error', 'Enter a valid whole BOING amount (e.g. 100)');
     return;
   }
   if (BigInt(lastBalanceRaw) < amount) {
@@ -570,7 +570,7 @@ $('form-bond').addEventListener('submit', async (e) => {
   const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
   ($('bond-error') as HTMLElement).classList.add('hidden');
   if (amount == null || amount <= 0n) {
-    ($('bond-error') as HTMLElement).textContent = 'Enter a valid amount in BOING';
+    ($('bond-error') as HTMLElement).textContent = 'Enter a valid whole BOING amount (e.g. 100)';
     ($('bond-error') as HTMLElement).classList.remove('hidden');
     return;
   }
@@ -612,7 +612,7 @@ $('form-unbond').addEventListener('submit', async (e) => {
   const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
   ($('unbond-error') as HTMLElement).classList.add('hidden');
   if (amount == null || amount <= 0n) {
-    ($('unbond-error') as HTMLElement).textContent = 'Enter a valid amount in BOING';
+    ($('unbond-error') as HTMLElement).textContent = 'Enter a valid whole BOING amount (e.g. 100)';
     ($('unbond-error') as HTMLElement).classList.remove('hidden');
     return;
   }

@@ -167,7 +167,7 @@ export function Dashboard() {
     const decimals = balance?.decimals ?? 0;
     const amount = sendAmount.trim() ? parseDecimalAmount(sendAmount, decimals) : null;
     if (amount == null || amount <= 0n) {
-      setSendError('Enter a valid amount in BOING (e.g. 1 or 0.5)');
+      setSendError('Enter a valid whole BOING amount (e.g. 100)');
       return;
     }
     if (balance && BigInt(balance.value) < amount) {
@@ -244,7 +244,7 @@ export function Dashboard() {
     const decimals = balance?.decimals ?? 0;
     const amount = bondAmount.trim() ? parseDecimalAmount(bondAmount, decimals) : null;
     if (amount == null || amount <= 0n) {
-      setBondError('Enter a valid amount in BOING (e.g. 1 or 0.5)');
+      setBondError('Enter a valid whole BOING amount (e.g. 100)');
       return;
     }
     if (balance && BigInt(balance.value) < amount) {
@@ -291,7 +291,7 @@ export function Dashboard() {
     const decimals = balance?.decimals ?? 0;
     const amount = unbondAmount.trim() ? parseDecimalAmount(unbondAmount, decimals) : null;
     if (amount == null || amount <= 0n) {
-      setUnbondError('Enter a valid amount in BOING (e.g. 1 or 0.5)');
+      setUnbondError('Enter a valid whole BOING amount (e.g. 100)');
       return;
     }
     const staked = stake ? BigInt(stake) : 0n;
@@ -597,7 +597,7 @@ export function Dashboard() {
               <form onSubmit={handleBond} className={styles.form}>
                 <input
                   type="text"
-                  placeholder="Amount to bond (e.g. 1.5)"
+                  placeholder="Amount to bond (whole BOING, e.g. 100)"
                   value={bondAmount}
                   onChange={(e) => setBondAmount(e.target.value)}
                   className={styles.input}
@@ -625,7 +625,7 @@ export function Dashboard() {
               <form onSubmit={handleUnbond} className={styles.form}>
                 <input
                   type="text"
-                  placeholder="Amount to unbond (e.g. 0.5)"
+                  placeholder="Amount to unbond (whole BOING, e.g. 100)"
                   value={unbondAmount}
                   onChange={(e) => setUnbondAmount(e.target.value)}
                   className={styles.input}
@@ -673,7 +673,7 @@ export function Dashboard() {
             <div className={styles.sendAmountRow}>
               <input
                 type="text"
-                placeholder="Amount in BOING (e.g. 1.5)"
+                placeholder="Amount in BOING (whole units, e.g. 100)"
                 value={sendAmount}
                 onChange={(e) => setSendAmount(e.target.value)}
                 className={styles.input}

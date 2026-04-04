@@ -17,6 +17,17 @@ export function parseDecimalAmount(str: string, decimals: number): bigint | null
   const parts = trimmed.split('.');
   if (parts.length > 2) return null;
 
+  // Native BOING uses whole units (decimals 0). Empty fractional slice made fracPart "",
+  // and /^\d+$/ did not match "", so integers like "100" incorrectly returned null.
+  if (decimals === 0) {
+    if (parts.length > 1 && !/^0*$/.test((parts[1] ?? '').replace(/\s/g, ''))) {
+      return null;
+    }
+    const intPart = (parts[0] ?? '').replace(/^0+/, '') || '0';
+    if (!/^\d+$/.test(intPart)) return null;
+    return BigInt(intPart);
+  }
+
   const intPart = (parts[0] ?? '').replace(/^0+/, '') || '0';
   const fracPart = (parts[1] ?? '').slice(0, decimals).padEnd(decimals, '0');
 
