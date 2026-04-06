@@ -8,6 +8,17 @@ This document combines integration details, GitHub/CI setup, and SEO/deployment 
 
 Boing Express uses the **Boing Design System** variant **Aqua Personal** (personal, secure, approachable, trustworthy). Design tokens, typography, and component patterns are documented in **[docs/DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)**. When adding or changing UI, use the tokens and section/button patterns from `src/index.css` and refer to DESIGN_SYSTEM.md for consistency with the rest of the Boing ecosystem.
 
+### Automated tests
+
+- **Unit / integration:** `pnpm test` (Vitest).
+- **Extension smoke (opt-in):** `pnpm exec playwright install chromium` once, then `EXTENSION_E2E=1 pnpm run test:e2e`. This builds the extension, serves `tests/e2e/static`, loads the unpacked `extension/` folder in Playwright’s Chromium (headed), and checks `window.boing`, `supportsBoingNativeRpc`, `boing_chainId`, and event listener APIs (`on` / `removeListener` for multi-account style subscriptions). Skipped unless `EXTENSION_E2E=1`.
+- **Extension popup + multi-account (opt-in):** `EXTENSION_E2E_FULL=1 pnpm run test:e2e:multi` — loads the unpacked extension, opens `popup.html`, asserts `wallet-landing-create` / `wallet-landing-import`, and runs a **full flow** (create wallet → dashboard → **Add** → second keypair → backup → two `<option>`s on `wallet-account-switch`). Playwright stubs Boing `GET /api/networks` and JSON-RPC (`tests/e2e/helpers/boingRouteMocks.ts`) so the run does not depend on live network latency.
+- **E2E env alignment:** `playwright.config.ts` loads repo **`.env`** then **`.env.local`** (same `VITE_BOING_TESTNET_RPC` / `VITE_BOING_MAINNET_RPC` keys as Vite) so JSON-RPC mocks target the **same hostnames** as the built extension without exporting vars in the shell. `.env.local` overrides `.env` for those keys.
+- **Extra RPC mock hosts:** Comma-separated **`EXTENSION_E2E_RPC_MOCK_HOSTS`** (hostnames or full `http(s)://` URLs) adds more JSON-RPC interception targets—for example a staging hostname that is not matched by the built-in `*.boing.network` heuristics.
+- **Headless (opt-in, limited):** **`EXTENSION_E2E_HEADLESS=1`** runs Chromium headless. **Manifest V3 extensions often do not register a service worker in headless mode**, so these tests may time out waiting for the extension ID. For CI without a display, prefer **headed Chromium on a virtual framebuffer** (e.g. Linux: `xvfb-run -a pnpm run test:e2e:multi`) and leave headless off unless your Chromium build supports extensions headless.
+- **Stable selectors:** The **web app** (`/wallet`) uses `data-testid` on `Welcome.tsx` / `Dashboard.tsx`. The **Chrome extension popup** uses the same `wallet-*` test ids on `extension/popup.html` (vanilla UI, not React) so Playwright can target either surface.
+- **Golden profile (optional):** To reuse one manual “already funded” profile instead of scripted onboarding, copy a Chrome user-data folder that already has the extension loaded and wallet state, point Playwright’s `launchPersistentContext` at that path, and skip create steps — document your own path; we do not commit profile zips.
+
 ---
 
 ## 1. Boing Network integration & Chrome Web Store checklist
@@ -27,7 +38,7 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNI
 | **Faucet (testnet)** | ✅ | "Get testnet BOING" calls `boing_faucetRequest([hex_account_id])`. Rate limit (-32016) and "method not found" (-32601 → "Faucet is not enabled") mapped to clear messages. Link to `https://boing.network/faucet` with `?address=` pre-filled. |
 | **Network switch** | ✅ | User chooses Boing Testnet vs Mainnet. Selection persisted (extension: `chrome.storage.local`; web: context). Correct RPC URL per network; default Testnet. |
 | **Chain height** | ✅ | Optional: `boing_chainHeight` used; web dashboard shows "Block #N". Adapter exposes `getChainHeight()`. |
-| **Errors** | ✅ | RPC codes -32600, -32601, -32602, -32000, -32016 mapped to user-friendly messages in `rpc.ts` (`rpcErrorToMessage`). |
+| **Errors** | ✅ | RPC codes -32600, -32601, -32602, -32000, -32016, -32050..-32057 (QA pool / operator) mapped in `rpc.ts` (`rpcErrorToMessage`). Forwarded node errors preserve `code`/`data` on `RpcClientError` for **boing-sdk** `BoingRpcError`. |
 
 #### Address and keys
 
@@ -215,7 +226,27 @@ This section summarizes how boing.express aligns with the six reference document
 
 ### Gaps (out of scope or deferred)
 
-- ContractDeploy / ContractDeployWithPurpose bincode: placeholder payloads; full deploy tx building pending boing-primitives layout confirmation.
-- ContractCall: placeholder; not implemented.
-- boing_qaMetrics: optional RPC; not used by wallet.
-- Blocklist check: enforced server-side via boing_qaCheck; client cannot check.
+- Optional RPCs (e.g. `boing_qaMetrics`) not used by the wallet UI.
+- Blocklist / bytecode policy: enforced server-side via `boing_qaCheck` and mempool QA; the wallet surfaces RPC errors with codes preserved for `BoingRpcError` parsing.
+
+### Cross-repo coordination & verification
+
+Normative URLs, env vars, and consumer backlogs for **boing.express**, **boing.observer**, and partner dApps:
+
+- **[THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md)** — canonical URLs, RPC env names (`VITE_BOING_TESTNET_RPC` here), chain IDs `0x1b01` / `0x1b02`.
+- **[HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md)** — P0/P1/P2 checklist per codebase; Express items include `contract_call` + `access_list`, simulation UX, error parity with [BOING-RPC-ERROR-CODES-FOR-DAPPS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-RPC-ERROR-CODES-FOR-DAPPS.md).
+
+**Smoke / tutorial (run from a `boing.network` clone):**
+
+```bash
+cd boing-sdk && npm ci && npm run build && npm test
+cd ../examples/native-boing-tutorial && npm ci
+# Off-chain native DEX route dump (see tutorial §7c3 for env):
+BOING_RPC_URL=https://testnet-rpc.boing.network \
+  TOKEN_IN=0x… TOKEN_OUT=0x… AMOUNT_IN=1000000 \
+  node scripts/print-native-dex-routes.mjs
+```
+
+Operator copy/paste checks: [PRE-VIBEMINER-NODE-COMMANDS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/PRE-VIBEMINER-NODE-COMMANDS.md) (`preflight-rpc`, `check-testnet-rpc`).
+
+Local index: [docs/CODEBASE-ALIGNMENT.md](CODEBASE-ALIGNMENT.md).

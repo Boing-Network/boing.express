@@ -38,4 +38,19 @@ describe('createBoingAdapter', () => {
     await expect(adapter.getBalance(accountId)).rejects.toThrow('RPC offline');
     expect(getBalanceSpy).not.toHaveBeenCalled();
   });
+
+  it('does not submit when simulate returns success: false', async () => {
+    vi.spyOn(rpc, 'simulateTransaction').mockResolvedValue({
+      success: false,
+      error: 'insufficient balance',
+    });
+    const submitSpy = vi.spyOn(rpc, 'submitTransaction');
+
+    const adapter = createBoingAdapter(baseConfig);
+    const result = await adapter.submitTransaction('0x00');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/insufficient balance/i);
+    expect(submitSpy).not.toHaveBeenCalled();
+  });
 });

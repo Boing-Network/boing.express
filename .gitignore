@@ -13,6 +13,10 @@ extension/config-*.js.map
 *.tsbuildinfo
 vite.config.d.ts
 vite.config.js
+vitest.config.d.ts
+vitest.config.js
+playwright.config.d.ts
+playwright.config.js
 
 # Env
 .env
@@ -34,3 +38,8 @@ pnpm-debug.log*
 
 # Wrangler
 .wrangler/
+
+# Playwright (extension E2E)
+.playwright-extension-profile/
+test-results/
+playwright-report/

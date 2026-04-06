@@ -18,6 +18,11 @@ import {
   importAndSaveWallet,
   clearWallet,
   getStoredWallet,
+  listAccountSummaries,
+  setActiveAccountIndex,
+  getActiveAccountIndex,
+  createAdditionalAccount,
+  importAdditionalAccount,
 } from '../storage/walletStore';
 import { saveSession, clearSession, getSession } from '../storage/sessionStore';
 import {
@@ -61,12 +66,21 @@ type WalletContextValue = WalletState & {
   unlock: (password: string) => Promise<void>;
   createWallet: (password: string) => Promise<{ privateKeyHex: string }>;
   importWallet: (password: string, privateKeyHex: string) => Promise<void>;
+  /** Append account to vault; returns backup key for the new keypair. */
+  createAnotherAccount: (password: string) => Promise<{ privateKeyHex: string }>;
+  /** Append imported account and unlock it (same password). */
+  importAnotherAccount: (password: string, privateKeyHex: string) => Promise<void>;
   lock: () => void;
   logout: () => void;
   getPrivateKey: () => Uint8Array | null;
   lockAfterMinutes: LockAfterMinutes;
   setLockAfterMinutes: (value: LockAfterMinutes) => void;
   networkDiscovery: NetworkDiscoveryInfo;
+  /** Multi-account vault (same storage as extension). */
+  accountList: ReturnType<typeof listAccountSummaries>;
+  activeAccountIndex: number;
+  /** Switch active account; clears unlock — user must enter password again on Welcome. */
+  switchVaultAccount: (index: number) => void;
 };
 
 const WalletContext = createContext<WalletContextValue | null>(null);
@@ -155,7 +169,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     isUnlocked: false,
   }));
   const [lockAfterMinutes, setLockAfterMinutesState] = useState<LockAfterMinutes>(() => getLockAfterMinutes());
+  const [vaultRev, setVaultRev] = useState(0);
   const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const bumpVault = useCallback(() => setVaultRev((n) => n + 1), []);
 
   useEffect(() => {
     setState((s) => {
@@ -193,8 +210,11 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hasWallet = hasStoredWallet();
+  void vaultRev;
   const stored = getStoredWallet();
   const storedAddressHint = stored ? `${stored.addressHex.slice(0, 8)}…${stored.addressHex.slice(-8)}` : null;
+  const accountList = listAccountSummaries();
+  const activeAccountIndex = getActiveAccountIndex();
 
   const setNetwork = useCallback((id: string) => {
     const n = getNetwork(id, networksCatalogRef.current);
@@ -214,11 +234,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const createWallet = useCallback(async (password: string) => {
     const { privateKeyHex } = await createAndSaveWallet(password);
+    bumpVault();
     return { privateKeyHex };
-  }, []);
+  }, [bumpVault]);
 
   const importWallet = useCallback(async (password: string, privateKeyHex: string) => {
     await importAndSaveWallet(password, privateKeyHex);
+    bumpVault();
     const [publicKey, privateKey] = await unlockWallet(password);
     saveSession(publicKey, privateKey);
     setState((s) => ({
@@ -227,7 +249,32 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       privateKey,
       isUnlocked: true,
     }));
-  }, []);
+  }, [bumpVault]);
+
+  const createAnotherAccount = useCallback(
+    async (password: string) => {
+      const { privateKeyHex } = await createAdditionalAccount(password);
+      bumpVault();
+      return { privateKeyHex };
+    },
+    [bumpVault]
+  );
+
+  const importAnotherAccount = useCallback(
+    async (password: string, privateKeyHex: string) => {
+      await importAdditionalAccount(password, privateKeyHex);
+      bumpVault();
+      const [publicKey, privateKey] = await unlockWallet(password);
+      saveSession(publicKey, privateKey);
+      setState((s) => ({
+        ...s,
+        accountId: publicKey,
+        privateKey,
+        isUnlocked: true,
+      }));
+    },
+    [bumpVault]
+  );
 
   const setLockAfterMinutes = useCallback((value: LockAfterMinutes) => {
     persistLockAfterMinutes(value);
@@ -243,6 +290,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       isUnlocked: false,
     }));
   }, []);
+
+  const switchVaultAccount = useCallback(
+    (index: number) => {
+      setActiveAccountIndex(index);
+      clearSession();
+      setState((s) => ({
+        ...s,
+        accountId: null,
+        privateKey: null,
+        isUnlocked: false,
+      }));
+      bumpVault();
+    },
+    [bumpVault]
+  );
 
   useEffect(() => {
     if (!state.isUnlocked || lockAfterMinutes === 0) {
@@ -276,6 +338,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     clearSession();
     clearWallet();
+    bumpVault();
     setState((s) => {
       const catalog = networksCatalogRef.current;
       const id = s.network.config.id;
@@ -286,7 +349,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         network: getNetwork(id, catalog) ?? getDefaultNetwork(catalog),
       };
     });
-  }, []);
+  }, [bumpVault]);
 
   const getPrivateKey = useCallback(() => state.privateKey, [state.privateKey]);
 
@@ -302,12 +365,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     unlock,
     createWallet,
     importWallet,
+    createAnotherAccount,
+    importAnotherAccount,
     lock,
     logout,
     getPrivateKey,
     lockAfterMinutes,
     setLockAfterMinutes,
     networkDiscovery: discovery,
+    accountList,
+    activeAccountIndex,
+    switchVaultAccount,
   };
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

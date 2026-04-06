@@ -137,6 +137,11 @@
   box-shadow: 0 0 12px var(--express-primary-glow);
 }
 
+.secondaryFullWidth {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
 .textBtn {
   background: none;
   border: none;

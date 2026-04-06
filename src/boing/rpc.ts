@@ -42,6 +42,12 @@ const RPC_ERROR_CODES: Record<number, string> = {
   [-32016]: 'Rate limit exceeded. Please try again later.',
   [-32050]: 'QA: Deployment rejected by protocol. Check rule_id and message.',
   [-32051]: 'QA: Deployment referred to community pool (unsure).',
+  [-32052]: 'QA pool: no pending item for this transaction.',
+  [-32053]: 'QA pool: voter is not an administrator.',
+  [-32054]: 'QA pool is disabled by governance.',
+  [-32055]: 'QA pool is full (global cap).',
+  [-32056]: 'QA pool: per-deployer cap reached.',
+  [-32057]: 'Operator RPC: missing or invalid X-Boing-Operator header.',
 };
 
 export function rpcErrorToMessage(code: number, message: string): string {

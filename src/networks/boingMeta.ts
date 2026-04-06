@@ -112,10 +112,19 @@ export function parseBoingNetworksApiBody(json: unknown): BoingNetworksMeta | nu
   return body.meta;
 }
 
+const FETCH_BOING_META_TIMEOUT_MS = 15_000;
+
 export async function fetchBoingNetworksMeta(signal?: AbortSignal): Promise<BoingNetworksMeta | null> {
+  const timeoutController = new AbortController();
+  const tid =
+    signal != null
+      ? null
+      : setTimeout(() => {
+          timeoutController.abort();
+        }, FETCH_BOING_META_TIMEOUT_MS);
   try {
     const res = await fetch(BOING_NETWORKS_API_URL, {
-      signal,
+      signal: signal ?? timeoutController.signal,
       cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
@@ -124,5 +133,7 @@ export async function fetchBoingNetworksMeta(signal?: AbortSignal): Promise<Boin
     return parseBoingNetworksApiBody(json);
   } catch {
     return null;
+  } finally {
+    if (tid != null) clearTimeout(tid);
   }
 }

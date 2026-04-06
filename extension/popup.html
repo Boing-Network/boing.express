@@ -17,27 +17,27 @@
     <div id="screen-choose" class="screen hidden">
       <p class="tagline">Authentic. Decentralized. Optimal. Quality-Assured.</p>
       <div class="actions">
-        <button type="button" id="btn-create" class="btn-primary" aria-label="Create new wallet">Create wallet</button>
-        <button type="button" id="btn-import" class="btn-secondary" aria-label="Import wallet with private key">Import wallet</button>
+        <button type="button" id="btn-create" class="btn-primary" aria-label="Create new wallet" data-testid="wallet-landing-create">Create wallet</button>
+        <button type="button" id="btn-import" class="btn-secondary" aria-label="Import wallet with private key" data-testid="wallet-landing-import">Import wallet</button>
       </div>
     </div>
     <div id="screen-unlock" class="screen hidden">
       <p class="hint" id="unlock-hint"></p>
       <p class="hint unlock-pending-hint hidden" id="unlock-pending-hint" aria-live="polite"></p>
       <form id="form-unlock" class="form">
-        <input type="password" id="unlock-password" placeholder="Password" class="input" />
+        <input type="password" id="unlock-password" placeholder="Password" class="input" data-testid="wallet-unlock-password" />
         <p id="unlock-error" class="error hidden"></p>
-        <button type="submit" class="btn-primary" aria-label="Unlock wallet">Unlock</button>
+        <button type="submit" class="btn-primary" aria-label="Unlock wallet" data-testid="wallet-unlock-submit">Unlock</button>
       </form>
       <button type="button" id="btn-unlock-back" class="btn-text" aria-label="Back to wallet options">Back</button>
     </div>
     <div id="screen-create" class="screen hidden">
       <p class="subtitle">Generate a new keypair. Back up your key.</p>
       <form id="form-create" class="form">
-        <input type="password" id="create-password" placeholder="Password (min 8 chars)" class="input" />
-        <input type="password" id="create-confirm" placeholder="Confirm password" class="input" />
+        <input type="password" id="create-password" placeholder="Password (min 8 chars)" class="input" data-testid="wallet-create-password" />
+        <input type="password" id="create-confirm" placeholder="Confirm password" class="input" data-testid="wallet-create-password-confirm" />
         <p id="create-error" class="error hidden"></p>
-        <button type="submit" class="btn-primary" aria-label="Create wallet">Create wallet</button>
+        <button type="submit" class="btn-primary" aria-label="Create wallet" data-testid="wallet-create-submit">Create wallet</button>
       </form>
       <button type="button" id="btn-create-back" class="btn-text" aria-label="Back">Back</button>
     </div>
@@ -48,33 +48,47 @@
         <button type="button" id="btn-backup-copy" class="btn-small" aria-label="Copy private key">Copy</button>
       </div>
       <label class="row backup-checkbox">
-        <input type="checkbox" id="backup-acknowledged" aria-label="I have saved my private key" />
+        <input type="checkbox" id="backup-acknowledged" aria-label="I have saved my private key" data-testid="wallet-backup-ack" />
         <span>I have saved my private key in a safe place</span>
       </label>
       <p id="backup-error" class="error hidden"></p>
-      <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet" disabled>I've backed it up — Continue</button>
+      <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet" disabled data-testid="wallet-backup-continue">I've backed it up — Continue</button>
     </div>
     <div id="screen-import" class="screen hidden">
       <p class="subtitle">Enter 64-char hex private key.</p>
       <form id="form-import" class="form">
-        <textarea id="import-key" placeholder="0x... or 64 hex chars" class="textarea" rows="3"></textarea>
-        <input type="password" id="import-password" placeholder="Password (min 8 chars)" class="input" />
-        <input type="password" id="import-confirm" placeholder="Confirm password" class="input" />
+        <textarea id="import-key" placeholder="0x... or 64 hex chars" class="textarea" rows="3" data-testid="wallet-import-key"></textarea>
+        <input type="password" id="import-password" placeholder="Password (min 8 chars)" class="input" data-testid="wallet-import-password" />
+        <input type="password" id="import-confirm" placeholder="Confirm password" class="input" data-testid="wallet-import-password-confirm" />
         <p id="import-error" class="error hidden"></p>
-        <button type="submit" class="btn-primary" aria-label="Import wallet">Import wallet</button>
+        <button type="submit" class="btn-primary" aria-label="Import wallet" data-testid="wallet-import-submit">Import wallet</button>
       </form>
       <button type="button" id="btn-import-back" class="btn-text" aria-label="Back">Back</button>
+    </div>
+    <div id="screen-add-pick" class="screen hidden">
+      <p class="subtitle">Add another account (encrypted with your password).</p>
+      <div class="actions">
+        <button type="button" id="btn-add-pick-create" class="btn-primary" aria-label="Create new keypair" data-testid="wallet-add-pick-create">Create new keypair</button>
+        <button type="button" id="btn-add-pick-import" class="btn-secondary" aria-label="Import private key" data-testid="wallet-add-pick-import">Import private key</button>
+      </div>
+      <button type="button" id="btn-add-pick-back" class="btn-text" aria-label="Back to wallet" data-testid="wallet-add-pick-back">Back</button>
     </div>
     <div id="screen-dashboard" class="screen hidden">
       <div class="dashboard-header">
         <div class="header-row">
           <select id="network-select" class="select select-network" aria-label="Select network"></select>
-          <button type="button" id="btn-lock" class="btn-icon" aria-label="Lock wallet" title="Lock wallet">
+          <button type="button" id="btn-lock" class="btn-icon" aria-label="Lock wallet" title="Lock wallet" data-testid="wallet-header-lock">
             <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </button>
         </div>
         <p class="network-meta-hint hidden" id="network-meta-hint" aria-live="polite"></p>
         <button type="button" id="btn-sync-network-meta" class="btn-text network-meta-sync">Sync endpoints from boing.network</button>
+        <div class="header-row account-row">
+          <label class="label-inline" for="account-select">Account</label>
+          <select id="account-select" class="select select-account" aria-label="Active account" data-testid="wallet-account-switch"></select>
+          <button type="button" id="btn-add-account" class="btn-small" aria-label="Add account" data-testid="wallet-dashboard-add-account">Add</button>
+          <button type="button" id="btn-remove-account" class="btn-small btn-disconnect hidden" aria-label="Remove active account">Remove</button>
+        </div>
       </div>
       <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
         <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet">Wallet</button>
@@ -109,6 +123,14 @@
             <ul id="connected-sites-list" class="connected-sites-list" aria-label="List of connected sites"></ul>
             <p id="connected-sites-empty" class="connected-sites-empty hidden">No sites connected.</p>
           </div>
+          <details class="card advanced-tx-card">
+            <summary class="label">Advanced: native transaction JSON</summary>
+            <p class="hint">Paste a Boing dApp transaction object (e.g. <code>contract_call</code> with <code>access_list</code>). Signs with the unlocked key and submits via the selected network RPC.</p>
+            <textarea id="native-tx-json" class="textarea" rows="5" placeholder='{"type":"transfer","to":"0x…","amount":"1"}' aria-label="Native transaction JSON"></textarea>
+            <p id="native-tx-error" class="error hidden"></p>
+            <p id="native-tx-success" class="success hidden" aria-live="polite"></p>
+            <button type="button" id="btn-native-tx-submit" class="btn-secondary" aria-label="Sign and send native transaction">Sign &amp; send</button>
+          </details>
         </section>
         <section id="panel-transactions" class="tab-panel" role="tabpanel" aria-labelledby="tab-transactions" hidden>
           <div class="card">

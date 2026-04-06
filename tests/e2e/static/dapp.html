@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Boing E2E dapp</title>
+</head>
+<body>
+  <p>Boing Express extension E2E harness</p>
+  <script type="module">
+    function sleep(ms) {
+      return new Promise((r) => setTimeout(r, ms));
+    }
+
+    async function waitForBoing(timeoutMs) {
+      const deadline = Date.now() + timeoutMs;
+      while (Date.now() < deadline) {
+        const b = window.boing;
+        if (b && typeof b.request === 'function') return b;
+        await sleep(50);
+      }
+      return undefined;
+    }
+
+    async function probe() {
+      const b = await waitForBoing(20000);
+      const result = {
+        hasBoing: !!b,
+        isBoing: b?.isBoing === true,
+        isBoingExpress: b?.isBoingExpress === true,
+        supportsBoingNativeRpc: b?.supportsBoingNativeRpc === true,
+        hasRequest: typeof b?.request === 'function',
+        hasOn: typeof b?.on === 'function',
+        hasRemoveListener: typeof b?.removeListener === 'function',
+        chainId: null,
+        chainErr: null,
+      };
+      try {
+        if (b?.request) {
+          const chainPromise = b.request({ method: 'boing_chainId', params: [] });
+          const timeoutMs = 15000;
+          result.chainId = await Promise.race([
+            chainPromise,
+            sleep(timeoutMs).then(() => {
+              throw new Error('boing_chainId timed out after ' + timeoutMs + 'ms');
+            }),
+          ]);
+        }
+      } catch (e) {
+        result.chainErr = e instanceof Error ? e.message : String(e);
+      }
+      window.__E2E_RESULT__ = result;
+    }
+    probe();
+  </script>
+</body>
+</html>

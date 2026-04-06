@@ -119,7 +119,16 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
     async submitTransaction(signedTxHex: string): Promise<SubmitResult> {
       try {
         try {
-          await rpc.simulateTransaction(rpcUrl, signedTxHex);
+          const simRaw = await rpc.simulateTransaction(rpcUrl, signedTxHex);
+          if (
+            simRaw &&
+            typeof simRaw === 'object' &&
+            !Array.isArray(simRaw) &&
+            (simRaw as { success?: boolean }).success === false
+          ) {
+            const err = (simRaw as { error?: string }).error?.trim();
+            return { success: false, error: err || 'Simulation reported failure.' };
+          }
         } catch (simErr) {
           const msg = simErr instanceof Error ? simErr.message : String(simErr);
           if (msg.includes('Method not found')) {

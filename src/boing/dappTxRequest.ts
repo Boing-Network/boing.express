@@ -32,6 +32,36 @@ function emptyAccessList(): AccessList {
   return { read: [], write: [] };
 }
 
+function parseAccountIdArray(v: unknown, label: string): AccountId[] {
+  if (v == null) return [];
+  if (!Array.isArray(v)) {
+    throw new Error(`${label} must be an array of 64-character hex account ids`);
+  }
+  return v.map((item, i) => {
+    try {
+      return accountIdFromHex(String(item ?? ''));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`${label}[${i}]: ${msg}`);
+    }
+  });
+}
+
+/** Parse `access_list` / `accessList` from dApp JSON (Boing 32-byte accounts, optional 0x). */
+export function accessListFromDappJson(raw: unknown, fieldName = 'access_list'): AccessList {
+  if (raw == null) return emptyAccessList();
+  if (typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error(`${fieldName} must be an object with read and write arrays`);
+  }
+  const o = raw as Record<string, unknown>;
+  const readRaw = o.read ?? o.Read;
+  const writeRaw = o.write ?? o.Write;
+  return {
+    read: parseAccountIdArray(readRaw, `${fieldName}.read`),
+    write: parseAccountIdArray(writeRaw, `${fieldName}.write`),
+  };
+}
+
 function parseU128String(s: unknown, field: string): bigint {
   if (s === undefined || s === null) throw new Error(`${field} is required`);
   const str = String(s).trim();
@@ -74,8 +104,12 @@ export function transactionSummary(tx: Transaction): string {
       return `Boing tx | From ${from} | Nonce ${n} | Bond ${p.amount.toString()} stake`;
     case 'unbond':
       return `Boing tx | From ${from} | Nonce ${n} | Unbond ${p.amount.toString()} stake`;
-    case 'contract_call':
-      return `Boing tx | From ${from} | Nonce ${n} | Call contract ${formatAddress(p.contract, true)} | calldata ${p.calldata.length} bytes`;
+    case 'contract_call': {
+      const ar = tx.access_list.read.length;
+      const aw = tx.access_list.write.length;
+      const al = ar + aw > 0 ? ` | access_list read:${ar} write:${aw}` : '';
+      return `Boing tx | From ${from} | Nonce ${n} | Call contract ${formatAddress(p.contract, true)} | calldata ${p.calldata.length} bytes${al}`;
+    }
     case 'contract_deploy':
       return `Boing tx | From ${from} | Nonce ${n} | Deploy contract | bytecode ${p.bytecode.length} bytes`;
     case 'contract_deploy_purpose':
@@ -87,6 +121,122 @@ export function transactionSummary(tx: Transaction): string {
       return _e;
     }
   }
+}
+
+/** Structured rows for the extension signature approval window (richer than plain `transactionSummary`). */
+export type TransactionApprovalDetail = {
+  txType: string;
+  summaryLine: string;
+  rows: { label: string; value: string }[];
+};
+
+function hexPreview(bytes: Uint8Array, maxBytes = 24): string {
+  if (bytes.length === 0) return '(empty)';
+  const n = Math.min(maxBytes, bytes.length);
+  const h = Array.from(bytes.subarray(0, n))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return bytes.length > n ? `0x${h}… (${bytes.length} bytes total)` : `0x${h}`;
+}
+
+function accessListSummary(tx: Transaction): { label: string; value: string } {
+  const { read, write } = tx.access_list;
+  const parts: string[] = [];
+  if (read.length) parts.push(`${read.length} read`);
+  if (write.length) parts.push(`${write.length} write`);
+  const counts = parts.length ? parts.join(' · ') : 'empty';
+  const preview = (accounts: AccountId[]): string =>
+    accounts.length === 0
+      ? '—'
+      : accounts
+          .slice(0, 3)
+          .map((a) => `${formatAddress(a, true).slice(0, 10)}…`)
+          .join(', ') + (accounts.length > 3 ? ` (+${accounts.length - 3} more)` : '');
+  return {
+    label: 'Access list',
+    value: `${counts}\nRead: ${preview(read)}\nWrite: ${preview(write)}`,
+  };
+}
+
+/**
+ * Human-readable breakdown for the approval popup (transaction signing / send).
+ */
+export function buildTransactionApprovalDetail(tx: Transaction): TransactionApprovalDetail {
+  const from = formatAddress(tx.sender, true);
+  const rows: { label: string; value: string }[] = [
+    { label: 'From', value: from },
+    { label: 'Nonce', value: tx.nonce.toString() },
+  ];
+  const p = tx.payload;
+  switch (p.kind) {
+    case 'transfer':
+      rows.push({ label: 'Operation', value: 'Transfer' });
+      rows.push({ label: 'To', value: formatAddress(p.to, true) });
+      rows.push({ label: 'Amount', value: p.amount.toString() + ' (smallest units)' });
+      if (tx.access_list.read.length + tx.access_list.write.length > 0) {
+        rows.push(accessListSummary(tx));
+      }
+      break;
+    case 'bond':
+      rows.push({ label: 'Operation', value: 'Bond (stake)' });
+      rows.push({ label: 'Amount', value: p.amount.toString() });
+      if (tx.access_list.read.length + tx.access_list.write.length > 0) {
+        rows.push(accessListSummary(tx));
+      }
+      break;
+    case 'unbond':
+      rows.push({ label: 'Operation', value: 'Unbond' });
+      rows.push({ label: 'Amount', value: p.amount.toString() });
+      if (tx.access_list.read.length + tx.access_list.write.length > 0) {
+        rows.push(accessListSummary(tx));
+      }
+      break;
+    case 'contract_call':
+      rows.push({ label: 'Operation', value: 'Contract call' });
+      rows.push({ label: 'Contract', value: formatAddress(p.contract, true) });
+      rows.push({ label: 'Calldata', value: `${p.calldata.length} bytes — ${hexPreview(p.calldata)}` });
+      rows.push(accessListSummary(tx));
+      break;
+    case 'contract_deploy':
+      rows.push({ label: 'Operation', value: 'Deploy (legacy)' });
+      rows.push({ label: 'Bytecode', value: `${p.bytecode.length} bytes — ${hexPreview(p.bytecode)}` });
+      rows.push(accessListSummary(tx));
+      break;
+    case 'contract_deploy_purpose':
+      rows.push({ label: 'Operation', value: 'Deploy (purpose)' });
+      rows.push({ label: 'Purpose', value: p.purpose_category });
+      if (p.description_hash) {
+        rows.push({ label: 'Description hash', value: hexPreview(p.description_hash) });
+      }
+      rows.push({ label: 'Bytecode', value: `${p.bytecode.length} bytes — ${hexPreview(p.bytecode)}` });
+      rows.push(accessListSummary(tx));
+      break;
+    case 'contract_deploy_meta':
+      rows.push({ label: 'Operation', value: 'Deploy + metadata' });
+      rows.push({ label: 'Purpose', value: p.purpose_category });
+      if (p.asset_name != null || p.asset_symbol != null) {
+        rows.push({
+          label: 'Asset',
+          value: [p.asset_name, p.asset_symbol].filter(Boolean).join(' ') || '—',
+        });
+      }
+      if (p.description_hash) {
+        rows.push({ label: 'Description hash', value: hexPreview(p.description_hash) });
+      }
+      rows.push({ label: 'Bytecode', value: `${p.bytecode.length} bytes — ${hexPreview(p.bytecode)}` });
+      rows.push(accessListSummary(tx));
+      break;
+    default: {
+      const _ex: never = p;
+      return _ex;
+    }
+  }
+
+  return {
+    txType: p.kind,
+    summaryLine: transactionSummary(tx),
+    rows,
+  };
 }
 
 /**
@@ -194,11 +344,17 @@ export function transactionFromDappJson(
   const overrideNonce = parseNonce(o.nonce);
   const finalNonce = overrideNonce !== null ? overrideNonce : nonce;
 
+  const accessListRaw = o.access_list ?? o.accessList;
+  const access_list =
+    accessListRaw !== undefined && accessListRaw !== null
+      ? accessListFromDappJson(accessListRaw)
+      : emptyAccessList();
+
   return {
     nonce: finalNonce,
     sender,
     payload,
-    access_list: emptyAccessList(),
+    access_list,
   };
 }
 

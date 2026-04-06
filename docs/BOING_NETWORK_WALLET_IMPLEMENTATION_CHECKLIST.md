@@ -11,7 +11,7 @@ Make `boing.express` a first-class Boing wallet for:
 - portal sign-in
 - Boing-native dApp connection
 - safe message signing
-- future transaction signing/submission from dApps
+- native transaction signing/submission from dApps (`boing_signTransaction` / `boing_sendTransaction` / `boing_simulateTransaction`)
 
 ## Current Network Expectations
 
@@ -46,6 +46,9 @@ These should already work and must remain stable:
 - support `boing_signMessage`
 - support `boing_chainId`
 - support `boing_switchChain`
+- support `boing_signTransaction`, `boing_sendTransaction`, `boing_simulateTransaction` (extension provider)
+- expose `supportsBoingNativeRpc: true` for **boing-sdk** detection
+- parse explicit **`access_list` / `accessList`** on dApp transaction JSON (32-byte Boing accounts)
 - allow compatibility aliases:
   - `eth_requestAccounts`
   - `eth_accounts`
@@ -130,20 +133,14 @@ Status: implemented.
 
 ### 6. Public dApp transaction API
 
-Expose transaction operations through the provider, not just through the popup UI.
+Status: **implemented** (extension `window.boing`).
 
-Recommended methods:
+- `boing_signTransaction` / `boing_sendTransaction` with Boing-native tx JSON (including `contract_call` + `access_list`).
+- `boing_simulateTransaction([hex])` forwards to RPC for pre-flight / `suggested_access_list` flows.
+- Submit uses RPC `boing_submitTransaction` (there is no separate `boing_submitTransaction` provider method).
+- On simulation failure during send, provider error `data` may include `suggested_access_list` and `access_list_covers_suggestion` per [RPC-API-SPEC.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md).
 
-- `boing_signTransaction`
-- `boing_submitTransaction`
-- `boing_simulateTransaction`
-
-Expected direction:
-
-- dApp prepares transaction payload
-- wallet shows approval UI
-- wallet signs with Ed25519
-- wallet optionally submits to the selected RPC
+Optional polish: richer approval UI for contract calls, tighter copy parity with **boing-sdk** `mapInjectedProviderErrorToUiMessage`.
 
 ### 7. Multi-account support
 
@@ -197,10 +194,10 @@ Supported chain ids:
 
 ## Suggested Agent Task Order
 
-1. Add transaction provider methods
-2. Add multi-account support
-3. Consider connection approval flow
-4. Consider richer event coverage and account selection UX
+1. Multi-account support and account-switch events
+2. Error-copy parity with **boing-sdk** / **BOING-RPC-ERROR-CODES-FOR-DAPPS**
+3. Optional connection approval UX (first connect prompt)
+4. Richer event coverage and transaction approval summaries
 
 ## Acceptance Checklist
 
@@ -216,11 +213,10 @@ The wallet work is in good shape when:
 
 ## Short Summary
 
-If only one wallet improvement gets done next, make it:
-
-- **public dApp transaction methods**
-
-If two more get done after that, make them:
+Next highest-impact items:
 
 - **multi-account support**
-- **transaction approval UX for dApps**
+- **transaction approval UX** (clearer contract_call / access_list display)
+- **error string parity** with **boing-sdk** for dApp integrators
+
+Cross-repo checklist: [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md), [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md).

@@ -28,6 +28,25 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
 | **boing_signMessage** | `[message, address?]` | `string` | Signs **BLAKE3(UTF-8 message)** with the account’s **Ed25519** key (Boing convention; matches portal and tx signing). **Message:** pass a **plain UTF-8 string** (e.g. the portal’s nonce-backed multiline message) or 0x-prefixed hex of UTF-8 bytes. Returns a 64-byte Ed25519 signature as 128 hex chars (with or without `0x`). Optional second param: address to sign with (default: current account). Requires site connected and wallet unlocked. |
 | **boing_chainId** | `[]` | `string` | Returns the current chain id: `0x1b01` (testnet) or `0x1b02` (mainnet). |
 | **boing_switchChain** | `[{ chainId }]` or `[chainId]` | `null` | Switches the wallet’s active network. Supported: `0x1b01`, `0x1b02`. Throws if chain is unsupported. |
+| **boing_signTransaction** | `[txObject]` | `string` | Signs a native Boing transaction JSON and returns `0x` + hex(bincode `SignedTransaction`). User must approve in the extension. Requires the origin to be connected and the wallet unlocked. |
+| **boing_sendTransaction** | `[txObject]` | `string` | Same as sign, then RPC `boing_simulateTransaction` when available, then `boing_submitTransaction`. Returns tx hash string. |
+| **boing_simulateTransaction** | `[hexSignedTx]` | `object` | Forwards to node RPC (no signing). Params: hex from `boing_signTransaction`. Connected origin required. Result shape per [RPC-API-SPEC.md `boing_simulateTransaction`](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md) (includes `suggested_access_list`, `access_list_covers_suggestion`). |
+
+### Native transaction JSON (`boing_signTransaction` / `boing_sendTransaction`)
+
+- **`type`:** `transfer` \| `bond` \| `unbond` \| `contract_call` \| `contract_deploy_purpose` \| `contract_deploy_meta` (not legacy `contract_deploy`).
+- **`contract_call`:** `contract` (32-byte AccountId hex), `calldata` (hex bytes), and explicit **`access_list`**: `{ read: string[], write: string[] }` with the same 64-hex-character account ids (optional `0x`). Alias: **`accessList`**. Omitting `access_list` yields an empty list (backward compatible); production dApps and **boing-sdk** should pass the list the node expects for scheduling (see network **HANDOFF-DEPENDENT-PROJECTS** / **RPC-API-SPEC**).
+- **`from`:** optional; if set, must match the active account.
+- **`nonce`:** optional decimal string; if omitted, the wallet fetches the next nonce from RPC.
+
+### Provider surface for SDK alignment
+
+- **`supportsBoingNativeRpc`:** `true` on `window.boing` (Boing Express). Use with **boing-sdk** `providerSupportsBoingNativeRpc` / **`connectInjectedBoingWallet`** patterns.
+- **Errors:** Node failures from submit/simulate are exposed as `data.boingCode === 'BOING_NODE_JSONRPC'` with `data.rpc: { code, message, data }` so clients match [BOING-RPC-ERROR-CODES-FOR-DAPPS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-RPC-ERROR-CODES-FOR-DAPPS.md). Simulation failure (`BOING_SIMULATION_FAILED`) may include `suggested_access_list` and `access_list_covers_suggestion` for retry flows.
+
+### dApp helpers in this repo (SDK parity)
+
+`src/boing/injectedWallet.ts` mirrors **boing-sdk** `walletProvider.ts` (`connectInjectedBoingWallet`, `providerSupportsBoingNativeRpc`, `requestAccounts`, `readChainIdHex`, `boingSendTransaction`, …) and extends **`mapInjectedProviderErrorToUiMessage`** with Boing Express `data.boingCode` and nested node RPC. Prefer depending on **boing-sdk** when possible; copy or import from this file when you want the same strings without the full SDK.
 
 ### Account format
 
@@ -77,13 +96,13 @@ Wallets may support these aliases so existing dApp code or libraries that use Et
 
 ### Connect / disconnect
 
-- **Connect:** When a site calls `boing_requestAccounts`, the extension adds the page’s **origin** to a stored “connected sites” list and returns the current account. Only those origins can later call `boing_accounts` or `boing_signMessage`.
+- **Connect:** When a site calls `boing_requestAccounts`, the extension adds the page’s **origin** to a stored “connected sites” list and returns the current account. Only those origins can later call `boing_accounts`, `boing_signMessage`, transaction methods, or `boing_simulateTransaction`.
 - **Disconnect:** In the extension popup, **Wallet** tab → **Connected sites** lists each origin with a **Disconnect** button. Removing a site revokes access until the user connects again from that origin.
 
 ### Security and UX
 
 - **Origin tracking:** Connected sites are stored in `chrome.storage.local`; only those origins get accounts and can request signing.
-- **Unlock required for signing:** Signing uses a key held in memory only after the user unlocks in the extension popup. After **Lock**, `boing_signMessage` fails until the user unlocks again.
+- **Unlock required for signing:** Signing uses a key held in memory only after the user unlocks in the extension popup. After **Lock**, `boing_signMessage` and transaction methods fail until the user unlocks again. **`boing_simulateTransaction`** does not use the private key but still requires a **connected** origin.
 - **Account format:** 32-byte Boing account ids are exposed as 64 hex characters with optional `0x` prefix (e.g. `0x7f3a2b1c...`).
 - **Chain IDs:** Testnet `0x1b01` (6913), Mainnet `0x1b02` (6914).
 
@@ -213,9 +232,10 @@ The portal’s legacy “address-only” flow (e.g. `GET /api/portal/me?account_
 
 | Topic | boing.express (done) | boing.network (to do) |
 |-------|---------------------|----------------------|
-| **Provider** | Injects `window.boing`, Boing methods + optional eth aliases | Detect `window.boing`, call `boing_requestAccounts` for Connect |
+| **Provider** | Injects `window.boing`, Boing methods + optional eth aliases + `supportsBoingNativeRpc` | Detect `window.boing`, call `boing_requestAccounts` for Connect |
 | **Connect** | Adds origin to connected list, returns address | Show “Connect wallet”, call API, store address for session |
 | **Sign-in / auth** | `boing_signMessage` returns Ed25519 signature | Fetch backend nonce, build nonce-backed multiline message, get signature, send to backend; backend verifies Ed25519 and creates session |
+| **Native txs** | `boing_signTransaction`, `boing_sendTransaction`, `boing_simulateTransaction`; `access_list` on tx JSON | dApps use **boing-sdk** + wallet per [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md) |
 | **Disconnect** | User removes site in extension “Connected sites” | Optional: “Disconnect” in UI clears local session; next visit must call `boing_requestAccounts` again |
 | **Spec** | This document | Adopt same method names for portal and any other Boing dApps |
 

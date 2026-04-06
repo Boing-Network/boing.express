@@ -32,6 +32,9 @@ export function Dashboard() {
     setRpcOverride,
     lockAfterMinutes,
     setLockAfterMinutes,
+    accountList,
+    activeAccountIndex,
+    switchVaultAccount,
   } = useWallet();
 
   const [balance, setBalance] = useState<BalanceResult | null>(null);
@@ -447,7 +450,7 @@ export function Dashboard() {
           >
             {networkDiscovery.status === 'loading' ? 'Syncing…' : 'Sync network'}
           </button>
-          <button type="button" className={styles.lockBtn} onClick={lock}>
+          <button type="button" className={styles.lockBtn} onClick={lock} data-testid="wallet-header-lock">
             Lock
           </button>
           <button type="button" className={styles.logoutBtn} onClick={logout}>
@@ -513,7 +516,15 @@ export function Dashboard() {
                 {onboarding.sentTx ? '✓' : '○'} Send a transaction
               </li>
             </ul>
-            <button type="button" className={styles.onboardingDismiss} onClick={() => { dismissOnboarding(); setOnboarding(getOnboardingState()); }}>
+            <button
+              type="button"
+              className={styles.onboardingDismiss}
+              data-testid="wallet-onboarding-dismiss"
+              onClick={() => {
+                dismissOnboarding();
+                setOnboarding(getOnboardingState());
+              }}
+            >
               Dismiss
             </button>
           </section>
@@ -521,6 +532,28 @@ export function Dashboard() {
 
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Address</h2>
+          {accountList.length > 1 && (
+            <div className={styles.accountSwitchRow}>
+              <label htmlFor="web-account-select" className={styles.accountSwitchLabel}>
+                Active account
+              </label>
+              <select
+                id="web-account-select"
+                className={styles.accountSwitchSelect}
+                value={activeAccountIndex}
+                onChange={(e) => switchVaultAccount(Number(e.target.value))}
+                aria-label="Switch wallet account"
+                data-testid="wallet-account-switch"
+              >
+                {accountList.map((a) => (
+                  <option key={a.index} value={a.index}>
+                    {a.addressHex.slice(0, 8)}…{a.addressHex.slice(-6)}
+                  </option>
+                ))}
+              </select>
+              <p className={styles.accountSwitchHint}>Switching locks the wallet — unlock again with your password.</p>
+            </div>
+          )}
           <div className={styles.addressRow}>
             <code className={styles.address}>{address}</code>
             <button type="button" className={styles.copyBtn} onClick={copyAddress}>

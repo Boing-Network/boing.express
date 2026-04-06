@@ -13,8 +13,15 @@ import {
   unlockWallet,
   createAndSaveWallet,
   importAndSaveWallet,
-  clearWallet,
+  listAccountSummaries,
+  setActiveAccountIndex,
+  getActiveAccountIndex,
+  createAdditionalAccount,
+  importAdditionalAccount,
+  removeAccountAtIndex,
 } from '../src/storage/walletStore.extension';
+import { assertFromMatchesSender, transactionFromDappJson } from '../src/boing/dappTxRequest';
+import { buildSignedTransactionHex } from '../src/boing/signing';
 import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
 import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
@@ -47,9 +54,11 @@ const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
 const BOING_DECIMALS = 0;
 
-type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'backup' | 'dashboard';
+type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'backup' | 'dashboard' | 'add-pick';
 
 let currentScreen: Screen = 'choose';
+/** True when create/import screens are adding a second+ account from the dashboard. */
+let addingAccountMode = false;
 let accountId: Uint8Array | null = null;
 let privateKey: Uint8Array | null = null;
 let pendingBackupPassword = '';
@@ -264,19 +273,33 @@ async function refreshStake(): Promise<void> {
   }
 }
 
+function refreshAccountSelect(): void {
+  const sel = document.getElementById('account-select') as HTMLSelectElement | null;
+  if (!sel) return;
+  const summaries = listAccountSummaries();
+  const active = getActiveAccountIndex();
+  sel.innerHTML = summaries
+    .map(
+      (s, i) =>
+        `<option value="${i}" ${i === active ? 'selected' : ''}>${s.addressHex.slice(0, 8)}…${s.addressHex.slice(-6)}</option>`
+    )
+    .join('');
+  const rm = document.getElementById('btn-remove-account');
+  if (rm) rm.classList.toggle('hidden', summaries.length <= 1);
+}
+
 async function goDashboard(): Promise<void> {
   if (!accountId || !privateKey) return;
   const network = getDefaultNetwork(networksCatalog);
   const net = getNetwork(selectedNetworkId, networksCatalog) ?? network;
 
+  refreshAccountSelect();
   ($('address') as HTMLElement).textContent = formatAddress(accountId, false);
   const addressTxEl = document.getElementById('address-tx-tab');
   if (addressTxEl) addressTxEl.textContent = formatAddress(accountId, false);
   ($('balance') as HTMLElement).textContent = '…';
   repopulateNetworkSelect();
 
-  await refreshDashboardBalance();
-  await refreshStake();
   updateFaucetVisibility();
   updateStakingVisibility();
   updateNetworkMetaHint();
@@ -284,6 +307,8 @@ async function goDashboard(): Promise<void> {
   showScreen('dashboard');
   switchTab('wallet');
   refreshConnectedSites();
+  await refreshDashboardBalance();
+  await refreshStake();
 }
 
 // --- Choose
@@ -326,7 +351,9 @@ $('form-create').addEventListener('submit', async (e) => {
     return;
   }
   try {
-    const { privateKeyHex } = await createAndSaveWallet(password);
+    const { privateKeyHex } = addingAccountMode
+      ? await createAdditionalAccount(password)
+      : await createAndSaveWallet(password);
     pendingBackupPassword = password;
     ($('backup-key') as HTMLElement).textContent = privateKeyHex;
     const ack = document.getElementById('backup-acknowledged') as HTMLInputElement;
@@ -363,6 +390,7 @@ $('btn-backup-continue').addEventListener('click', async () => {
     const [pub, priv] = await unlockWallet(password);
     accountId = pub;
     privateKey = priv;
+    addingAccountMode = false;
     chrome.runtime.sendMessage({
       type: 'WALLET_UNLOCK',
       accountHex: accountIdToHex(pub),
@@ -373,7 +401,14 @@ $('btn-backup-continue').addEventListener('click', async () => {
     showError('backup-error', err instanceof Error ? err.message : 'Failed to unlock');
   }
 });
-$('btn-create-back').addEventListener('click', () => showScreen('choose'));
+$('btn-create-back').addEventListener('click', () => {
+  if (addingAccountMode) {
+    addingAccountMode = false;
+    void goDashboard();
+  } else {
+    showScreen('choose');
+  }
+});
 
 // --- Import
 $('form-import').addEventListener('submit', async (e) => {
@@ -401,10 +436,15 @@ $('form-import').addEventListener('submit', async (e) => {
     importBtn.textContent = 'Importing…';
   }
   try {
-    await importAndSaveWallet(password, hex);
+    if (addingAccountMode) {
+      await importAdditionalAccount(password, hex);
+    } else {
+      await importAndSaveWallet(password, hex);
+    }
     const [pub, priv] = await unlockWallet(password);
     accountId = pub;
     privateKey = priv;
+    addingAccountMode = false;
     chrome.runtime.sendMessage({
       type: 'WALLET_UNLOCK',
       accountHex: accountIdToHex(pub),
@@ -420,7 +460,14 @@ $('form-import').addEventListener('submit', async (e) => {
     }
   }
 });
-$('btn-import-back').addEventListener('click', () => showScreen('choose'));
+$('btn-import-back').addEventListener('click', () => {
+  if (addingAccountMode) {
+    addingAccountMode = false;
+    void goDashboard();
+  } else {
+    showScreen('choose');
+  }
+});
 
 // --- Dashboard
 document.querySelectorAll('.tab-btn').forEach((btn) => {
@@ -444,6 +491,103 @@ $('btn-lock').addEventListener('click', () => {
   privateKey = null;
   chrome.runtime.sendMessage({ type: 'WALLET_LOCK' });
   renderChoose();
+});
+
+const accountSelectEl = document.getElementById('account-select') as HTMLSelectElement | null;
+if (accountSelectEl) {
+  accountSelectEl.addEventListener('change', async () => {
+    const idx = parseInt(accountSelectEl.value, 10);
+    if (Number.isNaN(idx) || idx === getActiveAccountIndex()) return;
+    await setActiveAccountIndex(idx);
+    chrome.runtime.sendMessage({ type: 'BOING_ACTIVE_ACCOUNT_CHANGED' });
+    accountId = null;
+    privateKey = null;
+    const w = getStoredWallet();
+    ($('unlock-hint') as HTMLParagraphElement).textContent = w
+      ? `Address: ${w.addressHex.slice(0, 8)}…${w.addressHex.slice(-8)}`
+      : '';
+    showScreen('unlock');
+  });
+}
+
+document.getElementById('btn-add-account')?.addEventListener('click', () => {
+  showScreen('add-pick');
+});
+
+document.getElementById('btn-remove-account')?.addEventListener('click', async () => {
+  if (!confirm('Remove this account from Boing Express? This cannot be undone.')) return;
+  const idx = getActiveAccountIndex();
+  await removeAccountAtIndex(idx);
+  chrome.runtime.sendMessage({ type: 'BOING_ACTIVE_ACCOUNT_CHANGED' });
+  accountId = null;
+  privateKey = null;
+  if (!hasStoredWallet()) {
+    renderChoose();
+    return;
+  }
+  const w = getStoredWallet();
+  ($('unlock-hint') as HTMLParagraphElement).textContent = w
+    ? `Address: ${w.addressHex.slice(0, 8)}…${w.addressHex.slice(-8)}`
+    : '';
+  showScreen('unlock');
+});
+
+document.getElementById('btn-add-pick-create')?.addEventListener('click', () => {
+  addingAccountMode = true;
+  showScreen('create');
+});
+
+document.getElementById('btn-add-pick-import')?.addEventListener('click', () => {
+  addingAccountMode = true;
+  showScreen('import');
+});
+
+document.getElementById('btn-add-pick-back')?.addEventListener('click', () => {
+  void goDashboard();
+});
+
+document.getElementById('btn-native-tx-submit')?.addEventListener('click', async () => {
+  if (!accountId || !privateKey) return;
+  const errEl = document.getElementById('native-tx-error') as HTMLElement | null;
+  const okEl = document.getElementById('native-tx-success') as HTMLElement | null;
+  const ta = document.getElementById('native-tx-json') as HTMLTextAreaElement | null;
+  if (!errEl || !okEl || !ta) return;
+  errEl.classList.add('hidden');
+  okEl.classList.add('hidden');
+  const raw = ta.value.trim();
+  if (!raw) {
+    errEl.textContent = 'Paste JSON first.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  const btn = document.getElementById('btn-native-tx-submit') as HTMLButtonElement;
+  const prev = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const obj = JSON.parse(raw) as unknown;
+    assertFromMatchesSender(obj, accountIdToHex(accountId));
+    const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
+    const nonce = await net.getNonce(accountId);
+    const tx = transactionFromDappJson(obj, accountId, nonce);
+    const signedHexNo0x = await buildSignedTransactionHex(tx, privateKey);
+    const hex = signedHexNo0x.startsWith('0x') ? signedHexNo0x : `0x${signedHexNo0x}`;
+    const result = await net.submitTransaction(hex);
+    if (result.success) {
+      okEl.textContent = result.txHash ? `Submitted: ${result.txHash.slice(0, 20)}…` : 'Submitted.';
+      okEl.classList.remove('hidden');
+      await refreshDashboardBalance();
+    } else {
+      errEl.textContent = result.error ?? 'Submit failed';
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.textContent = e instanceof Error ? e.message : String(e);
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prev ?? 'Sign & send';
+  }
 });
 
 $('btn-copy').addEventListener('click', async () => {

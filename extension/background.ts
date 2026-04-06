@@ -11,8 +11,10 @@ import { buildSignedTransactionHex } from '../src/boing/signing';
 import { accountIdFromHex } from '../src/boing/types';
 import {
   assertFromMatchesSender,
+  buildTransactionApprovalDetail,
   transactionFromDappJson,
   transactionSummary,
+  type TransactionApprovalDetail,
 } from '../src/boing/dappTxRequest';
 import {
   getAccount,
@@ -35,6 +37,7 @@ import {
   refreshExtensionBoingMetaForce,
   refreshExtensionBoingMetaIfStale,
 } from './boingMetaExtension';
+import { parseVaultFromStoredJson, getActiveAddressHex } from '../src/storage/walletVault';
 
 const STORAGE_KEY_WALLET = 'boing_wallet_enc';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
@@ -42,7 +45,7 @@ const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
 const STORAGE_KEY_UNLOCKED_SESSION = 'boing_unlocked_session';
 const DEFAULT_NETWORK_ID = BOING_TESTNET_NETWORK_ID;
 const APPROVAL_WINDOW_WIDTH = 420;
-const APPROVAL_WINDOW_HEIGHT = 640;
+const APPROVAL_WINDOW_HEIGHT = 720;
 const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000;
 const PENDING_UNLOCK_TIMEOUT_MS = 2 * 60 * 1000;
 
@@ -61,6 +64,7 @@ const BOING_METHODS = {
   SIGN_MESSAGE: 'boing_signMessage',
   SIGN_TRANSACTION: 'boing_signTransaction',
   SEND_TRANSACTION: 'boing_sendTransaction',
+  SIMULATE_TRANSACTION: 'boing_simulateTransaction',
   CHAIN_ID: 'boing_chainId',
   SWITCH_CHAIN: 'boing_switchChain',
 } as const;
@@ -98,33 +102,50 @@ type PendingSignatureApproval = {
   chainId: string;
   address: string;
   message: string;
+  transactionDetail?: TransactionApprovalDetail;
+  /** Present when approving a native transaction: sign-only vs sign+simulate+submit. */
+  txPipeline?: 'sign' | 'send';
   resolve: () => void;
   reject: (error: BoingProviderError) => void;
   timeoutId: number;
   windowId?: number;
 };
 
-type ApprovalRecord = Pick<PendingSignatureApproval, 'requestId' | 'origin' | 'chainId' | 'address' | 'message'>;
+type ApprovalRecord = Pick<
+  PendingSignatureApproval,
+  'requestId' | 'origin' | 'chainId' | 'address' | 'message' | 'transactionDetail' | 'txPipeline'
+>;
+
+/** Extra fields on provider errors (simulation hints, node forward). Aligned with RPC-API-SPEC / BOING-RPC-ERROR-CODES-FOR-DAPPS. */
+type BoingProviderErrorData = {
+  boingCode: string;
+  /** Original node JSON-RPC error when `boingCode === 'BOING_NODE_JSONRPC'`. */
+  rpc?: { code: number; message: string; data?: unknown };
+  /** From `boing_simulateTransaction` when execution fails — dApp can merge into next tx `access_list`. */
+  suggested_access_list?: { read: string[]; write: string[] };
+  access_list_covers_suggestion?: boolean;
+};
 
 /** Serialized on the wire to dApps (`window.boing.request`). */
 type ProviderErrorPayload = {
   code: number;
   message: string;
-  data: {
-    boingCode: string;
-    /** Original node JSON-RPC error when `boingCode === 'BOING_NODE_JSONRPC'`. */
-    rpc?: { code: number; message: string; data?: unknown };
-  };
+  data: BoingProviderErrorData;
 };
 
 class BoingProviderError extends Error {
   code: number;
-  data: ProviderErrorPayload['data'];
+  data: BoingProviderErrorData;
 
-  constructor(code: number, boingCode: string, message: string) {
+  constructor(
+    code: number,
+    boingCode: string,
+    message: string,
+    extras?: Partial<Omit<BoingProviderErrorData, 'boingCode'>>
+  ) {
     super(message);
     this.code = code;
-    this.data = { boingCode };
+    this.data = { boingCode, ...extras };
     this.name = 'BoingProviderError';
   }
 }
@@ -145,8 +166,13 @@ const pendingUnlockQueue: PendingUnlockItem[] = [];
 const pendingSignatureApprovals = new Map<string, PendingSignatureApproval>();
 const approvalRequestIdsByWindowId = new Map<number, string>();
 
-function providerError(code: number, boingCode: string, message: string): BoingProviderError {
-  return new BoingProviderError(code, boingCode, message);
+function providerError(
+  code: number,
+  boingCode: string,
+  message: string,
+  extras?: Partial<Omit<BoingProviderErrorData, 'boingCode'>>
+): BoingProviderError {
+  return new BoingProviderError(code, boingCode, message, extras);
 }
 
 function persistUnlockedSession(state: UnlockedState | null): Promise<void> {
@@ -234,12 +260,12 @@ function getAddressHexFromStorage(): Promise<string | null> {
     chrome.storage.local.get([STORAGE_KEY_WALLET], (result) => {
       try {
         const raw = result[STORAGE_KEY_WALLET];
-        if (!raw) {
+        if (!raw || typeof raw !== 'string') {
           resolve(null);
           return;
         }
-        const parsed = JSON.parse(raw) as { addressHex?: string };
-        resolve(parsed.addressHex ?? null);
+        const vault = parseVaultFromStoredJson(raw);
+        resolve(getActiveAddressHex(vault));
       } catch {
         resolve(null);
       }
@@ -396,6 +422,8 @@ async function signOrSendBoingTransaction(
     chainId,
     address: normalizedAddr,
     message: transactionSummary(tx),
+    transactionDetail: buildTransactionApprovalDetail(tx),
+    txPipeline: method === BOING_METHODS.SEND_TRANSACTION ? 'send' : 'sign',
   });
 
   const signedHexNoPrefix = await buildSignedTransactionHex(tx, unlockedState.privateKey);
@@ -408,12 +436,21 @@ async function signOrSendBoingTransaction(
 
     try {
       try {
-        const sim = (await simulateTransaction(rpcUrl, rpcHex)) as { success?: boolean; error?: string };
+        const sim = (await simulateTransaction(rpcUrl, rpcHex)) as {
+          success?: boolean;
+          error?: string;
+          suggested_access_list?: { read: string[]; write: string[] };
+          access_list_covers_suggestion?: boolean;
+        };
         if (sim && typeof sim === 'object' && sim.success === false) {
           throw providerError(
             PROVIDER_ERROR_CODES.INTERNAL_ERROR,
             'BOING_SIMULATION_FAILED',
-            sim.error ?? 'Simulation reported failure.'
+            sim.error ?? 'Simulation reported failure.',
+            {
+              suggested_access_list: sim.suggested_access_list,
+              access_list_covers_suggestion: sim.access_list_covers_suggestion,
+            }
           );
         }
       } catch (e) {
@@ -452,6 +489,8 @@ function toApprovalRecord(pending: PendingSignatureApproval): ApprovalRecord {
     chainId: pending.chainId,
     address: pending.address,
     message: pending.message,
+    transactionDetail: pending.transactionDetail,
+    txPipeline: pending.txPipeline,
   };
 }
 
@@ -475,6 +514,12 @@ function rejectPendingApproval(requestId: string, error: BoingProviderError): vo
     });
   }
   pending.reject(error);
+}
+
+function rejectAllPendingSignatureApprovals(error: BoingProviderError): void {
+  for (const requestId of [...pendingSignatureApprovals.keys()]) {
+    rejectPendingApproval(requestId, error);
+  }
 }
 
 function rejectPendingUnlockItem(item: PendingUnlockItem, error: BoingProviderError): void {
@@ -636,7 +681,14 @@ function resolvePendingApproval(requestId: string): void {
   pending.resolve();
 }
 
-async function requestSignatureApproval(data: { origin: string; chainId: string; address: string; message: string }): Promise<void> {
+async function requestSignatureApproval(data: {
+  origin: string;
+  chainId: string;
+  address: string;
+  message: string;
+  transactionDetail?: TransactionApprovalDetail;
+  txPipeline?: 'sign' | 'send';
+}): Promise<void> {
   const requestId = `sign-${Date.now()}-${nextApprovalId++}`;
   return new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => {
@@ -652,6 +704,8 @@ async function requestSignatureApproval(data: { origin: string; chainId: string;
       chainId: data.chainId,
       address: data.address,
       message: data.message,
+      transactionDetail: data.transactionDetail,
+      txPipeline: data.txPipeline,
       resolve,
       reject,
       timeoutId,
@@ -806,6 +860,38 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
           type: 'BOING_PROVIDER_EVENT',
           event: 'disconnect',
           payload: { origins, code: PROVIDER_ERROR_CODES.UNAUTHORIZED, message: 'Wallet locked in Boing Express.' },
+        });
+      }
+    });
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (msg.type === 'BOING_ACTIVE_ACCOUNT_CHANGED') {
+    unlocked = null;
+    void persistUnlockedSession(null);
+    const switchErr = providerError(
+      PROVIDER_ERROR_CODES.UNAUTHORIZED,
+      'BOING_ACCOUNT_SWITCHED',
+      'Active account changed. Unlock Boing Express again.'
+    );
+    rejectAllPendingUnlockRequests(switchErr);
+    rejectAllPendingSignatureApprovals(switchErr);
+    void getConnectedSites().then((origins) => {
+      if (origins.length > 0) {
+        broadcastProviderEvent({
+          type: 'BOING_PROVIDER_EVENT',
+          event: 'accountsChanged',
+          payload: { accounts: [], origins },
+        });
+        broadcastProviderEvent({
+          type: 'BOING_PROVIDER_EVENT',
+          event: 'disconnect',
+          payload: {
+            origins,
+            code: PROVIDER_ERROR_CODES.UNAUTHORIZED,
+            message: 'Active account changed in Boing Express. Connect again after unlock.',
+          },
         });
       }
     });
@@ -1018,6 +1104,28 @@ async function handleProviderRequest(
         throw new QueuedForUnlock();
       }
       return signOrSendBoingTransaction(normalizedMethod, params, origin, unlockedStateTx, addressHex);
+    }
+
+    case BOING_METHODS.SIMULATE_TRANSACTION: {
+      if (!isConnected) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
+      }
+      const hexParam = params[0];
+      if (typeof hexParam !== 'string' || !String(hexParam).trim()) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.INVALID_PARAMS,
+          'BOING_INVALID_PARAMS',
+          'boing_simulateTransaction requires one argument: hex-encoded SignedTransaction from boing_signTransaction.'
+        );
+      }
+      const rawHex = String(hexParam).trim();
+      const rpcHex = rawHex.startsWith('0x') ? rawHex : `0x${rawHex}`;
+      const rpcUrl = await rpcUrlForSelectedNetwork();
+      return await simulateTransaction(rpcUrl, rpcHex);
     }
 
     case BOING_METHODS.CHAIN_ID: {

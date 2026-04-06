@@ -12,7 +12,10 @@ const MASCOT_BY_STEP: Record<string, string> = {
   backup: 'mascot-default.png',
 };
 
-type Step = 'choose' | 'create' | 'import' | 'unlock' | 'backup';
+type Step = 'choose' | 'create' | 'import' | 'unlock' | 'backup' | 'add-pick';
+
+/** When adding a 2+ account to an existing vault (web parity with extension). */
+type AccountFlow = 'initial' | 'add-secondary';
 
 export function Welcome() {
   const {
@@ -21,9 +24,12 @@ export function Welcome() {
     unlock,
     createWallet,
     importWallet,
+    createAnotherAccount,
+    importAnotherAccount,
   } = useWallet();
 
   const [step, setStep] = useState<Step>(hasWallet ? 'unlock' : 'choose');
+  const [accountFlow, setAccountFlow] = useState<AccountFlow>('initial');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [privateKeyHex, setPrivateKeyHex] = useState('');
@@ -59,7 +65,8 @@ export function Welcome() {
     }
     setLoading(true);
     try {
-      const { privateKeyHex: keyHex } = await createWallet(password);
+      const { privateKeyHex: keyHex } =
+        accountFlow === 'add-secondary' ? await createAnotherAccount(password) : await createWallet(password);
       setBackupKeyHex(keyHex);
       setStep('backup');
       setBackupAcknowledged(false);
@@ -75,6 +82,7 @@ export function Welcome() {
     setLoading(true);
     try {
       await unlock(password);
+      setAccountFlow('initial');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to unlock');
     } finally {
@@ -107,7 +115,12 @@ export function Welcome() {
     }
     setLoading(true);
     try {
-      await importWallet(password, hex);
+      if (accountFlow === 'add-secondary') {
+        await importAnotherAccount(password, hex);
+        setAccountFlow('initial');
+      } else {
+        await importWallet(password, hex);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to import wallet');
     } finally {
@@ -123,10 +136,10 @@ export function Welcome() {
           <h1 className={styles.title}>Boing Wallet</h1>
           <p className={styles.subtitle}>The DeFi that always bounces back. Non-custodial wallet for Boing Network.</p>
           <div className={styles.actions}>
-            <button type="button" className={styles.primary} onClick={() => setStep('create')}>
+            <button type="button" className={styles.primary} data-testid="wallet-landing-create" onClick={() => setStep('create')}>
               Create wallet
             </button>
-            <button type="button" className={styles.secondary} onClick={() => setStep('import')}>
+            <button type="button" className={styles.secondary} data-testid="wallet-landing-import" onClick={() => setStep('import')}>
               Import wallet
             </button>
           </div>
@@ -152,13 +165,64 @@ export function Welcome() {
               onChange={(e) => setPassword(e.target.value)}
               className={styles.input}
               autoComplete="current-password"
+              data-testid="wallet-unlock-password"
             />
             {error && <p className={styles.error}>{error}</p>}
-            <button type="submit" className={styles.primary} disabled={loading}>
+            <button type="submit" className={styles.primary} disabled={loading} data-testid="wallet-unlock-submit">
               {loading ? 'Unlocking…' : 'Unlock'}
             </button>
           </form>
-          <button type="button" className={styles.textBtn} onClick={() => setStep('choose')}>
+          {hasWallet && (
+            <button
+              type="button"
+              className={`${styles.secondary} ${styles.secondaryFullWidth}`}
+              data-testid="wallet-unlock-add-account"
+              onClick={() => {
+                setError('');
+                setAccountFlow('add-secondary');
+                setStep('add-pick');
+              }}
+            >
+              Add another account
+            </button>
+          )}
+          {!hasWallet && (
+            <button type="button" className={styles.textBtn} onClick={() => setStep('choose')}>
+              Back
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'add-pick') {
+    return (
+      <div className={`${styles.wrap} page-app`}>
+        <div className={styles.card}>
+          <img src={`${ASSETS}/mascot-default.png`} alt="" className={styles.mascot} aria-hidden />
+          <h1 className={styles.title}>Add another account</h1>
+          <p className={styles.subtitle}>
+            New keys are encrypted with your password and stored alongside your existing wallet. Use Boing Express on
+            desktop for the same multi-account vault.
+          </p>
+          <div className={styles.actions}>
+            <button type="button" className={styles.primary} data-testid="wallet-add-pick-create" onClick={() => setStep('create')}>
+              Create new keypair
+            </button>
+            <button type="button" className={styles.secondary} data-testid="wallet-add-pick-import" onClick={() => setStep('import')}>
+              Import private key
+            </button>
+          </div>
+          <button
+            type="button"
+            className={styles.textBtn}
+            data-testid="wallet-add-pick-back"
+            onClick={() => {
+              setAccountFlow('initial');
+              setStep('unlock');
+            }}
+          >
             Back
           </button>
         </div>
@@ -187,6 +251,7 @@ export function Welcome() {
               checked={backupAcknowledged}
               onChange={(e) => setBackupAcknowledged(e.target.checked)}
               className={styles.checkbox}
+              data-testid="wallet-backup-ack"
             />
             <span>I have saved my private key in a safe place</span>
           </label>
@@ -194,6 +259,7 @@ export function Welcome() {
           <button
             type="button"
             className={styles.primary}
+            data-testid="wallet-backup-continue"
             onClick={handleBackupContinue}
             disabled={loading || !backupAcknowledged}
           >
@@ -209,7 +275,7 @@ export function Welcome() {
       <div className={`${styles.wrap} page-app`}>
         <div className={styles.card}>
           <img src={`${ASSETS}/${MASCOT_BY_STEP.create}`} alt="" className={styles.mascot} aria-hidden />
-          <h1 className={styles.title}>Create wallet</h1>
+          <h1 className={styles.title}>{accountFlow === 'add-secondary' ? 'Create another account' : 'Create wallet'}</h1>
           <p className={styles.subtitle}>
             Generate a new Ed25519 keypair. Back up your key — we don’t store it on any server.
           </p>
@@ -221,6 +287,7 @@ export function Welcome() {
               onChange={(e) => setPassword(e.target.value)}
               className={styles.input}
               autoComplete="new-password"
+              data-testid="wallet-create-password"
             />
             <input
               type="password"
@@ -229,13 +296,18 @@ export function Welcome() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className={styles.input}
               autoComplete="new-password"
+              data-testid="wallet-create-password-confirm"
             />
             {error && <p className={styles.error}>{error}</p>}
-            <button type="submit" className={styles.primary} disabled={loading}>
-              {loading ? 'Creating…' : 'Create wallet'}
+            <button type="submit" className={styles.primary} disabled={loading} data-testid="wallet-create-submit">
+              {loading ? 'Creating…' : accountFlow === 'add-secondary' ? 'Create account' : 'Create wallet'}
             </button>
           </form>
-          <button type="button" className={styles.textBtn} onClick={() => setStep('choose')}>
+          <button
+            type="button"
+            className={styles.textBtn}
+            onClick={() => setStep(accountFlow === 'add-secondary' ? 'add-pick' : 'choose')}
+          >
             Back
           </button>
         </div>
@@ -248,7 +320,7 @@ export function Welcome() {
     <div className={`${styles.wrap} page-app`}>
       <div className={styles.card}>
         <img src={`${ASSETS}/${MASCOT_BY_STEP.import}`} alt="" className={styles.mascot} aria-hidden />
-        <h1 className={styles.title}>Import wallet</h1>
+        <h1 className={styles.title}>{accountFlow === 'add-secondary' ? 'Import another account' : 'Import wallet'}</h1>
         <p className={styles.subtitle}>
           Enter your 64-character hex private key (32 bytes). It will be encrypted with your password.
         </p>
@@ -259,6 +331,7 @@ export function Welcome() {
             onChange={(e) => setPrivateKeyHex(e.target.value)}
             className={styles.textarea}
             rows={3}
+            data-testid="wallet-import-key"
           />
           <input
             type="password"
@@ -267,6 +340,7 @@ export function Welcome() {
             onChange={(e) => setPassword(e.target.value)}
             className={styles.input}
             autoComplete="new-password"
+            data-testid="wallet-import-password"
           />
           <input
             type="password"
@@ -275,13 +349,18 @@ export function Welcome() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             className={styles.input}
             autoComplete="new-password"
+            data-testid="wallet-import-password-confirm"
           />
           {error && <p className={styles.error}>{error}</p>}
-          <button type="submit" className={styles.primary} disabled={loading}>
-            {loading ? 'Importing…' : 'Import wallet'}
+          <button type="submit" className={styles.primary} disabled={loading} data-testid="wallet-import-submit">
+            {loading ? 'Importing…' : accountFlow === 'add-secondary' ? 'Import account' : 'Import wallet'}
           </button>
         </form>
-        <button type="button" className={styles.textBtn} onClick={() => setStep('choose')}>
+        <button
+          type="button"
+          className={styles.textBtn}
+          onClick={() => setStep(accountFlow === 'add-secondary' ? 'add-pick' : 'choose')}
+        >
           Back
         </button>
       </div>
