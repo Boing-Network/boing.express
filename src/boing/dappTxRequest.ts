@@ -91,6 +91,17 @@ function hexToBytesFlexible(hex: string, field: string): Uint8Array {
   return out;
 }
 
+/** `Option<[u8; 32]>` CREATE2 salt from dApp JSON (`create2_salt` / `create2Salt`, 64 hex chars). */
+function parseCreate2Salt(o: Record<string, unknown>): Uint8Array | null {
+  const c2 = o.create2_salt ?? o.create2Salt;
+  if (c2 == null || c2 === '') return null;
+  const bytes = hexToBytesFlexible(String(c2), 'create2_salt');
+  if (bytes.length !== 32) {
+    throw new Error('create2_salt must be 32 bytes (64 hex characters)');
+  }
+  return bytes;
+}
+
 export type BoingDappTxRequestJson = Record<string, unknown>;
 
 export function transactionSummary(tx: Transaction): string {
@@ -113,9 +124,13 @@ export function transactionSummary(tx: Transaction): string {
     case 'contract_deploy':
       return `Boing tx | From ${from} | Nonce ${n} | Deploy contract | bytecode ${p.bytecode.length} bytes`;
     case 'contract_deploy_purpose':
-      return `Boing tx | From ${from} | Nonce ${n} | Deploy (purpose: ${p.purpose_category}) | bytecode ${p.bytecode.length} bytes`;
+      return `Boing tx | From ${from} | Nonce ${n} | Deploy (purpose: ${p.purpose_category}) | bytecode ${p.bytecode.length} bytes${
+        p.create2_salt ? ' | CREATE2' : ''
+      }`;
     case 'contract_deploy_meta':
-      return `Boing tx | From ${from} | Nonce ${n} | Deploy + metadata (${p.purpose_category}) | bytecode ${p.bytecode.length} bytes`;
+      return `Boing tx | From ${from} | Nonce ${n} | Deploy + metadata (${p.purpose_category}) | bytecode ${p.bytecode.length} bytes${
+        p.create2_salt ? ' | CREATE2' : ''
+      }`;
     default: {
       const _e: never = p;
       return _e;
@@ -208,6 +223,9 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
       if (p.description_hash) {
         rows.push({ label: 'Description hash', value: hexPreview(p.description_hash) });
       }
+      if (p.create2_salt) {
+        rows.push({ label: 'CREATE2 salt', value: hexPreview(p.create2_salt, 32) });
+      }
       rows.push({ label: 'Bytecode', value: `${p.bytecode.length} bytes — ${hexPreview(p.bytecode)}` });
       rows.push(accessListSummary(tx));
       break;
@@ -222,6 +240,9 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
       }
       if (p.description_hash) {
         rows.push({ label: 'Description hash', value: hexPreview(p.description_hash) });
+      }
+      if (p.create2_salt) {
+        rows.push({ label: 'CREATE2 salt', value: hexPreview(p.create2_salt, 32) });
       }
       rows.push({ label: 'Bytecode', value: `${p.bytecode.length} bytes — ${hexPreview(p.bytecode)}` });
       rows.push(accessListSummary(tx));
@@ -294,7 +315,13 @@ export function transactionFromDappJson(
       if (dh != null && dh !== '') {
         description_hash = hexToBytesFlexible(String(dh), 'description_hash');
       }
-      payload = { kind: 'contract_deploy_purpose', bytecode, purpose_category, description_hash };
+      payload = {
+        kind: 'contract_deploy_purpose',
+        bytecode,
+        purpose_category,
+        description_hash,
+        create2_salt: parseCreate2Salt(o),
+      };
       break;
     }
     case 'contract_deploy_meta': {
@@ -334,6 +361,7 @@ export function transactionFromDappJson(
         description_hash,
         asset_name,
         asset_symbol,
+        create2_salt: parseCreate2Salt(o),
       };
       break;
     }

@@ -199,6 +199,32 @@
   line-height: 1.4;
 }
 
+.addAccountRow {
+  margin-bottom: 1rem;
+}
+
+.addAccountBtn {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent-teal, #06b6d4);
+  cursor: pointer;
+}
+
+.addAccountBtn:hover {
+  border-color: var(--accent-teal, #06b6d4);
+  color: var(--text);
+}
+
+.addAccountHint {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 .addressRow {
   display: flex;
   align-items: center;

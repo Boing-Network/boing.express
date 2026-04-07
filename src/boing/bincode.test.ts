@@ -18,9 +18,13 @@ describe('bincode vs Rust boing-primitives (see crates/boing-primitives/examples
     );
   });
 
-  it('encodes ContractDeploy payload', () => {
-    const p = encodePayload({ kind: 'contract_deploy', bytecode: new Uint8Array([0xde, 0xad]) });
-    expect(toHex(p)).toBe('020000000200000000000000dead');
+  it('encodes ContractDeploy payload with Option::None create2_salt (TECHNICAL-SPEC §4.4)', () => {
+    const p = encodePayload({
+      kind: 'contract_deploy',
+      bytecode: new Uint8Array([0xde, 0xad]),
+      create2_salt: null,
+    });
+    expect(toHex(p)).toBe('020000000200000000000000dead00');
   });
 
   it('encodes Bond payload', () => {

@@ -45,7 +45,38 @@ describe('dappTxRequest QA policy', () => {
     expect(tx.payload.kind).toBe('contract_deploy_meta');
     if (tx.payload.kind === 'contract_deploy_meta') {
       expect(tx.payload.purpose_category).toBe('token');
+      expect(tx.payload.create2_salt).toBeNull();
     }
+  });
+
+  const salt32 = '0x' + '01'.repeat(32);
+
+  it('parses create2_salt on contract_deploy_meta', () => {
+    const tx = transactionFromDappJson(
+      {
+        type: 'contract_deploy_meta',
+        bytecode: '0xab',
+        purpose_category: 'token',
+        create2_salt: salt32,
+      },
+      sender,
+      0n
+    );
+    expect(tx.payload.kind).toBe('contract_deploy_meta');
+    if (tx.payload.kind === 'contract_deploy_meta') {
+      expect(tx.payload.create2_salt?.length).toBe(32);
+      expect(tx.payload.create2_salt?.[0]).toBe(1);
+    }
+  });
+
+  it('rejects create2_salt with wrong length', () => {
+    expect(() =>
+      transactionFromDappJson(
+        { type: 'contract_deploy_meta', bytecode: '0xab', purpose_category: 'token', create2_salt: '0x00ff' },
+        sender,
+        0n
+      )
+    ).toThrow(/32 bytes/);
   });
 
   it('rejects contract_deploy_meta without purpose or asset fields', () => {

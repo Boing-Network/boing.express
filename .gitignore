@@ -43,3 +43,6 @@ pnpm-debug.log*
 .playwright-extension-profile/
 test-results/
 playwright-report/
+# Stray tsc emit next to E2E helpers (sources are .ts)
+tests/e2e/helpers/*.js
+tests/e2e/helpers/*.d.ts

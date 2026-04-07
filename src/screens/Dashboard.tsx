@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types';
 import { formatBalance, parseDecimalAmount } from '../boing/amount';
@@ -19,6 +20,7 @@ import { SiteLogo } from '../components/SiteLogo';
 import styles from './Dashboard.module.css';
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const {
     accountId,
     network,
@@ -99,6 +101,17 @@ export function Dashboard() {
       setRefreshing(false);
     }
   }, [accountId, network]);
+
+  /** Faucet / txs can commit before RPC balance reflects the new state — refresh now and again after short delays. */
+  const scheduleBalanceCatchUp = useCallback(() => {
+    void refreshData();
+    window.setTimeout(() => {
+      void refreshData();
+    }, 2_000);
+    window.setTimeout(() => {
+      void refreshData();
+    }, 5_000);
+  }, [refreshData]);
 
   useEffect(() => {
     if (!accountId) return;
@@ -205,8 +218,7 @@ export function Dashboard() {
         setSendSuccess(result.txHash ? `Sent! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
         setSendAmount('');
         setSendTo('');
-        setBalance(null);
-        network.getBalance(accountId).then(setBalance).catch(() => {});
+        scheduleBalanceCatchUp();
       } else {
         setSendError(result.error ?? 'Submit failed');
       }
@@ -227,8 +239,7 @@ export function Dashboard() {
         markGotTestnetBoing();
         setOnboarding(getOnboardingState());
         setFaucetStatus('ok');
-        setBalance(null);
-        network.getBalance(accountId).then(setBalance).catch(() => {});
+        scheduleBalanceCatchUp();
       } else {
         setFaucetStatus('err');
         setFaucetError(result.error ?? 'Faucet request failed');
@@ -272,10 +283,7 @@ export function Dashboard() {
         }
         setBondSuccess(result.txHash ? `Bonded! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
         setBondAmount('');
-        setBalance(null);
-        setStake(null);
-        network.getBalance(accountId).then(setBalance).catch(() => {});
-        if (network.getStake) network.getStake(accountId).then(setStake).catch(() => {});
+        scheduleBalanceCatchUp();
       } else {
         setBondError(result.error ?? 'Submit failed');
       }
@@ -320,10 +328,7 @@ export function Dashboard() {
         }
         setUnbondSuccess(result.txHash ? `Unbonded! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
         setUnbondAmount('');
-        setBalance(null);
-        setStake(null);
-        network.getBalance(accountId).then(setBalance).catch(() => {});
-        if (network.getStake) network.getStake(accountId).then(setStake).catch(() => {});
+        scheduleBalanceCatchUp();
       } else {
         setUnbondError(result.error ?? 'Submit failed');
       }
@@ -554,6 +559,19 @@ export function Dashboard() {
               <p className={styles.accountSwitchHint}>Switching locks the wallet — unlock again with your password.</p>
             </div>
           )}
+          <div className={styles.addAccountRow}>
+            <button
+              type="button"
+              className={styles.addAccountBtn}
+              onClick={() => navigate('/wallet/add-account')}
+              data-testid="wallet-dashboard-add-account"
+            >
+              Add account
+            </button>
+            <p className={styles.addAccountHint}>
+              Create or import another key in the same vault. Your password stays the same.
+            </p>
+          </div>
           <div className={styles.addressRow}>
             <code className={styles.address}>{address}</code>
             <button type="button" className={styles.copyBtn} onClick={copyAddress}>

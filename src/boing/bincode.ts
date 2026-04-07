@@ -64,6 +64,17 @@ function encodeOptionVecU8(v: Uint8Array | null | undefined): Uint8Array {
   return concatBytes([new Uint8Array([1]), encodeVecU8(v)]);
 }
 
+/** `Option<[u8; 32]>` for CREATE2 salt (bincode: 0 = None, 1 + 32 bytes = Some). */
+function encodeOptionCreate2Salt(salt: Uint8Array | null | undefined): Uint8Array {
+  if (salt == null) {
+    return new Uint8Array([0]);
+  }
+  if (salt.length !== 32) {
+    throw new Error('create2_salt must be exactly 32 bytes');
+  }
+  return concatBytes([new Uint8Array([1]), salt]);
+}
+
 function encodeOptionString(s: string | null | undefined): Uint8Array {
   if (s == null || s === '') {
     return new Uint8Array([0]);
@@ -92,7 +103,11 @@ export function encodePayload(p: Payload): Uint8Array {
       return concatBytes([enumTag(VARIANT_CONTRACT_CALL), p.contract, calldataEnc]);
     }
     case 'contract_deploy': {
-      return concatBytes([enumTag(VARIANT_CONTRACT_DEPLOY), encodeVecU8(p.bytecode)]);
+      return concatBytes([
+        enumTag(VARIANT_CONTRACT_DEPLOY),
+        encodeVecU8(p.bytecode),
+        encodeOptionCreate2Salt(p.create2_salt),
+      ]);
     }
     case 'contract_deploy_purpose': {
       return concatBytes([
@@ -100,6 +115,7 @@ export function encodePayload(p: Payload): Uint8Array {
         encodeVecU8(p.bytecode),
         encodeString(p.purpose_category),
         encodeOptionVecU8(p.description_hash),
+        encodeOptionCreate2Salt(p.create2_salt),
       ]);
     }
     case 'contract_deploy_meta': {
@@ -110,6 +126,7 @@ export function encodePayload(p: Payload): Uint8Array {
         encodeOptionVecU8(p.description_hash),
         encodeOptionString(p.asset_name),
         encodeOptionString(p.asset_symbol),
+        encodeOptionCreate2Salt(p.create2_salt),
       ]);
     }
     case 'bond': {

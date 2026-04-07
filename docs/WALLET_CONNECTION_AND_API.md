@@ -36,6 +36,7 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
 
 - **`type`:** `transfer` \| `bond` \| `unbond` \| `contract_call` \| `contract_deploy_purpose` \| `contract_deploy_meta` (not legacy `contract_deploy`).
 - **`contract_call`:** `contract` (32-byte AccountId hex), `calldata` (hex bytes), and explicit **`access_list`**: `{ read: string[], write: string[] }` with the same 64-hex-character account ids (optional `0x`). Alias: **`accessList`**. Omitting `access_list` yields an empty list (backward compatible); production dApps and **boing-sdk** should pass the list the node expects for scheduling (see network **HANDOFF-DEPENDENT-PROJECTS** / **RPC-API-SPEC**).
+- **Deploy payloads (`contract_deploy_purpose`, `contract_deploy_meta`):** Bincode on-chain includes **`create2_salt`**: `Option<[u8; 32]>`. Omit it or pass **`null`** for nonce-derived contract addresses; pass **64 hex chars** (32 bytes) as **`create2_salt`** / **`create2Salt`** for CREATE2 deploys (see [TECHNICAL-SPECIFICATION.md §4.4](https://github.com/Boing-Network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md)). Wallets must serialize this field or nodes will fail decoding the signed transaction.
 - **`from`:** optional; if set, must match the active account.
 - **`nonce`:** optional decimal string; if omitted, the wallet fetches the next nonce from RPC.
 

@@ -1,6 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallet } from '../context/WalletContext';
 import styles from './Welcome.module.css';
+
+export type WelcomeProps = {
+  /** From dashboard while unlocked: open multi-account create/import flow */
+  addAccountWhileUnlocked?: boolean;
+  /** Close add-account flow and return to dashboard */
+  onLeaveAddAccount?: () => void;
+};
 
 const ASSETS = '/assets';
 
@@ -17,7 +24,7 @@ type Step = 'choose' | 'create' | 'import' | 'unlock' | 'backup' | 'add-pick';
 /** When adding a 2+ account to an existing vault (web parity with extension). */
 type AccountFlow = 'initial' | 'add-secondary';
 
-export function Welcome() {
+export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: WelcomeProps = {}) {
   const {
     hasWallet,
     storedAddressHint,
@@ -28,8 +35,14 @@ export function Welcome() {
     importAnotherAccount,
   } = useWallet();
 
-  const [step, setStep] = useState<Step>(hasWallet ? 'unlock' : 'choose');
-  const [accountFlow, setAccountFlow] = useState<AccountFlow>('initial');
+  const [step, setStep] = useState<Step>(() => (addAccountWhileUnlocked ? 'add-pick' : hasWallet ? 'unlock' : 'choose'));
+  const [accountFlow, setAccountFlow] = useState<AccountFlow>(() => (addAccountWhileUnlocked ? 'add-secondary' : 'initial'));
+
+  useEffect(() => {
+    if (addAccountWhileUnlocked && !hasWallet) {
+      onLeaveAddAccount?.();
+    }
+  }, [addAccountWhileUnlocked, hasWallet, onLeaveAddAccount]);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [privateKeyHex, setPrivateKeyHex] = useState('');
@@ -83,6 +96,9 @@ export function Welcome() {
     try {
       await unlock(password);
       setAccountFlow('initial');
+      if (addAccountWhileUnlocked) {
+        onLeaveAddAccount?.();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to unlock');
     } finally {
@@ -118,6 +134,9 @@ export function Welcome() {
       if (accountFlow === 'add-secondary') {
         await importAnotherAccount(password, hex);
         setAccountFlow('initial');
+        if (addAccountWhileUnlocked) {
+          onLeaveAddAccount?.();
+        }
       } else {
         await importWallet(password, hex);
       }
@@ -219,6 +238,10 @@ export function Welcome() {
             className={styles.textBtn}
             data-testid="wallet-add-pick-back"
             onClick={() => {
+              if (addAccountWhileUnlocked && onLeaveAddAccount) {
+                onLeaveAddAccount();
+                return;
+              }
               setAccountFlow('initial');
               setStep('unlock');
             }}

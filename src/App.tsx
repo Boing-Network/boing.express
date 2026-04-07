@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { WalletProvider } from './context/WalletContext';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { InitialAnimation } from './components/InitialAnimation';
@@ -17,6 +17,32 @@ import { useWallet } from './context/WalletContext';
 
 function WalletApp() {
   const { isUnlocked } = useWallet();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pathNorm = (location.pathname.replace(/\/+$/, '') || '/') as string;
+  const addAccountRoute = pathNorm === '/wallet/add-account';
+
+  if (!isUnlocked && addAccountRoute) {
+    return (
+      <>
+        <WalletNav />
+        <Navigate to="/wallet" replace />
+      </>
+    );
+  }
+
+  if (isUnlocked && addAccountRoute) {
+    return (
+      <>
+        <WalletNav />
+        <Welcome
+          addAccountWhileUnlocked
+          onLeaveAddAccount={() => navigate('/wallet', { replace: true })}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <WalletNav />

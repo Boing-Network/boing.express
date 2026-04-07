@@ -9,12 +9,14 @@ export type AccountId = Uint8Array; // 32 bytes
 export type Payload =
   | { kind: 'transfer'; to: AccountId; amount: bigint }
   | { kind: 'contract_call'; contract: AccountId; calldata: Uint8Array }
-  | { kind: 'contract_deploy'; bytecode: Uint8Array }
+  /** `create2_salt` None → nonce-derived deploy address; Some(32 bytes) → CREATE2 (see TECHNICAL-SPECIFICATION §4.4). */
+  | { kind: 'contract_deploy'; bytecode: Uint8Array; create2_salt: Uint8Array | null }
   | {
       kind: 'contract_deploy_purpose';
       bytecode: Uint8Array;
       purpose_category: string;
       description_hash: Uint8Array | null;
+      create2_salt: Uint8Array | null;
     }
   | {
       kind: 'contract_deploy_meta';
@@ -23,6 +25,7 @@ export type Payload =
       description_hash: Uint8Array | null;
       asset_name: string | null;
       asset_symbol: string | null;
+      create2_salt: Uint8Array | null;
     }
   | { kind: 'bond'; amount: bigint }
   | { kind: 'unbond'; amount: bigint };
