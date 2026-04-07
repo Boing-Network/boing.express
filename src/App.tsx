@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { WalletProvider } from './context/WalletContext';
 import { AnimatedBackground } from './components/AnimatedBackground';
+import { EngravingVeinBackdrop, StoneSlabBackdrop } from './components/EngravingBackdrop';
 import { InitialAnimation } from './components/InitialAnimation';
 import styles from './App.module.css';
 import { WalletNav } from './components/WalletNav';
@@ -83,19 +84,23 @@ function AppShell() {
   const [introDone, setIntroDone] = useState(false);
   const handleIntroComplete = useCallback(() => setIntroDone(true), []);
 
-  /* Background runs from first paint so it’s already animated when intro fades out. */
+  /* Stone + canvas + engraved vein wrap all routes; intro overlays until complete. */
   return (
     <>
+      <StoneSlabBackdrop />
       <AnimatedBackground />
-      {!introDone ? (
-        <InitialAnimation onComplete={handleIntroComplete} />
-      ) : (
-        <div className={styles.appEntrance}>
-          <div data-page={pageKey} style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
-            <AppContent />
-          </div>
+      <div className={styles.pageWrap} data-page={pageKey}>
+        <EngravingVeinBackdrop />
+        <div
+          className={introDone ? styles.appEntrance : styles.appContentAwaitingIntro}
+          style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}
+          aria-hidden={!introDone}
+          {...(!introDone ? { inert: true } : {})}
+        >
+          <AppContent />
         </div>
-      )}
+      </div>
+      {!introDone ? <InitialAnimation onComplete={handleIntroComplete} /> : null}
     </>
   );
 }

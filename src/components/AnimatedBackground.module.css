@@ -7,4 +7,6 @@
   z-index: 0;
   pointer-events: none;
   display: block;
+  /* Let the stone slab read through; motion stays visible */
+  opacity: 0.44;
 }

@@ -1,0 +1,142 @@
+/* Stone slab + engraved circuit — sits under UI, over canvas */
+
+.stoneFixed {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(18, 36, 58, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 60% at 100% 40%, rgba(8, 22, 42, 0.4) 0%, transparent 45%),
+    radial-gradient(ellipse 70% 50% at 0% 70%, rgba(12, 28, 48, 0.35) 0%, transparent 40%),
+    linear-gradient(168deg, #060a12 0%, #0b1524 32%, #080e18 68%, #050810 100%);
+}
+
+.stoneFixed::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* Subtle “chiseled” grain */
+.stoneFixed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      -12deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, 0.04) 2px,
+      rgba(0, 0, 0, 0.04) 3px
+    );
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.veinLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.track {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.5);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+  vector-effect: non-scaling-stroke;
+}
+
+.trackHighlight {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.04);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+  vector-effect: non-scaling-stroke;
+}
+
+.neonLine {
+  fill: none;
+  stroke: var(--express-primary);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.82;
+  vector-effect: non-scaling-stroke;
+  animation: veinNeonPulse 5.5s var(--motion-easing) infinite;
+}
+
+.nodeHalo {
+  fill: var(--express-primary);
+  opacity: 0.22;
+  animation: nodeHaloPulse 4s var(--motion-easing) infinite;
+}
+
+.nodeCore {
+  fill: var(--express-primary);
+  opacity: 0.92;
+}
+
+.accentOrb {
+  fill: none;
+  stroke: var(--express-secondary);
+  stroke-width: 1;
+  opacity: 0.35;
+  vector-effect: non-scaling-stroke;
+}
+
+.connector {
+  fill: none;
+  stroke: var(--express-secondary);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-dasharray: 3 5;
+  opacity: 0.22;
+  vector-effect: non-scaling-stroke;
+}
+
+@keyframes veinNeonPulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.96;
+  }
+}
+
+@keyframes nodeHaloPulse {
+  0%,
+  100% {
+    opacity: 0.14;
+  }
+  50% {
+    opacity: 0.32;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neonLine {
+    animation: none;
+    opacity: 0.85;
+  }
+
+  .nodeHalo {
+    animation: none;
+    opacity: 0.2;
+  }
+}

@@ -1,5 +1,21 @@
+/* Full-page canvas for engraved vein (grows with route content) */
+.pageWrap {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+/* Routes mount during intro so the vein can size to the active page; hidden under InitialAnimation */
+.appContentAwaitingIntro {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* App shell entrance — ease into landing after intro fade-out */
 .appEntrance {
+  position: relative;
+  z-index: 1;
   animation: appEntrance 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
