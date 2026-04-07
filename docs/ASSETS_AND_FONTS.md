@@ -27,12 +27,7 @@ Official Boing Network design system assets. All are used in the web app.
 
 ### Pillars (six pillars of Boing Network)
 
-- **pillar-security.png** — Security. Used in Landing pills and "Non-custodial" feature card.
-- **pillar-scalability.png** — Scalability. Used in Landing pills and "Web & extension" feature card.
-- **pillar-decentralization.png** — Decentralization. Used in Landing pills and "Boing Network" feature card.
-- **pillar-authenticity.png** — Authenticity. Used in Landing pills.
-- **pillar-transparency.png** — Transparency. Used in Landing pills.
-- **pillar-quality.png** — Quality Assurance. Used in Landing pills.
+- **pillar-*.svg** — Same assets as [boing.network](https://boing.network/) (`/assets/pillar-*.svg`). Used on the Landing hero pills and feature cards (security, scalability, decentralization in cards; all six in pills).
 
 ### Locations
 

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 280" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="ps-g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d9ff"/>
+      <stop offset="55%" stop-color="#5ab0ff"/>
+      <stop offset="100%" stop-color="#7c6cf0"/>
+    </linearGradient>
+    <filter id="ps-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="200" height="280" rx="18" fill="#0a0e14"/>
+  <path stroke="rgba(0,217,255,0.08)" stroke-width="1" d="M20 40h160M20 240h160"/>
+  <path stroke="url(#ps-g)" stroke-width="2.4" filter="url(#ps-glow)" d="M100 52l44 22v48c0 36-18 62-44 78-26-16-44-42-44-78V74l44-22z"/>
+  <path stroke="rgba(255,255,255,0.12)" stroke-width="1.2" d="M100 52l44 22v48c0 36-18 62-44 78"/>
+  <circle cx="100" cy="118" r="14" stroke="url(#ps-g)" stroke-width="2"/>
+  <path stroke="url(#ps-g)" stroke-width="2" stroke-linecap="round" d="M94 118l4 4 10-12"/>
+</svg>

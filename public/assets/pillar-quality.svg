@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 280" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="pq-g" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5ecf9a"/>
+      <stop offset="50%" stop-color="#00d9ff"/>
+      <stop offset="100%" stop-color="#00ff88"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="280" rx="18" fill="#0a0e14"/>
+  <rect x="52" y="68" width="96" height="120" rx="12" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" transform="rotate(-8 100 128)"/>
+  <path stroke="url(#pq-g)" stroke-width="2.6" d="M100 54l38 20v44c0 32-16 54-38 66-22-12-38-34-38-66V74l38-20z"/>
+  <path stroke="rgba(255,255,255,0.14)" stroke-width="1.2" d="M100 54l38 20v44c0 32-16 54-38 66"/>
+  <circle cx="100" cy="118" r="28" stroke="url(#pq-g)" stroke-width="2"/>
+  <path stroke="url(#pq-g)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M88 118l8 8 18-22"/>
+  <path stroke="rgba(0,217,255,0.2)" stroke-width="1.5" stroke-linecap="round" d="M64 206h72M64 222h52M64 238h68"/>
+  <rect x="70" y="248" width="60" height="8" rx="2" fill="rgba(94,207,154,0.12)" stroke="url(#pq-g)" stroke-width="1"/>
+</svg>

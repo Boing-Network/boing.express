@@ -152,7 +152,7 @@ The web shell uses **`EngraveSceneBackdrop`** (`src/components/EngravingBackdrop
 ### Optional assets
 
 - **Boing Bot mascot:** For landing, onboarding, empty states; see [ASSETS_AND_FONTS.md](ASSETS_AND_FONTS.md).
-- **Pillar illustrations:** Already in `public/assets/`; used in Landing pills.
+- **Pillar illustrations:** `public/assets/pillar-*.svg` (same files as boing.network); used in Landing pills and feature cards.
 
 ---
 

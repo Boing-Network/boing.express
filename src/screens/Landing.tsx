@@ -4,13 +4,14 @@ import styles from './Landing.module.css';
 
 const ASSETS_BASE = '/assets';
 
+/* Same pillar artwork as https://boing.network/ (SVGs in public/assets/) */
 const PILLARS = [
-  { key: 'security', label: 'Security', img: 'pillar-security.png' },
-  { key: 'scalability', label: 'Scalability', img: 'pillar-scalability.png' },
-  { key: 'decentralization', label: 'Decentralization', img: 'pillar-decentralization.png' },
-  { key: 'authenticity', label: 'Authenticity', img: 'pillar-authenticity.png' },
-  { key: 'transparency', label: 'Transparency', img: 'pillar-transparency.png' },
-  { key: 'quality', label: 'Quality Assurance', img: 'pillar-quality.png' },
+  { key: 'security', label: 'Security', img: 'pillar-security.svg' },
+  { key: 'scalability', label: 'Scalability', img: 'pillar-scalability.svg' },
+  { key: 'decentralization', label: 'Decentralization', img: 'pillar-decentralization.svg' },
+  { key: 'authenticity', label: 'Authenticity', img: 'pillar-authenticity.svg' },
+  { key: 'transparency', label: 'Transparency', img: 'pillar-transparency.svg' },
+  { key: 'quality', label: 'Quality Assurance', img: 'pillar-quality.svg' },
 ] as const;
 
 export function Landing() {
@@ -64,17 +65,17 @@ export function Landing() {
           </div>
           <div className={styles.featureGrid}>
             <div className={styles.card}>
-              <img src={`${ASSETS_BASE}/pillar-security.png`} alt="" className={styles.cardIconImg} aria-hidden />
+              <img src={`${ASSETS_BASE}/pillar-security.svg`} alt="" className={styles.cardIconImg} aria-hidden />
               <h3>Non-custodial</h3>
               <p>Keys are generated and stored only on your device. Password-encrypted; we never see your private key.</p>
             </div>
             <div className={styles.card}>
-              <img src={`${ASSETS_BASE}/pillar-scalability.png`} alt="" className={styles.cardIconImg} aria-hidden />
+              <img src={`${ASSETS_BASE}/pillar-scalability.svg`} alt="" className={styles.cardIconImg} aria-hidden />
               <h3>Web & extension</h3>
               <p>Use the wallet at boing.express or install the browser extension for Chrome and Firefox.</p>
             </div>
             <div className={styles.card}>
-              <img src={`${ASSETS_BASE}/pillar-decentralization.png`} alt="" className={styles.cardIconImg} aria-hidden />
+              <img src={`${ASSETS_BASE}/pillar-decentralization.svg`} alt="" className={styles.cardIconImg} aria-hidden />
               <h3>Boing Network</h3>
               <p>Native support for Boing: Ed25519 addresses, send/receive BOING, testnet faucet, mainnet when live.</p>
             </div>
