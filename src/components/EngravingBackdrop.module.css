@@ -1,142 +1,300 @@
-/* Stone slab + engraved circuit — sits under UI, over canvas */
+/* Colosseum / Creator Treasury–style scene (reference: colloseum-hackathon.vercel.app) */
 
-.stoneFixed {
-  position: fixed;
+.bg {
+  position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(18, 36, 58, 0.55) 0%, transparent 55%),
-    radial-gradient(ellipse 90% 60% at 100% 40%, rgba(8, 22, 42, 0.4) 0%, transparent 45%),
-    radial-gradient(ellipse 70% 50% at 0% 70%, rgba(12, 28, 48, 0.35) 0%, transparent 40%),
-    linear-gradient(168deg, #060a12 0%, #0b1524 32%, #080e18 68%, #050810 100%);
+  --stone-deep: #06080c;
+  --stone-mid: #0c1018;
+  --stone-vein: #121a24;
 }
 
-.stoneFixed::before {
+.stone {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 100% 55% at 15% -5%, rgba(55, 68, 88, 0.22), transparent 52%),
+    radial-gradient(ellipse 80% 50% at 92% 12%, rgba(40, 48, 62, 0.18), transparent 48%),
+    radial-gradient(ellipse 70% 45% at 8% 88%, rgba(35, 42, 54, 0.2), transparent 50%),
+    radial-gradient(ellipse 90% 60% at 78% 96%, rgba(48, 58, 72, 0.15), transparent 55%),
+    linear-gradient(168deg, var(--stone-deep) 0%, var(--stone-mid) 42%, var(--stone-vein) 100%);
+}
+
+.stone::after {
   content: '';
   position: absolute;
   inset: 0;
-  opacity: 0.055;
+  opacity: 0.35;
+  background-image: repeating-linear-gradient(
+    -18deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.045) 2px,
+    rgba(0, 0, 0, 0.045) 3px
+  );
+  mix-blend-mode: multiply;
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   mix-blend-mode: overlay;
 }
 
-/* Subtle “chiseled” grain */
-.stoneFixed::after {
-  content: '';
+.vein {
   position: absolute;
   inset: 0;
-  background:
-    repeating-linear-gradient(
-      -12deg,
-      transparent 0px,
-      transparent 2px,
-      rgba(0, 0, 0, 0.04) 2px,
-      rgba(0, 0, 0, 0.04) 3px
-    );
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.veinLayer {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
-  overflow: visible;
-}
-
-.track {
-  fill: none;
-  stroke: rgba(0, 0, 0, 0.5);
-  stroke-width: 5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
   opacity: 0.55;
-  vector-effect: non-scaling-stroke;
 }
 
-.trackHighlight {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.04);
-  stroke-width: 1;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.9;
-  vector-effect: non-scaling-stroke;
+.veinShadow {
+  transform: translate(0.18%, 0.12%);
 }
 
-.neonLine {
-  fill: none;
-  stroke: var(--express-primary);
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.82;
-  vector-effect: non-scaling-stroke;
-  animation: veinNeonPulse 5.5s var(--motion-easing) infinite;
-}
-
-.nodeHalo {
-  fill: var(--express-primary);
-  opacity: 0.22;
-  animation: nodeHaloPulse 4s var(--motion-easing) infinite;
-}
-
-.nodeCore {
-  fill: var(--express-primary);
+.veinBranch {
   opacity: 0.92;
 }
 
-.accentOrb {
-  fill: none;
-  stroke: var(--express-secondary);
-  stroke-width: 1;
-  opacity: 0.35;
-  vector-effect: non-scaling-stroke;
+.neonLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-.connector {
-  fill: none;
-  stroke: var(--express-secondary);
-  stroke-width: 1;
-  stroke-linecap: round;
-  stroke-dasharray: 3 5;
-  opacity: 0.22;
-  vector-effect: non-scaling-stroke;
+.neon {
+  position: absolute;
+  will-change: transform, opacity;
 }
 
-@keyframes veinNeonPulse {
+.neonOrb {
+  border-radius: 50%;
+  width: min(28vw, 220px);
+  height: min(28vw, 220px);
+  background: radial-gradient(
+    circle at 35% 35%,
+    color-mix(in srgb, var(--neon-c) 22%, transparent) 0%,
+    color-mix(in srgb, var(--neon-c) 6%, transparent) 42%,
+    transparent 68%
+  );
+  box-shadow:
+    0 0 28px 12px color-mix(in srgb, var(--neon-c) 14%, transparent),
+    0 0 56px 28px color-mix(in srgb, var(--neon-c) 7%, transparent),
+    inset 0 0 22px color-mix(in srgb, var(--neon-c) 8%, transparent);
+  opacity: var(--neon-base-o, 0.55);
+  animation: engraveNeonPulse var(--neon-dur, 7s) ease-in-out infinite;
+  animation-delay: var(--neon-delay, 0s);
+}
+
+.neonA {
+  --neon-c: #4a9fe8;
+  left: 8%;
+  top: 6%;
+  --neon-dur: 8s;
+  --neon-delay: 0s;
+  --neon-base-o: 0.45;
+}
+
+.neonB {
+  --neon-c: #7c6cf0;
+  right: 4%;
+  top: 22%;
+  width: min(22vw, 160px);
+  height: min(22vw, 160px);
+  --neon-dur: 9.5s;
+  --neon-delay: -2s;
+  --neon-base-o: 0.38;
+}
+
+.neonC {
+  --neon-c: #5ecf9a;
+  left: 2%;
+  bottom: 12%;
+  width: min(32vw, 240px);
+  height: min(32vw, 240px);
+  --neon-dur: 10s;
+  --neon-delay: -4.5s;
+  --neon-base-o: 0.32;
+}
+
+.neonArc {
+  width: min(42vw, 320px);
+  height: min(42vw, 320px);
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--neon-c) 28%, transparent);
+  background: transparent;
+  box-shadow:
+    0 0 14px 2px color-mix(in srgb, var(--neon-c) 12%, transparent),
+    0 0 32px 8px color-mix(in srgb, var(--neon-c) 6%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--neon-c) 5%, transparent);
+  opacity: 0.4;
+  animation: engraveNeonDrift var(--neon-dur, 14s) ease-in-out infinite;
+  animation-delay: var(--neon-delay, 0s);
+}
+
+.neonD {
+  --neon-c: #5ab0ff;
+  right: -8%;
+  top: 38%;
+  clip-path: inset(0 48% 48% 0);
+  --neon-dur: 16s;
+  --neon-delay: -1s;
+}
+
+.neonE {
+  --neon-c: #b894f5;
+  left: -12%;
+  bottom: 18%;
+  clip-path: inset(48% 0 0 42%);
+  width: min(48vw, 360px);
+  height: min(48vw, 360px);
+  --neon-dur: 18s;
+  --neon-delay: -7s;
+  opacity: 0.32;
+}
+
+.neonDash {
+  height: 2px;
+  width: min(36vw, 280px);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--neon-c) 55%, transparent) 22%,
+    color-mix(in srgb, var(--neon-c) 35%, transparent) 78%,
+    transparent
+  );
+  box-shadow:
+    0 0 10px 3px color-mix(in srgb, var(--neon-c) 18%, transparent),
+    0 0 24px 8px color-mix(in srgb, var(--neon-c) 8%, transparent);
+  opacity: 0.5;
+  animation: engraveNeonShimmer var(--neon-dur, 6s) ease-in-out infinite;
+  animation-delay: var(--neon-delay, 0s);
+}
+
+.neonF {
+  --neon-c: #4a9fe8;
+  left: 18%;
+  top: 52%;
+  transform: rotate(-18deg);
+  --neon-dur: 5.5s;
+  --neon-delay: -0.8s;
+}
+
+.neonG {
+  --neon-c: #6ee0c0;
+  right: 12%;
+  bottom: 28%;
+  width: min(28vw, 200px);
+  transform: rotate(24deg);
+  --neon-dur: 7s;
+  --neon-delay: -3.2s;
+  opacity: 0.42;
+}
+
+.neonDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--neon-c) 75%, white);
+  box-shadow:
+    0 0 8px 3px color-mix(in srgb, var(--neon-c) 35%, transparent),
+    0 0 20px 6px color-mix(in srgb, var(--neon-c) 15%, transparent);
+  opacity: 0.65;
+  animation: engraveNeonBlink var(--neon-dur, 3.2s) ease-in-out infinite;
+  animation-delay: var(--neon-delay, 0s);
+}
+
+.neonH {
+  --neon-c: #7eb8ff;
+  left: 72%;
+  top: 14%;
+  --neon-dur: 4s;
+  --neon-delay: -1.5s;
+}
+
+.neonI {
+  --neon-c: #9f8fff;
+  left: 42%;
+  bottom: 8%;
+  --neon-dur: 3.6s;
+  --neon-delay: -2.2s;
+}
+
+@keyframes engraveNeonPulse {
   0%,
   100% {
-    opacity: 0.7;
+    opacity: var(--neon-base-o, 0.5);
+    transform: scale(1) translate(0);
   }
   50% {
-    opacity: 0.96;
+    opacity: calc(var(--neon-base-o, 0.5) * 1.35);
+    transform: scale(1.06) translate(1%, -0.8%);
   }
 }
 
-@keyframes nodeHaloPulse {
+@keyframes engraveNeonDrift {
   0%,
   100% {
-    opacity: 0.14;
+    opacity: 0.28;
+    transform: rotate(0) scale(1);
   }
   50% {
-    opacity: 0.32;
+    opacity: 0.48;
+    transform: rotate(6deg) scale(1.03);
+  }
+}
+
+@keyframes engraveNeonShimmer {
+  0%,
+  100% {
+    opacity: 0.35;
+    filter: brightness(0.92);
+  }
+  50% {
+    opacity: 0.62;
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes engraveNeonBlink {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  45%,
+  55% {
+    opacity: 0.85;
+    transform: scale(1.15);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .neonLine {
-    animation: none;
-    opacity: 0.85;
+  .neonLayer .neon {
+    animation: none !important;
   }
 
-  .nodeHalo {
-    animation: none;
-    opacity: 0.2;
+  .neonOrb {
+    opacity: calc(var(--neon-base-o, 0.5) * 0.85);
+  }
+
+  .neonArc {
+    opacity: 0.32;
+  }
+
+  .neonDash {
+    opacity: 0.42;
+  }
+
+  .neonDot {
+    opacity: 0.55;
   }
 }

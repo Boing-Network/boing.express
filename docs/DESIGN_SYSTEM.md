@@ -126,9 +126,9 @@ Use classes `.btn-primary`, `.btn-secondary`, `.btn-ghost` or `data-variant="pri
 
 ---
 
-## Animated background
+## App background (global scene)
 
-The landing and app backgrounds use the **Boing Background Engine** (Aquatic-Space v2) instead of a static image. Implemented in `src/lib/boing-bg-engine.js` and `src/components/AnimatedBackground.tsx`. Config is route-based: `/` → landing (full scene), `/wallet/*` → wallet (calmer), `/docs` and legal pages → docs (minimal stars + nebula). `prefers-reduced-motion: reduce` switches to a minimal config (stars + nebula only, no jellyfish/coral/bubbles/shooting stars). Reference: external `boing-animated-backgrounds` folder and ELEMENT_LIBRARY.md.
+The web shell uses **`EngraveSceneBackdrop`** (`src/components/EngravingBackdrop.tsx`): a cool stone slab, engraved silver vein network (SVG), and soft animated neon accents—aligned with the Creator Treasury / Colosseum hackathon reference. It sits inside `pageWrap` in `App.tsx` so it grows with scroll height. There is **no canvas** or separate motion engine; `prefers-reduced-motion: reduce` tones down the neon layer animations in CSS.
 
 ## Maintenance
 
@@ -146,8 +146,8 @@ The landing and app backgrounds use the **Boing Background Engine** (Aquatic-Spa
 ### Implementation status
 
 - **Colors, typography, components:** Aligned with Official Visual Design System. Tokens in `:root`; hex grid stroke 0.06; H1/H2/H3 type scale per spec.
-- **Backgrounds:** Landing uses Boing Background Engine (canvas), not static images. App pages use hex-grid.svg over `--bg-primary`.
-- **Motion:** Float, glow pulse, fade-in-up, shooting stars; `prefers-reduced-motion` respected.
+- **Backgrounds:** Global engraved stone + vein + neon via `EngraveSceneBackdrop`. Page shells (`.page-landing`, `.page-app`) use a transparent background over that scene (no repeating hex grid in the shell).
+- **Motion:** UI keyframes (float, glow pulse, fade-in-up); neon layer respects `prefers-reduced-motion`.
 
 ### Optional assets
 
@@ -166,7 +166,7 @@ Steps 1 & 8 of the Boing Takeover Redesign — audit and quality check.
 
 ### Component structure
 
-- **WalletNav, SiteLogo, AnimatedBackground** — Core components. Buttons, cards, inputs are inline in screens with local class names.
+- **WalletNav, SiteLogo, EngraveSceneBackdrop** — Core shell components. Buttons, cards, inputs are inline in screens with local class names.
 - **FullPage3DElements** — Removed during cleanup (was orphaned).
 
 ### Hardcoded colors → tokens

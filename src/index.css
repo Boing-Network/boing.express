@@ -226,7 +226,8 @@ html {
 }
 
 body {
-  background-color: var(--boing-black);
+  /* Base slab (matches engraved scene — see EngraveSceneBackdrop) */
+  background-color: #06080c;
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -473,12 +474,9 @@ textarea::placeholder {
    BACKGROUND STYLES — Landing vs App
    ============================================================ */
 
-/* === LANDING & APP SHELLS — hex grid over global stone/canvas/vein (same on every page) === */
+/* === LANDING & APP SHELLS — clear over global engraved scene (reference: no hex overlay) === */
 .page-landing,
 .page-app {
   min-height: 100vh;
-  background-color: transparent;
-  background-image: url('/assets/hex-grid.svg');
-  background-repeat: repeat;
-  background-size: 60px 60px;
+  background: transparent;
 }

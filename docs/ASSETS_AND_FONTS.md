@@ -10,7 +10,7 @@ Official Boing Network design system assets. All are used in the web app.
 
 ### Backgrounds
 
-- **hex-grid.svg** — Single hexagon outline (stroke `rgba(0, 229, 204, 0.06)`). Used by `.page-app` as repeating 60×60px background for app/dashboard pages. Landing uses the Boing Background Engine (canvas) instead of static images.
+- **hex-grid.svg** — Single hexagon outline (stroke `rgba(0, 229, 204, 0.06)`). Kept in `public/assets/` for reuse; the current app shell does not tile it—background is the engraved scene in `EngravingBackdrop`.
 
 ### Mascot (Boing Bot)
 

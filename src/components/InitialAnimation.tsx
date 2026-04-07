@@ -11,7 +11,7 @@ const TEAL = '#00e8c8';
 const TEAL_R = 0;
 const TEAL_G = 232;
 const TEAL_B = 200;
-const DEEP_BG = '#020c0a';
+const DEEP_BG = '#06080c';
 
 const TOTAL_MS = 4200;
 const REDUCED_MOTION_MS = 1800;

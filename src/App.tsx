@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { WalletProvider } from './context/WalletContext';
-import { AnimatedBackground } from './components/AnimatedBackground';
-import { EngravingVeinBackdrop, StoneSlabBackdrop } from './components/EngravingBackdrop';
+import { EngraveSceneBackdrop } from './components/EngravingBackdrop';
 import { InitialAnimation } from './components/InitialAnimation';
 import styles from './App.module.css';
 import { WalletNav } from './components/WalletNav';
@@ -84,13 +83,11 @@ function AppShell() {
   const [introDone, setIntroDone] = useState(false);
   const handleIntroComplete = useCallback(() => setIntroDone(true), []);
 
-  /* Stone + canvas + engraved vein wrap all routes; intro overlays until complete. */
+  /* Colosseum-style stone + engraved vein + neon; intro overlays until complete. */
   return (
     <>
-      <StoneSlabBackdrop />
-      <AnimatedBackground />
       <div className={styles.pageWrap} data-page={pageKey}>
-        <EngravingVeinBackdrop />
+        <EngraveSceneBackdrop />
         <div
           className={introDone ? styles.appEntrance : styles.appContentAwaitingIntro}
           style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}
