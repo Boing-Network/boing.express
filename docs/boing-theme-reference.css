@@ -7,7 +7,7 @@
  * Secondary            #00b4d8 (--express-secondary)
  * Trust / Security     #2dd4bf (--trust-green), #fbbf24 (--shield-gold)
  * Dark Background      #050c18 (--boing-black), #0a1628 (--boing-navy)
- * Typography           Orbitron (display), Inter (body), JetBrains Mono (code)
+ * Typography           Comfortaa (display, body, mono tokens — boing.express)
  * Theme                Aqua Personal: warm teal-cyan, trust-forward, caustics
  * Tagline              "Authentic. Decentralized. Optimal. Quality-Assured."
  *
@@ -24,6 +24,7 @@
   --shield-gold: #fbbf24;
   --boing-black: #050c18;
   --boing-navy: #0a1628;
-  --font-display: 'Orbitron', sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --font-display: 'Comfortaa', system-ui, sans-serif;
+  --font-body: 'Comfortaa', system-ui, sans-serif;
+  --font-mono: 'Comfortaa', ui-monospace, monospace;
 }

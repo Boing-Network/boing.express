@@ -1,4 +1,6 @@
 /* Boing Network theme — outerspace-oceanic (Comfortaa, Primary #00E5CC, Dark #0A0E1A) */
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
+
 @font-face {
   font-family: 'Comfortaa';
   src: url('fonts/Comfortaa-Light.ttf') format('truetype');

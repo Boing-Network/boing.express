@@ -9,7 +9,7 @@ This document describes the **Boing Design System** as it applies to **boing.exp
 The Boing Design System is **one foundational theme with three variants** — one per official Boing property. All three share the same structural and brand rules; each variant applies a distinct accent palette, background character, and component personality suited to its product.
 
 - **Reference assets:** External design theme files (e.g. `boing-design-themes/express/index.html`, `finance/index.html`, `network/index.html`) and PDFs: *Boing Design System — Site Variants*, *design_strategy.md*, *audit_notes.md*.
-- **This repo:** Implements only the **Express** variant. Tokens and base styles live in `src/index.css`; component patterns follow Aqua Personal (glassmorphism, warm teal-cyan, Orbitron + Inter).
+- **This repo:** Implements only the **Express** variant. Tokens and base styles live in `src/index.css`; component patterns follow Aqua Personal (glassmorphism, warm teal-cyan, **Comfortaa** for all UI type).
 
 ---
 
@@ -25,14 +25,14 @@ The Boing Design System is **one foundational theme with three variants** — on
 - **Finance:** DeFi platform; data-forward; grid background; green/red for P&L; JetBrains Mono for numbers; ticker, charts, swap widget.
 - **Network:** L1 protocol site; cosmic/nebula feel; violet primary; roadmap/ecosystem/status systems; largest hero; developer-focused.
 
-Shared across all three: dark base (boing-black, boing-navy), Orbitron + Inter, glassmorphism cards, section structure (eyebrow → title → subtitle), six pillars, tagline, and breakpoints (1024px, 640px). Only **accent palette** and **background character** (caustics vs grid vs nebula) differ by variant.
+Shared across all three: dark base (boing-black, boing-navy), glassmorphism cards, section structure (eyebrow → title → subtitle), six pillars, tagline, and breakpoints (1024px, 640px). Only **accent palette** and **background character** differ by variant. **boing.express (this repo)** uses Comfortaa for typography site-wide.
 
 ---
 
 ## Shared foundation (all Boing sites)
 
 - **Visual theme:** Aquatic–space (deep sea + cosmic depth).
-- **Typography:** Display = Orbitron (700–900); Body = Inter (300–700); Monospace = JetBrains Mono where needed.
+- **Typography (boing.express):** Comfortaa (300–700) for display, body, and code tokens (`--font-display`, `--font-body`, `--font-mono`). Other Boing properties may use different stacks per their variant guides.
 - **Background system:** Base gradient → structural layer (grid/nebula/caustics) → star field → shooting stars → atmospheric glow.
 - **Cards:** Glassmorphism (backdrop blur, semi-transparent background, 1px accent border, hover brighten).
 - **Tagline:** “Authentic. Decentralized. Optimal. Quality-Assured.”
@@ -88,7 +88,7 @@ This codebase implements **only the Aqua Personal (Express) variant**. Finance a
 - **Express accents:** `--express-primary` through `--express-soft`, `--trust-green`, `--shield-gold`.
 - **Borders & glass:** `--card-border`, `--card-border-hover`, `--nav-border`, `--glass-border`.
 - **Shadows & glow:** `--shadow-teal`, `--shadow-card`, `--express-primary-glow`.
-- **Typography:** `--font-display` (Orbitron), `--font-body` (Inter), `--font-mono` (JetBrains Mono).
+- **Typography:** `--font-display`, `--font-body`, `--font-mono` — all **Comfortaa** (Google Fonts in `index.css`).
 - **Radius:** `--radius-sm` (8px), `--radius-md` (14px), `--radius-lg` (20px), `--radius-xl` (28px), `--radius-pill` (999px).
 
 Legacy tokens (e.g. `--accent-teal`, `--bg-card`) are aliased to these so existing components keep working.
@@ -100,7 +100,7 @@ Legacy tokens (e.g. `--accent-teal`, `--bg-card`) are aliased to these so existi
 Use this pattern for section headers:
 
 - **Eyebrow:** `.section-eyebrow` — small label above the title (0.75rem, 700, uppercase, letter-spacing 0.15em, accent color).
-- **Title:** `.section-title` — Orbitron, clamp(1.8rem, 3.5vw, 2.8rem), 700.
+- **Title:** `.section-title` — Comfortaa via `--font-display`, clamp(1.8rem, 3.5vw, 2.8rem), 700.
 - **Subtitle:** `.section-subtitle` — 1.05rem, `--text-secondary`, max-width ~520px, centered.
 
 Defined in `src/index.css` for use in any screen or layout.
@@ -175,13 +175,13 @@ All non-`:root` instances were replaced with CSS variables. Tokens in `:root` in
 
 ### Fonts
 
-- **Web app:** Comfortaa, Orbitron, JetBrains Mono from Google Fonts.
-- **Extension:** Comfortaa from local TTF via `@font-face` in `extension/popup.css`.
+- **Web app:** Comfortaa (300–700) from Google Fonts — `@import` in `src/index.css`.
+- **Extension:** Comfortaa — Google Fonts `@import` in `popup.css` and `approval.css`; optional local `@font-face` in `popup.css` when `.ttf` files are present under `extension/fonts/`.
 
 ### Hardcoded colors — resolved
 
 - All styling in `src/**` uses `var(--…)`. Raw values only in `:root`.
-- **Excluded:** `index.html` (theme-color meta requires hex); `docs/screenshot-helper.html` and `extension/popup.css` (can be aligned later).
+- **Excluded:** `index.html` (theme-color meta requires hex); `docs/screenshot-helper.html` (ad-hoc helper page).
 
 ### Interactive states
 

@@ -3,7 +3,7 @@
    Breakpoints: >1024px full desktop, ≤1024px reduced columns, ≤640px single column / compact nav
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
 
 /* ============================================================
    BOING EXPRESS — AQUA PERSONAL DESIGN TOKENS
@@ -50,10 +50,10 @@
   --shadow-teal: 0 0 24px rgba(0, 232, 200, 0.18);
   --shadow-card: 0 4px 32px rgba(0, 0, 0, 0.4);
 
-  /* Typography */
-  --font-display: 'Orbitron', sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* Typography — Comfortaa site-wide (matches extension) */
+  --font-display: 'Comfortaa', system-ui, sans-serif;
+  --font-body: 'Comfortaa', system-ui, sans-serif;
+  --font-mono: 'Comfortaa', ui-monospace, monospace;
 
   /* Spacing / radius (design system scale) */
   --radius-sm: 8px;

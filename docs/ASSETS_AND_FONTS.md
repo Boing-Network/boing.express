@@ -38,12 +38,7 @@ Official Boing Network design system assets. All are used in the web app.
 
 ## Fonts
 
-**Comfortaa** .ttf files are loaded and used site-wide as the primary font (CSS family name: Contraa for compatibility):
+**Comfortaa** (300–700) is the **only** UI typeface for the web app and extension surfaces:
 
-- `Comfortaa-Light.ttf` (300)
-- `Comfortaa-Regular.ttf` (400)
-- `Comfortaa-Medium.ttf` (500)
-- `Comfortaa-SemiBold.ttf` (600)
-- `Comfortaa-Bold.ttf` (700)
-
-**Locations:** `public/fonts/` (web app) and `extension/fonts/` (extension popup).
+- **Web app:** Loaded from Google Fonts via `@import` in `src/index.css` (weights 300, 400, 500, 600, 700).
+- **Extension:** `extension/popup.css` and `extension/approval.css` use the same Google Fonts import; `popup.css` may also define `@font-face` rules pointing at optional `.ttf` files under `extension/fonts/` when those files are present in a given build.
