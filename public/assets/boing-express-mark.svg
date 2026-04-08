@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="bx-stroke" x1="10" y1="54" x2="54" y2="10" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e8c8"/>
+      <stop offset="48%" stop-color="#5ab0ff"/>
+      <stop offset="100%" stop-color="#00b4d8"/>
+    </linearGradient>
+    <linearGradient id="bx-fill" x1="22" y1="42" x2="42" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e8c8"/>
+      <stop offset="100%" stop-color="#00b4d8"/>
+    </linearGradient>
+    <filter id="bx-soft" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0.35" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#0c1018" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <rect x="4.5" y="4.5" width="55" height="55" rx="13.5" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.75"/>
+  <path d="M32 9 L51.5 20.25 V43.75 L32 55 L12.5 43.75 V20.25 Z" fill="none" stroke="rgba(0,0,0,0.42)" stroke-width="1.2" stroke-linejoin="round" transform="translate(0.35 0.35)"/>
+  <path d="M32 9 L51.5 20.25 V43.75 L32 55 L12.5 43.75 V20.25 Z" fill="none" stroke="url(#bx-stroke)" stroke-width="1.35" stroke-linejoin="round" filter="url(#bx-soft)"/>
+  <circle cx="32" cy="32" r="6.25" fill="url(#bx-fill)"/>
+  <circle cx="32" cy="32" r="2.4" fill="#f0f9ff" opacity="0.14"/>
+</svg>

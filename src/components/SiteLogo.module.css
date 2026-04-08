@@ -1,4 +1,4 @@
-/* Overall logo: aqua/teal (accent-neon) so it never appears dark/black */
+/* Wordmark + engraved neon mark — accents follow --express-* / data-page */
 .logo {
   display: inline-flex;
   align-items: center;
@@ -9,14 +9,12 @@
   letter-spacing: -0.02em;
   color: var(--express-primary);
   transition: letter-spacing 0.35s var(--ease-out), gap 0.35s var(--ease-out),
-    filter 0.35s var(--ease-out), transform 0.35s var(--ease-out);
+    transform 0.35s var(--ease-out);
 }
 
 .logo:hover {
   letter-spacing: 0.04em;
   gap: 0.7rem;
-  color: var(--express-primary);
-  filter: brightness(1.2);
   transform: scale(1.03);
 }
 
@@ -33,29 +31,41 @@
   height: 2.75rem;
 }
 
-.logoImg {
+.logoMark {
   display: block;
   height: 2.75rem;
   width: 2.75rem;
-  object-fit: contain;
   transition: filter 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
 
-.logo:hover .logoImgWrap .logoImg {
-  filter: brightness(1.15);
-  transform: scale(1.03);
+.logo:hover .logoImgWrap .logoMark {
+  filter: brightness(1.12) drop-shadow(0 0 10px var(--express-primary-glow));
+  transform: scale(1.04);
 }
 
-/* Title text: aqua/teal; hover = brighter glow + underline sweep */
+/* Wordmark: solid accent at rest; hover = teal → blue → violet (neon layer) */
 .logoText {
+  display: inline-block;
   color: var(--express-primary);
   position: relative;
-  transition: filter 0.35s var(--ease-out), text-shadow 0.35s var(--ease-out);
+  transition: color 0.35s var(--ease-out), filter 0.35s var(--ease-out);
 }
 
 .logo:hover .logoText {
-  filter: drop-shadow(0 0 10px var(--express-primary-glow));
-  text-shadow: 0 0 16px var(--express-primary-glow);
+  color: transparent;
+  background-image: linear-gradient(
+    105deg,
+    var(--express-primary) 0%,
+    #5ab0ff 38%,
+    #9f8fff 72%,
+    var(--express-secondary) 100%
+  );
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px var(--express-primary-glow))
+    drop-shadow(0 0 14px rgba(90, 176, 255, 0.35))
+    drop-shadow(0 0 22px rgba(159, 143, 255, 0.22));
 }
 
 .logoText::after {
@@ -67,9 +77,35 @@
   height: 2px;
   background: linear-gradient(to right, var(--express-primary), var(--express-secondary));
   box-shadow: 0 0 8px var(--glow-cyan);
-  transition: width 0.4s var(--ease-out);
+  transition: width 0.4s var(--ease-out), background 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out);
 }
 
 .logo:hover .logoText::after {
   width: 100%;
+  background: linear-gradient(
+    to right,
+    var(--express-primary),
+    #5ab0ff 45%,
+    #9f8fff 78%,
+    var(--express-secondary)
+  );
+  box-shadow:
+    0 0 8px rgba(0, 232, 200, 0.35),
+    0 0 14px rgba(90, 176, 255, 0.35),
+    0 0 20px rgba(159, 143, 255, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo:hover .logoText {
+    color: var(--express-primary);
+    background-image: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    filter: drop-shadow(0 0 6px var(--express-primary-glow));
+  }
+
+  .logo:hover .logoText::after {
+    background: linear-gradient(to right, var(--express-primary), var(--express-secondary));
+    box-shadow: 0 0 8px var(--glow-cyan);
+  }
 }

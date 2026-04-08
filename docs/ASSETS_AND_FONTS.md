@@ -21,7 +21,9 @@ Official Boing Network design system assets. All are used in the web app.
 
 ### Branding
 
-- **icon-only-transparent.png** — Boing icon (hexagonal orb + cyan ring). Used for SiteLogo (nav/header), Landing hero badge, and favicon/apple-touch-icon.
+- **boing-express-mark.svg** — Vector mark (stone slab + engraved hex + teal→blue gradient core). Source for raster icon.
+- **favicon.svg** (repo root `public/`) — Tab icon (simplified 32×32-style mark).
+- **icon-only-transparent.png** — 512×512 PNG generated from `boing-express-mark.svg` (Sharp) for Apple touch and PNG favicon fallback.
 - **logo-light-transparent.png** / **logo-dark-transparent.png** — Full wordmark logos for dark and light backgrounds (optional; app uses icon-only).
 - **logo-boing-comic.png** — "BOING!" comic-style logo (optional alternate for hero).
 

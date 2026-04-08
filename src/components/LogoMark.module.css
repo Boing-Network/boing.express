@@ -1,0 +1,28 @@
+.mark {
+  display: block;
+  flex-shrink: 0;
+}
+
+.slab {
+  fill: #0c1018;
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 1;
+}
+
+.slabHighlight {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.04);
+  stroke-width: 0.75;
+}
+
+.hexGroove {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.42);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  transform: translate(0.35px, 0.35px);
+}
+
+.core {
+  filter: drop-shadow(0 0 4px var(--express-primary-glow));
+}

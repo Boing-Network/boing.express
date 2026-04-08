@@ -22,7 +22,7 @@ if (!fs.existsSync(svgPath)) {
 }
 
 let svg = fs.readFileSync(svgPath, 'utf8');
-// Replace currentColor so sharp renders the icon with brand color
+// Legacy: extension favicon used currentColor; gradient SVGs ignore this replacement
 svg = svg.replace(/currentColor/g, ICON_COLOR);
 // Normalize SVG attributes for libvips (stroke-width → stroke-width is fine; some engines want lowercase)
 const svgBuffer = Buffer.from(svg);
