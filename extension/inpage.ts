@@ -8,6 +8,7 @@
  *   boing_signTransaction    — sign native Boing tx; params: [txObject]; returns 0x + hex(bincode SignedTransaction). Deploy: contract_deploy_purpose / contract_deploy_meta include bincode create2_salt (Option 32 bytes); pass create2_salt as 64 hex chars for CREATE2, or omit for nonce-derived address. contract_deploy_meta defaults purpose_category to "token" when asset_name or asset_symbol is set. contract_call: use 32-byte `contract`, `calldata`, and explicit `access_list` { read, write } (hex AccountIds) per boing-sdk / RPC-API-SPEC.
  *   boing_sendTransaction    — sign + simulate + submit; params: [txObject]; returns tx hash string (mempool QA still runs on deploy). On simulation failure, error.data may include suggested_access_list + access_list_covers_suggestion for retry.
  *   boing_simulateTransaction — params: [hexSignedTx]; forwards to node RPC (no extra signing). Connected origin required.
+ *   boing_simulateContractCall — params: [contractHex, calldataHex, senderHex?, atBlock?]; unsigned contract_call dry-run per RPC-API-SPEC. Connected origin required. If senderHex is omitted, the active vault account is sent as the third RPC param when available.
  *   boing_chainId           — current chain (0x1b01 testnet, 0x1b02 mainnet)
  *   boing_switchChain       — switch network
  *

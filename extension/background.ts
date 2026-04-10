@@ -20,6 +20,7 @@ import {
   getAccount,
   getNonce,
   RpcClientError,
+  simulateContractCall,
   simulateTransaction,
   submitTransaction,
 } from '../src/boing/rpc';
@@ -65,6 +66,7 @@ const BOING_METHODS = {
   SIGN_TRANSACTION: 'boing_signTransaction',
   SEND_TRANSACTION: 'boing_sendTransaction',
   SIMULATE_TRANSACTION: 'boing_simulateTransaction',
+  SIMULATE_CONTRACT_CALL: 'boing_simulateContractCall',
   CHAIN_ID: 'boing_chainId',
   SWITCH_CHAIN: 'boing_switchChain',
 } as const;
@@ -350,6 +352,26 @@ function normalizeAddress(hex: string): string {
     throw providerError(PROVIDER_ERROR_CODES.INVALID_PARAMS, 'BOING_ADDRESS_MISMATCH', 'Address must be 0x + 64 hex characters.');
   }
   return '0x' + normalized;
+}
+
+function normalizeCalldataHexForRpc(hex: string): string {
+  const raw = String(hex).trim();
+  const body = raw.replace(/^0x/i, '');
+  if (!/^[0-9a-f]*$/i.test(body)) {
+    throw providerError(
+      PROVIDER_ERROR_CODES.INVALID_PARAMS,
+      'BOING_INVALID_CALLDATA',
+      'calldata must be hex-encoded bytes (optional 0x prefix).'
+    );
+  }
+  if (body.length % 2 !== 0) {
+    throw providerError(
+      PROVIDER_ERROR_CODES.INVALID_PARAMS,
+      'BOING_INVALID_CALLDATA',
+      'calldata hex must have an even number of characters.'
+    );
+  }
+  return body.length === 0 ? '0x' : '0x' + body.toLowerCase();
 }
 
 async function rpcUrlForSelectedNetwork(): Promise<string> {
@@ -1126,6 +1148,56 @@ async function handleProviderRequest(
       const rpcHex = rawHex.startsWith('0x') ? rawHex : `0x${rawHex}`;
       const rpcUrl = await rpcUrlForSelectedNetwork();
       return await simulateTransaction(rpcUrl, rpcHex);
+    }
+
+    case BOING_METHODS.SIMULATE_CONTRACT_CALL: {
+      if (!isConnected) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
+      }
+      const contractRaw = params[0];
+      const calldataRaw = params[1];
+      if (typeof contractRaw !== 'string' || typeof calldataRaw !== 'string') {
+        throw providerError(
+          PROVIDER_ERROR_CODES.INVALID_PARAMS,
+          'BOING_INVALID_PARAMS',
+          'boing_simulateContractCall requires [contractHex, calldataHex] with optional senderHex and atBlock (see docs/BOING-EXPRESS-WALLET.md).'
+        );
+      }
+      const contractHex = normalizeAddress(contractRaw.trim());
+      const calldataHex = normalizeCalldataHexForRpc(calldataRaw);
+      const rpcParams: unknown[] = [contractHex, calldataHex];
+
+      if (params.length >= 3 && params[2] != null && String(params[2]).trim() !== '') {
+        rpcParams.push(normalizeAddress(String(params[2]).trim()));
+      } else if (addressHex) {
+        rpcParams.push(normalizeAddress(addressHex.startsWith('0x') ? addressHex : `0x${addressHex}`));
+      }
+
+      if (params.length >= 4 && params[3] != null && String(params[3]).trim() !== '') {
+        const br = params[3];
+        const block =
+          typeof br === 'number' && Number.isFinite(br) && br >= 0
+            ? Math.floor(br)
+            : (() => {
+                const s = String(br).trim();
+                if (!/^\d+$/.test(s)) {
+                  throw providerError(
+                    PROVIDER_ERROR_CODES.INVALID_PARAMS,
+                    'BOING_INVALID_PARAMS',
+                    'at_block must be a non-negative integer (decimal string or number).'
+                  );
+                }
+                return Number.parseInt(s, 10);
+              })();
+        rpcParams.push(block);
+      }
+
+      const rpcUrl = await rpcUrlForSelectedNetwork();
+      return await simulateContractCall(rpcUrl, rpcParams);
     }
 
     case BOING_METHODS.CHAIN_ID: {

@@ -120,6 +120,9 @@ export async function installBoingNetworkMocks(context: BrowserContext): Promise
       case 'boing_simulateTransaction':
         await fulfillJsonRpc(route, jsonRpcResult(id, { success: true }));
         return;
+      case 'boing_simulateContractCall':
+        await fulfillJsonRpc(route, jsonRpcResult(id, { success: true, gas_used: '0', return_data: '0x' }));
+        return;
       case 'boing_submitTransaction':
         await fulfillJsonRpc(route, jsonRpcResult(id, '0x' + 'ab'.repeat(32)));
         return;

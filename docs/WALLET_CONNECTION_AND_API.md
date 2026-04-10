@@ -31,6 +31,7 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
 | **boing_signTransaction** | `[txObject]` | `string` | Signs a native Boing transaction JSON and returns `0x` + hex(bincode `SignedTransaction`). User must approve in the extension. Requires the origin to be connected and the wallet unlocked. |
 | **boing_sendTransaction** | `[txObject]` | `string` | Same as sign, then RPC `boing_simulateTransaction` when available, then `boing_submitTransaction`. Returns tx hash string. |
 | **boing_simulateTransaction** | `[hexSignedTx]` | `object` | Forwards to node RPC (no signing). Params: hex from `boing_signTransaction`. Connected origin required. Result shape per [RPC-API-SPEC.md `boing_simulateTransaction`](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md) (includes `suggested_access_list`, `access_list_covers_suggestion`). |
+| **boing_simulateContractCall** | `[contractHex, calldataHex, senderHex?, atBlock?]` | `object` | **Unsigned** dry-run of a `contract_call` (no `SignedTransaction`). Connected origin required. Uses the wallet’s selected RPC URL. If `senderHex` is omitted, the active account is sent as the third RPC argument when available. See **[BOING-EXPRESS-WALLET.md](BOING-EXPRESS-WALLET.md)** and [RPC-API-SPEC.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md). |
 
 ### Native transaction JSON (`boing_signTransaction` / `boing_sendTransaction`)
 

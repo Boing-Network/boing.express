@@ -37,6 +37,7 @@ Backend should: (1) parse `account_id_hex` as Ed25519 public key, (2) parse `sig
 
 - `boing_requestAccounts` / `boing_accounts` / `boing_signMessage` / `boing_signTransaction` / `boing_sendTransaction` / `boing_chainId` / `boing_switchChain`
 - `boing_sendTransaction` signs, then calls RPC `boing_simulateTransaction` when available, then `boing_submitTransaction`. **`boing_simulateTransaction([hexSignedTx])`** is also exposed on the provider (connected origin; forwards to the wallet’s selected RPC).
+- **`boing_simulateContractCall([contractHex, calldataHex, senderHex?, atBlock?])`** — unsigned `contract_call` dry-run per [RPC-API-SPEC.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md); connected origin required; matches **boing-sdk** `BoingClient.simulateContractCall`. Details: **[BOING-EXPRESS-WALLET.md](BOING-EXPRESS-WALLET.md)**.
 - Aliases: `eth_requestAccounts`, `personal_sign`, `eth_chainId`, `wallet_switchEthereumChain`
 - Portal should prefer `boing_*` methods.
 

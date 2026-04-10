@@ -46,7 +46,7 @@ These should already work and must remain stable:
 - support `boing_signMessage`
 - support `boing_chainId`
 - support `boing_switchChain`
-- support `boing_signTransaction`, `boing_sendTransaction`, `boing_simulateTransaction` (extension provider)
+- support `boing_signTransaction`, `boing_sendTransaction`, `boing_simulateTransaction`, **`boing_simulateContractCall`** (extension provider; unsigned contract-call dry-run per RPC-API-SPEC — see **docs/BOING-EXPRESS-WALLET.md**)
 - expose `supportsBoingNativeRpc: true` for **boing-sdk** detection
 - parse explicit **`access_list` / `accessList`** on dApp transaction JSON (32-byte Boing accounts)
 - allow compatibility aliases:
@@ -137,6 +137,7 @@ Status: **implemented** (extension `window.boing`).
 
 - `boing_signTransaction` / `boing_sendTransaction` with Boing-native tx JSON (including `contract_call` + `access_list`).
 - `boing_simulateTransaction([hex])` forwards to RPC for pre-flight / `suggested_access_list` flows.
+- `boing_simulateContractCall([contract, calldata, …])` forwards to RPC for **unsigned** simulate (SDK parity).
 - Submit uses RPC `boing_submitTransaction` (there is no separate `boing_submitTransaction` provider method).
 - On simulation failure during send, provider error `data` may include `suggested_access_list` and `access_list_covers_suggestion` per [RPC-API-SPEC.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md).
 

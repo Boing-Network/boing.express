@@ -35,6 +35,7 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNI
 | **Nonce** | ✅ | From `boing_getAccount` when available; else `boing_getNonce`. Fetched when building the next transaction, not cached across sessions. |
 | **Send** | ✅ | Transfer payload, correct nonce/sender/to/amount, empty access_list. BLAKE3 signable hash + Ed25519 per boing-primitives. Submit `hex(bincode(SignedTransaction))` via `boing_submitTransaction`. |
 | **Simulate before send** | ✅ | `boing_simulateTransaction([hex_signed_tx])` called before submit. If simulation fails (e.g. insufficient balance), error shown and tx not submitted. If node returns "Method not found", submit proceeds. |
+| **Unsigned contract simulate** | ✅ | Extension provider **`boing_simulateContractCall`** → RPC (connected origin); aligns with **boing-sdk** `simulateContractCall`. See **docs/BOING-EXPRESS-WALLET.md**. |
 | **Faucet (testnet)** | ✅ | "Get testnet BOING" calls `boing_faucetRequest([hex_account_id])`. Rate limit (-32016) and "method not found" (-32601 → "Faucet is not enabled") mapped to clear messages. Link to `https://boing.network/faucet` with `?address=` pre-filled. |
 | **Network switch** | ✅ | User chooses Boing Testnet vs Mainnet. Selection persisted (extension: `chrome.storage.local`; web: context). Correct RPC URL per network; default Testnet. |
 | **Chain height** | ✅ | Optional: `boing_chainHeight` used; web dashboard shows "Block #N". Adapter exposes `getChainHeight()`. |
@@ -92,6 +93,7 @@ For ready-to-paste store copy and screenshot instructions, see [EXTENSION_STORE.
 | boing_getNonce | [hex_account_id] | Nonce when getAccount not available. |
 | boing_submitTransaction | [hex_signed_tx] | Submit signed Transfer. |
 | boing_simulateTransaction | [hex_signed_tx] | Pre-flight before submit. |
+| boing_simulateContractCall | [contract_hex, calldata_hex, sender_hex?, at_block?] | Unsigned `contract_call` dry-run (dApp / SDK). |
 | boing_faucetRequest | [hex_account_id] | Testnet only. |
 | boing_chainHeight | [] | Optional: block height in UI. |
 
@@ -220,7 +222,7 @@ This section summarizes how boing.express aligns with the six reference document
 
 **Data structures** — AccountId 32 bytes/64 hex ✓; Transaction, Payload, Signable message, SignedTransaction per TECHNICAL-SPECIFICATION ✓ (signing.ts, bincode.ts).
 
-**RPC methods** — boing_submitTransaction, boing_chainHeight, boing_getBalance, boing_getAccount, boing_getNonce, boing_simulateTransaction, boing_faucetRequest, boing_qaCheck ✓.
+**RPC methods** — boing_submitTransaction, boing_chainHeight, boing_getBalance, boing_getAccount, boing_getNonce, boing_simulateTransaction, boing_simulateContractCall, boing_faucetRequest, boing_qaCheck ✓.
 
 **Incident response** — Wallet directs users to RUNBOOK and SECURITY-STANDARDS for incident response and security contacts.
 

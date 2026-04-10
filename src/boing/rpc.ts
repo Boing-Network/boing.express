@@ -1,7 +1,7 @@
 /**
  * Boing JSON-RPC client. Aligned with boing-network docs/RPC-API-SPEC.md.
  * Methods: boing_getAccount, boing_getBalance, boing_getNonce, boing_submitTransaction,
- * boing_simulateTransaction, boing_faucetRequest, boing_chainHeight.
+ * boing_simulateTransaction, boing_simulateContractCall, boing_faucetRequest, boing_chainHeight.
  */
 
 const JSON_RPC_VERSION = '2.0';
@@ -142,6 +142,14 @@ export function getBlockByHeight(rpcUrl: string, height: number): Promise<unknow
 /** Simulate transaction. */
 export function simulateTransaction(rpcUrl: string, hexSignedTx: string): Promise<unknown> {
   return rpcCall<unknown>(rpcUrl, 'boing_simulateTransaction', [hexSignedTx]);
+}
+
+/**
+ * Dry-run a `contract_call` without signing (RPC-API-SPEC: `boing_simulateContractCall`).
+ * Params shape matches the node: `[contract_hex, calldata_hex, sender_hex?, at_block?]`.
+ */
+export function simulateContractCall(rpcUrl: string, params: unknown[]): Promise<unknown> {
+  return rpcCall<unknown>(rpcUrl, 'boing_simulateContractCall', params);
 }
 
 /** Testnet faucet: request BOING for account (hex AccountId). Maps -32016 (rate limit), -32601 (not enabled). */
