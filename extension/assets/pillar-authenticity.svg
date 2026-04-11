@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 280" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="pa-g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffb800"/>
+      <stop offset="100%" stop-color="#00d9ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="280" rx="18" fill="#0a0e14"/>
+  <rect x="48" y="64" width="104" height="132" rx="8" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+  <path stroke="url(#pa-g)" stroke-width="2.5" d="M100 56c-26 0-48 22-48 48v52c0 8 6 14 14 14h68c8 0 14-6 14-14v-52c0-26-22-48-48-48z"/>
+  <path stroke="rgba(255,255,255,0.12)" stroke-width="1.2" d="M100 56c-26 0-48 22-48 48v20"/>
+  <circle cx="100" cy="108" r="22" stroke="url(#pa-g)" stroke-width="2"/>
+  <path stroke="url(#pa-g)" stroke-width="1.8" stroke-linecap="round" d="M88 108c4-8 20-8 24 0M92 118h16"/>
+  <path stroke="url(#pa-g)" stroke-width="2" stroke-linecap="round" d="M76 188l16 16 32-36"/>
+  <rect x="56" y="200" width="88" height="6" rx="2" fill="rgba(0,217,255,0.15)" stroke="url(#pa-g)" stroke-width="1"/>
+  <rect x="56" y="214" width="64" height="6" rx="2" fill="rgba(0,217,255,0.08)" stroke="rgba(0,217,255,0.25)" stroke-width="1"/>
+</svg>

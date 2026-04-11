@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 280" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="pd-g" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#b894f5"/>
+      <stop offset="100%" stop-color="#00d9ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="280" rx="18" fill="#0a0e14"/>
+  <g stroke="url(#pd-g)" stroke-width="2">
+    <line x1="100" y1="78" x2="58" y2="118"/>
+    <line x1="100" y1="78" x2="142" y2="118"/>
+    <line x1="58" y1="118" x2="100" y2="168"/>
+    <line x1="142" y1="118" x2="100" y2="168"/>
+    <line x1="100" y1="168" x2="100" y2="208"/>
+    <line x1="58" y1="118" x2="42" y2="168"/>
+    <line x1="142" y1="118" x2="158" y2="168"/>
+  </g>
+  <circle cx="100" cy="78" r="10" fill="#0a0e14" stroke="url(#pd-g)" stroke-width="2.5"/>
+  <circle cx="58" cy="118" r="8" fill="#0a0e14" stroke="url(#pd-g)" stroke-width="2"/>
+  <circle cx="142" cy="118" r="8" fill="#0a0e14" stroke="url(#pd-g)" stroke-width="2"/>
+  <circle cx="100" cy="168" r="9" fill="#0a0e14" stroke="url(#pd-g)" stroke-width="2"/>
+  <circle cx="100" cy="208" r="7" fill="#0a0e14" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+  <circle cx="42" cy="168" r="6" fill="#0a0e14" stroke="url(#pd-g)" stroke-width="1.8"/>
+  <circle cx="158" cy="168" r="6" fill="#0a0e14" stroke="url(#pd-g)" stroke-width="1.8"/>
+</svg>
