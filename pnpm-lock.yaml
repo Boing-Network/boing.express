@@ -39,6 +39,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.3
         version: 4.7.0(vite@5.4.21(@types/node@22.19.17))
+      boing-sdk:
+        specifier: github:Boing-Network/boing.network#7990c6b6457f11158295c4fea374005bda8a8e37&path:/boing-sdk
+        version: https://codeload.github.com/Boing-Network/boing.network/tar.gz/7990c6b6457f11158295c4fea374005bda8a8e37#path:/boing-sdk
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
@@ -659,6 +662,10 @@ packages:
   '@noble/ed25519@2.3.0':
     resolution: {integrity: sha512-M7dvXL2B92/M7dw9+gzuydL8qn/jiqNHaoR3Q+cb1q1GHV7uwE17WCyFMG+Y+TZb5izcaXk5TdJRrDUxHXL78A==}
 
+  '@noble/hashes@1.8.0':
+    resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
+    engines: {node: ^14.21.3 || >=16}
+
   '@noble/hashes@2.0.1':
     resolution: {integrity: sha512-XlOlEbQcE9fmuXxrVTXCTlG2nlRXa9Rj3rr5Ue/+tX+nmkgbX720YHh0VR3hBF9xDvwnb8D2shVGOwNx+ulArw==}
     engines: {node: '>= 20.19.0'}
@@ -912,6 +919,10 @@ packages:
 
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
+
+  boing-sdk@https://codeload.github.com/Boing-Network/boing.network/tar.gz/7990c6b6457f11158295c4fea374005bda8a8e37#path:/boing-sdk:
+    resolution: {path: /boing-sdk, tarball: https://codeload.github.com/Boing-Network/boing.network/tar.gz/7990c6b6457f11158295c4fea374005bda8a8e37}
+    version: 0.2.0
 
   browserslist@4.28.1:
     resolution: {integrity: sha512-ZC5Bd0LgJXgwGqUknZY/vkUQ04r8NXnJZ3yYi4vDmSiZmC/pdSN0NbNRPxZpbtO4uAfDUAFffO8IZoM3Gj8IkA==}
@@ -1738,6 +1749,8 @@ snapshots:
 
   '@noble/ed25519@2.3.0': {}
 
+  '@noble/hashes@1.8.0': {}
+
   '@noble/hashes@2.0.1': {}
 
   '@playwright/test@1.59.1':
@@ -1942,6 +1955,11 @@ snapshots:
   baseline-browser-mapping@2.9.19: {}
 
   blake3-wasm@2.1.5: {}
+
+  boing-sdk@https://codeload.github.com/Boing-Network/boing.network/tar.gz/7990c6b6457f11158295c4fea374005bda8a8e37#path:/boing-sdk:
+    dependencies:
+      '@noble/ed25519': 2.3.0
+      '@noble/hashes': 1.8.0
 
   browserslist@4.28.1:
     dependencies:

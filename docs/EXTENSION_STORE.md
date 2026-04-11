@@ -16,7 +16,7 @@ You can run and test the extension **without submitting to the Chrome Web Store*
    ```bash
    pnpm run build:extension:unpacked
    ```
-   This creates **`extension-unpacked/`** at the repo root (gitignored). Use **Load unpacked** on that folder; it includes `README-UNPACKED.txt` with instructions.
+   This creates **`extension-unpacked/`** at the repo root. Use **Load unpacked** on that folder; it includes `README-UNPACKED.txt` with instructions. The repo may include a pre-built copy; rebuild locally for the latest bundle.
 2. Open **Chrome** and go to `chrome://extensions`.
 3. Turn **Developer mode** on (toggle top-right).
 4. Click **Load unpacked** and select either:

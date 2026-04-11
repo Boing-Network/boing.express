@@ -130,7 +130,7 @@ This regenerates `extension/manifest.json`, refreshes icons, and rebuilds the pa
 
 #### Pre-review: dedicated unpacked folder (recommended)
 
-For testing before **Chrome Web Store re-review**, use a clean copy under **`extension-unpacked/`** (gitignored):
+For testing before **Chrome Web Store re-review**, use a clean copy under **`extension-unpacked/`** (refreshed when you run `build:extension:unpacked`; the repo may ship a recent copy for convenience):
 
 ```bash
 pnpm run build:extension:unpacked

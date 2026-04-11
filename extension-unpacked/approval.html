@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Approve Signature</title>
+  <link rel="stylesheet" href="approval.css" />
+</head>
+<body>
+  <main class="approval-shell">
+    <section class="approval-card">
+      <p class="eyebrow">Boing Express</p>
+      <h1 id="approval-title" class="title">Approve Signature</h1>
+      <p id="approval-subtitle" class="subtitle">Review this message carefully before approving.</p>
+
+      <dl class="details">
+        <div class="detail">
+          <dt>Origin</dt>
+          <dd id="approval-origin">Loading…</dd>
+        </div>
+        <div class="detail">
+          <dt>Chain</dt>
+          <dd id="approval-chain">Loading…</dd>
+        </div>
+        <div class="detail">
+          <dt>Address</dt>
+          <dd id="approval-address">Loading…</dd>
+        </div>
+      </dl>
+
+      <section id="approval-tx-section" class="tx-section hidden" aria-label="Transaction details">
+        <p class="tx-section-label">Transaction</p>
+        <div class="tx-table-wrap">
+          <table class="tx-table">
+            <tbody id="approval-tx-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="approval-pipeline-section" class="pipeline-section hidden" aria-label="Signing pipeline">
+        <p class="pipeline-label" id="approval-pipeline-title">Network pipeline</p>
+        <ol id="approval-pipeline-steps" class="pipeline-steps"></ol>
+        <div id="approval-sim-example-wrap" class="sim-example-wrap hidden">
+          <p class="sim-example-caption">
+            Nodes return JSON from <code class="inline-code">boing_simulateTransaction</code> (shape varies). On failure you may see
+            <code class="inline-code">suggested_access_list</code> for retries:
+          </p>
+          <pre id="approval-sim-example" class="sim-example"></pre>
+          <p class="sim-example-footnote">Illustrative example only — not a live response.</p>
+        </div>
+      </section>
+
+      <div id="approval-message-block" class="message-block">
+        <p class="message-label">Message</p>
+        <pre id="approval-message" class="message-text">Loading…</pre>
+      </div>
+
+      <p id="approval-error" class="error hidden"></p>
+
+      <div class="actions">
+        <button type="button" id="btn-reject" class="btn btn-secondary">Reject</button>
+        <button type="button" id="btn-approve" class="btn btn-primary">Approve</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="approval.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boing Express</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <h1 class="logo">Boing Express</h1>
+    </div>
+    <div id="screen-loading" class="screen" aria-live="polite" aria-busy="true" aria-label="Loading wallet">
+      <p class="loading-message">Loading…</p>
+    </div>
+    <div id="screen-choose" class="screen hidden">
+      <p class="tagline">Authentic. Decentralized. Optimal. Quality-Assured.</p>
+      <div class="actions">
+        <button type="button" id="btn-create" class="btn-primary" aria-label="Create new wallet" data-testid="wallet-landing-create">Create wallet</button>
+        <button type="button" id="btn-import" class="btn-secondary" aria-label="Import wallet with private key" data-testid="wallet-landing-import">Import wallet</button>
+      </div>
+    </div>
+    <div id="screen-unlock" class="screen hidden">
+      <p class="hint" id="unlock-hint"></p>
+      <p class="hint unlock-pending-hint hidden" id="unlock-pending-hint" aria-live="polite"></p>
+      <form id="form-unlock" class="form">
+        <input type="password" id="unlock-password" placeholder="Password" class="input" data-testid="wallet-unlock-password" />
+        <p id="unlock-error" class="error hidden"></p>
+        <button type="submit" class="btn-primary" aria-label="Unlock wallet" data-testid="wallet-unlock-submit">Unlock</button>
+      </form>
+      <button type="button" id="btn-unlock-back" class="btn-text" aria-label="Back to wallet options">Back</button>
+    </div>
+    <div id="screen-create" class="screen hidden">
+      <p class="subtitle">Generate a new keypair. Back up your key.</p>
+      <form id="form-create" class="form">
+        <input type="password" id="create-password" placeholder="Password (min 8 chars)" class="input" data-testid="wallet-create-password" />
+        <input type="password" id="create-confirm" placeholder="Confirm password" class="input" data-testid="wallet-create-password-confirm" />
+        <p id="create-error" class="error hidden"></p>
+        <button type="submit" class="btn-primary" aria-label="Create wallet" data-testid="wallet-create-submit">Create wallet</button>
+      </form>
+      <button type="button" id="btn-create-back" class="btn-text" aria-label="Back">Back</button>
+    </div>
+    <div id="screen-backup" class="screen hidden">
+      <p class="subtitle">Save this key in a safe place. Anyone with it can control your wallet.</p>
+      <div class="row">
+        <code id="backup-key" class="backup-key"></code>
+        <button type="button" id="btn-backup-copy" class="btn-small" aria-label="Copy private key">Copy</button>
+      </div>
+      <label class="row backup-checkbox">
+        <input type="checkbox" id="backup-acknowledged" aria-label="I have saved my private key" data-testid="wallet-backup-ack" />
+        <span>I have saved my private key in a safe place</span>
+      </label>
+      <p id="backup-error" class="error hidden"></p>
+      <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet" disabled data-testid="wallet-backup-continue">I've backed it up — Continue</button>
+    </div>
+    <div id="screen-import" class="screen hidden">
+      <p class="subtitle">Enter 64-char hex private key.</p>
+      <form id="form-import" class="form">
+        <textarea id="import-key" placeholder="0x... or 64 hex chars" class="textarea" rows="3" data-testid="wallet-import-key"></textarea>
+        <input type="password" id="import-password" placeholder="Password (min 8 chars)" class="input" data-testid="wallet-import-password" />
+        <input type="password" id="import-confirm" placeholder="Confirm password" class="input" data-testid="wallet-import-password-confirm" />
+        <p id="import-error" class="error hidden"></p>
+        <button type="submit" class="btn-primary" aria-label="Import wallet" data-testid="wallet-import-submit">Import wallet</button>
+      </form>
+      <button type="button" id="btn-import-back" class="btn-text" aria-label="Back">Back</button>
+    </div>
+    <div id="screen-add-pick" class="screen hidden">
+      <p class="subtitle">Add another account (encrypted with your password).</p>
+      <div class="actions">
+        <button type="button" id="btn-add-pick-create" class="btn-primary" aria-label="Create new keypair" data-testid="wallet-add-pick-create">Create new keypair</button>
+        <button type="button" id="btn-add-pick-import" class="btn-secondary" aria-label="Import private key" data-testid="wallet-add-pick-import">Import private key</button>
+      </div>
+      <button type="button" id="btn-add-pick-back" class="btn-text" aria-label="Back to wallet" data-testid="wallet-add-pick-back">Back</button>
+    </div>
+    <div id="screen-dashboard" class="screen hidden">
+      <div class="dashboard-header">
+        <div class="header-row">
+          <select id="network-select" class="select select-network" aria-label="Select network"></select>
+          <button type="button" id="btn-lock" class="btn-icon" aria-label="Lock wallet" title="Lock wallet" data-testid="wallet-header-lock">
+            <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </button>
+        </div>
+        <p class="network-meta-hint hidden" id="network-meta-hint" aria-live="polite"></p>
+        <button type="button" id="btn-sync-network-meta" class="btn-text network-meta-sync">Sync endpoints from boing.network</button>
+        <div class="header-row account-row">
+          <label class="label-inline" for="account-select">Account</label>
+          <select id="account-select" class="select select-account" aria-label="Active account" data-testid="wallet-account-switch"></select>
+          <button type="button" id="btn-add-account" class="btn-small" aria-label="Add account" data-testid="wallet-dashboard-add-account">Add</button>
+          <button type="button" id="btn-remove-account" class="btn-small btn-disconnect hidden" aria-label="Remove active account">Remove</button>
+        </div>
+      </div>
+      <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
+        <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet">Wallet</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions">Transactions</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
+      </nav>
+      <div class="tab-panels">
+        <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
+          <div class="balance-hero card">
+            <div class="balance-hero-row">
+              <div class="balance-hero-left">
+                <p class="balance-label">Available balance</p>
+                <p class="balance"><span id="balance">…</span> <span id="symbol" class="balance-symbol">BOING</span></p>
+                <p id="balance-error" class="error hidden"></p>
+              </div>
+              <button type="button" id="btn-balance-retry" class="btn-icon btn-retry hidden" aria-label="Retry loading balance" title="Retry">
+                <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="card card-address">
+            <h2 class="label">Address</h2>
+            <div class="row">
+              <code id="address" class="address"></code>
+              <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
+            </div>
+          </div>
+          <div class="card card-connected-sites">
+            <h2 class="label">Connected sites</h2>
+            <p class="hint" id="connected-sites-hint">Sites that can see your address and request signatures.</p>
+            <ul id="connected-sites-list" class="connected-sites-list" aria-label="List of connected sites"></ul>
+            <p id="connected-sites-empty" class="connected-sites-empty hidden">No sites connected.</p>
+          </div>
+          <details class="card advanced-tx-card">
+            <summary class="label">Advanced: native transaction JSON</summary>
+            <p class="hint">Paste a Boing dApp transaction object (e.g. <code>contract_call</code> with <code>access_list</code>). Signs with the unlocked key and submits via the selected network RPC.</p>
+            <textarea id="native-tx-json" class="textarea" rows="5" placeholder='{"type":"transfer","to":"0x…","amount":"1"}' aria-label="Native transaction JSON"></textarea>
+            <p id="native-tx-error" class="error hidden"></p>
+            <p id="native-tx-success" class="success hidden" aria-live="polite"></p>
+            <button type="button" id="btn-native-tx-submit" class="btn-secondary" aria-label="Sign and send native transaction">Sign &amp; send</button>
+          </details>
+        </section>
+        <section id="panel-transactions" class="tab-panel" role="tabpanel" aria-labelledby="tab-transactions" hidden>
+          <div class="card">
+            <h2 class="label">Receive</h2>
+            <p class="hint">Share your address to receive BOING.</p>
+            <div class="row">
+              <code id="address-tx-tab" class="address address-tx"></code>
+              <button type="button" id="btn-copy-tx-tab" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2 class="label">Send BOING</h2>
+            <form id="form-send" class="form">
+              <input type="text" id="send-to" placeholder="e.g. 7f3a2b1c4d5e6f7890abcdef... (64 hex)" class="input" aria-label="Recipient address" />
+              <p class="send-hint" aria-hidden="true">64 hex characters. 0x prefix optional.</p>
+              <div class="row row-amount">
+                <input type="text" id="send-amount" placeholder="Amount (whole BOING, e.g. 100)" class="input" aria-label="Amount to send" inputmode="numeric" />
+                <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
+              </div>
+              <p id="send-error" class="error hidden"></p>
+              <p id="send-success" class="success hidden" aria-live="polite"></p>
+              <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING">Send</button>
+            </form>
+          </div>
+        </section>
+        <section id="panel-stake" class="tab-panel" role="tabpanel" aria-labelledby="tab-stake" hidden>
+          <div id="staking-section" class="staking-panel">
+            <div class="card balance-card">
+              <p class="balance-label">Staked</p>
+              <p class="balance"><span id="stake">…</span> <span id="stake-symbol" class="balance-symbol">BOING</span></p>
+            </div>
+            <form id="form-bond" class="form card">
+              <h2 class="label">Bond</h2>
+              <input type="text" id="bond-amount" placeholder="Amount to bond (e.g. 100)" class="input" inputmode="numeric" aria-label="Amount to bond" />
+              <p id="bond-error" class="error hidden"></p>
+              <button type="submit" id="btn-bond" class="btn-primary" aria-label="Bond BOING">Bond</button>
+            </form>
+            <form id="form-unbond" class="form card">
+              <h2 class="label">Unbond</h2>
+              <input type="text" id="unbond-amount" placeholder="Amount to unbond (e.g. 100)" class="input" inputmode="numeric" aria-label="Amount to unbond" />
+              <p id="unbond-error" class="error hidden"></p>
+              <button type="submit" id="btn-unbond" class="btn-secondary" aria-label="Unbond BOING">Unbond</button>
+            </form>
+          </div>
+        </section>
+        <section id="panel-faucet" class="tab-panel" role="tabpanel" aria-labelledby="tab-faucet" hidden>
+          <section id="faucet-section" class="faucet-panel">
+            <div class="card card-faucet">
+              <p class="subtitle">Get testnet BOING for development and testing.</p>
+              <button type="button" id="btn-faucet" class="btn-primary btn-faucet" aria-label="Request testnet BOING from faucet">Request testnet BOING</button>
+              <button type="button" id="btn-faucet-page" class="btn-secondary" aria-label="Open faucet page in new tab">Open faucet page</button>
+              <p id="faucet-error" class="error hidden"></p>
+            </div>
+          </section>
+        </section>
+      </div>
+    </div>
+    <footer class="popup-footer" aria-label="Legal and support">
+      <a href="https://boing.express/support" target="_blank" rel="noopener noreferrer" id="link-support">Support</a>
+      <span class="footer-sep">·</span>
+      <a href="https://boing.express/privacy" target="_blank" rel="noopener noreferrer" id="link-privacy">Privacy</a>
+      <span class="footer-sep">·</span>
+      <a href="https://boing.express/terms" target="_blank" rel="noopener noreferrer" id="link-terms">Terms</a>
+    </footer>
+  </div>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
