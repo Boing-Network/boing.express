@@ -18,7 +18,10 @@ import {
 } from '../src/boing/dappTxRequest';
 import {
   getAccount,
+  getDexToken,
   getNonce,
+  listDexPools,
+  listDexTokens,
   RpcClientError,
   simulateContractCall,
   simulateTransaction,
@@ -67,6 +70,9 @@ const BOING_METHODS = {
   SEND_TRANSACTION: 'boing_sendTransaction',
   SIMULATE_TRANSACTION: 'boing_simulateTransaction',
   SIMULATE_CONTRACT_CALL: 'boing_simulateContractCall',
+  LIST_DEX_POOLS: 'boing_listDexPools',
+  LIST_DEX_TOKENS: 'boing_listDexTokens',
+  GET_DEX_TOKEN: 'boing_getDexToken',
   CHAIN_ID: 'boing_chainId',
   SWITCH_CHAIN: 'boing_switchChain',
 } as const;
@@ -1198,6 +1204,42 @@ async function handleProviderRequest(
 
       const rpcUrl = await rpcUrlForSelectedNetwork();
       return await simulateContractCall(rpcUrl, rpcParams);
+    }
+
+    case BOING_METHODS.LIST_DEX_POOLS: {
+      if (!isConnected) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
+      }
+      const rpcUrlPools = await rpcUrlForSelectedNetwork();
+      return await listDexPools(rpcUrlPools, params);
+    }
+
+    case BOING_METHODS.LIST_DEX_TOKENS: {
+      if (!isConnected) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
+      }
+      const rpcUrlTokens = await rpcUrlForSelectedNetwork();
+      return await listDexTokens(rpcUrlTokens, params);
+    }
+
+    case BOING_METHODS.GET_DEX_TOKEN: {
+      if (!isConnected) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
+      }
+      const rpcUrlDexToken = await rpcUrlForSelectedNetwork();
+      return await getDexToken(rpcUrlDexToken, params);
     }
 
     case BOING_METHODS.CHAIN_ID: {

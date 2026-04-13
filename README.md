@@ -14,7 +14,7 @@ Non-custodial crypto wallet for **Boing Network**, built for [boing.express](htt
 
 - **React 18** + **TypeScript** + **Vite** (static build → `dist/`)
 - **@noble/ed25519** and **@noble/hashes** (BLAKE3) for crypto
-- **Cloudflare Pages** for hosting; optional **Cloudflare Workers** for RPC proxy/rate limiting
+- **Cloudflare Pages** for hosting; optional **Cloudflare Worker** HTTP JSON-RPC gateway (`workers/rpc-gateway/`) with **OpenAPI** and method allowlisting (see [docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md))
 
 ## Quick start
 
@@ -46,11 +46,11 @@ Set these in Cloudflare Pages **Build** → **Environment variables** (or in `.e
 - [ ] **Build**: Build command: `pnpm build` (or `npm run build`). Build output directory: `dist`. Install command: `pnpm install` (or `npm install`).
 - [ ] **Custom domain**: In **Pages** → **Your project** → **Custom domains**, add **boing.express**. Point your domain’s DNS to Cloudflare (nameservers or CNAME to the Pages URL).
 - [ ] **Env vars**: In Pages → **Settings** → **Environment variables**, add `VITE_BOING_TESTNET_RPC` and optionally `VITE_BOING_MAINNET_RPC` for Production (and Preview if you want). Leave mainnet unset until the official public endpoint is published.
-- [ ] **(Optional) Workers**: To run API routes (e.g. RPC proxy, rate limiting) under `boing.express/api/*`, create a Worker and bind it to that route in the dashboard. The wallet app itself does not require a Worker.
+- [ ] **(Optional) RPC gateway Worker**: Deploy **`workers/rpc-gateway/`** on its own hostname (or route) for partner HTTPS JSON-RPC — `pnpm run gateway:deploy`, secrets **`BOING_UPSTREAM_RPC_URL`** / optional **`GATEWAY_API_KEY`**. Details: [docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md). The static wallet app does not require this Worker.
 
 ### GitHub Actions (auto-deploy)
 
-The repo includes a workflow that deploys to Cloudflare Pages on every push to `main`. **Required GitHub repo secrets:**
+The repo includes a workflow that deploys to Cloudflare Pages on every push to `main`. A second workflow deploys the **RPC gateway Worker** when `workers/rpc-gateway/` changes (same Cloudflare account secrets). **Required GitHub repo secrets:**
 
 | Secret | Description |
 |--------|-------------|

@@ -1,0 +1,27 @@
+# Boing Express — optional HTTP JSON-RPC gateway (Cloudflare Worker).
+# Deploy: pnpm run gateway:deploy
+# Dev:     pnpm run gateway:dev (uses .dev.vars for BOING_UPSTREAM_RPC_URL)
+#
+# This Worker is separate from Cloudflare Pages (wallet static build). Route a hostname
+# or path prefix to this Worker in the Cloudflare dashboard (e.g. rpc-gateway.boing.express).
+
+name = "boing-express-rpc-gateway"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+GATEWAY_CORS_ORIGIN = "*"
+# Response cache for POST /v1/rpc (HTTP 200 only). Cap in code at 3600s.
+GATEWAY_CACHE_TTL_SECONDS = "15"
+# Per-minute cap per client (API key hash or IP hash). Uses RATE_LIMIT_KV when bound.
+GATEWAY_RATE_LIMIT_PER_MINUTE = "300"
+
+# Distributed rate limits (namespace title BOING_EXPRESS_GATEWAY_RL). To recreate:
+#   pnpm exec wrangler kv namespace create BOING_EXPRESS_GATEWAY_RL --config workers/rpc-gateway/wrangler.toml
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "4ebdfa981c304ffda1b33d00ef3e390f"
+
+# Production: set secrets (do not commit):
+#   wrangler secret put BOING_UPSTREAM_RPC_URL
+#   wrangler secret put GATEWAY_API_KEY   # optional API key

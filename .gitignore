@@ -35,6 +35,7 @@ pnpm-debug.log*
 
 # Wrangler
 .wrangler/
+workers/rpc-gateway/.dev.vars
 
 # Playwright (extension E2E)
 .playwright-extension-profile/

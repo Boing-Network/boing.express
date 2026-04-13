@@ -1,3 +1,6 @@
+# Legacy placeholder Worker (boing-wallet-api). For the Boing JSON-RPC HTTP gateway with
+# OpenAPI + allowlisting, use workers/rpc-gateway/wrangler.toml — see docs/RPC_GATEWAY.md.
+#
 # Cloudflare Pages: deploy with: pnpm build && wrangler pages deploy dist --project-name=boing-wallet
 # Custom domain: add boing.express in Pages → Custom domains
 # D1, R2, KV are created via CLI and can be bound to Pages Functions or this Worker later.

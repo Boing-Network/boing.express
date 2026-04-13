@@ -1,0 +1,10 @@
+# Copy to .dev.vars for `pnpm run gateway:dev` (gitignored).
+BOING_UPSTREAM_RPC_URL=https://testnet-rpc.boing.network
+
+# Optional local overrides:
+# GATEWAY_API_KEY=dev-shared-secret
+# GATEWAY_METHOD_ALLOWLIST=boing_health,boing_listDexPools
+# GATEWAY_CORS_ORIGIN=https://boing.express
+# Override wrangler [vars] locally if needed:
+# GATEWAY_CACHE_TTL_SECONDS=0
+# GATEWAY_RATE_LIMIT_PER_MINUTE=0

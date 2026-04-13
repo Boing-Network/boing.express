@@ -129,6 +129,15 @@ export async function installBoingNetworkMocks(context: BrowserContext): Promise
       case 'boing_faucetRequest':
         await fulfillJsonRpc(route, jsonRpcResult(id, { success: true }));
         return;
+      case 'boing_listDexPools':
+        await fulfillJsonRpc(route, jsonRpcResult(id, { pools: [], nextCursor: null }));
+        return;
+      case 'boing_listDexTokens':
+        await fulfillJsonRpc(route, jsonRpcResult(id, { tokens: [], nextCursor: null }));
+        return;
+      case 'boing_getDexToken':
+        await fulfillJsonRpc(route, jsonRpcResult(id, null));
+        return;
       default:
         await fulfillJsonRpc(route, jsonRpcError(id, -32601, 'Method not found (E2E mock)'));
         return;

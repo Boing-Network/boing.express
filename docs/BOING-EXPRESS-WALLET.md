@@ -16,6 +16,15 @@ This document is the **handoff target** referenced from **boing.network** (RPC s
 | `boing_sendTransaction` | `boing_simulateTransaction` (optional) → `boing_submitTransaction` | Signs first; uses wallet-selected RPC URL. |
 | `boing_simulateTransaction` | **`boing_simulateTransaction`** | Params: `[hexSignedTx]`. **Connected origin** required. No signing. |
 | **`boing_simulateContractCall`** | **`boing_simulateContractCall`** | Params: `[contractHex, calldataHex, senderHex?, atBlock?]`. **Connected origin** required. **Unsigned** dry-run of a `contract_call` (see [RPC-API-SPEC.md — `boing_simulateContractCall`](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md)). |
+| **`boing_listDexPools`** | **`boing_listDexPools`** | Params: `[requestObject]` — same single-object argument as **`BoingClient.listDexPoolsPage`** (**boing-sdk** ≥ 0.3.0). **Connected origin** required. Forwards unchanged to the wallet’s selected RPC. |
+| **`boing_listDexTokens`** | **`boing_listDexTokens`** | Params: `[requestObject]` — aligns with **`listDexTokensPage`**. **Connected origin** required. |
+| **`boing_getDexToken`** | **`boing_getDexToken`** | Params: `[{ id, … }]` — aligns with **`getDexToken`**. **Connected origin** required. |
+
+### DEX discovery reads (`boing_listDexPools` / `boing_listDexTokens` / `boing_getDexToken`)
+
+- **Spec:** [RPC-API-SPEC.md — DEX discovery](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md) and [HANDOFF_Boing_Network_Global_Token_Discovery.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_Boing_Network_Global_Token_Discovery.md) on **boing.network**.
+- **Contract:** Request body fields include **`factory`**, **`cursor`**, **`limit`**, **`light`** (or **`enrich`**), **`includeDiagnostics`**, and token-list filters (**`minReserveProduct`**, **`minLiquidityWei`**) as documented upstream. Omitted or non-object first param is sent as **`{}`** (same default as the SDK page helpers).
+- **HTTP gateway (optional, same contract):** This repo also includes a **Cloudflare Worker** that proxies allowlisted JSON-RPC over **`POST …/v1/rpc`** and serves **`GET /openapi.json`**. Deploy and configure it separately from the wallet — see **[RPC_GATEWAY.md](RPC_GATEWAY.md)**. BFFs should still document **`boing_health.rpc_surface`** / HTTP rate limits and use **cache keys** that include **`factory`**, pagination, **`light`**, and filter fields. Prefer **cursor pagination** with modest **`limit`** instead of repeated **`limit=500`** loops. **API keys** on the gateway must not be confused with token safety — discovery is **existence / directory** data only.
 
 ### `boing_simulateContractCall` (Boing Express behavior)
 
@@ -47,3 +56,5 @@ When **boing.network** adds or changes JSON-RPC methods that dApps expect throug
 1. `extension/background.ts` — `BOING_METHODS` + `handleProviderRequest` branch (or document “use HTTP RPC only”).
 2. `src/boing/rpc.ts` — thin `rpcCall` wrappers when shared with the web app.
 3. This file and **WALLET_CONNECTION_AND_API.md**.
+
+DEX discovery (**`boing_listDexPools`**, **`boing_listDexTokens`**, **`boing_getDexToken`**) follows the same update pattern.

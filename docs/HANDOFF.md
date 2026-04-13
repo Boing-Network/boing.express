@@ -38,6 +38,7 @@ Backend should: (1) parse `account_id_hex` as Ed25519 public key, (2) parse `sig
 - `boing_requestAccounts` / `boing_accounts` / `boing_signMessage` / `boing_signTransaction` / `boing_sendTransaction` / `boing_chainId` / `boing_switchChain`
 - `boing_sendTransaction` signs, then calls RPC `boing_simulateTransaction` when available, then `boing_submitTransaction`. **`boing_simulateTransaction([hexSignedTx])`** is also exposed on the provider (connected origin; forwards to the wallet’s selected RPC).
 - **`boing_simulateContractCall([contractHex, calldataHex, senderHex?, atBlock?])`** — unsigned `contract_call` dry-run per [RPC-API-SPEC.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md); connected origin required; matches **boing-sdk** `BoingClient.simulateContractCall`. Details: **[BOING-EXPRESS-WALLET.md](BOING-EXPRESS-WALLET.md)**.
+- **`boing_listDexPools` / `boing_listDexTokens` / `boing_getDexToken`** — L1 DEX discovery JSON-RPC, params aligned with **boing-sdk@^0.3.0** (`listDexPoolsPage`, `listDexTokensPage`, `getDexToken`); connected origin required; forwarded unchanged to the wallet RPC URL. Spec: [RPC-API-SPEC.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md); background: [HANDOFF_Boing_Network_Global_Token_Discovery.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_Boing_Network_Global_Token_Discovery.md). BFF/gateway integrators reuse the same JSON-RPC contract (see **BOING-EXPRESS-WALLET.md** for caching / rate-limit notes).
 - Aliases: `eth_requestAccounts`, `personal_sign`, `eth_chainId`, `wallet_switchEthereumChain`
 - Portal should prefer `boing_*` methods.
 
@@ -149,6 +150,14 @@ Typical **GET** paths (same origin as the Worker base, no `/v1` prefix on host):
 - **`GET {BASE}/stats`** or **`/`** — full indexer JSON (legacy / parity with finance env stats URL).
 
 Use **boing-sdk** directory/receipt helpers and **`canonicalTestnetDex`** for parsers + canonical testnet `AccountId`s; do not duplicate hex in the wallet unless a product requirement appears.
+
+## L1 DEX discovery via the injected provider
+
+For dApps that already use **`window.boing`** and **boing-sdk**, the extension forwards **`boing_listDexPools`**, **`boing_listDexTokens`**, and **`boing_getDexToken`** to the same RPC URL as simulate/submit (testnet/mainnet switch). This complements indexer/HTTP directory flows: partners that only need the node’s paginated state reads can call through the provider after **`boing_requestAccounts`**, or call the node JSON-RPC directly when CORS and policy allow.
+
+## Optional HTTP JSON-RPC gateway (same repo)
+
+Operators can deploy the Cloudflare Worker under **`workers/rpc-gateway/`** for **`POST /v1/rpc`** (allowlisted methods) and **`GET /openapi.json`**. Configuration, default allowlist, and caching guidance: **[RPC_GATEWAY.md](RPC_GATEWAY.md)**.
 
 ## QA / registry vs “indexer”
 

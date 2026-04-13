@@ -3,6 +3,7 @@ import {
   getBalance,
   getNonce,
   isMethodNotFoundError,
+  listDexPools,
   rpcCall,
   RpcClientError,
   simulateContractCall,
@@ -70,6 +71,27 @@ describe('rpc client', () => {
       rule_id: 'R_TEST',
       doc_url: 'https://example.invalid/doc',
     });
+  });
+
+  it('sends boing_listDexPools with one object param (SDK-shaped)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        jsonrpc: '2.0',
+        id: 1,
+        result: { pools: [], nextCursor: null },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await listDexPools('https://rpc.example/rpc', []);
+    let body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
+    expect(body.method).toBe('boing_listDexPools');
+    expect(body.params).toEqual([{}]);
+
+    await listDexPools('https://rpc.example/rpc', [{ cursor: '0xab', limit: 10 }]);
+    body = JSON.parse((fetchMock.mock.calls[1][1] as { body: string }).body);
+    expect(body.params).toEqual([{ cursor: '0xab', limit: 10 }]);
   });
 
   it('calls boing_simulateContractCall with given params', async () => {

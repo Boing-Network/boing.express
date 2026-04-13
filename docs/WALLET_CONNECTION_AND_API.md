@@ -32,6 +32,9 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
 | **boing_sendTransaction** | `[txObject]` | `string` | Same as sign, then RPC `boing_simulateTransaction` when available, then `boing_submitTransaction`. Returns tx hash string. |
 | **boing_simulateTransaction** | `[hexSignedTx]` | `object` | Forwards to node RPC (no signing). Params: hex from `boing_signTransaction`. Connected origin required. Result shape per [RPC-API-SPEC.md `boing_simulateTransaction`](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md) (includes `suggested_access_list`, `access_list_covers_suggestion`). |
 | **boing_simulateContractCall** | `[contractHex, calldataHex, senderHex?, atBlock?]` | `object` | **Unsigned** dry-run of a `contract_call` (no `SignedTransaction`). Connected origin required. Uses the wallet’s selected RPC URL. If `senderHex` is omitted, the active account is sent as the third RPC argument when available. See **[BOING-EXPRESS-WALLET.md](BOING-EXPRESS-WALLET.md)** and [RPC-API-SPEC.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md). |
+| **boing_listDexPools** | `[requestObject]` | `object` | Native DEX **pool** directory at L1 (paginated). Same request fields as **boing-sdk** `listDexPoolsPage` (`factory`, `cursor`, `limit`, `light`, `includeDiagnostics`, …). Connected origin required; forwards to selected RPC unchanged (see [RPC-API-SPEC.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md)). |
+| **boing_listDexTokens** | `[requestObject]` | `object` | DEX-derived **token** set (paginated). Same shape as **`listDexTokensPage`**. Connected origin required. |
+| **boing_getDexToken** | `[{ id, … }]` | `object` \| `null` | Single-token lookup in that universe. Same shape as **`getDexToken`**. Connected origin required. |
 
 ### Native transaction JSON (`boing_signTransaction` / `boing_sendTransaction`)
 
@@ -98,7 +101,7 @@ Wallets may support these aliases so existing dApp code or libraries that use Et
 
 ### Connect / disconnect
 
-- **Connect:** When a site calls `boing_requestAccounts`, the extension adds the page’s **origin** to a stored “connected sites” list and returns the current account. Only those origins can later call `boing_accounts`, `boing_signMessage`, transaction methods, or `boing_simulateTransaction`.
+- **Connect:** When a site calls `boing_requestAccounts`, the extension adds the page’s **origin** to a stored “connected sites” list and returns the current account. Only those origins can later call `boing_accounts`, `boing_signMessage`, transaction methods, `boing_simulateTransaction`, `boing_simulateContractCall`, or DEX discovery methods (**`boing_listDexPools`**, **`boing_listDexTokens`**, **`boing_getDexToken`**).
 - **Disconnect:** In the extension popup, **Wallet** tab → **Connected sites** lists each origin with a **Disconnect** button. Removing a site revokes access until the user connects again from that origin.
 
 ### Security and UX

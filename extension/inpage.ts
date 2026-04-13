@@ -9,6 +9,7 @@
  *   boing_sendTransaction    — sign + simulate + submit; params: [txObject]; returns tx hash string (mempool QA still runs on deploy). On simulation failure, error.data may include suggested_access_list + access_list_covers_suggestion for retry.
  *   boing_simulateTransaction — params: [hexSignedTx]; forwards to node RPC (no extra signing). Connected origin required.
  *   boing_simulateContractCall — params: [contractHex, calldataHex, senderHex?, atBlock?]; unsigned contract_call dry-run per RPC-API-SPEC. Connected origin required. If senderHex is omitted, the active vault account is sent as the third RPC param when available.
+ *   boing_listDexPools / boing_listDexTokens / boing_getDexToken — L1 DEX discovery; params mirror boing-sdk (single object in params array). Connected origin required. See docs/BOING-EXPRESS-WALLET.md.
  *   boing_chainId           — current chain (0x1b01 testnet, 0x1b02 mainnet)
  *   boing_switchChain       — switch network
  *

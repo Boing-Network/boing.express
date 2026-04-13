@@ -1,7 +1,8 @@
 /**
  * Boing JSON-RPC client. Aligned with boing-network docs/RPC-API-SPEC.md.
  * Methods: boing_getAccount, boing_getBalance, boing_getNonce, boing_submitTransaction,
- * boing_simulateTransaction, boing_simulateContractCall, boing_faucetRequest, boing_chainHeight.
+ * boing_simulateTransaction, boing_simulateContractCall, boing_faucetRequest, boing_chainHeight,
+ * boing_listDexPools, boing_listDexTokens, boing_getDexToken.
  */
 
 const JSON_RPC_VERSION = '2.0';
@@ -150,6 +151,30 @@ export function simulateTransaction(rpcUrl: string, hexSignedTx: string): Promis
  */
 export function simulateContractCall(rpcUrl: string, params: unknown[]): Promise<unknown> {
   return rpcCall<unknown>(rpcUrl, 'boing_simulateContractCall', params);
+}
+
+/** First JSON-RPC param for DEX discovery methods: one object, same as boing-sdk list/get helpers. */
+function dexDiscoveryRequestObject(params: unknown[]): Record<string, unknown> {
+  const first = params[0];
+  if (first != null && typeof first === 'object' && !Array.isArray(first)) {
+    return first as Record<string, unknown>;
+  }
+  return {};
+}
+
+/** `boing_listDexPools` — params `[{ factory?, cursor?, limit?, light?, includeDiagnostics?, … }]` per RPC-API-SPEC. */
+export function listDexPools(rpcUrl: string, params: unknown[] = [{}]): Promise<unknown> {
+  return rpcCall<unknown>(rpcUrl, 'boing_listDexPools', [dexDiscoveryRequestObject(params)]);
+}
+
+/** `boing_listDexTokens` — same param object shape as **`BoingClient.listDexTokensPage`**. */
+export function listDexTokens(rpcUrl: string, params: unknown[] = [{}]): Promise<unknown> {
+  return rpcCall<unknown>(rpcUrl, 'boing_listDexTokens', [dexDiscoveryRequestObject(params)]);
+}
+
+/** `boing_getDexToken` — params `[{ id, factory?, light?, includeDiagnostics? }]`; node returns one row or JSON null. */
+export function getDexToken(rpcUrl: string, params: unknown[] = [{}]): Promise<unknown> {
+  return rpcCall<unknown>(rpcUrl, 'boing_getDexToken', [dexDiscoveryRequestObject(params)]);
 }
 
 /** Testnet faucet: request BOING for account (hex AccountId). Maps -32016 (rate limit), -32601 (not enabled). */
