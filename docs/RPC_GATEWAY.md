@@ -34,6 +34,8 @@ The gateway is for **partners, BFFs, and scripts** that want stable HTTPS access
 
 Local development: copy **`workers/rpc-gateway/.dev.vars.example`** to **`workers/rpc-gateway/.dev.vars`** (gitignored).
 
+**Stable L1 DEX names and upstream configuration:** This Worker only forwards allowlisted JSON-RPC. Partner gateways can depend on **stable** native DEX discovery method names advertised by the node in **`boing_getNetworkInfo`** (`developer.dex_discovery_methods`, same triple as the [Global Token Discovery](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_Boing_Network_Global_Token_Discovery.md) handoff) and listed in **`boing_getRpcMethodCatalog`**. If you **operate** public RPC (`boing-node`), set **`BOING_CANONICAL_NATIVE_DEX_FACTORY`** and the three **`BOING_DEX_*`** variables as in the monorepo **`tools/boing-node-public-testnet.env.example`** (see [RPC-API-SPEC.md — DEX discovery](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md)); **restart** the node after any change. The repository **`.env.example`** includes the same block for operator copy/paste (not used by the Pages build).
+
 ---
 
 ## What values do the Wrangler **secrets** use?

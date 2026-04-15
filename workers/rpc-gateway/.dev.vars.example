@@ -1,5 +1,7 @@
 # Copy to .dev.vars for `pnpm run gateway:dev` (gitignored).
 BOING_UPSTREAM_RPC_URL=https://testnet-rpc.boing.network
+# Node-side DEX discovery tuning (BOING_DEX_*, BOING_CANONICAL_NATIVE_DEX_FACTORY) lives on
+# whatever host serves this URL — see repo .env.example and docs/RPC_GATEWAY.md.
 
 # Optional local overrides:
 # GATEWAY_API_KEY=dev-shared-secret

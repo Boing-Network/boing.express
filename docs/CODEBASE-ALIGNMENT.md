@@ -17,4 +17,4 @@
 
 **Tutorial tooling** such as `print-native-dex-routes.mjs` lives under `examples/native-boing-tutorial` in **Boing-Network/boing.network**, not in this repository.
 
-When `boing_getNetworkInfo`, canonical pool/factory env names, or SDK exports change, coordinate updates across repos per the handoff §6 (change coordination).
+When `boing_getNetworkInfo`, canonical pool/factory env names, or SDK exports change, coordinate updates across repos per the handoff §6 (change coordination). **Public RPC:** node operators should keep **`BOING_CANONICAL_NATIVE_DEX_FACTORY`** and the three **`BOING_DEX_*`** knobs in sync with **`tools/boing-node-public-testnet.env.example`** on **boing.network** (this repo’s **`.env.example`** mirrors that block for discoverability).
