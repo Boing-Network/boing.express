@@ -4,9 +4,11 @@ import {
   getNonce,
   isMethodNotFoundError,
   listDexPools,
+  parseSubmitTransactionResult,
   rpcCall,
   RpcClientError,
   simulateContractCall,
+  submitTransaction,
 } from '../src/boing/rpc';
 
 afterEach(() => {
@@ -121,6 +123,29 @@ describe('rpc client', () => {
       '0x' + 'bb'.repeat(32),
       123,
     ]);
+  });
+
+  it('parses boing_submitTransaction object result per RPC spec', () => {
+    expect(parseSubmitTransactionResult({ tx_hash: 'ok' })).toBe('ok');
+    expect(parseSubmitTransactionResult({ tx_hash: '0xabc' })).toBe('0xabc');
+    expect(parseSubmitTransactionResult('legacy-string')).toBe('legacy-string');
+    expect(() => parseSubmitTransactionResult({})).toThrow(RpcClientError);
+  });
+
+  it('submitTransaction extracts tx_hash from JSON-RPC result object', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          jsonrpc: '2.0',
+          id: 1,
+          result: { tx_hash: 'ok' },
+        }),
+      })
+    );
+
+    await expect(submitTransaction('https://testnet-rpc.boing.network', '0x00')).resolves.toBe('ok');
   });
 
   it('does not convert transport failures into zero balances or nonces', async () => {

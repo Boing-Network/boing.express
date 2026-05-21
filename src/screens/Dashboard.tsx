@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types';
-import { formatBalance, parseDecimalAmount } from '../boing/amount';
+import { formatBalance, parseDecimalAmount, parseU128String } from '../boing/amount';
 import { validateContractBytecode, VALID_PURPOSE_CATEGORIES } from '../boing/qa';
 import * as rpc from '../boing/rpc';
 import { addTxHistory, getTxHistory } from '../storage/txHistory';
@@ -305,7 +305,11 @@ export function Dashboard() {
       setUnbondError('Enter a valid whole BOING amount (e.g. 100)');
       return;
     }
-    const staked = stake ? BigInt(stake) : 0n;
+    const staked = stake ? parseU128String(stake) : 0n;
+    if (staked == null) {
+      setUnbondError('Could not read staked amount from network');
+      return;
+    }
     if (amount > staked) {
       setUnbondError('Insufficient staked amount');
       return;
@@ -388,7 +392,13 @@ export function Dashboard() {
     }
   }
 
-  if (!accountId) return null;
+  if (!accountId) {
+    return (
+      <div className={`${styles.wrap} page-app`}>
+        <p className={styles.addressHint}>Loading wallet…</p>
+      </div>
+    );
+  }
 
   const displayStake =
     stake != null
@@ -878,7 +888,9 @@ export function Dashboard() {
               {txHistory.slice(0, 10).map((entry) => (
                 <li key={entry.txHash} className={styles.txHistoryItem}>
                   <span className={styles.txType}>{entry.type}</span>
-                  <code className={styles.txHash}>{entry.txHash.slice(0, 16)}…</code>
+                  <code className={styles.txHash}>
+                    {typeof entry.txHash === 'string' ? `${entry.txHash.slice(0, 16)}…` : '—'}
+                  </code>
                 </li>
               ))}
             </ul>

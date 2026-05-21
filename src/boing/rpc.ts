@@ -125,9 +125,27 @@ export async function rpcCall<T>(
   return data.result as T;
 }
 
-/** Submit signed tx hex. Returns tx hash or error. */
+/** Parsed `boing_submitTransaction` result per RPC-API-SPEC (`{ tx_hash: string }`). */
+export interface SubmitTransactionResult {
+  tx_hash: string;
+}
+
+/**
+ * Normalize submit result to a tx hash string.
+ * Nodes return `{ tx_hash: "ok" }` (mempool ack) or a hex id; legacy callers may return a bare string.
+ */
+export function parseSubmitTransactionResult(result: unknown): string {
+  if (typeof result === 'string' && result.length > 0) return result;
+  if (result != null && typeof result === 'object' && !Array.isArray(result)) {
+    const txHash = (result as { tx_hash?: unknown }).tx_hash;
+    if (typeof txHash === 'string' && txHash.length > 0) return txHash;
+  }
+  throw new RpcClientError('RPC response missing tx_hash');
+}
+
+/** Submit signed tx hex. Returns tx hash string (e.g. `"ok"` or hex from QA pool). */
 export function submitTransaction(rpcUrl: string, hexSignedTx: string): Promise<string> {
-  return rpcCall<string>(rpcUrl, 'boing_submitTransaction', [hexSignedTx]);
+  return rpcCall<unknown>(rpcUrl, 'boing_submitTransaction', [hexSignedTx]).then(parseSubmitTransactionResult);
 }
 
 /** Current chain height. */

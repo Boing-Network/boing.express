@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { SiteLogo } from '../components/SiteLogo';
+import { CHROME_EXTENSION_STORE_URL } from '../constants/chromeExtension';
 import styles from './Landing.module.css';
 
 const ASSETS_BASE = '/assets';
@@ -22,6 +23,9 @@ export function Landing() {
         <SiteLogo className={styles.logoWrap} />
         <nav className={styles.nav}>
           <Link to="/docs">Docs</Link>
+          <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">
+            Chrome extension
+          </a>
           <Link to="/wallet" className={styles.ctaNav}>Open wallet</Link>
         </nav>
       </header>
@@ -53,6 +57,14 @@ export function Landing() {
           </p>
           <div className={styles.heroActions}>
             <Link to="/wallet" className={styles.primaryBtn}>Get started</Link>
+            <a
+              href={CHROME_EXTENSION_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.secondaryBtn}
+            >
+              Add to Chrome
+            </a>
             <Link to="/docs" className={styles.secondaryBtn}>Documentation</Link>
           </div>
         </section>
@@ -72,7 +84,13 @@ export function Landing() {
             <div className={styles.card}>
               <img src={`${ASSETS_BASE}/pillar-scalability.svg`} alt="" className={styles.cardIconImg} aria-hidden />
               <h3>Web & extension</h3>
-              <p>Use the wallet at boing.express or install the browser extension for Chrome and Firefox.</p>
+              <p>
+                Use the wallet at boing.express or{' '}
+                <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">
+                  install the Chrome extension
+                </a>{' '}
+                for one-click access from your browser toolbar.
+              </p>
             </div>
             <div className={styles.card}>
               <img src={`${ASSETS_BASE}/pillar-decentralization.svg`} alt="" className={styles.cardIconImg} aria-hidden />
@@ -91,6 +109,9 @@ export function Landing() {
         <footer className={styles.footer}>
           <h3 className={styles.footerTitle}>Resources</h3>
           <div className={styles.footerLinks}>
+            <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">
+              Chrome Web Store
+            </a>
             <a href="https://boing.network/testnet/join" target="_blank" rel="noopener noreferrer">Join Testnet</a>
             <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">Faucet</a>
             <a href="https://boing.network" target="_blank" rel="noopener noreferrer">Boing Network</a>

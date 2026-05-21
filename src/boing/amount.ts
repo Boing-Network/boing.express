@@ -40,6 +40,17 @@ export function parseDecimalAmount(str: string, decimals: number): bigint | null
   return whole + frac;
 }
 
+/** Parse u128-style decimal string from RPC; returns null if not a valid integer string. */
+export function parseU128String(valueRaw: string): bigint | null {
+  const trimmed = valueRaw.trim().replace(/,/g, '');
+  if (trimmed === '' || !/^\d+$/.test(trimmed)) return null;
+  try {
+    return BigInt(trimmed);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Format smallest-unit balance to human-readable string.
  * @param valueRaw - balance as decimal string (smallest units)
@@ -51,7 +62,8 @@ export function formatBalance(
   decimals: number,
   maxFractionDigits: number = 6
 ): string {
-  const value = BigInt(valueRaw);
+  const value = parseU128String(valueRaw);
+  if (value == null) return '—';
   const divisor = 10n ** BigInt(decimals);
   const whole = value / divisor;
   const frac = value % divisor;

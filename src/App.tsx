@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { WalletProvider } from './context/WalletContext';
 import { EngraveSceneBackdrop } from './components/EngravingBackdrop';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { InitialAnimation } from './components/InitialAnimation';
 import styles from './App.module.css';
 import { WalletNav } from './components/WalletNav';
@@ -104,10 +105,12 @@ function AppShell() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <WalletProvider>
-        <AppShell />
-      </WalletProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <WalletProvider>
+          <AppShell />
+        </WalletProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

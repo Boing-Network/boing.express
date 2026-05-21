@@ -18,12 +18,17 @@ function getStorageKey(addressHint: string, networkId: string): string {
   return `${STORAGE_KEY}:${addressHint}:${networkId}`;
 }
 
+function isValidTxHash(txHash: unknown): txHash is string {
+  return typeof txHash === 'string' && txHash.length > 0;
+}
+
 export function addTxHistory(
   addressHint: string,
   networkId: string,
   txHash: string,
   type: TxHistoryEntry['type']
 ): void {
+  if (!isValidTxHash(txHash)) return;
   try {
     const key = getStorageKey(addressHint, networkId);
     const raw = localStorage.getItem(key);
@@ -46,7 +51,15 @@ export function getTxHistory(addressHint: string, networkId: string): TxHistoryE
   try {
     const key = getStorageKey(addressHint, networkId);
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : [];
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (entry): entry is TxHistoryEntry =>
+        entry != null &&
+        typeof entry === 'object' &&
+        isValidTxHash((entry as TxHistoryEntry).txHash) &&
+        (entry as TxHistoryEntry).type != null
+    );
   } catch {
     return [];
   }

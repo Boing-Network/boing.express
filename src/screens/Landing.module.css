@@ -486,6 +486,16 @@
   line-height: 1.4;
 }
 
+.card p a {
+  color: var(--express-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.card p a:hover {
+  text-decoration: underline;
+}
+
 .cta {
   text-align: center;
   padding: 3.5rem 0;

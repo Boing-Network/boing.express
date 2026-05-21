@@ -91,7 +91,10 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext('2d');
-    if (!canvas || !context) return;
+    if (!canvas || !context) {
+      finish();
+      return;
+    }
     const ctx = context;
 
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
