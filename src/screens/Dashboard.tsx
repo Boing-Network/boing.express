@@ -19,6 +19,15 @@ import { chainIdHexToDecimal } from '../networks/chainIds';
 import { SiteLogo } from '../components/SiteLogo';
 import styles from './Dashboard.module.css';
 
+type WalletTabId = 'wallet' | 'transactions' | 'stake' | 'faucet';
+
+const WALLET_TABS: { id: WalletTabId; label: string }[] = [
+  { id: 'wallet', label: 'Wallet' },
+  { id: 'transactions', label: 'Transactions' },
+  { id: 'stake', label: 'Stake' },
+  { id: 'faucet', label: 'Faucet' },
+];
+
 export function Dashboard() {
   const navigate = useNavigate();
   const {
@@ -73,6 +82,10 @@ export function Dashboard() {
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [txHashCopied, setTxHashCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<WalletTabId>('wallet');
+
+  const showStakeTab = Boolean(network.buildBond || network.buildUnbond);
+  const showFaucetTab = Boolean(network.config.isTestnet);
 
   const address = accountId ? formatAddress(accountId, false) : '';
   const addressHint = address ? `${address.slice(0, 8)}…${address.slice(-8)}` : '';
@@ -135,6 +148,11 @@ export function Dashboard() {
   useEffect(() => {
     markWalletCreated();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'stake' && !showStakeTab) setActiveTab('wallet');
+    if (activeTab === 'faucet' && !showFaucetTab) setActiveTab('wallet');
+  }, [activeTab, showStakeTab, showFaucetTab]);
 
   useEffect(() => {
     if (addressHint && accountId) {
@@ -517,36 +535,109 @@ export function Dashboard() {
       )}
 
       <main className={styles.main}>
-        {!onboarding.dismissed && (
-          <section className={styles.onboardingSection}>
-            <h2 className={styles.sectionTitle}>Getting started</h2>
-            <ul className={styles.onboardingList}>
-              <li className={onboarding.walletCreated ? styles.onboardingDone : ''}>
-                {onboarding.walletCreated ? '✓' : '○'} Create wallet
-              </li>
-              <li className={onboarding.gotTestnetBoing ? styles.onboardingDone : ''}>
-                {onboarding.gotTestnetBoing ? '✓' : '○'} Get testnet BOING (testnet)
-              </li>
-              <li className={onboarding.sentTx ? styles.onboardingDone : ''}>
-                {onboarding.sentTx ? '✓' : '○'} Send a transaction
-              </li>
-            </ul>
-            <button
-              type="button"
-              className={styles.onboardingDismiss}
-              data-testid="wallet-onboarding-dismiss"
-              onClick={() => {
-                dismissOnboarding();
-                setOnboarding(getOnboardingState());
-              }}
-            >
-              Dismiss
-            </button>
-          </section>
-        )}
+        <nav className={styles.tabBar} role="tablist" aria-label="Wallet sections">
+          {WALLET_TABS.map(({ id, label }) => {
+            if (id === 'stake' && !showStakeTab) return null;
+            if (id === 'faucet' && !showFaucetTab) return null;
+            const selected = activeTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                id={`tab-${id}`}
+                aria-selected={selected}
+                aria-controls={`panel-${id}`}
+                className={`${styles.tabBtn} ${selected ? styles.tabBtnActive : ''}`}
+                onClick={() => setActiveTab(id)}
+                data-testid={`wallet-tab-${id}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </nav>
 
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Address</h2>
+        <div className={styles.tabPanels}>
+          <div
+            id="panel-wallet"
+            role="tabpanel"
+            aria-labelledby="tab-wallet"
+            hidden={activeTab !== 'wallet'}
+            className={`${styles.tabPanel} ${activeTab === 'wallet' ? styles.tabPanelActive : ''}`}
+          >
+            {!onboarding.dismissed && (
+              <section className={styles.onboardingSection}>
+                <h2 className={styles.sectionTitle}>Getting started</h2>
+                <ul className={styles.onboardingList}>
+                  <li className={onboarding.walletCreated ? styles.onboardingDone : ''}>
+                    {onboarding.walletCreated ? '✓' : '○'} Create wallet
+                  </li>
+                  <li className={onboarding.gotTestnetBoing ? styles.onboardingDone : ''}>
+                    {onboarding.gotTestnetBoing ? '✓' : '○'} Get testnet BOING (testnet)
+                  </li>
+                  <li className={onboarding.sentTx ? styles.onboardingDone : ''}>
+                    {onboarding.sentTx ? '✓' : '○'} Send a transaction
+                  </li>
+                </ul>
+                <button
+                  type="button"
+                  className={styles.onboardingDismiss}
+                  data-testid="wallet-onboarding-dismiss"
+                  onClick={() => {
+                    dismissOnboarding();
+                    setOnboarding(getOnboardingState());
+                  }}
+                >
+                  Dismiss
+                </button>
+              </section>
+            )}
+
+            <section className={`${styles.section} ${styles.balanceHero}`}>
+              <div className={styles.balanceHeader}>
+                <p className={styles.balanceLabel}>Available balance</p>
+                <button
+                  type="button"
+                  className={styles.refreshBtn}
+                  onClick={refreshData}
+                  disabled={refreshing || !accountId}
+                  aria-label="Refresh balance and chain data"
+                >
+                  {refreshing ? '…' : '↻'}
+                </button>
+              </div>
+              <p className={styles.balance}>
+                {displayBalance} <span className={styles.symbol}>{balance?.symbol ?? 'BOING'}</span>
+              </p>
+              {chainHeight != null && (
+                <p className={styles.chainHeight} aria-label="Chain height">
+                  Block #{chainHeight.toLocaleString()}
+                </p>
+              )}
+              {network.config.chainId && (
+                <p className={styles.chainHeight} aria-label="Chain ID for dApps">
+                  Chain ID {network.config.chainId}{' '}
+                  <span className={styles.chainIdDecimal}>(decimal {chainIdHexToDecimal(network.config.chainId)})</span>
+                </p>
+              )}
+              <p className={styles.chainIdNote}>
+                This is the ID Boing Express reports to sites like boing.finance. Block headers on Boing L1 do not carry
+                chain ID — private devnets often still use <code className={styles.inlineCode}>6913</code> for compatibility;
+                confirm with your operator if unsure.
+              </p>
+              {balanceError && (
+                <p className={styles.error}>
+                  {balanceError}
+                  <button type="button" className={styles.retryBtn} onClick={refreshData}>
+                    Retry
+                  </button>
+                </p>
+              )}
+            </section>
+
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Address</h2>
           {accountList.length > 1 && (
             <div className={styles.accountSwitchRow}>
               <label htmlFor="web-account-select" className={styles.accountSwitchLabel}>
@@ -600,53 +691,236 @@ export function Dashboard() {
             )}
           </div>
           <p className={styles.addressHint}>
-            Use this address to receive BOING. On testnet, you can also use it with the faucet.
+            Use this address to receive BOING. On testnet, use the Faucet tab to request funds.
           </p>
         </section>
 
-        <section className={styles.section}>
-          <div className={styles.balanceHeader}>
-            <h2 className={styles.sectionTitle}>Balance</h2>
-            <button
-              type="button"
-              className={styles.refreshBtn}
-              onClick={refreshData}
-              disabled={refreshing || !accountId}
-              aria-label="Refresh balance and chain data"
-            >
-              {refreshing ? '…' : '↻'}
-            </button>
-          </div>
-          <p className={styles.balance}>
-            {displayBalance} <span className={styles.symbol}>{balance?.symbol ?? 'BOING'}</span>
-          </p>
-          {chainHeight != null && (
-            <p className={styles.chainHeight} aria-label="Chain height">
-              Block #{chainHeight.toLocaleString()}
-            </p>
-          )}
-          {network.config.chainId && (
-            <p className={styles.chainHeight} aria-label="Chain ID for dApps">
-              Chain ID {network.config.chainId}{' '}
-              <span className={styles.chainIdDecimal}>(decimal {chainIdHexToDecimal(network.config.chainId)})</span>
-            </p>
-          )}
-          <p className={styles.chainIdNote}>
-            This is the ID Boing Express reports to sites like boing.finance. Block headers on Boing L1 do not carry
-            chain ID — private devnets often still use <code className={styles.inlineCode}>6913</code> for compatibility;
-            confirm with your operator if unsure.
-          </p>
-          {balanceError && (
-            <p className={styles.error}>
-              {balanceError}
-              <button type="button" className={styles.retryBtn} onClick={refreshData}>
-                Retry
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Deploy contract (QA Pillar)</h2>
+              <p className={styles.faucetHint}>
+                Validate contract bytecode before deployment. REJECT → blocked. ALLOW → deploy. UNSURE → community QA pool.
+              </p>
+              <form onSubmit={handleQaValidate} className={styles.form}>
+                <textarea
+                  placeholder="Contract bytecode (hex, e.g. 0x6080604052...)"
+                  value={qaBytecode}
+                  onChange={(e) => {
+                    setQaBytecode(e.target.value);
+                    setQaResult(null);
+                  }}
+                  className={styles.qaTextarea}
+                  rows={4}
+                  spellCheck={false}
+                  aria-label="Contract bytecode"
+                />
+                <div className={styles.qaPurposeRow}>
+                  <label htmlFor="qa-purpose" className={styles.qaLabel}>Purpose (optional, for boing_qaCheck)</label>
+                  <select
+                    id="qa-purpose"
+                    value={qaPurpose}
+                    onChange={(e) => setQaPurpose(e.target.value)}
+                    className={styles.qaPurposeSelect}
+                    aria-label="Purpose category"
+                  >
+                    <option value="">— None —</option>
+                    {VALID_PURPOSE_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.qaPurposeRow}>
+                  <label htmlFor="qa-description-hash" className={styles.qaLabel}>Description hash (optional)</label>
+                  <input
+                    id="qa-description-hash"
+                    type="text"
+                    placeholder="0x..."
+                    value={qaDescriptionHash}
+                    onChange={(e) => setQaDescriptionHash(e.target.value)}
+                    className={styles.input}
+                    aria-label="Description hash"
+                  />
+                </div>
+                <label className={styles.qaCheckbox}>
+                  <input
+                    type="checkbox"
+                    checked={qaUseRpc}
+                    onChange={(e) => setQaUseRpc(e.target.checked)}
+                  />
+                  Also call boing_qaCheck (when available)
+                </label>
+                <div className={styles.qaButtonRow}>
+                  <button type="submit" className={styles.primary} disabled={qaValidating}>
+                    {qaValidating ? 'Validating…' : 'Validate'}
+                  </button>
+                </div>
+                {qaResult && (
+                  <div
+                    className={
+                      qaResult.result === 'allow'
+                        ? styles.qaAllow
+                        : qaResult.result === 'reject'
+                          ? styles.qaReject
+                          : styles.qaUnsure
+                    }
+                    role="status"
+                  >
+                    <strong>{qaResult.result.toUpperCase()}</strong>
+                    {qaResult.ruleId && <span className={styles.qaRuleId}> ({qaResult.ruleId})</span>}
+                    {qaResult.message && <p className={styles.qaMessage}>{qaResult.message}</p>}
+                    {qaResult.docUrl && (
+                      <p className={styles.qaMessage}>
+                        <a href={qaResult.docUrl} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
+                          Open canonical QA guidance
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form>
+            </section>
+
+            <section className={styles.section}>
+              <button
+                type="button"
+                className={styles.rpcToggle}
+                onClick={() => setShowRpcOverride(!showRpcOverride)}
+                aria-expanded={showRpcOverride}
+              >
+                {showRpcOverride ? '−' : '+'} RPC override (dev)
               </button>
-            </p>
-          )}
-        </section>
+              {showRpcOverride && (
+                <div className={styles.rpcOverrideForm}>
+                  <p className={styles.faucetHint}>
+                    Override RPC URL for the current network (e.g. http://localhost:8545 for local node). Leave empty to use default.
+                    Chain ID above does not change — it stays the testnet/mainnet value Boing Express uses for{' '}
+                    <code className={styles.inlineCode}>boing_chainId</code>. Custom RPC must still match that network (same
+                    genesis / operator expectations).
+                  </p>
+                  <div className={styles.rpcOverrideRow}>
+                    <label htmlFor="rpc-override" className={styles.qaLabel}>
+                      {network.config.name} RPC URL
+                    </label>
+                    <input
+                      id="rpc-override"
+                      type="text"
+                      placeholder={network.config.rpcUrl}
+                      value={rpcOverrideInput}
+                      onChange={(e) => setRpcOverrideInput(e.target.value)}
+                      className={styles.input}
+                    />
+                    <button
+                      type="button"
+                      className={styles.secondary}
+                      onClick={() => {
+                        setRpcOverride(network.config.id, rpcOverrideInput);
+                      }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                  {rpcOverrides[network.config.id] && (
+                    <p className={styles.success}>Using override: {rpcOverrides[network.config.id]}</p>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
 
-        {(network.buildBond || network.buildUnbond) && (
+          <div
+            id="panel-transactions"
+            role="tabpanel"
+            aria-labelledby="tab-transactions"
+            hidden={activeTab !== 'transactions'}
+            className={`${styles.tabPanel} ${activeTab === 'transactions' ? styles.tabPanelActive : ''}`}
+          >
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Receive</h2>
+              <p className={styles.addressHint}>Share your address to receive BOING.</p>
+              <div className={styles.addressRow}>
+                <code className={styles.address}>{address}</code>
+                <button type="button" className={styles.copyBtn} onClick={copyAddress}>
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            </section>
+
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Send BOING</h2>
+              {isMainnet && sendAmount.trim() && (
+                <div className={styles.mainnetWarning} role="alert">
+                  You are on Mainnet. Real BOING is at risk. Double-check the amount and recipient.
+                </div>
+              )}
+              <form onSubmit={handleSend} className={styles.form}>
+                <input
+                  type="text"
+                  placeholder="To address (64 hex or 0x…)"
+                  value={sendTo}
+                  onChange={(e) => setSendTo(e.target.value)}
+                  className={styles.input}
+                />
+                <div className={styles.sendAmountRow}>
+                  <input
+                    type="text"
+                    placeholder="Amount in BOING (whole units, e.g. 100)"
+                    value={sendAmount}
+                    onChange={(e) => setSendAmount(e.target.value)}
+                    className={styles.input}
+                    inputMode="decimal"
+                  />
+                  <button
+                    type="button"
+                    className={styles.maxBtn}
+                    onClick={() => setSendAmount(displayBalance !== '…' && displayBalance !== '—' ? displayBalance : '')}
+                  >
+                    Max
+                  </button>
+                </div>
+                {sendError && <p className={styles.error}>{sendError}</p>}
+                {sendSuccess && (
+                  <p className={styles.success}>
+                    {sendSuccess}
+                    {lastTxHash && (
+                      <>
+                        {' · '}
+                        <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>
+                          {txHashCopied ? 'Copied' : 'Copy tx hash'}
+                        </button>
+                      </>
+                    )}
+                  </p>
+                )}
+                <button type="submit" className={styles.primary} disabled={sending}>
+                  {sending ? 'Sending…' : 'Send'}
+                </button>
+              </form>
+            </section>
+
+            {txHistory.length > 0 && (
+              <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>Recent transactions</h2>
+                <ul className={styles.txHistoryList}>
+                  {txHistory.slice(0, 10).map((entry) => (
+                    <li key={entry.txHash} className={styles.txHistoryItem}>
+                      <span className={styles.txType}>{entry.type}</span>
+                      <code className={styles.txHash}>
+                        {typeof entry.txHash === 'string' ? `${entry.txHash.slice(0, 16)}…` : '—'}
+                      </code>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+
+          {showStakeTab && (
+            <div
+              id="panel-stake"
+              role="tabpanel"
+              aria-labelledby="tab-stake"
+              hidden={activeTab !== 'stake'}
+              className={`${styles.tabPanel} ${activeTab === 'stake' ? styles.tabPanelActive : ''}`}
+            >
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Staking</h2>
             {displayStake != null && (
@@ -714,234 +988,46 @@ export function Dashboard() {
               Bond BOING to stake and participate in PoS validation. Unbond to return staked BOING to your balance.
             </p>
           </section>
-        )}
-
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Send</h2>
-          {isMainnet && sendAmount.trim() && (
-            <div className={styles.mainnetWarning} role="alert">
-              You are on Mainnet. Real BOING is at risk. Double-check the amount and recipient.
             </div>
           )}
-          <form onSubmit={handleSend} className={styles.form}>
-            <input
-              type="text"
-              placeholder="To address (64 hex or 0x…)"
-              value={sendTo}
-              onChange={(e) => setSendTo(e.target.value)}
-              className={styles.input}
-            />
-            <div className={styles.sendAmountRow}>
-              <input
-                type="text"
-                placeholder="Amount in BOING (whole units, e.g. 100)"
-                value={sendAmount}
-                onChange={(e) => setSendAmount(e.target.value)}
-                className={styles.input}
-                inputMode="decimal"
-              />
-              <button
-                type="button"
-                className={styles.maxBtn}
-                onClick={() => setSendAmount(displayBalance !== '…' && displayBalance !== '—' ? displayBalance : '')}
-              >
-                Max
-              </button>
-            </div>
-            {sendError && <p className={styles.error}>{sendError}</p>}
-            {sendSuccess && (
-              <p className={styles.success}>
-                {sendSuccess}
-                {lastTxHash && (
-                  <>
-                    {' · '}
-                    <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>
-                      {txHashCopied ? 'Copied' : 'Copy tx hash'}
+
+          {showFaucetTab && (
+            <div
+              id="panel-faucet"
+              role="tabpanel"
+              aria-labelledby="tab-faucet"
+              hidden={activeTab !== 'faucet'}
+              className={`${styles.tabPanel} ${activeTab === 'faucet' ? styles.tabPanelActive : ''}`}
+            >
+              <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>Testnet faucet</h2>
+                <p className={styles.faucetHint}>
+                  Get testnet BOING for development and testing.
+                </p>
+                <div className={styles.faucetRow}>
+                  {network.faucetRequest ? (
+                    <button
+                      type="button"
+                      className={styles.primary}
+                      onClick={handleFaucet}
+                      disabled={faucetStatus === 'loading'}
+                    >
+                      {faucetStatus === 'loading'
+                        ? 'Requesting…'
+                        : faucetStatus === 'ok'
+                          ? 'Requested'
+                          : 'Request testnet BOING'}
                     </button>
-                  </>
-                )}
-              </p>
-            )}
-            <button type="submit" className={styles.primary} disabled={sending}>
-              {sending ? 'Sending…' : 'Send'}
-            </button>
-          </form>
-        </section>
-
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Deploy contract (QA Pillar)</h2>
-          <p className={styles.faucetHint}>
-            Validate contract bytecode before deployment. REJECT → blocked. ALLOW → deploy. UNSURE → community QA pool.
-          </p>
-          <form onSubmit={handleQaValidate} className={styles.form}>
-            <textarea
-              placeholder="Contract bytecode (hex, e.g. 0x6080604052...)"
-              value={qaBytecode}
-              onChange={(e) => {
-                setQaBytecode(e.target.value);
-                setQaResult(null);
-              }}
-              className={styles.qaTextarea}
-              rows={4}
-              spellCheck={false}
-              aria-label="Contract bytecode"
-            />
-            <div className={styles.qaPurposeRow}>
-              <label htmlFor="qa-purpose" className={styles.qaLabel}>Purpose (optional, for boing_qaCheck)</label>
-              <select
-                id="qa-purpose"
-                value={qaPurpose}
-                onChange={(e) => setQaPurpose(e.target.value)}
-                className={styles.qaPurposeSelect}
-                aria-label="Purpose category"
-              >
-                <option value="">— None —</option>
-                {VALID_PURPOSE_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.qaPurposeRow}>
-              <label htmlFor="qa-description-hash" className={styles.qaLabel}>Description hash (optional)</label>
-              <input
-                id="qa-description-hash"
-                type="text"
-                placeholder="0x..."
-                value={qaDescriptionHash}
-                onChange={(e) => setQaDescriptionHash(e.target.value)}
-                className={styles.input}
-                aria-label="Description hash"
-              />
-            </div>
-            <label className={styles.qaCheckbox}>
-              <input
-                type="checkbox"
-                checked={qaUseRpc}
-                onChange={(e) => setQaUseRpc(e.target.checked)}
-              />
-              Also call boing_qaCheck (when available)
-            </label>
-            <div className={styles.qaButtonRow}>
-              <button type="submit" className={styles.primary} disabled={qaValidating}>
-                {qaValidating ? 'Validating…' : 'Validate'}
-              </button>
-            </div>
-            {qaResult && (
-              <div
-                className={
-                  qaResult.result === 'allow'
-                    ? styles.qaAllow
-                    : qaResult.result === 'reject'
-                      ? styles.qaReject
-                      : styles.qaUnsure
-                }
-                role="status"
-              >
-                <strong>{qaResult.result.toUpperCase()}</strong>
-                {qaResult.ruleId && <span className={styles.qaRuleId}> ({qaResult.ruleId})</span>}
-                {qaResult.message && <p className={styles.qaMessage}>{qaResult.message}</p>}
-                {qaResult.docUrl && (
-                  <p className={styles.qaMessage}>
-                    <a href={qaResult.docUrl} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
-                      Open canonical QA guidance
-                    </a>
-                  </p>
-                )}
-              </div>
-            )}
-          </form>
-        </section>
-
-        {network.config.isTestnet && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Testnet faucet</h2>
-            <p className={styles.faucetHint}>
-              Request testnet BOING for this address.
-            </p>
-            <div className={styles.faucetRow}>
-              {network.faucetRequest ? (
-                <button
-                  type="button"
-                  className={styles.primary}
-                  onClick={handleFaucet}
-                  disabled={faucetStatus === 'loading'}
-                >
-                  {faucetStatus === 'loading'
-                    ? 'Requesting…'
-                    : faucetStatus === 'ok'
-                      ? 'Requested'
-                      : 'Request testnet BOING'}
-                </button>
-              ) : null}
-              <button type="button" className={styles.secondary} onClick={openFaucetPage}>
-                Open faucet page
-              </button>
-            </div>
-            {faucetError && <p className={styles.error}>{faucetError}</p>}
-          </section>
-        )}
-
-        {txHistory.length > 0 && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Recent transactions</h2>
-            <ul className={styles.txHistoryList}>
-              {txHistory.slice(0, 10).map((entry) => (
-                <li key={entry.txHash} className={styles.txHistoryItem}>
-                  <span className={styles.txType}>{entry.type}</span>
-                  <code className={styles.txHash}>
-                    {typeof entry.txHash === 'string' ? `${entry.txHash.slice(0, 16)}…` : '—'}
-                  </code>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <section className={styles.section}>
-          <button
-            type="button"
-            className={styles.rpcToggle}
-            onClick={() => setShowRpcOverride(!showRpcOverride)}
-            aria-expanded={showRpcOverride}
-          >
-            {showRpcOverride ? '−' : '+'} RPC override (dev)
-          </button>
-          {showRpcOverride && (
-            <div className={styles.rpcOverrideForm}>
-              <p className={styles.faucetHint}>
-                Override RPC URL for the current network (e.g. http://localhost:8545 for local node). Leave empty to use default.
-                Chain ID above does not change — it stays the testnet/mainnet value Boing Express uses for{' '}
-                <code className={styles.inlineCode}>boing_chainId</code>. Custom RPC must still match that network (same
-                genesis / operator expectations).
-              </p>
-              <div className={styles.rpcOverrideRow}>
-                <label htmlFor="rpc-override" className={styles.qaLabel}>
-                  {network.config.name} RPC URL
-                </label>
-                <input
-                  id="rpc-override"
-                  type="text"
-                  placeholder={network.config.rpcUrl}
-                  value={rpcOverrideInput}
-                  onChange={(e) => setRpcOverrideInput(e.target.value)}
-                  className={styles.input}
-                />
-                <button
-                  type="button"
-                  className={styles.secondary}
-                  onClick={() => {
-                    setRpcOverride(network.config.id, rpcOverrideInput);
-                  }}
-                >
-                  Save
-                </button>
-              </div>
-              {rpcOverrides[network.config.id] && (
-                <p className={styles.success}>Using override: {rpcOverrides[network.config.id]}</p>
-              )}
+                  ) : null}
+                  <button type="button" className={styles.secondary} onClick={openFaucetPage}>
+                    Open faucet page
+                  </button>
+                </div>
+                {faucetError && <p className={styles.error}>{faucetError}</p>}
+              </section>
             </div>
           )}
-        </section>
+        </div>
       </main>
     </div>
   );

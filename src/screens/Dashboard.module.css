@@ -717,3 +717,91 @@
 .rpcOverrideRow button {
   align-self: flex-start;
 }
+
+/* Tab bar — aligned with extension popup */
+.tabBar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 1rem;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--card-border, var(--border));
+}
+
+.tabBtn {
+  flex: 1;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 8px);
+  color: var(--text-secondary, var(--muted));
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+  position: relative;
+}
+
+.tabBtn:hover {
+  color: var(--text-primary, var(--text));
+  background: rgba(0, 232, 200, 0.06);
+}
+
+.tabBtnActive {
+  color: var(--express-primary, #00e8c8);
+}
+
+.tabBtnActive::after {
+  content: '';
+  position: absolute;
+  bottom: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  background: var(--express-primary, #00e8c8);
+  border-radius: 1px;
+}
+
+.tabPanels {
+  position: relative;
+  min-height: 200px;
+}
+
+.tabPanel {
+  display: none;
+  animation: tabPanelEnter 0.3s var(--ease-out);
+}
+
+.tabPanelActive {
+  display: block;
+}
+
+.tabPanel[hidden] {
+  display: none !important;
+}
+
+@keyframes tabPanelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.balanceHero {
+  background: linear-gradient(145deg, rgba(0, 232, 200, 0.08) 0%, rgba(0, 180, 216, 0.04) 100%);
+  border-color: rgba(0, 232, 200, 0.25);
+}
+
+.balanceLabel {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
