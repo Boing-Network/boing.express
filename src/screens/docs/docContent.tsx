@@ -87,7 +87,7 @@ export const DOCS: Record<string, Doc> = {
         <p>Output is written to the <code>extension/</code> folder (popup.js, background.js, content.js, inpage.js). Load that folder as an unpacked extension in Chrome (chrome://extensions) or Firefox (about:debugging → This Firefox → Load Temporary Add-on).</p>
         <h2>Wallet connection for dApps</h2>
         <p>
-          The extension injects <code>window.boing</code> so sites can offer &quot;Connect wallet&quot;. dApps call <code>boing_requestAccounts</code> to connect and <code>boing_signMessage</code> for sign-in. In the popup, the <strong>Connected sites</strong> list lets you revoke access per origin. See <a href="https://github.com/chiku524/boing.express/blob/main/docs/WALLET_CONNECTION_AND_API.md" target="_blank" rel="noopener noreferrer">docs/WALLET_CONNECTION_AND_API.md</a> for the full API and implementation notes.
+          The extension injects <code>window.boing</code> so sites can offer &quot;Connect wallet&quot;. dApps call <code>boing_requestAccounts</code> to connect and <code>boing_signMessage</code> for sign-in. In the popup, the <strong>Connected sites</strong> list lets you revoke access per origin. See <a href="https://github.com/Boing-Network/boing.express/blob/main/docs/WALLET_CONNECTION_AND_API.md" target="_blank" rel="noopener noreferrer">docs/WALLET_CONNECTION_AND_API.md</a> for the full API and implementation notes.
         </p>
         <h2>Extension vs web</h2>
         <p>
@@ -144,14 +144,14 @@ export const DOCS: Record<string, Doc> = {
     content: (
       <>
         <p>
-          The <strong>Quality Assurance</strong> (Pillar 6) ensures only safe, well-formed contracts reach the network. Aligned with <a href="https://github.com/boing-network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> and <a href="https://github.com/boing-network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a>.
+          The <strong>Quality Assurance</strong> (Pillar 6) ensures only safe, well-formed contracts reach the network. Aligned with <a href="https://github.com/Boing-Network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> and <a href="https://github.com/Boing-Network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a>.
         </p>
         <h2>Validation flow</h2>
         <p>
           Contract bytecode is checked and routed to: <strong>REJECT</strong> (blocked), <strong>ALLOW</strong> (permitted), or <strong>UNSURE</strong> (community QA pool).
         </p>
         <p>
-          <strong>REJECT</strong>: empty, oversized (&gt;32 KiB), invalid Boing opcode, malformed (truncated PUSH). <strong>ALLOW</strong>: valid Boing VM opcodes, well-formed. <strong>UNSURE</strong> cases go to the community QA pool. Blocklist (bytecode hash) and purpose checks run server-side via <code>boing_qaCheck</code>. The canonical malice definition also lives in <a href="https://github.com/boing-network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a>.
+          <strong>REJECT</strong>: empty, oversized (&gt;32 KiB), invalid Boing opcode, malformed (truncated PUSH). <strong>ALLOW</strong>: valid Boing VM opcodes, well-formed. <strong>UNSURE</strong> cases go to the community QA pool. Blocklist (bytecode hash), deploy metadata content policy (<code>content_blocklist</code> on live testnet), and purpose checks run server-side via <code>boing_qaCheck</code>. The canonical malice definition also lives in <a href="https://github.com/Boing-Network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a>.
         </p>
         <h2>Using the validator</h2>
         <p>
@@ -159,8 +159,8 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>References</h2>
         <ul>
-          <li><a href="https://github.com/boing-network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a> — QA policy, deployer guidance, and canonical malice definition</li>
-          <li><a href="https://github.com/boing-network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> — VM opcodes, bytecode limits (32 KiB)</li>
+          <li><a href="https://github.com/Boing-Network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a> — QA policy, deployer guidance, content blocklist, and canonical malice definition</li>
+          <li><a href="https://github.com/Boing-Network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> — VM opcodes, bytecode limits (32 KiB)</li>
         </ul>
       </>
     ),
@@ -170,25 +170,26 @@ export const DOCS: Record<string, Doc> = {
     content: (
       <>
         <p>
-          Boing Express is prepared for the Boing Network incentivized testnet and mainnet. See the full roadmap in{' '}
-          <a href="https://github.com/chiku524/boing.express/blob/main/docs/DEVELOPMENT.md" target="_blank" rel="noopener noreferrer">
+          Boing Express is the public wallet for the live Boing testnet. See the full roadmap in{' '}
+          <a href="https://github.com/Boing-Network/boing.express/blob/main/docs/DEVELOPMENT.md" target="_blank" rel="noopener noreferrer">
             docs/DEVELOPMENT.md
           </a>{' '}
           (Launch readiness section).
         </p>
         <h2>Current status</h2>
         <p>
-          The wallet supports create/import, send/receive, testnet faucet, and network switching. All features use real RPC calls — nothing is simulated. Testnet is the current public rollout path; mainnet should be treated as configurable until official launch metadata is published.
+          The wallet supports create/import, send/receive, testnet faucet, staking (Bond/Unbond), and network switching. All features use real RPC calls against <code>https://testnet-rpc.boing.network</code> — nothing is simulated. Mainnet should be treated as configurable until official launch metadata is published.
         </p>
         <h2>VibeMiner vs boing.express</h2>
         <p>
-          <strong>VibeMiner</strong> runs nodes and stakes (one-click mining/validating). It needs P2P bootnodes to join the public testnet. <strong>boing.express</strong> is the wallet — it needs RPC endpoints for balance and transactions. Both depend on Boing Network infrastructure; the wallet is ready when the RPC is available.
+          <strong>VibeMiner</strong> runs nodes and stakes (one-click mining/validating). It dials public bootnodes at <code>/ip4/73.84.106.121/tcp/4001</code> to join the testnet. <strong>boing.express</strong> is the wallet — it needs RPC endpoints for balance and transactions. Both use the same live Boing Network infrastructure.
         </p>
-        <h2>Priorities for testnet launch</h2>
+        <h2>Priorities</h2>
         <ul>
           <li>Chrome Web Store listing — in review</li>
           <li>Staking UI (Bond/Unbond) — implemented</li>
           <li>Backup reminder for new wallets — implemented</li>
+          <li>Explorer tx deep links — pending stable route on boing.observer</li>
         </ul>
         <h2>Links</h2>
         <ul>
