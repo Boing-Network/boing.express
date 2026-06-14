@@ -156,6 +156,8 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .articleBody pre {
@@ -173,9 +175,16 @@
   border: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .layout {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
   .layout {
     flex-direction: column;
+    padding: 0.75rem 1rem;
   }
 
   .sidebar {
@@ -193,5 +202,9 @@
 
   .sidebarList li {
     margin-bottom: 0;
+  }
+
+  .articleTitle {
+    font-size: 1.4rem;
   }
 }

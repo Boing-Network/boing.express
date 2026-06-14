@@ -1,20 +1,13 @@
-import { Link } from 'react-router-dom';
+import { SiteHeader, type SiteHeaderLink } from './SiteHeader';
 import { CHROME_EXTENSION_STORE_URL } from '../constants/chromeExtension';
-import { SiteLogo } from './SiteLogo';
-import styles from './WalletNav.module.css';
+
+const LINKS: SiteHeaderLink[] = [
+  { label: 'Home', to: '/' },
+  { label: 'Docs', to: '/docs' },
+  { label: 'Extension', href: CHROME_EXTENSION_STORE_URL, external: true },
+  { label: 'Wallet', to: '/wallet', active: true },
+];
 
 export function WalletNav() {
-  return (
-    <nav className={styles.nav}>
-      <SiteLogo className={styles.logoWrap} />
-      <div className={styles.links}>
-        <Link to="/">Home</Link>
-        <Link to="/docs">Docs</Link>
-        <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">
-          Chrome extension
-        </a>
-        <Link to="/wallet" className={styles.active}>Wallet</Link>
-      </div>
-    </nav>
-  );
+  return <SiteHeader links={LINKS} />;
 }

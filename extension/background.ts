@@ -48,6 +48,8 @@ const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
 const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
 const STORAGE_KEY_UNLOCKED_SESSION = 'boing_unlocked_session';
 const DEFAULT_NETWORK_ID = BOING_TESTNET_NETWORK_ID;
+const POPUP_WINDOW_WIDTH = 380;
+const POPUP_WINDOW_HEIGHT = 560;
 const APPROVAL_WINDOW_WIDTH = 420;
 const APPROVAL_WINDOW_HEIGHT = 720;
 const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000;
@@ -574,13 +576,15 @@ function rejectAllPendingUnlockRequests(reason: BoingProviderError): void {
 
 function openUnlockWindow(pendingAction?: 'connect' | 'sign'): void {
   if (unlockWindowId != null) return;
-  const qs = pendingAction ? `?pending=${pendingAction}` : '';
+  const qs = pendingAction
+    ? `?surface=window&pending=${pendingAction}`
+    : '?surface=window';
   chrome.windows.create(
     {
       url: chrome.runtime.getURL('popup.html' + qs),
       type: 'popup',
-      width: APPROVAL_WINDOW_WIDTH,
-      height: APPROVAL_WINDOW_HEIGHT,
+      width: POPUP_WINDOW_WIDTH,
+      height: POPUP_WINDOW_HEIGHT,
     },
     (createdWindow) => {
       if (createdWindow?.id != null) {

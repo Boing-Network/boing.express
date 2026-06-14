@@ -95,6 +95,32 @@
     0 0 20px rgba(159, 143, 255, 0.25);
 }
 
+.compact {
+  font-size: 1.15rem;
+  gap: 0.45rem;
+}
+
+.compact .logoImgWrap {
+  height: 2rem;
+}
+
+.compact .logoMark {
+  height: 2rem;
+  width: 2rem;
+}
+
+@media (max-width: 640px) {
+  .compact .logoText {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .compact .logoText {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .logo:hover .logoText {
     color: var(--express-primary);

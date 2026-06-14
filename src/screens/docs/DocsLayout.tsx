@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { SiteLogo } from '../../components/SiteLogo';
-import { CHROME_EXTENSION_STORE_URL } from '../../constants/chromeExtension';
+import { SiteHeader } from '../../components/SiteHeader';
+import { DOCS_HEADER_LINKS } from '../../constants/siteNav';
 import styles from './Docs.module.css';
 
 const DOC_NAV: { slug: string; label: string }[] = [
@@ -20,18 +20,7 @@ export function DocsLayout() {
 
   return (
     <div className={`${styles.page} page-app`}>
-      <header className={styles.header}>
-        <SiteLogo className={styles.logoWrap} />
-        <nav className={styles.nav}>
-          <Link to="/">Home</Link>
-          <Link to="/docs" className={styles.active}>Docs</Link>
-          <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">
-            Chrome extension
-          </a>
-          <Link to="/wallet">Wallet</Link>
-          <Link to="/support">Support</Link>
-        </nav>
-      </header>
+      <SiteHeader links={DOCS_HEADER_LINKS} />
 
       <div className={styles.layout}>
         <aside className={styles.sidebar}>

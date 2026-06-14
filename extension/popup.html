@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Boing Express</title>
+  <script>
+    if (new URLSearchParams(location.search).get('surface') === 'window') {
+      document.documentElement.dataset.surface = 'window';
+    }
+  </script>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
@@ -92,7 +97,7 @@
       </div>
       <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
         <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet">Wallet</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions">Transactions</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transactions">Tx</button>
         <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
         <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>

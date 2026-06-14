@@ -1,20 +1,12 @@
 import { Link } from 'react-router-dom';
-import { SiteLogo } from '../components/SiteLogo';
+import { SiteHeader } from '../components/SiteHeader';
+import { LEGAL_HEADER_LINKS } from '../constants/siteNav';
 import styles from './Legal.module.css';
 
 export function Privacy() {
   return (
     <div className={`${styles.page} page-app`}>
-      <header className={styles.header}>
-        <SiteLogo className={styles.logoWrap} />
-        <nav className={styles.nav}>
-          <Link to="/">Home</Link>
-          <Link to="/docs">Docs</Link>
-          <Link to="/wallet">Wallet</Link>
-          <Link to="/support">Support</Link>
-          <Link to="/terms">Terms of Service</Link>
-        </nav>
-      </header>
+      <SiteHeader links={LEGAL_HEADER_LINKS} />
 
       <main className={styles.main}>
         <h1 className={styles.title}>Privacy Policy</h1>

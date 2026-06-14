@@ -209,3 +209,13 @@
   border-color: var(--accent-teal);
   color: var(--accent-teal);
 }
+
+@media (max-width: 480px) {
+  .backupKeyWrap {
+    flex-direction: column;
+  }
+
+  .copyBtn {
+    align-self: flex-start;
+  }
+}

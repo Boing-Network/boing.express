@@ -23,6 +23,8 @@ function WalletApp() {
   const pathNorm = (location.pathname.replace(/\/+$/, '') || '/') as string;
   const addAccountRoute = pathNorm === '/wallet/add-account';
 
+  const showTopNav = !isUnlocked || addAccountRoute;
+
   if (!isUnlocked && addAccountRoute) {
     return (
       <>
@@ -46,7 +48,7 @@ function WalletApp() {
 
   return (
     <>
-      <WalletNav />
+      {showTopNav ? <WalletNav /> : null}
       {isUnlocked ? <Dashboard /> : <Welcome />}
     </>
   );

@@ -294,7 +294,7 @@
 
 .heroTagline {
   margin: 0 0 1.25rem;
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
   font-weight: 500;
   background: linear-gradient(to right, var(--accent-teal), var(--accent-cyan));
   -webkit-background-clip: text;
@@ -431,6 +431,16 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: 2rem 1rem 3rem;
+  }
+
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Design system: glassmorphism card */

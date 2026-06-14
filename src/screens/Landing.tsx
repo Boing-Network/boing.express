@@ -1,7 +1,13 @@
 import { Link } from 'react-router-dom';
-import { SiteLogo } from '../components/SiteLogo';
+import { SiteHeader, type SiteHeaderLink } from '../components/SiteHeader';
 import { CHROME_EXTENSION_STORE_URL } from '../constants/chromeExtension';
 import styles from './Landing.module.css';
+
+const HEADER_LINKS: SiteHeaderLink[] = [
+  { label: 'Docs', to: '/docs' },
+  { label: 'Extension', href: CHROME_EXTENSION_STORE_URL, external: true },
+  { label: 'Open wallet', to: '/wallet', variant: 'cta' },
+];
 
 const ASSETS_BASE = '/assets';
 
@@ -19,16 +25,7 @@ export function Landing() {
   return (
     <div className={`${styles.page} page-landing`}>
       <div className={styles.pageContent}>
-      <header className={styles.header}>
-        <SiteLogo className={styles.logoWrap} />
-        <nav className={styles.nav}>
-          <Link to="/docs">Docs</Link>
-          <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">
-            Chrome extension
-          </a>
-          <Link to="/wallet" className={styles.ctaNav}>Open wallet</Link>
-        </nav>
-      </header>
+      <SiteHeader links={HEADER_LINKS} />
 
       <main className={styles.main}>
         <section className={styles.hero}>

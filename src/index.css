@@ -10,6 +10,10 @@
    Source: docs/DESIGN_SYSTEM.md, Boing Design System — Site Variants
    ============================================================ */
 :root {
+  --bp-desktop: 1024px;
+  --bp-tablet: 768px;
+  --bp-mobile: 640px;
+
   /* Core brand (shared with all Boing sites) */
   --boing-black: #050c18;
   --boing-navy: #0a1628;
@@ -290,6 +294,8 @@ code, pre, .monospace {
   background-color: var(--bg-tertiary);
   border-radius: 4px;
   padding: 2px 6px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 button {
@@ -410,9 +416,8 @@ button[data-variant="secondary"]:hover {
 }
 
 /* === NAVIGATION BAR === */
-nav,
-.navbar,
-header {
+nav:not([aria-label='Mobile navigation']),
+.navbar {
   background: var(--nav-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -421,6 +426,13 @@ header {
   position: sticky;
   top: 0;
   z-index: 1000;
+}
+
+@media (max-width: 640px) {
+  nav:not([aria-label='Mobile navigation']),
+  .navbar {
+    padding: 10px 16px;
+  }
 }
 
 nav a,

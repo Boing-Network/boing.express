@@ -104,6 +104,14 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: 1.5rem 1rem 3rem;
+  }
 }
 
 .back {
