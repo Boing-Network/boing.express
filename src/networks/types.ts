@@ -70,6 +70,22 @@ export interface NetworkAdapter {
     privateKey: Uint8Array
   ): Promise<string>;
 
+  /** Optional: build signed ClaimUnbond tx (credit matured pending_unbond). */
+  buildClaimUnbond?(
+    sender: AccountId,
+    nonce: bigint,
+    privateKey: Uint8Array
+  ): Promise<string>;
+
   /** Optional: get staked amount for account (decimal string). */
   getStake?(accountId: AccountId): Promise<string>;
+
+  /**
+   * Optional: pending unbond queue from `boing_getAccount`.
+   * `unlockHeight` is the chain height when claim becomes valid (0 if none).
+   */
+  getUnbondStatus?(accountId: AccountId): Promise<{
+    pendingUnbond: string;
+    unlockHeight: number;
+  }>;
 }

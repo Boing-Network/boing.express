@@ -4,6 +4,7 @@
 
 import type { AccountId, AccessList, Payload, Transaction } from './types';
 import { accountIdFromHex, accountIdToHex, formatAddress } from './types';
+import { emptyAccessList, suggestedAccessList } from './accessList';
 
 const U128_MAX = (1n << 128n) - 1n;
 
@@ -26,10 +27,6 @@ export function assertValidQaPurposeCategory(purpose: string): void {
       `Invalid purpose_category for Boing protocol QA. Use one of: ${[...QA_PURPOSE_ALLOWED].join(', ')}`
     );
   }
-}
-
-function emptyAccessList(): AccessList {
-  return { read: [], write: [] };
 }
 
 function parseAccountIdArray(v: unknown, label: string): AccountId[] {
@@ -115,6 +112,8 @@ export function transactionSummary(tx: Transaction): string {
       return `Boing tx | From ${from} | Nonce ${n} | Bond ${p.amount.toString()} stake`;
     case 'unbond':
       return `Boing tx | From ${from} | Nonce ${n} | Unbond ${p.amount.toString()} stake`;
+    case 'claim_unbond':
+      return `Boing tx | From ${from} | Nonce ${n} | Claim unbonded stake`;
     case 'contract_call': {
       const ar = tx.access_list.read.length;
       const aw = tx.access_list.write.length;
@@ -202,6 +201,16 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
     case 'unbond':
       rows.push({ label: 'Operation', value: 'Unbond' });
       rows.push({ label: 'Amount', value: p.amount.toString() });
+      if (tx.access_list.read.length + tx.access_list.write.length > 0) {
+        rows.push(accessListSummary(tx));
+      }
+      break;
+    case 'claim_unbond':
+      rows.push({ label: 'Operation', value: 'Claim unbond' });
+      rows.push({
+        label: 'Effect',
+        value: 'Move matured pending_unbond into spendable balance',
+      });
       if (tx.access_list.read.length + tx.access_list.write.length > 0) {
         rows.push(accessListSummary(tx));
       }
@@ -294,6 +303,11 @@ export function transactionFromDappJson(
       payload = { kind: 'unbond', amount: parseU128String(o.amount, 'amount') };
       break;
     }
+    case 'claim_unbond':
+    case 'claimUnbond': {
+      payload = { kind: 'claim_unbond' };
+      break;
+    }
     case 'contract_call': {
       const contract = accountIdFromHex(String(o.contract ?? ''));
       const calldata = hexToBytesFlexible(String(o.calldata ?? '0x'), 'calldata');
@@ -376,7 +390,7 @@ export function transactionFromDappJson(
   const access_list =
     accessListRaw !== undefined && accessListRaw !== null
       ? accessListFromDappJson(accessListRaw)
-      : emptyAccessList();
+      : suggestedAccessList(sender, payload);
 
   return {
     nonce: finalNonce,

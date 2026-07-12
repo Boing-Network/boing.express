@@ -28,7 +28,9 @@ export type Payload =
       create2_salt: Uint8Array | null;
     }
   | { kind: 'bond'; amount: bigint }
-  | { kind: 'unbond'; amount: bigint };
+  | { kind: 'unbond'; amount: bigint }
+  /** Claim matured `pending_unbond` after unlock height (Rust `ClaimUnbond`, variant 7). */
+  | { kind: 'claim_unbond' };
 
 export interface AccessList {
   read: AccountId[];

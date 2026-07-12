@@ -410,7 +410,7 @@ async function signOrSendBoingTransaction(
     throw providerError(
       PROVIDER_ERROR_CODES.INVALID_PARAMS,
       'BOING_INVALID_TX',
-      'Pass one argument: a transaction object (type: transfer | bond | unbond | contract_call | contract_deploy_purpose | contract_deploy_meta | …). Deployments must declare a valid purpose_category (protocol QA).'
+      'Pass one argument: a transaction object (type: transfer | bond | unbond | claim_unbond | contract_call | contract_deploy_purpose | contract_deploy_meta | …). Deployments must declare a valid purpose_category (protocol QA).'
     );
   }
 

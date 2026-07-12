@@ -8,7 +8,7 @@ const MAX_ENTRIES = 20;
 
 export interface TxHistoryEntry {
   txHash: string;
-  type: 'send' | 'bond' | 'unbond';
+  type: 'send' | 'bond' | 'unbond' | 'claim_unbond';
   networkId: string;
   addressHint: string; // first 8 + last 8 of address
   timestamp: number;

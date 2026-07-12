@@ -1,5 +1,4 @@
 /* Boing Network theme — outerspace-oceanic (Comfortaa, Primary #00E5CC, Dark #0A0E1A) */
-@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
 
 @font-face {
   font-family: 'Comfortaa';
@@ -71,16 +70,36 @@
 
 body {
   margin: 0;
-  width: 380px;
+  width: min(380px, 100vw);
+  max-width: 380px;
   min-height: 420px;
   max-height: 560px;
   overflow-y: auto;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
   font-size: 14px;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+}
+
+html[data-surface='window'] body {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  min-height: 100vh;
+  max-height: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+html[data-surface='window'] #app {
+  min-height: 100vh;
 }
 
 body::-webkit-scrollbar { width: 6px; }
@@ -109,6 +128,7 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .dashboard-header .header-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -194,18 +214,22 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .tab-btn {
   flex: 1;
-  padding: 10px 12px;
+  min-width: 0;
+  padding: 10px 8px;
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
   color: var(--muted);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: color var(--transition), background var(--transition);
   position: relative;
   z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tab-btn:hover {
@@ -241,7 +265,7 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .tab-panels {
   position: relative;
-  min-height: 280px;
+  min-height: 0;
 }
 
 .tab-panel {
@@ -282,10 +306,11 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 }
 
 .balance-hero .balance {
-  font-size: 1.5rem;
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 4px 0 0;
+  overflow-wrap: anywhere;
 }
 
 .balance-label {
@@ -636,6 +661,12 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .error { margin: 0; color: var(--danger); font-size: 12px; }
 .success { margin: 0; color: var(--success); font-size: 12px; }
 .error.hidden, .success.hidden { display: none; }
+
+.advanced-tx-card .hint,
+.advanced-tx-card code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 
 .popup-footer {
   padding: 10px 16px;

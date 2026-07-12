@@ -148,10 +148,30 @@ describe('buildTransactionApprovalDetail', () => {
     expect(d.summaryLine).toBe(transactionSummary(tx));
   });
 
-  it('omits access list row for transfer when empty', () => {
-    const tx = transactionFromDappJson({ type: 'transfer', to: poolHex, amount: '1' }, sender, 0n);
+  it('omits access list row only when access_list is explicitly empty', () => {
+    const tx = transactionFromDappJson(
+      { type: 'transfer', to: poolHex, amount: '1', access_list: { read: [], write: [] } },
+      sender,
+      0n
+    );
     const d = buildTransactionApprovalDetail(tx);
     expect(d.rows.some((r) => r.label === 'Access list')).toBe(false);
+  });
+
+  it('defaults suggested access_list for transfer when omitted', () => {
+    const tx = transactionFromDappJson({ type: 'transfer', to: poolHex, amount: '1' }, sender, 0n);
+    expect(tx.access_list.read.length).toBe(2);
+    expect(tx.access_list.write.length).toBe(2);
+    const d = buildTransactionApprovalDetail(tx);
+    expect(d.rows.some((r) => r.label === 'Access list')).toBe(true);
+  });
+
+  it('parses claim_unbond and defaults sender-only access_list', () => {
+    const tx = transactionFromDappJson({ type: 'claim_unbond' }, sender, 2n);
+    expect(tx.payload.kind).toBe('claim_unbond');
+    expect(tx.access_list.read.length).toBe(1);
+    expect(tx.access_list.write.length).toBe(1);
+    expect(transactionSummary(tx)).toMatch(/Claim unbonded stake/);
   });
 
   it('includes contract call, calldata preview, and access list', () => {

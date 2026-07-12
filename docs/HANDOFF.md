@@ -53,7 +53,8 @@ Backend should: (1) parse `account_id_hex` as Ed25519 public key, (2) parse `sig
 
 ## 5. Gaps / follow-ups vs network handoff
 
-- **Done in extension:** `boing_signTransaction` / `boing_sendTransaction` / **`boing_simulateTransaction`**; `contract_call` with explicit **`access_list`** (`access_list` or `accessList`); simulation failure includes **`suggested_access_list`** / **`access_list_covers_suggestion`** in `error.data` when the node returns them; **`supportsBoingNativeRpc: true`** on `window.boing` for SDK detection.
+- **Done in extension:** `boing_signTransaction` / `boing_sendTransaction` / **`boing_simulateTransaction`**; `contract_call` with explicit **`access_list`** (`access_list` or `accessList`); when omitted, native types get the protocol suggested access list; simulation failure includes **`suggested_access_list`** / **`access_list_covers_suggestion`** in `error.data` when the node returns them; **`supportsBoingNativeRpc: true`** on `window.boing` for SDK detection.
+- **Done:** **`ClaimUnbond`** (`type: "claim_unbond"`) + web/extension stake UI for `pending_unbond` / `unbond_unlock_height` (matches `boing_getAccount` + `UNBONDING_DELAY_BLOCKS`).
 - **Done / updated:** `src/boing/injectedWallet.ts` — **`connectInjectedBoingWallet`** + extended **`mapInjectedProviderErrorToUiMessage`**; multi-account vault (extension + web); extension **Advanced: native transaction JSON**; account switch locks session and notifies dApps (`BOING_ACTIVE_ACCOUNT_CHANGED` / `BOING_ACCOUNT_SWITCHED`).
 - **Still optional / backlog:** richer pre-sign approval UI (show simulation hints before sign), published npm package for helpers, formal wallet API spec PDF. Track priorities in [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md).
 

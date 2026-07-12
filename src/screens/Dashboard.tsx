@@ -69,6 +69,11 @@ export function Dashboard() {
   const [unbondError, setUnbondError] = useState('');
   const [unbondSuccess, setUnbondSuccess] = useState('');
   const [unbonding, setUnbonding] = useState(false);
+  const [pendingUnbond, setPendingUnbond] = useState<string | null>(null);
+  const [unbondUnlockHeight, setUnbondUnlockHeight] = useState<number | null>(null);
+  const [claimError, setClaimError] = useState('');
+  const [claimSuccess, setClaimSuccess] = useState('');
+  const [claiming, setClaiming] = useState(false);
   const [qaBytecode, setQaBytecode] = useState('');
   const [qaPurpose, setQaPurpose] = useState<string>('');
   const [qaDescriptionHash, setQaDescriptionHash] = useState('');
@@ -84,7 +89,7 @@ export function Dashboard() {
   const [txHashCopied, setTxHashCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<WalletTabId>('wallet');
 
-  const showStakeTab = Boolean(network.buildBond || network.buildUnbond);
+  const showStakeTab = Boolean(network.buildBond || network.buildUnbond || network.buildClaimUnbond);
   const showFaucetTab = Boolean(network.config.isTestnet);
 
   const address = accountId ? formatAddress(accountId, false) : '';
@@ -96,7 +101,7 @@ export function Dashboard() {
     setBalanceError(null);
     setStakeError(null);
     try {
-      const [bal, h, st] = await Promise.all([
+      const [bal, h, st, unbondStatus] = await Promise.all([
         network.getBalance(accountId).catch((e) => {
           setBalanceError(e instanceof Error ? e.message : String(e));
           return null;
@@ -106,10 +111,20 @@ export function Dashboard() {
           setStakeError(e instanceof Error ? e.message : String(e));
           return null;
         }) : Promise.resolve(null),
+        network.getUnbondStatus
+          ? network.getUnbondStatus(accountId).catch(() => null)
+          : Promise.resolve(null),
       ]);
       if (bal) setBalance(bal);
       if (h != null) setChainHeight(h);
       if (st != null) setStake(st);
+      if (unbondStatus) {
+        setPendingUnbond(unbondStatus.pendingUnbond);
+        setUnbondUnlockHeight(unbondStatus.unlockHeight);
+      } else {
+        setPendingUnbond(null);
+        setUnbondUnlockHeight(null);
+      }
     } finally {
       setRefreshing(false);
     }
@@ -361,6 +376,55 @@ export function Dashboard() {
     }
   }
 
+  async function handleClaimUnbond(e: React.FormEvent) {
+    e.preventDefault();
+    if (!network.buildClaimUnbond || !accountId) return;
+    setClaimError('');
+    setClaimSuccess('');
+    const pending = pendingUnbond ? parseU128String(pendingUnbond) : 0n;
+    if (pending == null || pending <= 0n) {
+      setClaimError('No pending unbond to claim');
+      return;
+    }
+    if (
+      chainHeight != null &&
+      unbondUnlockHeight != null &&
+      unbondUnlockHeight > 0 &&
+      chainHeight < unbondUnlockHeight
+    ) {
+      setClaimError(
+        `Unlocks at block ${unbondUnlockHeight} (current height ${chainHeight}). Wait ${unbondUnlockHeight - chainHeight} more block(s).`
+      );
+      return;
+    }
+    const privateKey = getPrivateKey();
+    if (!privateKey) {
+      setClaimError('Wallet locked');
+      return;
+    }
+    setClaiming(true);
+    try {
+      const nonce = await network.getNonce(accountId);
+      const signedHex = await network.buildClaimUnbond(accountId, nonce, privateKey);
+      const result = await network.submitTransaction(signedHex);
+      if (result.success) {
+        if (result.txHash) {
+          addTxHistory(addressHint, network.config.id, result.txHash, 'claim_unbond');
+          refreshTxHistory();
+          setLastTxHash(result.txHash);
+        }
+        setClaimSuccess(result.txHash ? `Claimed! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
+        scheduleBalanceCatchUp();
+      } else {
+        setClaimError(result.error ?? 'Submit failed');
+      }
+    } catch (err) {
+      setClaimError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setClaiming(false);
+    }
+  }
+
   function openFaucetPage() {
     const hex = address;
     const url = network.config.faucetUrl
@@ -426,6 +490,18 @@ export function Dashboard() {
         : network.getStake
           ? '…'
           : null;
+
+  const pendingRaw = pendingUnbond ? parseU128String(pendingUnbond) : 0n;
+  const hasPendingUnbond = pendingRaw != null && pendingRaw > 0n;
+  const displayPendingUnbond = hasPendingUnbond
+    ? formatBalance(pendingUnbond!, balance?.decimals ?? 0)
+    : null;
+  const claimReady =
+    hasPendingUnbond &&
+    (unbondUnlockHeight == null ||
+      unbondUnlockHeight <= 0 ||
+      chainHeight == null ||
+      chainHeight >= unbondUnlockHeight);
 
   const displayBalance =
     balance != null
@@ -928,6 +1004,21 @@ export function Dashboard() {
                 {displayStake} <span className={styles.symbol}>BOING</span> <span className={styles.stakeLabel}>staked</span>
               </p>
             )}
+            {displayPendingUnbond != null && (
+              <p className={styles.balance}>
+                {displayPendingUnbond} <span className={styles.symbol}>BOING</span>{' '}
+                <span className={styles.stakeLabel}>
+                  pending unbond
+                  {unbondUnlockHeight != null && unbondUnlockHeight > 0
+                    ? claimReady
+                      ? ' · ready to claim'
+                      : ` · unlocks at block ${unbondUnlockHeight}${
+                          chainHeight != null ? ` (now ${chainHeight})` : ''
+                        }`
+                    : ''}
+                </span>
+              </p>
+            )}
             {network.buildBond && (
               <form onSubmit={handleBond} className={styles.form}>
                 <input
@@ -984,8 +1075,28 @@ export function Dashboard() {
                 </button>
               </form>
             )}
+            {network.buildClaimUnbond && hasPendingUnbond && (
+              <form onSubmit={handleClaimUnbond} className={styles.form}>
+                <p className={styles.faucetHint}>
+                  Claim matured pending unbond into your spendable balance
+                  {unbondUnlockHeight != null && unbondUnlockHeight > 0 && !claimReady
+                    ? ` after block ${unbondUnlockHeight}`
+                    : ''}
+                  .
+                </p>
+                {claimError && <p className={styles.error}>{claimError}</p>}
+                {claimSuccess && (
+                  <p className={styles.success} role="status">
+                    {claimSuccess}
+                  </p>
+                )}
+                <button type="submit" className={styles.primary} disabled={claiming || !claimReady}>
+                  {claiming ? 'Claiming…' : claimReady ? 'Claim unbond' : 'Waiting for unlock'}
+                </button>
+              </form>
+            )}
             <p className={styles.stakingHint}>
-              Bond BOING to stake and participate in PoS validation. Unbond to return staked BOING to your balance.
+              Bond BOING to stake for PoS validation. Unbond queues stake for ~100 blocks; claim after the unlock height to return it to your balance.
             </p>
           </section>
             </div>

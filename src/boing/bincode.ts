@@ -12,6 +12,8 @@ const VARIANT_CONTRACT_DEPLOY_PURPOSE = 3;
 const VARIANT_CONTRACT_DEPLOY_META = 4;
 const VARIANT_BOND = 5;
 const VARIANT_UNBOND = 6;
+/** Must stay last — matches Rust `TransactionPayload::ClaimUnbond`. */
+const VARIANT_CLAIM_UNBOND = 7;
 
 function writeU32LE(buf: Uint8Array, offset: number, value: number): void {
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -140,6 +142,9 @@ export function encodePayload(p: Payload): Uint8Array {
       writeU32LE(body, 0, VARIANT_UNBOND);
       writeU128LE(body, 4, p.amount);
       return body;
+    }
+    case 'claim_unbond': {
+      return enumTag(VARIANT_CLAIM_UNBOND);
     }
     default: {
       const _exhaustive: never = p;

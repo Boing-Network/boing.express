@@ -15,6 +15,8 @@
 
 **This repo:** RPC defaults and explorer links are implemented in `src/networks/`, `extension/config.ts`, and `docs/DEVELOPMENT.md`. Wallet ↔ dApp API: `docs/WALLET_CONNECTION_AND_API.md` and `docs/HANDOFF.md`. **Optional HTTP JSON-RPC gateway** (OpenAPI + allowlist): **`workers/rpc-gateway/`**, documented in **`docs/RPC_GATEWAY.md`**. **Native DEX directory / canonical testnet addresses:** the wallet does not embed pool/router hex; **boing-sdk** is a **devDependency** pinned to a **boing.network** monorepo commit (`path:/boing-sdk`) for parity with upstream CI — see **HANDOFF.md → Part 5**.
 
+**Native BOING amounts:** ledger balances/transfers use whole on-chain u128 units (**decimals 0** in the wallet UI). The “Decimals: 18” note in THREE-CODEBASE-ALIGNMENT is the display convention for **DEX / reference fungible tokens**, not the native account balance scale.
+
 **Tutorial tooling** such as `print-native-dex-routes.mjs` lives under `examples/native-boing-tutorial` in **Boing-Network/boing.network**, not in this repository.
 
 When `boing_getNetworkInfo`, canonical pool/factory env names, or SDK exports change, coordinate updates across repos per the handoff §6 (change coordination). **Public RPC:** node operators should keep **`BOING_CANONICAL_NATIVE_DEX_FACTORY`** and the three **`BOING_DEX_*`** knobs in sync with **`tools/boing-node-public-testnet.env.example`** on **boing.network** (this repo’s **`.env.example`** mirrors that block for discoverability).

@@ -7,17 +7,32 @@
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
 import { buildSignedTransactionHex } from '../boing/signing';
+import { suggestedAccessList } from '../boing/accessList';
 import * as rpc from '../boing/rpc';
 import type { NetworkAdapter, BalanceResult, SubmitResult } from './types';
 import type { NetworkConfig } from './types';
-import type { Transaction, Payload, AccessList } from '../boing/types';
+import type { Transaction, Payload } from '../boing/types';
 
-/** Native BOING uses whole on-chain units (RPC u128 strings); not 10^-18. */
+/**
+ * Native BOING ledger amounts are whole on-chain units (RPC u128 decimal strings).
+ * DEX / reference tokens often use 18 display decimals; do not confuse the two.
+ */
 const BOING_DECIMALS = 0;
 const BOING_SYMBOL = 'BOING';
 
-function emptyAccessList(): AccessList {
-  return { read: [], write: [] };
+function signedNativeTx(
+  sender: AccountId,
+  nonce: bigint,
+  payload: Payload,
+  privateKey: Uint8Array
+): Promise<string> {
+  const tx: Transaction = {
+    nonce,
+    sender,
+    payload,
+    access_list: suggestedAccessList(sender, payload),
+  };
+  return buildSignedTransactionHex(tx, privateKey);
 }
 
 export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
@@ -63,14 +78,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      const payload: Payload = { kind: 'transfer', to, amount };
-      const tx: Transaction = {
-        nonce,
-        sender,
-        payload,
-        access_list: emptyAccessList(),
-      };
-      return buildSignedTransactionHex(tx, privateKey);
+      return signedNativeTx(sender, nonce, { kind: 'transfer', to, amount }, privateKey);
     },
 
     async buildBond(
@@ -79,14 +87,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      const payload: Payload = { kind: 'bond', amount };
-      const tx: Transaction = {
-        nonce,
-        sender,
-        payload,
-        access_list: emptyAccessList(),
-      };
-      return buildSignedTransactionHex(tx, privateKey);
+      return signedNativeTx(sender, nonce, { kind: 'bond', amount }, privateKey);
     },
 
     async buildUnbond(
@@ -95,14 +96,15 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      const payload: Payload = { kind: 'unbond', amount };
-      const tx: Transaction = {
-        nonce,
-        sender,
-        payload,
-        access_list: emptyAccessList(),
-      };
-      return buildSignedTransactionHex(tx, privateKey);
+      return signedNativeTx(sender, nonce, { kind: 'unbond', amount }, privateKey);
+    },
+
+    async buildClaimUnbond(
+      sender: AccountId,
+      nonce: bigint,
+      privateKey: Uint8Array
+    ): Promise<string> {
+      return signedNativeTx(sender, nonce, { kind: 'claim_unbond' }, privateKey);
     },
 
     async getStake(accountId: AccountId): Promise<string> {
@@ -113,6 +115,23 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       } catch (error) {
         if (!rpc.isMethodNotFoundError(error)) throw error;
         return '0';
+      }
+    },
+
+    async getUnbondStatus(accountId: AccountId): Promise<{
+      pendingUnbond: string;
+      unlockHeight: number;
+    }> {
+      const hex = accountIdToHex(accountId);
+      try {
+        const account = await rpc.getAccount(rpcUrl, hex);
+        return {
+          pendingUnbond: account.pendingUnbond ?? '0',
+          unlockHeight: account.unbondUnlockHeight ?? 0,
+        };
+      } catch (error) {
+        if (!rpc.isMethodNotFoundError(error)) throw error;
+        return { pendingUnbond: '0', unlockHeight: 0 };
       }
     },
 

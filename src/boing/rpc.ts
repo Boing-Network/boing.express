@@ -206,24 +206,42 @@ export function faucetRequest(rpcUrl: string, hexAccountId: string): Promise<unk
 }
 
 /**
- * Account state: balance and nonce (and optionally stake) as decimal strings (u128).
+ * Account state: balance and nonce (and optionally stake / unbond queue) as decimal strings (u128).
  * Prefer this over separate getBalance/getNonce so nonce is consistent with balance.
  */
 export interface BoingAccountState {
   balance: string;
   nonce: string;
   stake?: string;
+  /** Stake waiting for unbonding delay (RPC `pending_unbond`). */
+  pendingUnbond?: string;
+  /** Block height when `pending_unbond` may be claimed (RPC `unbond_unlock_height`). */
+  unbondUnlockHeight?: number;
 }
 
-/** boing_getAccount([hex_account_id]) — balance, nonce, stake as decimal strings. Throws if method not available. */
+/** boing_getAccount([hex_account_id]) — balance, nonce, stake, pending unbond. Throws if method not available. */
 export function getAccount(rpcUrl: string, hexAccountId: string): Promise<BoingAccountState> {
-  return rpcCall<{ balance: string; nonce: string | number; stake?: string }>(rpcUrl, 'boing_getAccount', [hexAccountId]).then(
-    (r) => ({
+  return rpcCall<{
+    balance: string;
+    nonce: string | number;
+    stake?: string;
+    pending_unbond?: string;
+    unbond_unlock_height?: number | string;
+  }>(rpcUrl, 'boing_getAccount', [hexAccountId]).then((r) => {
+    const unlockRaw = r.unbond_unlock_height;
+    let unbondUnlockHeight: number | undefined;
+    if (unlockRaw != null && unlockRaw !== '') {
+      const n = typeof unlockRaw === 'number' ? unlockRaw : Number(unlockRaw);
+      if (Number.isFinite(n)) unbondUnlockHeight = n;
+    }
+    return {
       balance: String(r.balance ?? '0'),
       nonce: String(r.nonce ?? '0'),
       stake: r.stake != null ? String(r.stake) : undefined,
-    })
-  );
+      pendingUnbond: r.pending_unbond != null ? String(r.pending_unbond) : undefined,
+      unbondUnlockHeight,
+    };
+  });
 }
 
 /**

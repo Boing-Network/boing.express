@@ -179,6 +179,14 @@
               <p id="unbond-error" class="error hidden"></p>
               <button type="submit" id="btn-unbond" class="btn-secondary" aria-label="Unbond BOING">Unbond</button>
             </form>
+            <div id="claim-unbond-card" class="card hidden">
+              <h2 class="label">Pending unbond</h2>
+              <p class="balance"><span id="pending-unbond">0</span> <span class="balance-symbol">BOING</span></p>
+              <p id="claim-unbond-hint" class="hint">Unlocks after the unbonding delay (~100 blocks).</p>
+              <p id="claim-unbond-error" class="error hidden"></p>
+              <p id="claim-unbond-success" class="success hidden" aria-live="polite"></p>
+              <button type="button" id="btn-claim-unbond" class="btn-primary" aria-label="Claim matured unbond">Claim unbond</button>
+            </div>
           </div>
         </section>
         <section id="panel-faucet" class="tab-panel" role="tabpanel" aria-labelledby="tab-faucet" hidden>

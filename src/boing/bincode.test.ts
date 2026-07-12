@@ -32,6 +32,11 @@ describe('bincode vs Rust boing-primitives (see crates/boing-primitives/examples
     expect(toHex(p)).toBe('0500000001000000000000000000000000000000');
   });
 
+  it('encodes ClaimUnbond payload (variant 7, no fields)', () => {
+    const p = encodePayload({ kind: 'claim_unbond' });
+    expect(toHex(p)).toBe('07000000');
+  });
+
   it('encodes empty AccessList', () => {
     const a = encodeAccessList({ read: [], write: [] });
     expect(toHex(a)).toBe('00000000000000000000000000000000');

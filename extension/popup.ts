@@ -179,8 +179,9 @@ function updateStakingVisibility(): void {
   const net = getCurrentNetwork();
   const section = document.getElementById('staking-section');
   const tabBtn = document.getElementById('tab-stake');
-  if (section) section.classList.toggle('hidden', !net.buildBond && !net.buildUnbond);
-  if (tabBtn) tabBtn.classList.toggle('hidden', !net.buildBond && !net.buildUnbond);
+  const show = Boolean(net.buildBond || net.buildUnbond || net.buildClaimUnbond);
+  if (section) section.classList.toggle('hidden', !show);
+  if (tabBtn) tabBtn.classList.toggle('hidden', !show);
 }
 
 function getConnectedSitesFromStorage(): Promise<string[]> {
@@ -264,17 +265,57 @@ function switchTab(tabId: TabId): void {
 }
 
 let lastStakeRaw = '0';
+let lastPendingUnbondRaw = '0';
+let lastUnbondUnlockHeight = 0;
+let lastChainHeight: number | null = null;
+
 async function refreshStake(): Promise<void> {
   if (!accountId) return;
   const net = getCurrentNetwork();
-  if (!net.getStake) return;
+  if (!net.getStake && !net.getUnbondStatus) return;
   try {
-    const s = await net.getStake(accountId);
-    lastStakeRaw = s;
-    const displayStr = formatBalance(s, BOING_DECIMALS);
-    ($('stake') as HTMLElement).textContent = displayStr;
+    if (net.getStake) {
+      const s = await net.getStake(accountId);
+      lastStakeRaw = s;
+      const displayStr = formatBalance(s, BOING_DECIMALS);
+      ($('stake') as HTMLElement).textContent = displayStr;
+    }
   } catch {
     ($('stake') as HTMLElement).textContent = '—';
+  }
+
+  const claimCard = document.getElementById('claim-unbond-card');
+  const claimBtn = document.getElementById('btn-claim-unbond') as HTMLButtonElement | null;
+  if (!net.getUnbondStatus || !claimCard) return;
+  try {
+    const [status, height] = await Promise.all([
+      net.getUnbondStatus(accountId),
+      net.getChainHeight?.().catch(() => null) ?? Promise.resolve(null),
+    ]);
+    lastPendingUnbondRaw = status.pendingUnbond;
+    lastUnbondUnlockHeight = status.unlockHeight;
+    lastChainHeight = height;
+    const pending = BigInt(status.pendingUnbond || '0');
+    if (pending <= 0n) {
+      claimCard.classList.add('hidden');
+      return;
+    }
+    claimCard.classList.remove('hidden');
+    ($('pending-unbond') as HTMLElement).textContent = formatBalance(status.pendingUnbond, BOING_DECIMALS);
+    const hint = document.getElementById('claim-unbond-hint');
+    const ready =
+      status.unlockHeight <= 0 || height == null || height >= status.unlockHeight;
+    if (hint) {
+      hint.textContent = ready
+        ? 'Matured — ready to claim into your balance.'
+        : `Unlocks at block ${status.unlockHeight}${height != null ? ` (now ${height})` : ''}.`;
+    }
+    if (claimBtn) {
+      claimBtn.disabled = !net.buildClaimUnbond || !ready;
+      claimBtn.textContent = ready ? 'Claim unbond' : 'Waiting for unlock';
+    }
+  } catch {
+    claimCard.classList.add('hidden');
   }
 }
 
@@ -791,6 +832,54 @@ $('form-unbond').addEventListener('submit', async (e) => {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Unbond';
+  }
+});
+
+$('btn-claim-unbond').addEventListener('click', async () => {
+  if (!accountId || !privateKey) return;
+  const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
+  if (!net.buildClaimUnbond) return;
+  const errEl = $('claim-unbond-error') as HTMLElement;
+  const okEl = $('claim-unbond-success') as HTMLElement;
+  errEl.classList.add('hidden');
+  okEl.classList.add('hidden');
+  const pending = BigInt(lastPendingUnbondRaw || '0');
+  if (pending <= 0n) {
+    errEl.textContent = 'No pending unbond to claim';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (
+    lastChainHeight != null &&
+    lastUnbondUnlockHeight > 0 &&
+    lastChainHeight < lastUnbondUnlockHeight
+  ) {
+    errEl.textContent = `Unlocks at block ${lastUnbondUnlockHeight} (current ${lastChainHeight}).`;
+    errEl.classList.remove('hidden');
+    return;
+  }
+  const btn = $('btn-claim-unbond') as HTMLButtonElement;
+  btn.disabled = true;
+  btn.textContent = 'Claiming…';
+  try {
+    const nonce = await net.getNonce(accountId);
+    const signedHex = await net.buildClaimUnbond!(accountId, nonce, privateKey);
+    const result = await net.submitTransaction(signedHex);
+    if (result.success) {
+      okEl.textContent = result.txHash ? `Claimed! Tx: ${result.txHash.slice(0, 16)}…` : 'Submitted';
+      okEl.classList.remove('hidden');
+      await refreshDashboardBalance();
+      await refreshStake();
+    } else {
+      errEl.textContent = result.error ?? 'Claim failed';
+      errEl.classList.remove('hidden');
+    }
+  } catch (err) {
+    errEl.textContent = err instanceof Error ? err.message : String(err);
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Claim unbond';
   }
 });
 
