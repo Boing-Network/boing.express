@@ -182,7 +182,7 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>VibeMiner vs boing.express</h2>
         <p>
-          <strong>VibeMiner</strong> runs nodes and stakes (one-click mining/validating). It dials public bootnodes at <code>/ip4/73.84.106.121/tcp/4001</code> to join the testnet. <strong>boing.express</strong> is the wallet — it needs RPC endpoints for balance and transactions. Both use the same live Boing Network infrastructure.
+          <strong>VibeMiner</strong> runs nodes and stakes (one-click mining/validating). It dials public bootnodes at <code>/ip4/169.155.48.188/tcp/4001</code> and <code>/ip4/109.105.220.118/tcp/4001</code> (hosted Fly pair) to join the testnet. <strong>boing.express</strong> is the wallet — it needs RPC endpoints for balance and transactions. Both use the same live Boing Network infrastructure.
         </p>
         <h2>Priorities</h2>
         <ul>

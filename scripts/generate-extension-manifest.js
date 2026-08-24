@@ -48,6 +48,8 @@ const hostPermissions = [
   toExtensionHostPermission(testnetRpc),
   toExtensionHostPermission(mainnetRpc),
   'https://boing.network/*',
+  'https://boing-testnet-1.fly.dev/*',
+  'https://boing-testnet-2.fly.dev/*',
 ].filter((value, index, array) => Boolean(value) && array.indexOf(value) === index);
 
 manifest.host_permissions = hostPermissions;
