@@ -62,7 +62,7 @@ export function isBoingMetaCacheStale(entry: BoingMetaCacheEntry | null, ttlMs: 
 }
 
 /**
- * When testnet RPC is not pinned by env, prefer `meta.public_testnet_rpc_url` (official tunnel).
+ * When testnet RPC is not pinned by env, prefer `meta.public_testnet_rpc_url` (hosted public RPC).
  */
 export function resolveTestnetRpcWithMeta(
   envResolvedTestnetRpc: string,

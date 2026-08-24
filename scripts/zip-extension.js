@@ -14,7 +14,12 @@ const extDir = path.join(root, 'extension');
 const outZip = path.join(root, 'boing-wallet-extension.zip');
 
 const isWin = process.platform === 'win32';
-execSync('pnpm build:extension', { cwd: root, stdio: 'inherit' });
+const storeTestnetRpc = process.env.VITE_BOING_TESTNET_RPC?.trim() || 'https://testnet-rpc.boing.network';
+execSync('pnpm build:extension', {
+  cwd: root,
+  stdio: 'inherit',
+  env: { ...process.env, VITE_BOING_TESTNET_RPC: storeTestnetRpc },
+});
 const bundledEntries = readdirSync(extDir).filter((name) => {
   if (name.endsWith('.map') || name.endsWith('.ts')) return false;
   const fullPath = path.join(extDir, name);
@@ -36,3 +41,4 @@ if (isWin) {
 }
 
 console.log('Created:', outZip);
+console.log('Pinned store testnet RPC:', storeTestnetRpc);
