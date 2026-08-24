@@ -1,5 +1,9 @@
 # Hero object extraction
 
+> 👋 **Everyday users:** skip this.  
+> 🛠️ **Developers:** extract layered 3D assets from `public/images/boing_robot_hero.png`. The full-page 3D consumer was removed; scripts remain for assets.  
+> 🛰️ **Operators:** n/a.
+
 Extract the Boing robot and 3D objects from `public/images/boing_robot_hero.png` for layered 3D motion. Output goes to `public/images/hero_objects/`. **Note:** The full-page 3D consumer was removed during cleanup; these scripts are retained for asset extraction or future use.
 
 ## Quick start (rembg + connected components)

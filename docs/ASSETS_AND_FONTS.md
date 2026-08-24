@@ -1,5 +1,9 @@
 # Boing Express — Assets & Fonts
 
+> 👋 **Everyday users:** skip this inventory.  
+> 🛠️ **Developers:** official Boing Network assets and fonts for web + extension. Keep Comfortaa as UI type.  
+> 🛰️ **Operators:** n/a.
+
 Inventory of design system assets and fonts used by the web app and extension.
 
 ---

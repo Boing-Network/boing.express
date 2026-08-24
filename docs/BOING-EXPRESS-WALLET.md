@@ -1,6 +1,21 @@
 # Boing Express — injected wallet & RPC forwarding
 
+> 👋 **Everyday users:** this is the dApp “Connect” API. You just click Connect.  
+> 🛠️ **Developers:** `window.boing.request`. Unsigned simulation vs signed submit paths are below.  
+> 🛰️ **Operators:** n/a — wallet client behavior.
+
 This document is the **handoff target** referenced from **boing.network** (RPC specs, SDK). It describes what **`window.boing`** does in **Boing Express** and how dApps should call **unsigned simulation** vs **signed** paths.
+
+```mermaid
+sequenceDiagram
+  participant DApp
+  participant Boing as window.boing
+  participant Node
+  DApp->>Boing: boing_simulateContractCall
+  Boing->>Node: unsigned dry-run
+  DApp->>Boing: boing_sendTransaction
+  Boing->>Node: simulate + submit
+```
 
 ---
 

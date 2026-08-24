@@ -1,6 +1,22 @@
 # Boing Express Wallet Connection & API
 
+> 👋 **Everyday users:** click **Connect** on a Boing site. Approve in the extension. Never paste your private key into a website.  
+> 🛠️ **Developers:** `window.boing.request({ method, params })`. Addresses are **32-byte** hex. Signing is Ed25519 over BLAKE3 — not `personal_sign` / keccak.  
+> 🛰️ **Operators:** portal and dApps must verify Ed25519 over the **exact UTF-8 message**.
+
 This document describes the wallet connection and sign-in features implemented in **boing.express**, the **Boing Wallet API** (provider spec), and what **boing.network** needs to implement for “Connect wallet” and secure sign-in.
+
+```mermaid
+sequenceDiagram
+  participant Site
+  participant Ext as window.boing
+  participant Node
+  Site->>Ext: boing_requestAccounts
+  Ext-->>Site: 0x + 64 hex
+  Site->>Ext: boing_sendTransaction
+  Ext->>Node: simulate + submit
+  Node-->>Ext: tx accepted
+```
 
 ---
 

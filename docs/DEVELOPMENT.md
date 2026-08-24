@@ -1,6 +1,18 @@
 # Boing Express — Development & Operations
 
+> 👋 **Everyday users:** you do not need this file. Use [boing.express](https://boing.express) or the extension.  
+> 🛠️ **Developers:** Vitest, Playwright extension smoke, RPC gateway Worker, Chrome Web Store checklist.  
+> 🛰️ **Operators:** GitHub variables `VITE_BOING_TESTNET_RPC` / `VITE_BOING_MAINNET_RPC`; gateway secrets in `workers/rpc-gateway/`.
+
 This document combines integration details, GitHub/CI setup, and SEO/deployment notes for the Boing Express project.
+
+```mermaid
+flowchart LR
+  Code[src/ + extension/] --> Unit[pnpm test]
+  Code --> E2E[Playwright EXTENSION_E2E]
+  Code --> Pages[Cloudflare Pages]
+  GW[workers/rpc-gateway] --> Worker[Cloudflare Worker]
+```
 
 ---
 

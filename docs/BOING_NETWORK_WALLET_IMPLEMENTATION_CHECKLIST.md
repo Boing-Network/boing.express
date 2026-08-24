@@ -1,5 +1,9 @@
 # Boing Network Wallet Implementation Checklist
 
+> 👋 **Everyday users:** skip this engineering checklist. Use [boing.express](https://boing.express).  
+> 🛠️ **Developers:** remaining wallet work for portal + dApp experience.  
+> 🛰️ **Operators:** n/a — product implementation.
+
 This file is a short, implementation-focused handoff for the `boing.express` agent/team.
 
 Use this document when the goal is to implement the remaining wallet work needed for the best `boing.network` portal and dApp experience.

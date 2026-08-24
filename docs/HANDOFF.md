@@ -1,8 +1,19 @@
 # Boing Express — Handoff & Sync
 
+> 👋 **Everyday users:** skip this engineering handoff.  
+> 🛠️ **Developers on boing.network / observer:** what the wallet signs, which provider methods exist, and how the portal must verify.  
+> 🛰️ **Operators:** backend verifies Ed25519 over UTF-8 — not Ethereum `personal_sign`.
+
 Single reference for the **boing.express** wallet: handoff to **boing.network**, sync contract with the portal, and sync review changelog.
 
-**Cross-repo backlog (node, SDK, Express, Observer, partners):** [Boing Network — HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md) and [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md) on `Boing-Network/boing.network` (e.g. commit `fbf3112` and later).
+**Cross-repo backlog:** [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md) and [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md).
+
+```mermaid
+flowchart LR
+  Wallet[boing.express] -->|signed message| Portal[boing.network portal]
+  Wallet -->|tx hex| Node[boing-node RPC]
+  Wallet -->|account URL| Observer[boing.observer]
+```
 
 ---
 

@@ -1,6 +1,18 @@
 # Ecosystem alignment (Boing Network)
 
+> 👋 **Everyday users:** wallet at [boing.express](https://boing.express), explorer at [boing.observer](https://boing.observer), docs at [boing.network](https://boing.network).  
+> 🛠️ **Developers:** this table is the local index into **boing.network** docs. Do not fork those URLs here.  
+> 🛰️ **Operators:** public RPC is `https://testnet-rpc.boing.network`.
+
 **boing.express** stays in sync with the node, SDK, portal, and explorer via the **boing.network** documentation.
+
+```mermaid
+flowchart LR
+  Express[boing.express] --> Align[THREE-CODEBASE-ALIGNMENT]
+  Observer[boing.observer] --> Align
+  Site[boing.network] --> Align
+  Align --> RPC[testnet-rpc.boing.network]
+```
 
 | Document | Purpose |
 |----------|---------|

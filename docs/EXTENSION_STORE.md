@@ -1,6 +1,17 @@
 # Chrome Web Store — Extension Submission
 
+> 👋 **Everyday users:** install Boing Express from the Chrome Web Store (or Load unpacked while it is in review). Never download a random zip from chat.  
+> 🛠️ **Developers:** `pnpm run build:extension` then `pnpm run zip:extension`. Privacy + permissions copy is in this file.  
+> 🛰️ **Operators:** host permissions include testnet RPC and boing.network; mainnet only when `VITE_BOING_MAINNET_RPC` is set at build time.
+
 This document combines **permissions & privacy** (for the store form), **loading the extension locally**, and the **Chrome Web Store checklist & listing copy**. Use it to prepare and submit the Boing Express extension.
+
+```mermaid
+flowchart LR
+  Build[pnpm run build:extension] --> Unpacked[Load unpacked]
+  Build --> Zip[pnpm run zip:extension]
+  Zip --> Store[Chrome Web Store]
+```
 
 ---
 

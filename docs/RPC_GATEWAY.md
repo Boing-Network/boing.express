@@ -1,6 +1,24 @@
 # Boing Express — HTTP JSON-RPC gateway (Cloudflare Worker)
 
+> 👋 **Everyday users:** you do not need this Worker. The wallet talks to RPC directly.  
+> 🛠️ **Developers / partners:** allowlisted HTTPS JSON-RPC + OpenAPI for scripts and BFFs. Not a replacement for `window.boing`.  
+> 🛰️ **Operators:** deploy on its **own** hostname. Secrets: `BOING_UPSTREAM_RPC_URL`, optional `GATEWAY_API_KEY`.
+
 This repository ships **two** integration surfaces:
+
+1. **Browser wallet** — injected `window.boing`, extension, and web app (unchanged).
+2. **Optional HTTP gateway** — `workers/rpc-gateway/`, a **Cloudflare Worker** that proxies **allowlisted** Boing JSON-RPC to an upstream node, exposes **`GET /openapi.json`**, and supports **optional API keys**.
+
+The gateway is for **partners, BFFs, and scripts** that want stable HTTPS access without parsing bincode or hammering the node from every browser tab. It does **not** replace the wallet; deploy it on its **own** hostname or route (for example `https://rpc-gateway.boing.express`).
+
+```mermaid
+flowchart LR
+  Partner[Partner / script] --> GW[rpc-gateway Worker]
+  GW -->|allowlisted methods| Up[BOING_UPSTREAM_RPC_URL]
+  Browser[Wallet in browser] --> Node[Public or local RPC]
+```
+
+---
 
 1. **Browser wallet** — injected `window.boing`, extension, and web app (unchanged).
 2. **Optional HTTP gateway** — `workers/rpc-gateway/`, a **Cloudflare Worker** that proxies **allowlisted** Boing JSON-RPC to an upstream node, exposes **`GET /openapi.json`**, and supports **optional API keys**.

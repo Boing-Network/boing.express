@@ -1,6 +1,17 @@
 # Boing Design System — Express (Aqua Personal)
 
+> 👋 **Everyday users:** the look is dark, teal, Comfortaa — same family as boing.network.  
+> 🛠️ **Developers:** tokens in `src/index.css`. This is the **Aqua Personal** variant. Do not invent a fourth palette.  
+> 🛰️ **Operators:** n/a — visual system only.
+
 This document describes the **Boing Design System** as it applies to **boing.express**: one shared foundation plus three site-specific variants, with this repo implementing the **Aqua Personal** variant. It is the single reference for tokens, typography, components, and layout when building or updating the Express UI.
+
+```mermaid
+flowchart LR
+  Foundation[Shared Boing foundation] --> Net[Network site]
+  Foundation --> Exp[Express · Aqua Personal]
+  Foundation --> Fin[Finance]
+```
 
 ---
 

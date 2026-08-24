@@ -1,154 +1,94 @@
-# Boing Wallet (Boing Express)
+# 👛 Boing Express (Boing Wallet)
 
-Non-custodial crypto wallet for **Boing Network**, built for [boing.express](https://boing.express). Keys are generated and stored only in the browser; the app is deployable to **Cloudflare Pages** with optional Workers for API routes.
+Non-custodial wallet for **Boing Network**. Keys are generated and stored **only in your browser**. Live at **[boing.express](https://boing.express)**.
 
-## Features
+> 👋 **Everyday users:** create or import a wallet, copy your 64-character address, get testnet BOING from [the faucet](https://boing.network/faucet), send, stake. The Chrome/Firefox extension adds “Connect wallet” for dApps.  
+> 🛠️ **Developers:** inject `window.boing`. Methods: `boing_requestAccounts`, `boing_sendTransaction`, DEX list RPCs. See [docs/WALLET_CONNECTION_AND_API.md](docs/WALLET_CONNECTION_AND_API.md).  
+> 🛰️ **Operators:** `VITE_BOING_TESTNET_RPC` defaults to `https://testnet-rpc.boing.network`. Mainnet stays **off** until `VITE_BOING_MAINNET_RPC` is a distinct URL.
 
-- **Boing Network**: Ed25519 addresses (32-byte AccountId, 64-char hex), send/receive BOING, testnet faucet, staking (Bond/Unbond)
-- **Signing**: BLAKE3 signable hash + Ed25519 signatures; bincode layout matches `boing-primitives`
-- **Multi-chain ready**: Pluggable network adapter interface; Boing is the first, others can be added via config and a new adapter
-- **Security**: Client-only key generation (Web Crypto–compatible), password-encrypted storage (AES-GCM), keys never sent to any server
-- **Extension**: Injects `window.boing` for dApp “Connect wallet”; Connected sites management in popup
+```mermaid
+flowchart LR
+  You[You] --> Web[🌐 boing.express]
+  You --> Ext[🧩 Extension]
+  Web --> Enc[🔐 Encrypted keys in browser]
+  Ext --> Enc
+  Ext --> Inject[window.boing]
+  Inject --> DApp[dApps]
+  Enc --> RPC[testnet-rpc.boing.network]
+  DApp --> RPC
+```
 
-## Tech stack
+## ✨ Features
+
+- **Boing Network:** Ed25519 addresses (32-byte AccountId, 64-char hex), send/receive BOING, testnet faucet, staking (Bond/Unbond/ClaimUnbond)
+- **Signing:** BLAKE3 signable hash + Ed25519; bincode layout matches `boing-primitives`
+- **Security:** Client-only key generation, password-encrypted storage (AES-GCM), keys never sent to any server
+- **Extension:** Injects `window.boing` for dApp connect; Connected sites management in the popup
+
+## 🧰 Tech stack
 
 - **React 18** + **TypeScript** + **Vite** (static build → `dist/`)
-- **@noble/ed25519** and **@noble/hashes** (BLAKE3) for crypto
-- **Cloudflare Pages** for hosting; optional **Cloudflare Worker** HTTP JSON-RPC gateway (`workers/rpc-gateway/`) with **OpenAPI** and method allowlisting (see [docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md))
+- **@noble/ed25519** and **@noble/hashes** (BLAKE3)
+- **Cloudflare Pages**; optional **RPC gateway Worker** ([docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md))
 
-## Quick start
+## 🚀 Quick start
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Open http://localhost:5173. Build for production:
+Open http://localhost:5173. Production build: `pnpm build` → `dist/`.
 
-```bash
-pnpm build
-```
-
-Output is in `dist/`.
-
-## Environment variables
+## ⚙️ Environment
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_BOING_TESTNET_RPC` | Boing testnet JSON-RPC URL (default: `https://testnet-rpc.boing.network`) |
-| `VITE_BOING_MAINNET_RPC` | Optional Boing mainnet JSON-RPC URL. Mainnet stays disabled in the web app and extension unless this is explicitly set at build time. |
+| `VITE_BOING_TESTNET_RPC` | Testnet JSON-RPC (default `https://testnet-rpc.boing.network`) |
+| `VITE_BOING_MAINNET_RPC` | Optional mainnet JSON-RPC. Leave unset until official mainnet is published |
 
-Set these in Cloudflare Pages **Build** → **Environment variables** (or in `.env` for local dev). They are baked in at build time via Vite.
+Set these in Cloudflare Pages **Build → Environment variables** (baked in at build time).
 
-## Cloudflare setup (boing.express)
+## ☁️ Cloudflare (boing.express)
 
-- [ ] **Create a Cloudflare Pages project** linked to this repo (GitHub/GitLab).
-- [ ] **Build**: Build command: `pnpm build` (or `npm run build`). Build output directory: `dist`. Install command: `pnpm install` (or `npm install`).
-- [ ] **Custom domain**: In **Pages** → **Your project** → **Custom domains**, add **boing.express**. Point your domain’s DNS to Cloudflare (nameservers or CNAME to the Pages URL).
-- [ ] **Env vars**: In Pages → **Settings** → **Environment variables**, add `VITE_BOING_TESTNET_RPC` and optionally `VITE_BOING_MAINNET_RPC` for Production (and Preview if you want). Leave mainnet unset until the official public endpoint is published.
-- [ ] **(Optional) RPC gateway Worker**: Deploy **`workers/rpc-gateway/`** on its own hostname (or route) for partner HTTPS JSON-RPC — `pnpm run gateway:deploy`, secrets **`BOING_UPSTREAM_RPC_URL`** / optional **`GATEWAY_API_KEY`**. Details: [docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md). The static wallet app does not require this Worker.
-
-### GitHub Actions (auto-deploy)
-
-The repo includes a workflow that deploys to Cloudflare Pages on every push to `main`. A second workflow deploys the **RPC gateway Worker** when `workers/rpc-gateway/` changes (same Cloudflare account secrets). **Required GitHub repo secrets:**
-
-| Secret | Description |
-|--------|-------------|
-| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
-| `CLOUDFLARE_API_TOKEN` | API token with **Cloudflare Pages — Edit** (or **Account — Cloudflare Pages — Edit**) |
-
-After you add the custom domain to the **boing-wallet** Pages project, the site will be available at **https://boing.express** and each push to `main` will trigger a new deployment.
-
-Optional: set repo **variables** so the GitHub build uses the correct RPC endpoints:
-
-| Variable | Value |
-|----------|--------|
-| `VITE_BOING_TESTNET_RPC` | `https://testnet-rpc.boing.network` |
-| `VITE_BOING_MAINNET_RPC` | Set this to the official public mainnet RPC when Boing mainnet metadata is published; otherwise mainnet remains disabled |
-
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#2-github-repository-variables-and-secrets) for details.
-
-### Deploy from CLI
+- Pages project, build `pnpm build`, output `dist`, domain **boing.express**
+- GitHub Actions deploys on `main`. Secrets: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`
+- Optional RPC gateway: `pnpm run gateway:deploy` — see [docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md)
 
 ```bash
 pnpm build
 npx wrangler pages deploy dist --project-name=boing-wallet
 ```
 
-Create the Pages project in the Cloudflare dashboard first so `project-name` matches.
-
-## Boing Network details
-
-- **Address**: 32-byte AccountId = Ed25519 public key, shown as 64-character hex (with or without `0x`).
-- **Signing**: Signable message = BLAKE3(nonce_LE \|\| sender \|\| bincode(payload) \|\| bincode(access_list)); signature = Ed25519(signable_message). Submitted as `hex(bincode(SignedTransaction))` via `boing_submitTransaction`.
-- **RPC**: JSON-RPC 2.0. Prefers `boing_getAccount` for balance+nonce; falls back to `boing_getBalance`/`boing_getNonce`. Submit via `boing_submitTransaction`; optional `boing_simulateTransaction` before submit. See [Boing-Network/boing.network `docs/RPC-API-SPEC.md`](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md). Full integration and Chrome Web Store checklist: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#1-boing-network-integration--chrome-web-store-checklist). Wallet connection and provider API: [docs/WALLET_CONNECTION_AND_API.md](docs/WALLET_CONNECTION_AND_API.md).
-- **Explorer links**: Canonical explorer deep links should target `https://boing.observer/account/<address>`. Transaction-detail deep links should be treated as future-facing until Boing Observer publishes a stable tx route contract.
-- **Ecosystem alignment**: Cross-app URLs, env vars, and consumer backlogs are documented in [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md) and [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md) on **Boing-Network/boing.network**. Local summary: [docs/CODEBASE-ALIGNMENT.md](docs/CODEBASE-ALIGNMENT.md). Tutorial scripts such as **`print-native-dex-routes`** (`examples/native-boing-tutorial`, env in tutorial §7c3) and RPC smoke commands ([PRE-VIBEMINER-NODE-COMMANDS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/PRE-VIBEMINER-NODE-COMMANDS.md)) are run from a clone of that repo, not from this wallet repo.
-
-## Project structure
-
-```
-src/               # Shared wallet core (used by web app and extension)
-  boing/           # Boing types, bincode encoding, signing, RPC client
-  crypto/          # Ed25519 key generation
-  networks/        # Network adapter interface + Boing adapter
-  storage/         # Encrypted wallet persistence
-  context/         # React wallet context (web only)
-  screens/         # Welcome & Dashboard (web only)
-extension/         # Browser extension (Chrome + Firefox)
-  manifest.base.json  # Source manifest used to generate manifest.json per build
-  manifest.json       # Generated Manifest V3; browser_specific_settings for Firefox
-  popup.html, popup.css, popup.ts → popup.js
-  background.ts    # Service worker: wallet connection (window.boing), connected sites
-  content.ts       # Content script: injects inpage.js, bridges to background
-  inpage.ts        # Injected script: sets window.boing for dApps
-  config.ts        # RPC URLs and chain IDs for extension
-  icons/           # 16, 48, 128 PNG (generated by scripts/generate-extension-icons.js)
-docs/              # DEVELOPMENT.md, CODEBASE-ALIGNMENT.md, DESIGN_SYSTEM.md, EXTENSION_STORE.md, WALLET_CONNECTION_AND_API.md, HANDOFF.md, etc.
-```
-
-## Adding another chain
-
-1. Implement `NetworkAdapter` in `src/networks/` (e.g. `evmAdapter.ts`).
-2. Register the adapter and config (RPC URL, chain id) in `src/networks/index.ts`.
-3. The UI network selector will list it; no wallet core changes required.
-
-## What’s in this repo
-
-- **Website (boing.express)**: The Boing Wallet **web app** — deployed to Cloudflare Pages at your custom domain. Create/import wallet, view address, balance, send BOING, testnet faucet. Theme matches [Boing Network](https://boing.network/) (dark UI, aqua/teal accent).
-- **Browser extension**: A **Chrome and Firefox** extension in `extension/` that reuses the same wallet core. One codebase (Manifest V3); same features: create/import/unlock, address, balance, send, faucet, staking (Bond/Unbond). The extension also injects **`window.boing`** for dApp “Connect wallet” and supports **Connected sites** (manage in popup). Same Boing Network theme.
-
-### Building and loading the extension
+## 🧩 Browser extension
 
 ```bash
 pnpm run build:extension
 ```
 
-**Note:** Extension build outputs (e.g. `config-*.js` chunks) are not committed. You must run `pnpm run build:extension` before **Load unpacked** so the `extension/` folder contains all required files.
+Chrome: `chrome://extensions` → Developer mode → Load unpacked → **`extension/`** folder.  
+Firefox: `about:debugging` → Load Temporary Add-on → `extension/manifest.json`.
 
-This regenerates `extension/manifest.json`, refreshes icons, and rebuilds the packaged extension scripts. If `VITE_BOING_MAINNET_RPC` is not set, the generated extension build exposes only testnet.
+Recommended pre-review copy: `pnpm run build:extension:unpacked` → load **`extension-unpacked/`**. Store zip: `pnpm run zip:extension`. Listing checklist: [docs/EXTENSION_STORE.md](docs/EXTENSION_STORE.md).
 
-#### Pre-review: dedicated unpacked folder (recommended)
+## 📡 Boing Network details
 
-For testing before **Chrome Web Store re-review**, use a clean copy under **`extension-unpacked/`** (refreshed when you run `build:extension:unpacked`; the repo may ship a recent copy for convenience):
+- **Address:** 32-byte AccountId = Ed25519 public key, 64 hex chars (optional `0x`)
+- **Submit:** `hex(bincode(SignedTransaction))` via `boing_submitTransaction`
+- **Explorer:** `https://boing.observer/account/<address>`
+- **Alignment:** [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md)
 
-```bash
-pnpm run build:extension:unpacked
-```
+## 📚 Docs in this repo
 
-Then in **Chrome**: `chrome://extensions` → Developer mode → **Load unpacked** → select the repo’s **`extension-unpacked`** folder (not `extension/`). That folder includes **`README-UNPACKED.txt`** with the same instructions.
-
-- Re-run `pnpm run build:extension:unpacked` after code changes to refresh the copy.
-- For store upload, use **`pnpm run zip:extension`** → `boing-wallet-extension.zip` (same bundled files as `extension/`).
-
-If the project lives in **OneDrive/cloud** and Chrome’s picker shows an empty folder, use **`pnpm run build:extension:load`** instead — it copies the built extension to a local path under `%LOCALAPPDATA%\boing-extension` (Windows) or `$HOME/boing-extension` (macOS/Linux).
-
-#### Load directly from `extension/` (development)
-
-In **Chrome**: open `chrome://extensions`, enable “Developer mode”, “Load unpacked”, and select the **`extension`** folder.  
-In **Firefox**: open `about:debugging` → “This Firefox” → “Load Temporary Add-on” and select `extension/manifest.json`.
-
-For **Chrome Web Store** submission (icons, privacy policy, listing assets), see [docs/EXTENSION_STORE.md](docs/EXTENSION_STORE.md).
+| Doc | For |
+|-----|-----|
+| [docs/WALLET_CONNECTION_AND_API.md](docs/WALLET_CONNECTION_AND_API.md) | `window.boing` provider API |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | CI, tests, Chrome Web Store checklist |
+| [docs/BOING-EXPRESS-WALLET.md](docs/BOING-EXPRESS-WALLET.md) | Product + integration spec |
+| [docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md) | Optional HTTPS JSON-RPC Worker |
+| [docs/CODEBASE-ALIGNMENT.md](docs/CODEBASE-ALIGNMENT.md) | Local summary of cross-repo URLs |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | Portal / protocol handoff |
+| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Aqua Personal tokens |
 
 ## License
 
