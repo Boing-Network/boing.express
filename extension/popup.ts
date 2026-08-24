@@ -33,9 +33,13 @@ import {
   refreshExtensionBoingMetaIfStale,
 } from './boingMetaExtension';
 
-// Standalone unlock windows use ?surface=window; toolbar popups use default sizing.
-if (new URLSearchParams(window.location.search).get('surface') === 'window') {
-  document.documentElement.dataset.surface = 'window';
+// Standalone unlock windows use ?surface=window; toolbar popups keep a fixed 380px width.
+try {
+  if (new URLSearchParams(window.location.search).get('surface') === 'window') {
+    document.documentElement.dataset.surface = 'window';
+  }
+} catch {
+  // Ignore malformed query strings; default popup sizing still applies.
 }
 
 let networksCatalog = buildExtensionNetworksCatalog(null);

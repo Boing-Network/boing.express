@@ -54,6 +54,7 @@
   --radius-sm: 0.5rem;
   --font: 'Comfortaa', system-ui, sans-serif;
   --transition: 0.2s ease;
+  --popup-width: 380px;
 }
 
 @keyframes fadeIn {
@@ -68,10 +69,20 @@
 
 * { box-sizing: border-box; }
 
+/*
+ * Toolbar popups must use a fixed width. Chrome sizes the popup to the document, so
+ * `100vw` / `width=device-width` create a shrink loop (smushed create/import screens).
+ */
+html {
+  width: var(--popup-width);
+  min-width: var(--popup-width);
+}
+
 body {
   margin: 0;
-  width: min(380px, 100vw);
-  max-width: 380px;
+  width: var(--popup-width);
+  min-width: var(--popup-width);
+  max-width: var(--popup-width);
   min-height: 420px;
   max-height: 560px;
   overflow-y: auto;
@@ -84,9 +95,15 @@ body {
   scrollbar-color: var(--border) transparent;
 }
 
+html[data-surface='window'] {
+  width: 100%;
+  min-width: 0;
+}
+
 html[data-surface='window'] body {
   width: 100%;
-  max-width: 380px;
+  min-width: 0;
+  max-width: var(--popup-width);
   margin: 0 auto;
   min-height: 100vh;
   max-height: none;
