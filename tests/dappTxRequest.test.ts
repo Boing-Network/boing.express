@@ -174,6 +174,32 @@ describe('buildTransactionApprovalDetail', () => {
     expect(transactionSummary(tx)).toMatch(/Claim unbonded stake/);
   });
 
+  it('parses qa_pool_vote and defaults sender-only access_list', () => {
+    const subject = `0x${'03'.repeat(32)}`;
+    const tx = transactionFromDappJson(
+      { type: 'qa_pool_vote', subject, vote: 'allow' },
+      sender,
+      3n
+    );
+    expect(tx.payload.kind).toBe('qa_pool_vote');
+    expect(tx.access_list.read.length).toBe(1);
+    expect(tx.access_list.write.length).toBe(1);
+    expect(transactionSummary(tx)).toMatch(/QA pool vote allow/);
+    const d = buildTransactionApprovalDetail(tx);
+    expect(d.rows.some((r) => r.label === 'Operation' && r.value === 'QA pool vote')).toBe(true);
+    expect(d.rows.some((r) => r.label === 'Vote' && r.value === 'Allow')).toBe(true);
+  });
+
+  it('rejects qa_pool_vote without a valid vote', () => {
+    expect(() =>
+      transactionFromDappJson(
+        { type: 'qa_pool_vote', subject: `0x${'03'.repeat(32)}`, vote: 'maybe' },
+        sender,
+        0n
+      )
+    ).toThrow(/allow, reject, or abstain/);
+  });
+
   it('includes contract call, calldata preview, and access list', () => {
     const tx = transactionFromDappJson(
       {

@@ -12,8 +12,10 @@ const VARIANT_CONTRACT_DEPLOY_PURPOSE = 3;
 const VARIANT_CONTRACT_DEPLOY_META = 4;
 const VARIANT_BOND = 5;
 const VARIANT_UNBOND = 6;
-/** Must stay last — matches Rust `TransactionPayload::ClaimUnbond`. */
+/** Rust `TransactionPayload::ClaimUnbond`. */
 const VARIANT_CLAIM_UNBOND = 7;
+/** Rust `TransactionPayload::QaPoolVote`. */
+const VARIANT_QA_POOL_VOTE = 8;
 
 function writeU32LE(buf: Uint8Array, offset: number, value: number): void {
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -145,6 +147,13 @@ export function encodePayload(p: Payload): Uint8Array {
     }
     case 'claim_unbond': {
       return enumTag(VARIANT_CLAIM_UNBOND);
+    }
+    case 'qa_pool_vote': {
+      if (p.subject.length !== 32) {
+        throw new Error('qa_pool_vote subject must be 32 bytes');
+      }
+      const voteDisc = p.vote === 'allow' ? 0 : p.vote === 'reject' ? 1 : 2;
+      return concatBytes([enumTag(VARIANT_QA_POOL_VOTE), p.subject, enumTag(voteDisc)]);
     }
     default: {
       const _exhaustive: never = p;

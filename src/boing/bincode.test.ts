@@ -37,6 +37,14 @@ describe('bincode vs Rust boing-primitives (see crates/boing-primitives/examples
     expect(toHex(p)).toBe('07000000');
   });
 
+  it('encodes QaPoolVote payload (variant 8, allow)', () => {
+    const subject = new Uint8Array(32).fill(3);
+    const p = encodePayload({ kind: 'qa_pool_vote', subject, vote: 'allow' });
+    expect(toHex(p)).toBe(
+      '08000000030303030303030303030303030303030303030303030303030303030303030300000000'
+    );
+  });
+
   it('encodes empty AccessList', () => {
     const a = encodeAccessList({ read: [], write: [] });
     expect(toHex(a)).toBe('00000000000000000000000000000000');

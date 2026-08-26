@@ -114,6 +114,8 @@ export function transactionSummary(tx: Transaction): string {
       return `Boing tx | From ${from} | Nonce ${n} | Unbond ${p.amount.toString()} stake`;
     case 'claim_unbond':
       return `Boing tx | From ${from} | Nonce ${n} | Claim unbonded stake`;
+    case 'qa_pool_vote':
+      return `Boing tx | From ${from} | Nonce ${n} | QA pool vote ${p.vote} on ${formatAddress(p.subject, true)}`;
     case 'contract_call': {
       const ar = tx.access_list.read.length;
       const aw = tx.access_list.write.length;
@@ -215,6 +217,24 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
         rows.push(accessListSummary(tx));
       }
       break;
+    case 'qa_pool_vote':
+      rows.push({ label: 'Operation', value: 'QA pool vote' });
+      rows.push({ label: 'Subject', value: formatAddress(p.subject, true) });
+      rows.push({
+        label: 'Vote',
+        value: p.vote === 'allow' ? 'Allow' : p.vote === 'reject' ? 'Reject' : 'Abstain',
+      });
+      rows.push({
+        label: 'Rewards',
+        value:
+          p.vote === 'abstain'
+            ? 'Abstain does not earn the counted-vote treasury reward by default'
+            : 'Counted Allow/Reject votes are paid from PROTOCOL_TREASURY when the vote is included',
+      });
+      if (tx.access_list.read.length + tx.access_list.write.length > 0) {
+        rows.push(accessListSummary(tx));
+      }
+      break;
     case 'contract_call':
       rows.push({ label: 'Operation', value: 'Contract call' });
       rows.push({ label: 'Contract', value: formatAddress(p.contract, true) });
@@ -306,6 +326,16 @@ export function transactionFromDappJson(
     case 'claim_unbond':
     case 'claimUnbond': {
       payload = { kind: 'claim_unbond' };
+      break;
+    }
+    case 'qa_pool_vote':
+    case 'qaPoolVote': {
+      const subject = accountIdFromHex(String(o.subject ?? o.txHash ?? o.tx_hash ?? ''));
+      const voteRaw = String(o.vote ?? '').trim().toLowerCase();
+      if (voteRaw !== 'allow' && voteRaw !== 'reject' && voteRaw !== 'abstain') {
+        throw new Error('qa_pool_vote vote must be allow, reject, or abstain');
+      }
+      payload = { kind: 'qa_pool_vote', subject, vote: voteRaw };
       break;
     }
     case 'contract_call': {

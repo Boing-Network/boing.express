@@ -30,7 +30,9 @@ export type Payload =
   | { kind: 'bond'; amount: bigint }
   | { kind: 'unbond'; amount: bigint }
   /** Claim matured `pending_unbond` after unlock height (Rust `ClaimUnbond`, variant 7). */
-  | { kind: 'claim_unbond' };
+  | { kind: 'claim_unbond' }
+  /** On-chain QA pool vote (Rust `QaPoolVote`, variant 8). */
+  | { kind: 'qa_pool_vote'; subject: AccountId; vote: 'allow' | 'reject' | 'abstain' };
 
 export interface AccessList {
   read: AccountId[];
