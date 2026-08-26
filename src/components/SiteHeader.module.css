@@ -62,8 +62,10 @@
   display: none;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   background: transparent;
   border: 1px solid var(--card-border);
@@ -71,6 +73,8 @@
   color: var(--text-primary);
   cursor: pointer;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1002;
 }
 
 .menuBtn:hover {
@@ -84,6 +88,10 @@
   height: 1.25rem;
 }
 
+.backdrop {
+  display: none;
+}
+
 .navMobile {
   display: none;
   flex-direction: column;
@@ -92,6 +100,8 @@
   background: var(--nav-bg);
   border-bottom: 1px solid var(--nav-border);
   animation: fadeIn 0.2s var(--ease-out);
+  position: relative;
+  z-index: 1001;
 }
 
 .navMobileOpen {
@@ -134,7 +144,7 @@
   border-bottom: none;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .navDesktop {
     display: none;
   }
@@ -142,6 +152,36 @@
   .menuBtn {
     display: inline-flex;
   }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    cursor: pointer;
+  }
+
+  .navMobile {
+    max-height: min(70vh, calc(100dvh - 4.5rem));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .navMobile a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+}
+
+:global(body.nav-scroll-lock) {
+  overflow: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {

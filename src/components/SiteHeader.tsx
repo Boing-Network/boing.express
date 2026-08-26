@@ -58,8 +58,16 @@ export function SiteHeader({ links }: Props) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeMenu();
     };
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onMq = () => closeMenu();
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    mq.addEventListener('change', onMq);
+    document.body.classList.add('nav-scroll-lock');
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      mq.removeEventListener('change', onMq);
+      document.body.classList.remove('nav-scroll-lock');
+    };
   }, [menuOpen, closeMenu]);
 
   return (
@@ -90,6 +98,14 @@ export function SiteHeader({ links }: Props) {
           )}
         </button>
       </header>
+      {menuOpen ? (
+        <button
+          type="button"
+          className={styles.backdrop}
+          aria-label="Close menu"
+          onClick={closeMenu}
+        />
+      ) : null}
       <nav
         id={menuId}
         className={`${styles.navMobile} ${menuOpen ? styles.navMobileOpen : ''}`}
