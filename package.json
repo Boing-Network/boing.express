@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "generate:brand-assets": "node scripts/generate-brand-assets.mjs",
+    "prebuild": "node scripts/generate-brand-assets.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:extension": "node scripts/clean-extension-build.js && node scripts/generate-extension-manifest.js && node scripts/generate-extension-icons.js && vite build --config vite.extension.config.ts && vite build --config vite.extension.inpage.config.ts",

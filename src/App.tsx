@@ -4,6 +4,7 @@ import { WalletProvider } from './context/WalletContext';
 import { EngraveSceneBackdrop } from './components/EngravingBackdrop';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { InitialAnimation } from './components/InitialAnimation';
+import { RouteSeo } from './components/RouteSeo';
 import styles from './App.module.css';
 import { WalletNav } from './components/WalletNav';
 import { Landing } from './screens/Landing';
@@ -91,6 +92,7 @@ function AppShell() {
     <>
       <div className={styles.pageWrap} data-page={pageKey}>
         <EngraveSceneBackdrop />
+        <RouteSeo />
         <div
           className={introDone ? styles.appEntrance : styles.appContentAwaitingIntro}
           style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}

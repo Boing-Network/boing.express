@@ -21,6 +21,7 @@
     <meta property="og:image" content="https://boing.express/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Boing Express — Wallet for Boing Network" />
     <meta property="og:site_name" content="Boing Express" />
     <meta property="og:locale" content="en_US" />
 
@@ -35,10 +36,13 @@
     <!-- Theme — slab base matches engraved backdrop -->
     <meta name="theme-color" content="#06080c" />
     <meta name="msapplication-TileColor" content="#06080c" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" type="image/png" href="/assets/icon-only-transparent.png" />
-    <link rel="apple-touch-icon" href="/assets/icon-only-transparent.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/icon-only-transparent.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Boing Express" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <!-- Fonts — Comfortaa via @import in src/index.css -->
@@ -49,16 +53,34 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Boing Express",
-      "alternateName": "boing.express",
-      "url": "https://boing.express",
-      "description": "Non-custodial wallet for Boing Network. Create or import a wallet, send and receive BOING, use the testnet faucet.",
-      "publisher": {
-        "@type": "Organization",
-        "name": "Boing Express",
-        "url": "https://boing.express"
-      }
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://boing.express/#website",
+          "name": "Boing Express",
+          "alternateName": "boing.express",
+          "url": "https://boing.express",
+          "description": "Non-custodial wallet for Boing Network. Create or import a wallet, send and receive BOING, use the testnet faucet.",
+          "publisher": { "@id": "https://boing.express/#organization" }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://boing.express/#organization",
+          "name": "Boing Express",
+          "url": "https://boing.express",
+          "logo": "https://boing.express/icon-512.png",
+          "sameAs": ["https://boing.network", "https://boing.observer", "https://boing.finance"]
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "Boing Express",
+          "applicationCategory": "FinanceApplication",
+          "operatingSystem": "Web",
+          "url": "https://boing.express",
+          "description": "Official non-custodial wallet for Boing Network.",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+        }
+      ]
     }
     </script>
   </head>
