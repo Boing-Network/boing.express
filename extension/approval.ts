@@ -95,7 +95,8 @@ function fillPipelineSteps(ol: HTMLOListElement, txPipeline: 'sign' | 'send'): v
     'Sign the transaction with your approved key.',
     'Call boing_simulateTransaction on the selected RPC with the signed bytes.',
     'If simulation succeeds (or the node has no simulator), call boing_submitTransaction.',
-    'If simulation reports failure, the transaction is not submitted; the dApp may receive suggested_access_list in the error data.',
+    'If simulation fails with a suggested_access_list that is not already covered, Express merges it into access_list once, re-signs, and re-simulates before submit.',
+    'If simulation still fails, nothing is submitted; the dApp may receive suggested_access_list and access_list_auto_merged in the error data.',
   ];
   for (const text of steps) {
     const li = document.createElement('li');
