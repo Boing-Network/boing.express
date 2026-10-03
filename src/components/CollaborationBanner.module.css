@@ -1,0 +1,39 @@
+.banner {
+  width: 100%;
+  padding: 0.45rem 1rem;
+  text-align: center;
+  background: color-mix(in srgb, var(--express-primary, #00e8c8) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--express-primary, #00e8c8) 22%, transparent);
+  position: relative;
+  z-index: 1001;
+}
+
+.text {
+  margin: 0;
+  font-family: Comfortaa, system-ui, sans-serif;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-secondary, rgba(232, 240, 248, 0.88));
+}
+
+.link {
+  color: var(--express-primary, #00e8c8);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--express-accent, #7af5e4);
+}
+
+@media (min-width: 768px) {
+  .banner {
+    padding: 0.5rem 1.5rem;
+  }
+
+  .text {
+    font-size: 0.875rem;
+  }
+}
