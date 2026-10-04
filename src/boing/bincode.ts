@@ -4,6 +4,7 @@
  */
 
 import type { Payload, AccessList, Transaction, SignedTransaction } from './types';
+import { blake3 } from '@noble/hashes/blake3.js';
 
 const VARIANT_TRANSFER = 0;
 const VARIANT_CONTRACT_CALL = 1;
@@ -205,4 +206,43 @@ export function encodeSignature(sig: Uint8Array): Uint8Array {
 /** SignedTransaction: bincode(tx) || bincode(signature) */
 export function encodeSignedTransaction(st: SignedTransaction): Uint8Array {
   return concatBytes([encodeTransaction(st.tx), encodeSignature(st.signature)]);
+}
+
+function bytesToHex0x(bytes: Uint8Array): string {
+  return (
+    '0x' +
+    Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+  );
+}
+
+/** Receipt / mempool id: BLAKE3 of unsigned `Transaction` bincode (`Transaction::id()`). */
+export function transactionIdFromTransaction(tx: Transaction): string {
+  return bytesToHex0x(blake3(encodeTransaction(tx)));
+}
+
+const SIGNED_TX_SIGNATURE_TRAIL_BYTES = 8 + 64;
+
+/**
+ * Derive `tx_id` from `0x` + bincode(`SignedTransaction`) hex.
+ * Trailing serde signature is `u64(64) || 64 bytes`.
+ */
+export function transactionIdFromSignedTransactionHex(signedTxHex: string): string {
+  const h = signedTxHex.replace(/^0x/i, '');
+  if (h.length % 2 !== 0) throw new Error('invalid signed tx hex');
+  const bytes = new Uint8Array(h.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+  }
+  if (bytes.length < SIGNED_TX_SIGNATURE_TRAIL_BYTES + 1) {
+    throw new Error('Signed transaction bytes too short to derive tx_id');
+  }
+  const sigLenOffset = bytes.length - SIGNED_TX_SIGNATURE_TRAIL_BYTES;
+  const dv = new DataView(bytes.buffer, bytes.byteOffset + sigLenOffset, 8);
+  const sigLen = dv.getBigUint64(0, true);
+  if (sigLen !== 64n) {
+    throw new Error(`Unexpected serde signature length field: ${sigLen} (expected 64)`);
+  }
+  return bytesToHex0x(blake3(bytes.subarray(0, sigLenOffset)));
 }

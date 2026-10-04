@@ -59,6 +59,23 @@ export function accessListFromDappJson(raw: unknown, fieldName = 'access_list'):
   };
 }
 
+const SELECTOR_MINT_BATCH = 0x06;
+
+/** Decode reference NFT `mint_batch` (selector `0x06`) for wallet preview. Access lists stay AccountIds. */
+export function describeReferenceMintBatchCalldata(
+  calldata: Uint8Array
+): { n: number; to: AccountId } | null {
+  if (calldata.length < 96) return null;
+  if (calldata[31] !== SELECTOR_MINT_BATCH) return null;
+  let n = 0n;
+  for (let i = 64; i < 96; i++) {
+    n = (n << 8n) | BigInt(calldata[i]!);
+  }
+  if (n > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+  const to = calldata.slice(32, 64);
+  return { n: Number(n), to };
+}
+
 function parseU128String(s: unknown, field: string): bigint {
   if (s === undefined || s === null) throw new Error(`${field} is required`);
   const str = String(s).trim();
@@ -117,9 +134,13 @@ export function transactionSummary(tx: Transaction): string {
     case 'qa_pool_vote':
       return `Boing tx | From ${from} | Nonce ${n} | QA pool vote ${p.vote} on ${formatAddress(p.subject, true)}`;
     case 'contract_call': {
+      const mint = describeReferenceMintBatchCalldata(p.calldata);
       const ar = tx.access_list.read.length;
       const aw = tx.access_list.write.length;
       const al = ar + aw > 0 ? ` | access_list read:${ar} write:${aw}` : '';
+      if (mint) {
+        return `Boing tx | From ${from} | Nonce ${n} | Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)}${al}`;
+      }
       return `Boing tx | From ${from} | Nonce ${n} | Call contract ${formatAddress(p.contract, true)} | calldata ${p.calldata.length} bytes${al}`;
     }
     case 'contract_deploy':
@@ -235,12 +256,21 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
         rows.push(accessListSummary(tx));
       }
       break;
-    case 'contract_call':
-      rows.push({ label: 'Operation', value: 'Contract call' });
+    case 'contract_call': {
+      const mint = describeReferenceMintBatchCalldata(p.calldata);
+      rows.push({
+        label: 'Operation',
+        value: mint ? `Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)}` : 'Contract call',
+      });
       rows.push({ label: 'Contract', value: formatAddress(p.contract, true) });
+      if (mint) {
+        rows.push({ label: 'Recipient', value: formatAddress(mint.to, true) });
+        rows.push({ label: 'Count', value: String(mint.n) });
+      }
       rows.push({ label: 'Calldata', value: `${p.calldata.length} bytes — ${hexPreview(p.calldata)}` });
       rows.push(accessListSummary(tx));
       break;
+    }
     case 'contract_deploy':
       rows.push({ label: 'Operation', value: 'Deploy (legacy)' });
       rows.push({ label: 'Bytecode', value: `${p.bytecode.length} bytes — ${hexPreview(p.bytecode)}` });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { encodePayload, encodeAccessList, encodeTransaction } from './bincode';
+import { encodePayload, encodeAccessList, encodeTransaction, transactionIdFromTransaction } from './bincode';
 import type { Transaction } from './types';
 
 function toHex(u: Uint8Array): string {
@@ -60,5 +60,6 @@ describe('bincode vs Rust boing-primitives (see crates/boing-primitives/examples
     const b = encodeTransaction(tx);
     expect(b.length).toBe(108);
     expect(toHex(b.subarray(0, 8))).toBe('0700000000000000');
+    expect(transactionIdFromTransaction(tx)).toMatch(/^0x[0-9a-f]{64}$/);
   });
 });

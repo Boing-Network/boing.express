@@ -8,6 +8,7 @@
 
 import { signMessage } from '../src/crypto/keys';
 import { buildSignedTransactionHex } from '../src/boing/signing';
+import { transactionIdFromTransaction } from '../src/boing/bincode';
 import { accountIdFromHex } from '../src/boing/types';
 import {
   assertFromMatchesSender,
@@ -493,7 +494,10 @@ async function signOrSendBoingTransaction(
         }
       }
 
-    return await submitTransaction(rpcUrl, rpcHex);
+    return {
+      tx_hash: await submitTransaction(rpcUrl, rpcHex),
+      tx_id: transactionIdFromTransaction(tx),
+    };
   } catch (e) {
     if (e instanceof BoingProviderError) throw e;
     if (e instanceof RpcClientError) throw e;
