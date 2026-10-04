@@ -220,6 +220,25 @@ describe('buildTransactionApprovalDetail', () => {
     expect(al?.value).toMatch(/1 write/);
   });
 
+  it('previews mint_batch as Mint N NFTs to {to}', () => {
+    const toHex = 'aa'.repeat(32);
+    const calldata = new Uint8Array(96 + 64 * 3);
+    calldata[31] = 0x06;
+    calldata.fill(0xaa, 32, 64);
+    calldata[95] = 3;
+    const hex = '0x' + Array.from(calldata).map((b) => b.toString(16).padStart(2, '0')).join('');
+    const tx = transactionFromDappJson(
+      { type: 'contract_call', contract: poolHex, calldata: hex },
+      sender,
+      1n
+    );
+    const d = buildTransactionApprovalDetail(tx);
+    expect(d.rows.some((r) => r.label === 'Operation' && r.value === `Mint 3 NFTs to 0x${toHex}`)).toBe(
+      true
+    );
+    expect(transactionSummary(tx)).toMatch(/Mint 3 NFTs to 0xaa/);
+  });
+
   it('includes deploy meta rows and bytecode preview', () => {
     const tx = transactionFromDappJson(
       {

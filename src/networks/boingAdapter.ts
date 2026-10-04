@@ -7,6 +7,7 @@
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
 import { buildSignedTransactionHex } from '../boing/signing';
+import { transactionIdFromSignedTransactionHex } from '../boing/bincode';
 import { suggestedAccessList } from '../boing/accessList';
 import * as rpc from '../boing/rpc';
 import type { NetworkAdapter, BalanceResult, SubmitResult } from './types';
@@ -156,8 +157,16 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
             return { success: false, error: msg };
           }
         }
-        const txHash = await rpc.submitTransaction(rpcUrl, signedTxHex);
-        return { success: true, txHash };
+        const mempoolAck = await rpc.submitTransaction(rpcUrl, signedTxHex);
+        let txId: string | undefined;
+        try {
+          txId = transactionIdFromSignedTransactionHex(
+            signedTxHex.startsWith('0x') ? signedTxHex : `0x${signedTxHex}`
+          );
+        } catch {
+          txId = undefined;
+        }
+        return { success: true, txHash: txId ?? mempoolAck, txId, mempoolAck };
       } catch (e) {
         return {
           success: false,

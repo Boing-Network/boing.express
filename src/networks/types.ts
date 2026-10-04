@@ -24,6 +24,10 @@ export interface BalanceResult {
 export interface SubmitResult {
   success: boolean;
   txHash?: string;
+  /** Receipt-fetchable `Transaction::id()` (0x + 32-byte hex). */
+  txId?: string;
+  /** Raw mempool ack (`"ok"` from current boing-node). */
+  mempoolAck?: string;
   error?: string;
 }
 
