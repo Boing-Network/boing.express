@@ -46,7 +46,7 @@ Source of truth: **boing-network** repo — `docs/RPC-API-SPEC.md`, `docs/TECHNI
 |------|--------|--------|
 | **Balance** | ✅ | `boing_getBalance([hex_account_id])` or `boing_getAccount([hex_account_id])`. Adapter prefers `getAccount` (balance + nonce in one call); falls back to `getBalance`. Decimal strings for u128. |
 | **Nonce** | ✅ | From `boing_getAccount` when available; else `boing_getNonce`. Fetched when building the next transaction, not cached across sessions. |
-| **Send** | ✅ | Transfer payload, correct nonce/sender/to/amount, empty access_list. BLAKE3 signable hash + Ed25519 per boing-primitives. Submit `hex(bincode(SignedTransaction))` via `boing_submitTransaction`. |
+| **Send** | ✅ | Transfer payload, correct nonce/sender/to/amount, empty access_list. BLAKE3 signable hash + Ed25519 per boing-primitives. Submit `hex(bincode(SignedTransaction))` via `boing_submitTransaction`. Provider returns **`{ tx_hash, tx_id }`**. Reference NFT **`mint_batch` (`0x06`)** approval: “Mint N NFTs to {to}”. |
 | **Simulate before send** | ✅ | `boing_simulateTransaction([hex_signed_tx])` called before submit. If simulation fails (e.g. insufficient balance), error shown and tx not submitted. If node returns "Method not found", submit proceeds. |
 | **Unsigned contract simulate** | ✅ | Extension provider **`boing_simulateContractCall`** → RPC (connected origin); aligns with **boing-sdk** `simulateContractCall`. See **docs/BOING-EXPRESS-WALLET.md**. |
 | **Faucet (testnet)** | ✅ | "Get testnet BOING" calls `boing_faucetRequest([hex_account_id])`. Rate limit (-32016) and "method not found" (-32601 → "Faucet is not enabled") mapped to clear messages. Link to `https://boing.network/faucet` with `?address=` pre-filled. |

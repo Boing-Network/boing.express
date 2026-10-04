@@ -87,7 +87,7 @@ export const DOCS: Record<string, Doc> = {
         <p>Output is written to the <code>extension/</code> folder (popup.js, background.js, content.js, inpage.js). Load that folder as an unpacked extension in Chrome (chrome://extensions) or Firefox (about:debugging → This Firefox → Load Temporary Add-on).</p>
         <h2>Wallet connection for dApps</h2>
         <p>
-          The extension injects <code>window.boing</code> so sites can offer &quot;Connect wallet&quot;. dApps call <code>boing_requestAccounts</code> to connect and <code>boing_signMessage</code> for sign-in. In the popup, the <strong>Connected sites</strong> list lets you revoke access per origin. See <a href="https://github.com/Boing-Network/boing.express/blob/main/docs/WALLET_CONNECTION_AND_API.md" target="_blank" rel="noopener noreferrer">docs/WALLET_CONNECTION_AND_API.md</a> for the full API and implementation notes.
+          The extension injects <code>window.boing</code> so sites can offer &quot;Connect wallet&quot;. dApps call <code>boing_requestAccounts</code> to connect and <code>boing_signMessage</code> for sign-in. <code>boing_sendTransaction</code> returns <code>{'{ tx_hash, tx_id }'}</code> — poll receipts with <code>tx_id</code>. Reference NFT <code>mint_batch</code> (<code>0x06</code>) shows as one approval: &quot;Mint N NFTs to {'{to}'}&quot;. In the popup, the <strong>Connected sites</strong> list lets you revoke access per origin. See <a href="https://github.com/Boing-Network/boing.express/blob/main/docs/WALLET_CONNECTION_AND_API.md" target="_blank" rel="noopener noreferrer">docs/WALLET_CONNECTION_AND_API.md</a> for the full API and implementation notes.
         </p>
         <h2>Extension vs web</h2>
         <p>

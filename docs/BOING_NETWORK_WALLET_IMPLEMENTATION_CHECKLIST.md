@@ -145,6 +145,8 @@ Status: **implemented** (extension `window.boing`).
 - `boing_simulateContractCall([contract, calldata, …])` forwards to RPC for **unsigned** simulate (SDK parity).
 - Submit uses RPC `boing_submitTransaction` (there is no separate `boing_submitTransaction` provider method).
 - On simulation failure during send, provider error `data` may include `suggested_access_list` and `access_list_covers_suggestion` per [RPC-API-SPEC.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md).
+- **`boing_sendTransaction` result:** `{ tx_hash, tx_id }` — poll receipts with **`tx_id`**.
+- **Reference NFT `mint_batch`:** one approval; summary **“Mint N NFTs to {to}”** (selector `0x06`). Access lists remain AccountIds.
 
 Optional polish: richer approval UI for contract calls, tighter copy parity with **boing-sdk** `mapInjectedProviderErrorToUiMessage`.
 
