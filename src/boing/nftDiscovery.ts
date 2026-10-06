@@ -45,6 +45,17 @@ export interface NftDiscoveryResult {
   fromHeight: number;
   toHeight: number;
   blocksScanned: number;
+  /** Heights that failed after retry (pruned RPC / transient errors). */
+  blocksFailed: number;
+  /** Failed heights (capped list for UI). */
+  failedHeights: number[];
+  /**
+   * When the catch-up gap exceeds the scan window, heights below `fromHeight`
+   * are never visited this pass (cursor jumps forward within the tip window).
+   */
+  skippedOlderRange: boolean;
+  /** Prior cursor before this pass (`null` = cold start). */
+  previousCursor: number | null;
   discovered: DiscoveredNftItem[];
   /** New rows written to the watchlist this pass. */
   persistedCount: number;
@@ -180,6 +191,31 @@ function computeScanRange(
  * Scan recent blocks for mint_batch / transfer_nft to `ownerHex`, persist into watchlist,
  * and optionally sequential-probe known collections.
  */
+async function fetchBlockWithRetry(
+  rpcUrl: string,
+  height: number,
+  retries: number
+): Promise<{ height: number; block: unknown | null; failed: boolean }> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const block = await rpc.getBlockByHeight(rpcUrl, height, true);
+      if (block == null) {
+        lastError = new Error('empty block');
+      } else {
+        return { height, block, failed: false };
+      }
+    } catch (e) {
+      lastError = e;
+    }
+    if (attempt < retries) {
+      await new Promise((r) => setTimeout(r, 120 * (attempt + 1)));
+    }
+  }
+  void lastError;
+  return { height, block: null, failed: true };
+}
+
 export async function discoverAndPersistOwnedNfts(
   rpcUrl: string,
   ownerHex: string,
@@ -189,6 +225,8 @@ export async function discoverAndPersistOwnedNfts(
     maxConcurrent?: number;
     maxItems?: number;
     sequentialProbe?: number;
+    /** Retries per height after the first attempt. Default 1. */
+    blockRetries?: number;
     /** When false, skip writing the scan cursor (tests). Default true. */
     persistCursor?: boolean;
   }
@@ -198,48 +236,58 @@ export async function discoverAndPersistOwnedNfts(
   const maxConcurrent = options?.maxConcurrent ?? NFT_DISCOVERY_MAX_CONCURRENT;
   const maxItems = options?.maxItems ?? NFT_DISCOVERY_MAX_ITEMS;
   const sequentialProbe = options?.sequentialProbe ?? NFT_DISCOVERY_SEQUENTIAL_PROBE;
+  const blockRetries = options?.blockRetries ?? 1;
   const persistCursor = options?.persistCursor !== false;
+
+  const emptyResult = (partial: Partial<NftDiscoveryResult> & { error?: string }): NftDiscoveryResult => ({
+    tipHeight: 0,
+    fromHeight: 0,
+    toHeight: 0,
+    blocksScanned: 0,
+    blocksFailed: 0,
+    failedHeights: [],
+    skippedOlderRange: false,
+    previousCursor: null,
+    discovered: [],
+    persistedCount: 0,
+    truncated: false,
+    ...partial,
+  });
 
   let tipHeight = 0;
   try {
     tipHeight = await rpc.chainHeight(rpcUrl);
   } catch (e) {
-    return {
-      tipHeight: 0,
-      fromHeight: 0,
-      toHeight: 0,
-      blocksScanned: 0,
-      discovered: [],
-      persistedCount: 0,
-      truncated: false,
-      error: e instanceof Error ? e.message : String(e),
-    };
+    return emptyResult({ error: e instanceof Error ? e.message : String(e) });
   }
 
   const lastCursor = await getNftScanCursor(owner, networkId);
   const { fromHeight, toHeight } = computeScanRange(tipHeight, lastCursor, scanWindow);
+  const skippedOlderRange =
+    lastCursor != null && lastCursor >= 0 && lastCursor + 1 < fromHeight;
 
   const discovered: DiscoveredNftItem[] = [];
   const seen = new Set<string>();
   let truncated = false;
   let blocksScanned = 0;
+  const failedHeights: number[] = [];
 
   const heights: number[] = [];
   for (let h = fromHeight; h <= toHeight; h++) heights.push(h);
 
+  let scanError: string | undefined;
   try {
-    const blocks = await mapWithConcurrency(heights, maxConcurrent, async (h) => {
-      try {
-        return await rpc.getBlockByHeight(rpcUrl, h, true);
-      } catch {
-        return null;
-      }
-    });
+    const blocks = await mapWithConcurrency(heights, maxConcurrent, (h) =>
+      fetchBlockWithRetry(rpcUrl, h, blockRetries)
+    );
 
-    for (const block of blocks) {
-      if (block == null) continue;
+    for (const entry of blocks) {
+      if (entry.failed || entry.block == null) {
+        failedHeights.push(entry.height);
+        continue;
+      }
       blocksScanned++;
-      for (const item of discoverNftItemsFromBlock(block, owner)) {
+      for (const item of discoverNftItemsFromBlock(entry.block, owner)) {
         const id = `${item.collectionHex}:${item.tokenIdHex}`;
         if (seen.has(id)) continue;
         seen.add(id);
@@ -252,16 +300,8 @@ export async function discoverAndPersistOwnedNfts(
       if (truncated) break;
     }
   } catch (e) {
-    return {
-      tipHeight,
-      fromHeight,
-      toHeight,
-      blocksScanned,
-      discovered,
-      persistedCount: 0,
-      truncated,
-      error: e instanceof Error ? e.message : String(e),
-    };
+    // Keep going: persist any finds already decoded; do not drop the whole refresh.
+    scanError = e instanceof Error ? e.message : String(e);
   }
 
   // Persist calldata-discovered items first (mint_batch / transfer_nft to this account).
@@ -326,6 +366,9 @@ export async function discoverAndPersistOwnedNfts(
     (e) => !beforeKeys.has(`${e.collectionHex}:${e.tokenIdHex}`)
   ).length;
 
+  // Advance cursor to tip even when some heights failed after retry.
+  // Pruned/missing blocks in the window will not reappear; re-scanning them
+  // would stall catch-up forever. UI surfaces `blocksFailed` instead of silent drop.
   if (persistCursor) {
     await setNftScanCursor(owner, networkId, tipHeight);
   }
@@ -335,9 +378,14 @@ export async function discoverAndPersistOwnedNfts(
     fromHeight,
     toHeight,
     blocksScanned,
+    blocksFailed: failedHeights.length,
+    failedHeights: failedHeights.slice(0, 12),
+    skippedOlderRange,
+    previousCursor: lastCursor,
     discovered,
     persistedCount,
     truncated,
+    error: scanError,
   };
 }
 

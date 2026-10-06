@@ -886,6 +886,11 @@
   letter-spacing: 0.05em;
 }
 
+.nftCollectionCount {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .nftMono {
   font-size: 0.8rem;
   word-break: break-all;
@@ -906,11 +911,101 @@
   border-bottom: none;
 }
 
+.nftGalleryRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.nftCheck {
+  display: flex;
+  align-items: center;
+  padding-top: 1.1rem;
+  flex-shrink: 0;
+}
+
+.nftCheckSpacer {
+  width: 1rem;
+  flex-shrink: 0;
+}
+
+.nftThumbLink {
+  position: relative;
+  width: 3.25rem;
+  height: 3.25rem;
+  flex-shrink: 0;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--border-color, var(--card-border));
+  background: var(--surface, rgba(255, 255, 255, 0.04));
+}
+
+.nftThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.nftThumbPlaceholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  background: linear-gradient(
+    145deg,
+    rgba(0, 229, 204, 0.08),
+    rgba(10, 14, 26, 0.6)
+  );
+}
+
+.nftThumbPlaceholder[hidden] {
+  display: none;
+}
+
 .nftItemMain {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.nftTitleLink {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nftTitleLink:hover {
+  color: var(--accent-cyan, #00e8c8);
+  text-decoration: underline;
+}
+
+.nftDescription {
+  margin: 0;
+  width: 100%;
+  font-size: 0.8rem;
+  color: var(--text-secondary, var(--muted));
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.nftDescriptionMuted {
+  margin: 0;
+  width: 100%;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
 }
 
 .nftItemActions {
@@ -918,6 +1013,23 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.4rem;
+  padding-left: calc(1rem + 0.65rem + 3.25rem + 0.65rem);
+}
+
+.nftSelectBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.nftConfirmNote {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text);
+  padding: 0.5rem 0.65rem;
+  border-left: 3px solid var(--accent-cyan, #00e8c8);
+  background: rgba(0, 229, 204, 0.06);
 }
 
 .nftBadgeOwned,
@@ -939,4 +1051,10 @@
 
 .nftBadgeMissing {
   color: var(--text-secondary, var(--muted));
+}
+
+@media (max-width: 640px) {
+  .nftItemActions {
+    padding-left: 0;
+  }
 }
