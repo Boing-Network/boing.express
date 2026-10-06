@@ -18,6 +18,15 @@ import {
 import { probeNftHolding } from './nftHoldings';
 import { addNftWatchEntries, listNftWatchlist, type NftWatchEntry } from '../storage/nftWatchlist';
 import { getNftScanCursor, setNftScanCursor } from '../storage/nftScanCursor';
+import {
+  getNftScanLastSuccessfulHeight,
+  listNftScanGaps,
+  pickNftScanGapHeightsToRetry,
+  recordNftScanGapFailures,
+  resolveNftScanGapHeights,
+  setNftScanLastSuccessfulHeight,
+  type NftScanGapEntry,
+} from '../storage/nftScanGaps';
 
 /** Inclusive recent-block window scanned on a cold start (matches observer-ish deploy scans). */
 export const NFT_DISCOVERY_SCAN_WINDOW = 256;
@@ -34,6 +43,12 @@ export const NFT_DISCOVERY_SEQUENTIAL_PROBE = 8;
 /** Max watched collections to sequential-probe per refresh. */
 export const NFT_DISCOVERY_MAX_COLLECTIONS_TO_PROBE = 6;
 
+/**
+ * Persisted scan gaps (pruned/missing heights) retried per pass, oldest-attempted first.
+ * Keeps retry cost bounded even when many heights are permanently pruned.
+ */
+export const NFT_DISCOVERY_GAP_RETRY_LIMIT = 16;
+
 export interface DiscoveredNftItem {
   collectionHex: string;
   tokenIdHex: string;
@@ -45,9 +60,9 @@ export interface NftDiscoveryResult {
   fromHeight: number;
   toHeight: number;
   blocksScanned: number;
-  /** Heights that failed after retry (pruned RPC / transient errors). */
+  /** Heights that failed after retry this pass (pruned RPC / transient errors). */
   blocksFailed: number;
-  /** Failed heights (capped list for UI). */
+  /** Failed heights from this pass (capped list for UI). */
   failedHeights: number[];
   /**
    * When the catch-up gap exceeds the scan window, heights below `fromHeight`
@@ -60,6 +75,20 @@ export interface NftDiscoveryResult {
   /** New rows written to the watchlist this pass. */
   persistedCount: number;
   truncated: boolean;
+  /** Durable open-gap count (across all passes, not just this one) after this pass. */
+  openGapCount: number;
+  /** Sample of durable open-gap heights (capped) for UI, ascending. */
+  openGapHeights: number[];
+  /** Previously-failed heights that were retried and recovered this pass. */
+  recoveredGapCount: number;
+  /** How many persisted gap heights this pass attempted to retry. */
+  gapRetriesAttempted: number;
+  /**
+   * Highest height below which every attempted height has been successfully scanned
+   * (no open gap at or below it). Distinct from the cursor, which always advances to
+   * tip for catch-up even when gaps remain — this tracks confirmed-clean coverage.
+   */
+  lastSuccessfulHeight: number | null;
   error?: string;
 }
 
@@ -229,6 +258,8 @@ export async function discoverAndPersistOwnedNfts(
     blockRetries?: number;
     /** When false, skip writing the scan cursor (tests). Default true. */
     persistCursor?: boolean;
+    /** Max persisted gap heights to retry this pass. Default `NFT_DISCOVERY_GAP_RETRY_LIMIT`. */
+    gapRetryLimit?: number;
   }
 ): Promise<NftDiscoveryResult> {
   const owner = normalizeHex64(ownerHex);
@@ -238,6 +269,7 @@ export async function discoverAndPersistOwnedNfts(
   const sequentialProbe = options?.sequentialProbe ?? NFT_DISCOVERY_SEQUENTIAL_PROBE;
   const blockRetries = options?.blockRetries ?? 1;
   const persistCursor = options?.persistCursor !== false;
+  const gapRetryLimit = options?.gapRetryLimit ?? NFT_DISCOVERY_GAP_RETRY_LIMIT;
 
   const emptyResult = (partial: Partial<NftDiscoveryResult> & { error?: string }): NftDiscoveryResult => ({
     tipHeight: 0,
@@ -251,6 +283,11 @@ export async function discoverAndPersistOwnedNfts(
     discovered: [],
     persistedCount: 0,
     truncated: false,
+    openGapCount: 0,
+    openGapHeights: [],
+    recoveredGapCount: 0,
+    gapRetriesAttempted: 0,
+    lastSuccessfulHeight: null,
     ...partial,
   });
 
@@ -274,8 +311,18 @@ export async function discoverAndPersistOwnedNfts(
 
   const heights: number[] = [];
   for (let h = fromHeight; h <= toHeight; h++) heights.push(h);
+  const heightsInWindow = new Set(heights);
+
+  // Durable gaps from prior passes — retried alongside this pass's window so pruned
+  // heights get repeated chances instead of being abandoned once the cursor moves on.
+  const gapRetryHeightsAll = persistCursor
+    ? await pickNftScanGapHeightsToRetry(owner, networkId, gapRetryLimit)
+    : [];
+  const gapRetryHeights = gapRetryHeightsAll.filter((h) => !heightsInWindow.has(h));
 
   let scanError: string | undefined;
+  const recoveredGapHeights: number[] = [];
+  const stillFailedGapHeights: number[] = [];
   try {
     const blocks = await mapWithConcurrency(heights, maxConcurrent, (h) =>
       fetchBlockWithRetry(rpcUrl, h, blockRetries)
@@ -298,6 +345,30 @@ export async function discoverAndPersistOwnedNfts(
         }
       }
       if (truncated) break;
+    }
+
+    if (gapRetryHeights.length > 0) {
+      const gapBlocks = await mapWithConcurrency(gapRetryHeights, maxConcurrent, (h) =>
+        fetchBlockWithRetry(rpcUrl, h, blockRetries)
+      );
+      for (const entry of gapBlocks) {
+        if (entry.failed || entry.block == null) {
+          stillFailedGapHeights.push(entry.height);
+          continue;
+        }
+        recoveredGapHeights.push(entry.height);
+        if (truncated) continue;
+        for (const item of discoverNftItemsFromBlock(entry.block, owner)) {
+          const id = `${item.collectionHex}:${item.tokenIdHex}`;
+          if (seen.has(id)) continue;
+          seen.add(id);
+          discovered.push(item);
+          if (discovered.length >= maxItems) {
+            truncated = true;
+            break;
+          }
+        }
+      }
     }
   } catch (e) {
     // Keep going: persist any finds already decoded; do not drop the whole refresh.
@@ -373,6 +444,29 @@ export async function discoverAndPersistOwnedNfts(
     await setNftScanCursor(owner, networkId, tipHeight);
   }
 
+  // Durable gap bookkeeping: new window failures become open gaps; recovered gap
+  // retries are cleared; still-failing gap retries get their attempt count bumped.
+  let openGaps: NftScanGapEntry[] = [];
+  if (persistCursor) {
+    if (failedHeights.length > 0) {
+      await recordNftScanGapFailures(owner, networkId, failedHeights);
+    }
+    if (recoveredGapHeights.length > 0) {
+      await resolveNftScanGapHeights(owner, networkId, recoveredGapHeights);
+    }
+    if (stillFailedGapHeights.length > 0) {
+      await recordNftScanGapFailures(owner, networkId, stillFailedGapHeights);
+    }
+    openGaps = await listNftScanGaps(owner, networkId);
+    const lastSuccessfulHeight =
+      openGaps.length > 0 ? Math.min(...openGaps.map((g) => g.height)) - 1 : toHeight;
+    await setNftScanLastSuccessfulHeight(owner, networkId, Math.max(0, lastSuccessfulHeight));
+  }
+
+  const persistedLastSuccessfulHeight = persistCursor
+    ? await getNftScanLastSuccessfulHeight(owner, networkId)
+    : null;
+
   return {
     tipHeight,
     fromHeight,
@@ -385,6 +479,11 @@ export async function discoverAndPersistOwnedNfts(
     discovered,
     persistedCount,
     truncated,
+    openGapCount: openGaps.length,
+    openGapHeights: openGaps.slice(0, 12).map((g) => g.height),
+    recoveredGapCount: recoveredGapHeights.length,
+    gapRetriesAttempted: gapRetryHeights.length,
+    lastSuccessfulHeight: persistedLastSuccessfulHeight,
     error: scanError,
   };
 }

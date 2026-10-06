@@ -30,6 +30,13 @@ import {
   type NftDisplayMeta,
 } from '../boing/nftMetadata';
 import { transferOwnedNfts } from '../boing/nftTransfer';
+import { fetchOwnerIndexHoldings, formatOwnerIndexNote, type OwnerIndexResult } from '../boing/nftOwnerIndex';
+import {
+  findFreshmintCollectionLink,
+  freshmintCollectionsIndexUrl,
+  resolveFreshmintMarketplaceBaseUrl,
+  type FreshmintCollectionLink,
+} from '../boing/freshmintMarketplace';
 import {
   addNftWatchEntries,
   listNftWatchlist,
@@ -38,6 +45,9 @@ import {
 import { addTxHistory } from '../storage/txHistory';
 import type { NetworkAdapter } from '../networks/types';
 import styles from '../screens/Dashboard.module.css';
+
+/** Cap how many distinct collections get a best-effort FreshMint lookup per refresh. */
+const FRESHMINT_LOOKUP_MAX_COLLECTIONS = 10;
 
 export interface NftHoldingsPanelProps {
   accountId: AccountId;
@@ -67,8 +77,23 @@ function formatDiscoveryNote(discovery: NftDiscoveryResult): string {
   if (discovery.blocksFailed > 0) {
     const sample = discovery.failedHeights.slice(0, 3).join(', ');
     parts.push(
-      `${discovery.blocksFailed} unavailable after retry${sample ? ` (e.g. ${sample})` : ''} — skipped, not a full abort`
+      `${discovery.blocksFailed} unavailable after retry${sample ? ` (e.g. ${sample})` : ''} — tracked as a gap, not dropped`
     );
+  }
+  if (discovery.gapRetriesAttempted > 0) {
+    parts.push(
+      `retried ${discovery.gapRetriesAttempted} previously-missing block(s)` +
+        (discovery.recoveredGapCount > 0 ? `, recovered ${discovery.recoveredGapCount}` : '')
+    );
+  }
+  if (discovery.openGapCount > 0) {
+    const sample = discovery.openGapHeights.slice(0, 3).join(', ');
+    parts.push(
+      `${discovery.openGapCount} block(s) still missing${sample ? ` (e.g. ${sample})` : ''} — retried each refresh`
+    );
+  }
+  if (discovery.lastSuccessfulHeight != null) {
+    parts.push(`confirmed clean through height ${discovery.lastSuccessfulHeight}`);
   }
   if (discovery.skippedOlderRange) {
     parts.push(
@@ -96,6 +121,10 @@ export function NftHoldingsPanel({
   const [loading, setLoading] = useState(false);
   const [discovering, setDiscovering] = useState(false);
   const [discoveryNote, setDiscoveryNote] = useState<string | null>(null);
+  const [ownerIndexNote, setOwnerIndexNote] = useState<string | null>(null);
+  const [freshmintLinkByCollection, setFreshmintLinkByCollection] = useState<
+    Map<string, FreshmintCollectionLink>
+  >(new Map());
   const [error, setError] = useState<string | null>(null);
   const [addCollection, setAddCollection] = useState('');
   const [addTokenId, setAddTokenId] = useState('');
@@ -112,13 +141,40 @@ export function NftHoldingsPanel({
   const explorerBase = network.config.explorerUrl?.replace(/\/$/, '') ?? 'https://boing.observer';
   const isTestnet = Boolean(network.config.isTestnet);
   const ownerHex = accountIdToHex(accountId);
+  const freshmintBaseUrl = resolveFreshmintMarketplaceBaseUrl();
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setDiscovering(true);
     setError(null);
     setDiscoveryNote(null);
+    setOwnerIndexNote(null);
     try {
+      // Durable NFT-by-owner index first (observer proxy to the owner-indexer Worker) —
+      // covers holdings older than the bounded scan window below. Graceful no-op when
+      // the indexer is unconfigured, unreachable, or still empty for this account.
+      let ownerIndex: OwnerIndexResult | null = null;
+      try {
+        ownerIndex = await fetchOwnerIndexHoldings(explorerBase, ownerHex, isTestnet);
+      } catch (e) {
+        ownerIndex = {
+          available: false,
+          items: [],
+          indexer: null,
+          reason: e instanceof Error ? e.message : String(e),
+          pagesFetched: 0,
+          truncated: false,
+        };
+      }
+      if (ownerIndex.available && ownerIndex.items.length > 0) {
+        await addNftWatchEntries(
+          ownerHex,
+          network.config.id,
+          ownerIndex.items.map((it) => ({ collectionHex: it.collectionHex, tokenIdHex: it.tokenIdHex }))
+        );
+      }
+      setOwnerIndexNote(formatOwnerIndexNote(ownerIndex));
+
       const discovery = await discoverAndPersistOwnedNfts(
         rpcUrl,
         ownerHex,
@@ -148,13 +204,30 @@ export function NftHoldingsPanel({
         networkIsTestnet: isTestnet,
       });
       setMetaByKey(meta);
+
+      if (freshmintBaseUrl) {
+        const collections = [...new Set(probed.map((p) => p.collectionHex))].slice(
+          0,
+          FRESHMINT_LOOKUP_MAX_COLLECTIONS
+        );
+        void Promise.all(
+          collections.map(async (collectionHex) => {
+            const link = await findFreshmintCollectionLink(freshmintBaseUrl, collectionHex);
+            setFreshmintLinkByCollection((prev) => {
+              const next = new Map(prev);
+              next.set(collectionHex, link);
+              return next;
+            });
+          })
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setDiscovering(false);
       setLoading(false);
     }
-  }, [accountId, explorerBase, isTestnet, network.config.id, ownerHex, rpcUrl]);
+  }, [accountId, explorerBase, freshmintBaseUrl, isTestnet, network.config.id, ownerHex, rpcUrl]);
 
   useEffect(() => {
     void refresh();
@@ -312,13 +385,15 @@ export function NftHoldingsPanel({
           </button>
         </div>
         <p className={styles.faucetHint}>
-          Auto-discovers reference NFTs by scanning recent blocks for{' '}
+          Checks the durable NFT-by-owner index (when the operator has one deployed) for holdings
+          beyond the recent-block window, then scans recent blocks for{' '}
           <code className={styles.inlineCode}>mint_batch</code> /{' '}
           <code className={styles.inlineCode}>transfer_nft</code> to this account (window ≤
-          {NFT_DISCOVERY_SCAN_WINDOW} blocks — not a full-history indexer). Unavailable blocks are
-          retried once then skipped with a status note. Grouped by collection; media from on-chain
-          metadata (observer profiles for full detail).
+          {NFT_DISCOVERY_SCAN_WINDOW} blocks). Blocks that fail to fetch (pruned RPC) are retried
+          every refresh and tracked as an open gap instead of being silently skipped. Grouped by
+          collection; media from on-chain metadata (observer profiles for full detail).
         </p>
+        {ownerIndexNote && <p className={styles.addressHint}>{ownerIndexNote}</p>}
         {discoveryNote && <p className={styles.addressHint}>{discoveryNote}</p>}
         {error && <p className={styles.error}>{error}</p>}
         {statuses.length === 0 && !loading && (
@@ -353,6 +428,24 @@ export function NftHoldingsPanel({
               >
                 Open collection
               </a>
+              {freshmintBaseUrl && (
+                <a
+                  href={
+                    freshmintLinkByCollection.get(collectionHex)?.url ??
+                    freshmintCollectionsIndexUrl(freshmintBaseUrl)
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.explorerLink}
+                  title={
+                    freshmintLinkByCollection.get(collectionHex)?.matched
+                      ? 'Open this collection on FreshMint'
+                      : 'Browse FreshMint collections (no confirmed match yet)'
+                  }
+                >
+                  FreshMint ↗
+                </a>
+              )}
             </div>
             <ul className={styles.nftItemList}>
               {items.map((item) => {

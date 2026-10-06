@@ -181,5 +181,59 @@ describe('nftDiscovery', () => {
     expect(result.error).toBeUndefined();
     expect(result.fromHeight).toBe(9);
     expect(result.toHeight).toBe(10);
+    // The pruned height becomes a durable gap instead of being silently dropped.
+    expect(result.openGapCount).toBe(1);
+    expect(result.openGapHeights).toEqual([9]);
+    expect(result.lastSuccessfulHeight).toBe(8);
+  });
+
+  it('persists open gaps across passes and retries them on the next refresh', async () => {
+    const owner = 'dd'.repeat(32);
+
+    vi.spyOn(rpc, 'chainHeight').mockResolvedValue(10);
+    vi.spyOn(rpc, 'getBlockByHeight').mockImplementation(async (_url, h) => {
+      if (h === 9) throw new Error('pruned');
+      return { transactions: [], receipts: [] };
+    });
+
+    const first = await discoverAndPersistOwnedNfts('https://rpc.example', owner, 'testnet', {
+      scanWindow: 2,
+      maxConcurrent: 2,
+      sequentialProbe: 0,
+      blockRetries: 0,
+      persistCursor: true,
+    });
+    expect(first.openGapCount).toBe(1);
+    expect(first.openGapHeights).toEqual([9]);
+    expect(first.lastSuccessfulHeight).toBe(8);
+
+    // Cursor already at tip (10); next pass has no new window heights to scan but
+    // should still retry the persisted gap from a prior pass.
+    const second = await discoverAndPersistOwnedNfts('https://rpc.example', owner, 'testnet', {
+      scanWindow: 2,
+      maxConcurrent: 2,
+      sequentialProbe: 0,
+      blockRetries: 0,
+      persistCursor: true,
+    });
+    expect(second.gapRetriesAttempted).toBe(1);
+    expect(second.openGapCount).toBe(1); // height 9 still pruned — remains open
+    expect(second.recoveredGapCount).toBe(0);
+
+    // RPC recovers for height 9 (e.g. node un-prunes or a different node is used).
+    vi.spyOn(rpc, 'getBlockByHeight').mockImplementation(async () => ({
+      transactions: [],
+      receipts: [],
+    }));
+    const third = await discoverAndPersistOwnedNfts('https://rpc.example', owner, 'testnet', {
+      scanWindow: 2,
+      maxConcurrent: 2,
+      sequentialProbe: 0,
+      blockRetries: 0,
+      persistCursor: true,
+    });
+    expect(third.recoveredGapCount).toBe(1);
+    expect(third.openGapCount).toBe(0);
+    expect(third.lastSuccessfulHeight).toBe(10);
   });
 });
