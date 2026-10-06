@@ -44,6 +44,12 @@ export const DOCS: Record<string, Doc> = {
         <p>
           The dashboard shows your balance for the selected network (Testnet or Mainnet). Use the refresh button (↻) to sync with the chain. Balance auto-refreshes when you return to the tab and every 45 seconds. If the fetch fails, use Retry.
         </p>
+        <h2>NFTs</h2>
+        <p>
+          The NFTs tab lists reference NFT collections and items you add (collection AccountId + token id word). Express checks owner storage via the XOR key scheme used on-chain, then links each item to{' '}
+          <a href="https://boing.observer" target="_blank" rel="noopener noreferrer">boing.observer</a>{' '}
+          at <code>/asset/&lt;collection&gt;/item/&lt;tokenId&gt;</code>. After a dApp <code>mint_batch</code> to your address, add the collection and token ids (or approve the mint in the extension — those ids are saved automatically). Transfer uses <code>transfer_nft</code> only when this account is the recorded owner.
+        </p>
         <h2>Send</h2>
         <p>
           To send BOING, enter the recipient’s address (64 hex characters or 0x…) and the amount in BOING (e.g. 1 or 0.5). Use “Max” to send your full balance. On Mainnet, a warning appears when you enter an amount — real BOING may be at risk. After a successful send, copy the tx hash for support or future explorer deep links.
@@ -178,7 +184,7 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>Current status</h2>
         <p>
-          The wallet supports create/import, send/receive, testnet faucet, staking (Bond/Unbond), and network switching. All features use real RPC calls against <code>https://testnet-rpc.boing.network</code> — nothing is simulated. Mainnet should be treated as configurable until official launch metadata is published.
+          The wallet supports create/import, send/receive, reference NFT view/transfer, testnet faucet, staking (Bond/Unbond), and network switching. All features use real RPC calls against <code>https://testnet-rpc.boing.network</code> — nothing is simulated. Mainnet should be treated as configurable until official launch metadata is published.
         </p>
         <h2>VibeMiner vs boing.express</h2>
         <p>

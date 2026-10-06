@@ -92,6 +92,7 @@
       <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
         <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet">Wallet</button>
         <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transactions">Tx</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-nfts" aria-selected="false" aria-controls="panel-nfts" data-tab="nfts">NFTs</button>
         <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
         <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>
@@ -154,6 +155,30 @@
               <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING">Send</button>
             </form>
           </div>
+        </section>
+        <section id="panel-nfts" class="tab-panel" role="tabpanel" aria-labelledby="tab-nfts" hidden>
+          <div class="card">
+            <h2 class="label">NFTs</h2>
+            <p class="hint">Reference NFT items for this account. Add a collection + token id after mint_batch, then open the item on boing.observer.</p>
+            <ul id="nft-list" class="connected-sites-list" aria-label="Watched NFTs"></ul>
+            <p id="nft-empty" class="hint">No watched NFTs yet.</p>
+            <p id="nft-error" class="error hidden"></p>
+          </div>
+          <form id="form-nft-add" class="form card">
+            <h2 class="label">Add NFT</h2>
+            <input type="text" id="nft-collection" placeholder="Collection (64 hex)" class="input" aria-label="NFT collection" data-testid="nft-add-collection" />
+            <input type="text" id="nft-token-id" placeholder="Token id (64 hex or 1, 2, …)" class="input" aria-label="NFT token id" data-testid="nft-add-token-id" />
+            <p id="nft-add-error" class="error hidden"></p>
+            <button type="submit" class="btn-secondary" aria-label="Add NFT to watchlist">Add to watchlist</button>
+          </form>
+          <form id="form-nft-transfer" class="form card">
+            <h2 class="label">Transfer NFT</h2>
+            <p class="hint" id="nft-transfer-selected">Select Transfer on an owned item.</p>
+            <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
+            <p id="nft-transfer-error" class="error hidden"></p>
+            <p id="nft-transfer-success" class="success hidden" aria-live="polite"></p>
+            <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
+          </form>
         </section>
         <section id="panel-stake" class="tab-panel" role="tabpanel" aria-labelledby="tab-stake" hidden>
           <div id="staking-section" class="staking-panel">

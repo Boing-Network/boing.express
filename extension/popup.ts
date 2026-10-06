@@ -20,7 +20,15 @@ import {
   importAdditionalAccount,
   removeAccountAtIndex,
 } from '../src/storage/walletStore.extension';
-import { assertFromMatchesSender, transactionFromDappJson } from '../src/boing/dappTxRequest';
+import { assertFromMatchesSender, describeReferenceMintBatchCalldata, transactionFromDappJson } from '../src/boing/dappTxRequest';
+import {
+  encodeReferenceTransferNftCalldata,
+  observerNftItemUrl,
+  parseTokenIdInput,
+  shortHexLabel,
+} from '../src/boing/referenceNft';
+import { probeNftWatchlist, type NftHoldingStatus } from '../src/boing/nftHoldings';
+import { addNftWatchEntries, listNftWatchlist, removeNftWatchEntry } from '../src/storage/nftWatchlist';
 import { buildSignedTransactionHex } from '../src/boing/signing';
 import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
@@ -245,7 +253,7 @@ async function refreshConnectedSites(): Promise<void> {
   }
 }
 
-type TabId = 'wallet' | 'transactions' | 'stake' | 'faucet';
+type TabId = 'wallet' | 'transactions' | 'nfts' | 'stake' | 'faucet';
 
 function switchTab(tabId: TabId): void {
   document.querySelectorAll('.tab-btn').forEach((el) => {
@@ -338,6 +346,104 @@ function refreshAccountSelect(): void {
   if (rm) rm.classList.toggle('hidden', summaries.length <= 1);
 }
 
+let nftTransferTarget: NftHoldingStatus | null = null;
+
+function nftExplorerBase(): string {
+  const net = getCurrentNetwork();
+  return (net.config.explorerUrl ?? 'https://boing.observer').replace(/\/$/, '');
+}
+
+async function maybeWatchMintBatch(tx: { payload: { kind: string; contract?: Uint8Array; calldata?: Uint8Array } }): Promise<void> {
+  if (!accountId || tx.payload.kind !== 'contract_call' || !tx.payload.contract || !tx.payload.calldata) return;
+  const mint = describeReferenceMintBatchCalldata(tx.payload.calldata);
+  if (!mint) return;
+  const recipient = accountIdToHex(mint.to).toLowerCase();
+  const mine = accountIdToHex(accountId).toLowerCase();
+  if (recipient !== mine) return;
+  const collectionHex = accountIdToHex(tx.payload.contract);
+  await addNftWatchEntries(
+    mine,
+    selectedNetworkId,
+    mint.tokenIds.map((tokenIdHex) => ({ collectionHex, tokenIdHex }))
+  );
+}
+
+async function refreshNfts(): Promise<void> {
+  if (!accountId) return;
+  const listEl = document.getElementById('nft-list');
+  const emptyEl = document.getElementById('nft-empty');
+  const errEl = document.getElementById('nft-error');
+  if (!listEl || !emptyEl) return;
+  listEl.replaceChildren();
+  if (errEl) {
+    errEl.classList.add('hidden');
+    errEl.textContent = '';
+  }
+  try {
+    const ownerHex = accountIdToHex(accountId);
+    const entries = await listNftWatchlist(ownerHex, selectedNetworkId);
+    if (entries.length === 0) {
+      emptyEl.classList.remove('hidden');
+      return;
+    }
+    emptyEl.classList.add('hidden');
+    const net = getCurrentNetwork();
+    const statuses = await probeNftWatchlist(net.config.rpcUrl, accountId, entries);
+    const explorer = nftExplorerBase();
+    for (const item of statuses) {
+      const li = document.createElement('li');
+      const status = item.error ? 'Error' : item.owned ? 'Owned' : item.exists ? 'Not yours' : 'Not found';
+      const label = document.createElement('span');
+      label.textContent = `${status} · ${shortHexLabel(item.tokenIdHex, 8, 6)}`;
+      const link = document.createElement('a');
+      link.href = observerNftItemUrl(explorer, item.collectionHex, item.tokenIdHex, Boolean(net.config.isTestnet));
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'Details';
+      li.appendChild(label);
+      li.appendChild(link);
+      if (item.owned) {
+        const xfer = document.createElement('button');
+        xfer.type = 'button';
+        xfer.className = 'btn-small';
+        xfer.textContent = 'Transfer';
+        xfer.addEventListener('click', () => {
+          nftTransferTarget = item;
+          const sel = document.getElementById('nft-transfer-selected');
+          if (sel) sel.textContent = `Selected: ${shortHexLabel(item.tokenIdHex, 8, 6)}`;
+          const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement | null;
+          if (btn) btn.disabled = false;
+        });
+        li.appendChild(xfer);
+      }
+      const rmBtn = document.createElement('button');
+      rmBtn.type = 'button';
+      rmBtn.className = 'btn-small btn-disconnect';
+      rmBtn.textContent = 'Remove';
+      rmBtn.addEventListener('click', async () => {
+        await removeNftWatchEntry(ownerHex, selectedNetworkId, item.collectionHex, item.tokenIdHex);
+        if (
+          nftTransferTarget &&
+          nftTransferTarget.collectionHex === item.collectionHex &&
+          nftTransferTarget.tokenIdHex === item.tokenIdHex
+        ) {
+          nftTransferTarget = null;
+          const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement | null;
+          if (btn) btn.disabled = true;
+        }
+        await refreshNfts();
+      });
+      li.appendChild(rmBtn);
+      listEl.appendChild(li);
+    }
+  } catch (e) {
+    if (errEl) {
+      errEl.textContent = e instanceof Error ? e.message : String(e);
+      errEl.classList.remove('hidden');
+    }
+  }
+}
+
 async function goDashboard(): Promise<void> {
   if (!accountId || !privateKey) return;
   const network = getDefaultNetwork(networksCatalog);
@@ -359,6 +465,7 @@ async function goDashboard(): Promise<void> {
   refreshConnectedSites();
   await refreshDashboardBalance();
   await refreshStake();
+  void refreshNfts();
 }
 
 // --- Choose
@@ -523,7 +630,9 @@ $('btn-import-back').addEventListener('click', () => {
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     const tabId = (btn as HTMLElement).getAttribute('data-tab');
-    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'stake' || tabId === 'faucet') switchTab(tabId);
+    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'nfts' || tabId === 'stake' || tabId === 'faucet')
+      switchTab(tabId);
+    if (tabId === 'nfts') void refreshNfts();
   });
 });
 
@@ -626,7 +735,9 @@ document.getElementById('btn-native-tx-submit')?.addEventListener('click', async
     if (result.success) {
       okEl.textContent = result.txHash ? `Submitted: ${result.txHash.slice(0, 20)}…` : 'Submitted.';
       okEl.classList.remove('hidden');
+      await maybeWatchMintBatch(tx);
       await refreshDashboardBalance();
+      void refreshNfts();
     } else {
       errEl.textContent = result.error ?? 'Submit failed';
       errEl.classList.remove('hidden');
@@ -637,6 +748,89 @@ document.getElementById('btn-native-tx-submit')?.addEventListener('click', async
   } finally {
     btn.disabled = false;
     btn.textContent = prev ?? 'Sign & send';
+  }
+});
+
+document.getElementById('form-nft-add')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!accountId) return;
+  const errEl = document.getElementById('nft-add-error');
+  const colEl = document.getElementById('nft-collection') as HTMLInputElement | null;
+  const tokEl = document.getElementById('nft-token-id') as HTMLInputElement | null;
+  if (!errEl || !colEl || !tokEl) return;
+  errEl.classList.add('hidden');
+  try {
+    const collectionHex = colEl.value.replace(/^0x/i, '').trim().toLowerCase();
+    const tokenIdHex = parseTokenIdInput(tokEl.value);
+    if (collectionHex.length !== 64 || !/^[0-9a-f]+$/.test(collectionHex)) {
+      throw new Error('Collection must be 64 hex characters');
+    }
+    await addNftWatchEntries(accountIdToHex(accountId), selectedNetworkId, [
+      { collectionHex, tokenIdHex },
+    ]);
+    colEl.value = '';
+    tokEl.value = '';
+    await refreshNfts();
+  } catch (err) {
+    errEl.textContent = err instanceof Error ? err.message : String(err);
+    errEl.classList.remove('hidden');
+  }
+});
+
+document.getElementById('form-nft-transfer')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!accountId || !privateKey) return;
+  const errEl = document.getElementById('nft-transfer-error');
+  const okEl = document.getElementById('nft-transfer-success');
+  const toEl = document.getElementById('nft-transfer-to') as HTMLInputElement | null;
+  if (!errEl || !okEl || !toEl) return;
+  errEl.classList.add('hidden');
+  okEl.classList.add('hidden');
+  if (!nftTransferTarget?.owned) {
+    errEl.textContent = 'Select an owned NFT first.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  const net = getCurrentNetwork();
+  if (!net.buildContractCall) {
+    errEl.textContent = 'This network cannot send contract calls.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  const toHex = toEl.value.replace(/\s/g, '').replace(/^0x/i, '');
+  if (toHex.length !== 64 || !/^[0-9a-fA-F]+$/.test(toHex)) {
+    errEl.textContent = 'Invalid address: must be 64 hex characters';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement;
+  btn.disabled = true;
+  try {
+    const toId = accountIdFromHex(toHex);
+    const collectionId = accountIdFromHex(nftTransferTarget.collectionHex);
+    const calldata = encodeReferenceTransferNftCalldata(toId, nftTransferTarget.tokenIdHex);
+    const nonce = await net.getNonce(accountId);
+    const signedHex = await net.buildContractCall(accountId, collectionId, calldata, nonce, privateKey);
+    const result = await net.submitTransaction(signedHex);
+    if (result.success) {
+      okEl.textContent = result.txHash ? `Submitted: ${result.txHash.slice(0, 16)}…` : 'Submitted.';
+      okEl.classList.remove('hidden');
+      nftTransferTarget = null;
+      toEl.value = '';
+      const sel = document.getElementById('nft-transfer-selected');
+      if (sel) sel.textContent = 'Select Transfer on an owned item.';
+      window.setTimeout(() => {
+        void refreshNfts();
+      }, 2000);
+    } else {
+      errEl.textContent = result.error ?? 'Submit failed';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    errEl.textContent = err instanceof Error ? err.message : String(err);
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
   }
 });
 

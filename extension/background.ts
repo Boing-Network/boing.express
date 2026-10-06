@@ -9,10 +9,11 @@
 import { signMessage } from '../src/crypto/keys';
 import { buildSignedTransactionHex } from '../src/boing/signing';
 import { transactionIdFromTransaction } from '../src/boing/bincode';
-import { accountIdFromHex } from '../src/boing/types';
+import { accountIdFromHex, accountIdToHex } from '../src/boing/types';
 import {
   assertFromMatchesSender,
   buildTransactionApprovalDetail,
+  describeReferenceMintBatchCalldata,
   transactionFromDappJson,
   transactionSummary,
   type TransactionApprovalDetail,
@@ -43,6 +44,7 @@ import {
   refreshExtensionBoingMetaIfStale,
 } from './boingMetaExtension';
 import { parseVaultFromStoredJson, getActiveAddressHex } from '../src/storage/walletVault';
+import { addNftWatchEntries } from '../src/storage/nftWatchlist';
 
 const STORAGE_KEY_WALLET = 'boing_wallet_enc';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
@@ -494,8 +496,10 @@ async function signOrSendBoingTransaction(
         }
       }
 
+    const tx_hash = await submitTransaction(rpcUrl, rpcHex);
+    maybeWatchMintBatchFromTx(tx, networkId);
     return {
-      tx_hash: await submitTransaction(rpcUrl, rpcHex),
+      tx_hash,
       tx_id: transactionIdFromTransaction(tx),
     };
   } catch (e) {
@@ -504,6 +508,21 @@ async function signOrSendBoingTransaction(
     const msg = e instanceof Error ? e.message : String(e);
     throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_SUBMIT_FAILED', msg);
   }
+}
+
+function maybeWatchMintBatchFromTx(tx: {
+  payload: { kind: string; contract?: Uint8Array; calldata?: Uint8Array };
+}, networkId: string): void {
+  if (tx.payload.kind !== 'contract_call' || !tx.payload.contract || !tx.payload.calldata) return;
+  const mint = describeReferenceMintBatchCalldata(tx.payload.calldata);
+  if (!mint || mint.tokenIds.length === 0) return;
+  const collectionHex = accountIdToHex(tx.payload.contract);
+  const toHex = accountIdToHex(mint.to);
+  void addNftWatchEntries(
+    toHex,
+    networkId,
+    mint.tokenIds.map((tokenIdHex) => ({ collectionHex, tokenIdHex }))
+  );
 }
 
 function broadcastProviderEvent(message: ProviderEventMessage): void {

@@ -2,7 +2,7 @@
  * Boing JSON-RPC client. Aligned with boing-network docs/RPC-API-SPEC.md.
  * Methods: boing_getAccount, boing_getBalance, boing_getNonce, boing_submitTransaction,
  * boing_simulateTransaction, boing_simulateContractCall, boing_faucetRequest, boing_chainHeight,
- * boing_listDexPools, boing_listDexTokens, boing_getDexToken.
+ * boing_listDexPools, boing_listDexTokens, boing_getDexToken, boing_getContractStorage.
  */
 
 const JSON_RPC_VERSION = '2.0';
@@ -193,6 +193,20 @@ export function listDexTokens(rpcUrl: string, params: unknown[] = [{}]): Promise
 /** `boing_getDexToken` — params `[{ id, factory?, light?, includeDiagnostics? }]`; node returns one row or JSON null. */
 export function getDexToken(rpcUrl: string, params: unknown[] = [{}]): Promise<unknown> {
   return rpcCall<unknown>(rpcUrl, 'boing_getDexToken', [dexDiscoveryRequestObject(params)]);
+}
+
+/**
+ * `boing_getContractStorage([contract_hex, key_hex])` — one 32-byte VM storage word.
+ * Used for reference NFT owner/metadata XOR slots (see BOING-REFERENCE-NFT.md).
+ */
+export function getContractStorage(
+  rpcUrl: string,
+  contractHex32: string,
+  keyHex32: string
+): Promise<unknown> {
+  const contract = contractHex32.startsWith('0x') ? contractHex32 : `0x${contractHex32}`;
+  const key = keyHex32.startsWith('0x') ? keyHex32 : `0x${keyHex32}`;
+  return rpcCall<unknown>(rpcUrl, 'boing_getContractStorage', [contract, key]);
 }
 
 /** Testnet faucet: request BOING for account (hex AccountId). Maps -32016 (rate limit), -32601 (not enabled). */

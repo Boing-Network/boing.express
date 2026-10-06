@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getBalance,
   getNonce,
+  getContractStorage,
   isMethodNotFoundError,
   listDexPools,
   parseSubmitTransactionResult,
@@ -123,6 +124,25 @@ describe('rpc client', () => {
       '0x' + 'bb'.repeat(32),
       123,
     ]);
+  });
+
+  it('calls boing_getContractStorage with 0x-prefixed contract and key', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        jsonrpc: '2.0',
+        id: 1,
+        result: { value: '0x' + '11'.repeat(32) },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const contract = 'aa'.repeat(32);
+    const key = 'bb'.repeat(32);
+    const out = await getContractStorage('https://rpc.example/rpc', contract, key);
+    expect(out).toEqual({ value: '0x' + '11'.repeat(32) });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
+    expect(body.method).toBe('boing_getContractStorage');
+    expect(body.params).toEqual([`0x${contract}`, `0x${key}`]);
   });
 
   it('parses boing_submitTransaction object result per RPC spec', () => {

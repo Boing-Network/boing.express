@@ -5,6 +5,7 @@
 import type { AccountId, AccessList, Payload, Transaction } from './types';
 import { accountIdFromHex, accountIdToHex, formatAddress } from './types';
 import { emptyAccessList, suggestedAccessList } from './accessList';
+import { parseReferenceMintBatchTokenIds } from './referenceNft';
 
 const U128_MAX = (1n << 128n) - 1n;
 
@@ -59,21 +60,17 @@ export function accessListFromDappJson(raw: unknown, fieldName = 'access_list'):
   };
 }
 
-const SELECTOR_MINT_BATCH = 0x06;
-
 /** Decode reference NFT `mint_batch` (selector `0x06`) for wallet preview. Access lists stay AccountIds. */
 export function describeReferenceMintBatchCalldata(
   calldata: Uint8Array
-): { n: number; to: AccountId } | null {
-  if (calldata.length < 96) return null;
-  if (calldata[31] !== SELECTOR_MINT_BATCH) return null;
-  let n = 0n;
-  for (let i = 64; i < 96; i++) {
-    n = (n << 8n) | BigInt(calldata[i]!);
-  }
-  if (n > BigInt(Number.MAX_SAFE_INTEGER)) return null;
-  const to = calldata.slice(32, 64);
-  return { n: Number(n), to };
+): { n: number; to: AccountId; tokenIds: string[] } | null {
+  const parsed = parseReferenceMintBatchTokenIds(calldata);
+  if (!parsed) return null;
+  return {
+    n: parsed.n,
+    to: accountIdFromHex(parsed.toHex),
+    tokenIds: parsed.tokenIds,
+  };
 }
 
 function parseU128String(s: unknown, field: string): bigint {

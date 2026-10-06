@@ -17,13 +17,15 @@ import { getLockAfterLabel } from '../storage/lockSettings';
 import type { BalanceResult } from '../networks/types';
 import { chainIdHexToDecimal } from '../networks/chainIds';
 import { SiteLogo } from '../components/SiteLogo';
+import { NftHoldingsPanel } from '../components/NftHoldingsPanel';
 import styles from './Dashboard.module.css';
 
-type WalletTabId = 'wallet' | 'transactions' | 'stake' | 'faucet';
+type WalletTabId = 'wallet' | 'transactions' | 'nfts' | 'stake' | 'faucet';
 
 const WALLET_TABS: { id: WalletTabId; label: string }[] = [
   { id: 'wallet', label: 'Wallet' },
   { id: 'transactions', label: 'Transactions' },
+  { id: 'nfts', label: 'NFTs' },
   { id: 'stake', label: 'Stake' },
   { id: 'faucet', label: 'Faucet' },
 ];
@@ -986,6 +988,25 @@ export function Dashboard() {
                   ))}
                 </ul>
               </section>
+            )}
+          </div>
+
+          <div
+            id="panel-nfts"
+            role="tabpanel"
+            aria-labelledby="tab-nfts"
+            hidden={activeTab !== 'nfts'}
+            className={`${styles.tabPanel} ${activeTab === 'nfts' ? styles.tabPanelActive : ''}`}
+          >
+            {accountId && (
+              <NftHoldingsPanel
+                accountId={accountId}
+                network={network}
+                rpcUrl={network.config.rpcUrl}
+                getPrivateKey={getPrivateKey}
+                addressHint={addressHint}
+                onTxRecorded={refreshTxHistory}
+              />
             )}
           </div>
 
