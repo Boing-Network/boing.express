@@ -178,6 +178,21 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
     async getChainHeight(): Promise<number> {
       return rpc.chainHeight(rpcUrl);
     },
+
+    async buildContractCall(
+      sender: AccountId,
+      contract: AccountId,
+      calldata: Uint8Array,
+      nonce: bigint,
+      privateKey: Uint8Array
+    ): Promise<string> {
+      return signedNativeTx(
+        sender,
+        nonce,
+        { kind: 'contract_call', contract, calldata },
+        privateKey
+      );
+    },
   };
 
   if (config.isTestnet) {

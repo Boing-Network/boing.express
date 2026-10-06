@@ -865,3 +865,78 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
+.nftCollectionBlock {
+  margin-top: 1rem;
+}
+
+.nftCollectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.nftCollectionLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nftMono {
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.nftItemList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nftItem {
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border-color, var(--card-border));
+}
+
+.nftItem:last-child {
+  border-bottom: none;
+}
+
+.nftItemMain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nftItemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.nftBadgeOwned,
+.nftBadgeOther,
+.nftBadgeMissing {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nftBadgeOwned {
+  color: var(--accent-cyan, #00e8c8);
+}
+
+.nftBadgeOther {
+  color: var(--text-tertiary, var(--muted));
+}
+
+.nftBadgeMissing {
+  color: var(--text-secondary, var(--muted));
+}

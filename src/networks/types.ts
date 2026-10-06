@@ -92,4 +92,16 @@ export interface NetworkAdapter {
     pendingUnbond: string;
     unlockHeight: number;
   }>;
+
+  /**
+   * Optional: build signed `contract_call` (e.g. reference NFT `transfer_nft`).
+   * Access list defaults to sender + contract (protocol suggestion).
+   */
+  buildContractCall?(
+    sender: AccountId,
+    contract: AccountId,
+    calldata: Uint8Array,
+    nonce: bigint,
+    privateKey: Uint8Array
+  ): Promise<string>;
 }
