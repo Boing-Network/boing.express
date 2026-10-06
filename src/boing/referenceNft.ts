@@ -134,6 +134,29 @@ export function isZeroStorageWordHex64(hex64: string | null): boolean {
   return hex64 == null || /^0+$/.test(hex64);
 }
 
+/** Coerce hex string or JSON byte array into calldata bytes. */
+export function calldataBytesFromRpc(raw: unknown): Uint8Array | null {
+  if (raw instanceof Uint8Array) return raw.length >= 32 ? raw : null;
+  if (typeof raw === 'string') {
+    const h = raw.trim().replace(/^0x/i, '');
+    if (!h || h.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(h)) return null;
+    const out = new Uint8Array(h.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+    return out.length >= 32 ? out : null;
+  }
+  if (Array.isArray(raw)) {
+    if (raw.length < 32) return null;
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) {
+      const n = Number(raw[i]);
+      if (!Number.isInteger(n) || n < 0 || n > 255) return null;
+      out[i] = n;
+    }
+    return out;
+  }
+  return null;
+}
+
 /**
  * Extract token-id words from reference NFT `mint_batch` (`0x06`) calldata.
  * Returns null when selector/length do not match `96 + 64n`.
@@ -159,6 +182,19 @@ export function parseReferenceMintBatchTokenIds(calldata: Uint8Array): {
     tokenIds.push(bytesToHex64(calldata.slice(start, start + 32)));
   }
   return { n: nNum, toHex, tokenIds };
+}
+
+/** Decode reference `transfer_nft` (`0x04`) calldata — word1 = to, word2 = token_id. */
+export function parseReferenceTransferNftCalldata(calldata: Uint8Array): {
+  toHex: string;
+  tokenIdHex: string;
+} | null {
+  if (calldata.length < 96) return null;
+  if (calldata[31] !== SELECTOR_TRANSFER_NFT) return null;
+  return {
+    toHex: bytesToHex64(calldata.slice(32, 64)),
+    tokenIdHex: bytesToHex64(calldata.slice(64, 96)),
+  };
 }
 
 /** Observer item profile URL — same identity as `/asset/:collection/item/:tokenId`. */

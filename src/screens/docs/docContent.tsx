@@ -46,9 +46,9 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>NFTs</h2>
         <p>
-          The NFTs tab lists reference NFT collections and items you add (collection AccountId + token id word). Express checks owner storage via the XOR key scheme used on-chain, then links each item to{' '}
+          Opening the NFTs tab scans up to the last <strong>256 blocks</strong> for <code>mint_batch</code> and <code>transfer_nft</code> calls that credit your address, saves finds to a local watchlist, and verifies ownership via the on-chain XOR owner slot. This is not a full-history indexer — older mints outside that window need a manual add (collection AccountId + token id word). Item profiles open on{' '}
           <a href="https://boing.observer" target="_blank" rel="noopener noreferrer">boing.observer</a>{' '}
-          at <code>/asset/&lt;collection&gt;/item/&lt;tokenId&gt;</code>. After a dApp <code>mint_batch</code> to your address, add the collection and token ids (or approve the mint in the extension — those ids are saved automatically). Transfer uses <code>transfer_nft</code> only when this account is the recorded owner.
+          at <code>/asset/&lt;collection&gt;/item/&lt;tokenId&gt;</code>. Transfer uses <code>transfer_nft</code> only when this account is the recorded owner.
         </p>
         <h2>Send</h2>
         <p>

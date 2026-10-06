@@ -28,6 +28,10 @@ import {
   shortHexLabel,
 } from '../src/boing/referenceNft';
 import { probeNftWatchlist, type NftHoldingStatus } from '../src/boing/nftHoldings';
+import {
+  discoverAndPersistOwnedNfts,
+  NFT_DISCOVERY_SCAN_WINDOW,
+} from '../src/boing/nftDiscovery';
 import { addNftWatchEntries, listNftWatchlist, removeNftWatchEntry } from '../src/storage/nftWatchlist';
 import { buildSignedTransactionHex } from '../src/boing/signing';
 import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
@@ -381,13 +385,25 @@ async function refreshNfts(): Promise<void> {
   }
   try {
     const ownerHex = accountIdToHex(accountId);
+    const net = getCurrentNetwork();
+    const discovery = await discoverAndPersistOwnedNfts(
+      net.config.rpcUrl,
+      ownerHex,
+      selectedNetworkId
+    );
+    if (emptyEl) {
+      emptyEl.textContent = discovery.error
+        ? `Scan skipped: ${discovery.error}`
+        : `Scanned ≤${NFT_DISCOVERY_SCAN_WINDOW} recent blocks for mint_batch / transfer_nft.`;
+    }
     const entries = await listNftWatchlist(ownerHex, selectedNetworkId);
     if (entries.length === 0) {
       emptyEl.classList.remove('hidden');
+      emptyEl.textContent =
+        'No NFTs found in the recent scan window. Add a collection + token id below for older holdings.';
       return;
     }
     emptyEl.classList.add('hidden');
-    const net = getCurrentNetwork();
     const statuses = await probeNftWatchlist(net.config.rpcUrl, accountId, entries);
     const explorer = nftExplorerBase();
     for (const item of statuses) {

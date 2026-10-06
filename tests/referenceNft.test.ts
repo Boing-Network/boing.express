@@ -5,6 +5,7 @@ import {
   encodeReferenceTransferNftCalldata,
   observerNftItemUrl,
   parseReferenceMintBatchTokenIds,
+  parseReferenceTransferNftCalldata,
   parseTokenIdInput,
   referenceNftOwnerStorageKey,
   referenceNftTokenIdWordFromU64,
@@ -59,6 +60,9 @@ describe('referenceNft', () => {
     expect(data[31]).toBe(0x04);
     expect(Array.from(data.slice(32, 64))).toEqual(Array.from(to));
     expect(Array.from(data.slice(64, 96))).toEqual(Array.from(hexToBytes(tokenId)));
+    const parsed = parseReferenceTransferNftCalldata(data);
+    expect(parsed?.toHex).toBe('aa'.repeat(32));
+    expect(parsed?.tokenIdHex).toBe(tokenId);
   });
 
   it('builds observer item URLs matching /asset/{collection}/item/{tokenId}', () => {

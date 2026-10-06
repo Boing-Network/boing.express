@@ -153,9 +153,22 @@ export function chainHeight(rpcUrl: string): Promise<number> {
   return rpcCall<number>(rpcUrl, 'boing_chainHeight', []);
 }
 
-/** Get block by height (optional). */
-export function getBlockByHeight(rpcUrl: string, height: number): Promise<unknown> {
-  return rpcCall<unknown>(rpcUrl, 'boing_getBlockByHeight', [height]);
+/**
+ * Get block by height. Pass `includeReceipts: true` for txs + receipts
+ * (needed for NFT discovery from mint_batch / transfer_nft calldata).
+ */
+export function getBlockByHeight(
+  rpcUrl: string,
+  height: number,
+  includeReceipts?: boolean
+): Promise<unknown> {
+  const params =
+    includeReceipts === true
+      ? [height, true]
+      : includeReceipts === false
+        ? [height, false]
+        : [height];
+  return rpcCall<unknown>(rpcUrl, 'boing_getBlockByHeight', params);
 }
 
 /** Simulate transaction. */

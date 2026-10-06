@@ -21,6 +21,10 @@ import {
   type NftHoldingStatus,
 } from '../boing/nftHoldings';
 import {
+  discoverAndPersistOwnedNfts,
+  NFT_DISCOVERY_SCAN_WINDOW,
+} from '../boing/nftDiscovery';
+import {
   addNftWatchEntries,
   listNftWatchlist,
   removeNftWatchEntry,
@@ -48,6 +52,8 @@ export function NftHoldingsPanel({
 }: NftHoldingsPanelProps) {
   const [statuses, setStatuses] = useState<NftHoldingStatus[]>([]);
   const [loading, setLoading] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoveryNote, setDiscoveryNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addCollection, setAddCollection] = useState('');
   const [addTokenId, setAddTokenId] = useState('');
@@ -65,8 +71,32 @@ export function NftHoldingsPanel({
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setDiscovering(true);
     setError(null);
+    setDiscoveryNote(null);
     try {
+      const discovery = await discoverAndPersistOwnedNfts(
+        rpcUrl,
+        ownerHex,
+        network.config.id
+      );
+      if (discovery.error) {
+        setDiscoveryNote(`Scan skipped: ${discovery.error}`);
+      } else {
+        const range =
+          discovery.toHeight >= discovery.fromHeight
+            ? `blocks ${discovery.fromHeight}–${discovery.toHeight}`
+            : 'no new blocks';
+        const parts = [
+          `Scanned ${discovery.blocksScanned} blocks (${range}; window ≤${NFT_DISCOVERY_SCAN_WINDOW})`,
+        ];
+        if (discovery.persistedCount > 0) {
+          parts.push(`found ${discovery.persistedCount} new item(s)`);
+        }
+        if (discovery.truncated) parts.push('hit scan cap');
+        setDiscoveryNote(parts.join(' · '));
+      }
+
       const entries = await listNftWatchlist(ownerHex, network.config.id);
       if (entries.length === 0) {
         setStatuses([]);
@@ -77,6 +107,7 @@ export function NftHoldingsPanel({
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
+      setDiscovering(false);
       setLoading(false);
     }
   }, [accountId, network.config.id, ownerHex, rpcUrl]);
@@ -196,25 +227,30 @@ export function NftHoldingsPanel({
             type="button"
             className={styles.refreshBtn}
             onClick={() => void refresh()}
-            disabled={loading}
+            disabled={loading || discovering}
             aria-label="Refresh NFT holdings"
           >
-            {loading ? '…' : '↻'}
+            {loading || discovering ? '…' : '↻'}
           </button>
         </div>
         <p className={styles.faucetHint}>
-          Reference NFT collections use owner storage keys (<code className={styles.inlineCode}>token_id XOR</code>
-          ). Add items by collection AccountId + token id (64-hex word, or sequential decimal). After a{' '}
-          <code className={styles.inlineCode}>mint_batch</code> to this address, paste the collection and token ids
-          here — or approve the mint in the extension while this account is the recipient. Open full profiles on{' '}
+          Auto-discovers reference NFTs by scanning recent blocks for{' '}
+          <code className={styles.inlineCode}>mint_batch</code> /{' '}
+          <code className={styles.inlineCode}>transfer_nft</code> to this account (window ≤
+          {NFT_DISCOVERY_SCAN_WINDOW} blocks — not a full-history indexer). Findings are saved to your local
+          watchlist; ownership is checked via XOR owner storage. You can still add older items manually. Profiles
+          on{' '}
           <a href={explorerBase} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
             boing.observer
           </a>
           .
         </p>
+        {discoveryNote && <p className={styles.addressHint}>{discoveryNote}</p>}
         {error && <p className={styles.error}>{error}</p>}
         {statuses.length === 0 && !loading && (
-          <p className={styles.addressHint}>No watched NFTs yet. Add a collection and token id below.</p>
+          <p className={styles.addressHint}>
+            No NFTs found in the recent scan window. Add a collection and token id below for older holdings.
+          </p>
         )}
         {groups.map(({ collectionHex, items }) => (
           <div key={collectionHex} className={styles.nftCollectionBlock}>
