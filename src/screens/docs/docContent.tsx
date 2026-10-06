@@ -46,9 +46,9 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>NFTs</h2>
         <p>
-          Opening the NFTs tab scans up to the last <strong>256 blocks</strong> for <code>mint_batch</code> and <code>transfer_nft</code> calls that credit your address, saves finds to a local watchlist, and verifies ownership via the on-chain XOR owner slot. This is not a full-history indexer — older mints outside that window need a manual add (collection AccountId + token id word). Item profiles open on{' '}
+          Opening the NFTs tab scans up to the last <strong>256 blocks</strong> for <code>mint_batch</code> and <code>transfer_nft</code> calls that credit your address (unavailable heights are retried then skipped with a status note), saves finds to a local watchlist, and verifies ownership via the on-chain XOR owner slot. The gallery shows name/image/description when metadata resolves, grouped by collection, with links to{' '}
           <a href="https://boing.observer" target="_blank" rel="noopener noreferrer">boing.observer</a>{' '}
-          at <code>/asset/&lt;collection&gt;/item/&lt;tokenId&gt;</code>. Transfer uses <code>transfer_nft</code> only when this account is the recorded owner.
+          item profiles. Multi-select transfer sends one <code>transfer_nft</code> tx per item (no on-chain batch). This is not a full-history indexer — older mints outside the window need a manual add until a durable owner index exists.
         </p>
         <h2>Send</h2>
         <p>

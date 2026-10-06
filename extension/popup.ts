@@ -22,16 +22,23 @@ import {
 } from '../src/storage/walletStore.extension';
 import { assertFromMatchesSender, describeReferenceMintBatchCalldata, transactionFromDappJson } from '../src/boing/dappTxRequest';
 import {
-  encodeReferenceTransferNftCalldata,
+  observerNftCollectionUrl,
   observerNftItemUrl,
   parseTokenIdInput,
   shortHexLabel,
 } from '../src/boing/referenceNft';
-import { probeNftWatchlist, type NftHoldingStatus } from '../src/boing/nftHoldings';
+import {
+  groupHoldingsByCollection,
+  probeNftWatchlist,
+  type NftHoldingStatus,
+} from '../src/boing/nftHoldings';
 import {
   discoverAndPersistOwnedNfts,
   NFT_DISCOVERY_SCAN_WINDOW,
+  type NftDiscoveryResult,
 } from '../src/boing/nftDiscovery';
+import { hydrateNftDisplayMetaList, type NftDisplayMeta } from '../src/boing/nftMetadata';
+import { transferOwnedNfts } from '../src/boing/nftTransfer';
 import { addNftWatchEntries, listNftWatchlist, removeNftWatchEntry } from '../src/storage/nftWatchlist';
 import { buildSignedTransactionHex } from '../src/boing/signing';
 import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
@@ -350,11 +357,57 @@ function refreshAccountSelect(): void {
   if (rm) rm.classList.toggle('hidden', summaries.length <= 1);
 }
 
-let nftTransferTarget: NftHoldingStatus | null = null;
+let nftSelectedKeys = new Set<string>();
+let nftConfirmBatch = false;
+let nftStatusesCache: NftHoldingStatus[] = [];
+
+function nftHoldingKey(item: { collectionHex: string; tokenIdHex: string }): string {
+  return `${item.collectionHex}:${item.tokenIdHex}`;
+}
 
 function nftExplorerBase(): string {
   const net = getCurrentNetwork();
   return (net.config.explorerUrl ?? 'https://boing.observer').replace(/\/$/, '');
+}
+
+function formatNftDiscoveryNote(discovery: NftDiscoveryResult): string {
+  if (discovery.error && discovery.blocksScanned === 0 && discovery.discovered.length === 0) {
+    return `Scan issue: ${discovery.error}`;
+  }
+  const expected = Math.max(0, discovery.toHeight - discovery.fromHeight + 1);
+  const parts = [
+    `Scanned ${discovery.blocksScanned}/${expected} (window ≤${NFT_DISCOVERY_SCAN_WINDOW})`,
+  ];
+  if (discovery.blocksFailed > 0) {
+    parts.push(`${discovery.blocksFailed} unavailable after retry — skipped`);
+  }
+  if (discovery.skippedOlderRange) {
+    parts.push(`catch-up capped below ${discovery.fromHeight}`);
+  }
+  if (discovery.persistedCount > 0) parts.push(`+${discovery.persistedCount} new`);
+  if (discovery.truncated) parts.push('hit scan cap');
+  if (discovery.error) parts.push(`partial: ${discovery.error}`);
+  return parts.join(' · ');
+}
+
+function updateNftTransferChrome(): void {
+  const sel = document.getElementById('nft-transfer-selected');
+  const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement | null;
+  const n = nftSelectedKeys.size;
+  if (sel) {
+    sel.textContent =
+      n === 0
+        ? 'Select owned items (checkboxes) or Transfer on a row.'
+        : n === 1
+          ? 'Selected 1 owned item (1 transfer_nft tx).'
+          : `Selected ${n} owned items → ${n} separate transfer_nft txs (no on-chain batch).`;
+  }
+  if (btn) {
+    btn.disabled = n === 0;
+    if (!nftConfirmBatch) {
+      btn.textContent = n > 1 ? `Transfer ${n} NFTs` : 'Transfer NFT';
+    }
+  }
 }
 
 async function maybeWatchMintBatch(tx: { payload: { kind: string; contract?: Uint8Array; calldata?: Uint8Array } }): Promise<void> {
@@ -377,8 +430,10 @@ async function refreshNfts(): Promise<void> {
   const listEl = document.getElementById('nft-list');
   const emptyEl = document.getElementById('nft-empty');
   const errEl = document.getElementById('nft-error');
+  const statusEl = document.getElementById('nft-scan-status');
   if (!listEl || !emptyEl) return;
   listEl.replaceChildren();
+  nftConfirmBatch = false;
   if (errEl) {
     errEl.classList.add('hidden');
     errEl.textContent = '';
@@ -386,72 +441,172 @@ async function refreshNfts(): Promise<void> {
   try {
     const ownerHex = accountIdToHex(accountId);
     const net = getCurrentNetwork();
+    const explorer = nftExplorerBase();
+    const isTestnet = Boolean(net.config.isTestnet);
     const discovery = await discoverAndPersistOwnedNfts(
       net.config.rpcUrl,
       ownerHex,
       selectedNetworkId
     );
-    if (emptyEl) {
-      emptyEl.textContent = discovery.error
-        ? `Scan skipped: ${discovery.error}`
-        : `Scanned ≤${NFT_DISCOVERY_SCAN_WINDOW} recent blocks for mint_batch / transfer_nft.`;
-    }
+    if (statusEl) statusEl.textContent = formatNftDiscoveryNote(discovery);
+
     const entries = await listNftWatchlist(ownerHex, selectedNetworkId);
     if (entries.length === 0) {
       emptyEl.classList.remove('hidden');
       emptyEl.textContent =
         'No NFTs found in the recent scan window. Add a collection + token id below for older holdings.';
+      nftStatusesCache = [];
+      nftSelectedKeys = new Set();
+      updateNftTransferChrome();
       return;
     }
     emptyEl.classList.add('hidden');
     const statuses = await probeNftWatchlist(net.config.rpcUrl, accountId, entries);
-    const explorer = nftExplorerBase();
-    for (const item of statuses) {
-      const li = document.createElement('li');
-      const status = item.error ? 'Error' : item.owned ? 'Owned' : item.exists ? 'Not yours' : 'Not found';
-      const label = document.createElement('span');
-      label.textContent = `${status} · ${shortHexLabel(item.tokenIdHex, 8, 6)}`;
-      const link = document.createElement('a');
-      link.href = observerNftItemUrl(explorer, item.collectionHex, item.tokenIdHex, Boolean(net.config.isTestnet));
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = 'Details';
-      li.appendChild(label);
-      li.appendChild(link);
-      if (item.owned) {
-        const xfer = document.createElement('button');
-        xfer.type = 'button';
-        xfer.className = 'btn-small';
-        xfer.textContent = 'Transfer';
-        xfer.addEventListener('click', () => {
-          nftTransferTarget = item;
-          const sel = document.getElementById('nft-transfer-selected');
-          if (sel) sel.textContent = `Selected: ${shortHexLabel(item.tokenIdHex, 8, 6)}`;
-          const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement | null;
-          if (btn) btn.disabled = false;
-        });
-        li.appendChild(xfer);
-      }
-      const rmBtn = document.createElement('button');
-      rmBtn.type = 'button';
-      rmBtn.className = 'btn-small btn-disconnect';
-      rmBtn.textContent = 'Remove';
-      rmBtn.addEventListener('click', async () => {
-        await removeNftWatchEntry(ownerHex, selectedNetworkId, item.collectionHex, item.tokenIdHex);
-        if (
-          nftTransferTarget &&
-          nftTransferTarget.collectionHex === item.collectionHex &&
-          nftTransferTarget.tokenIdHex === item.tokenIdHex
-        ) {
-          nftTransferTarget = null;
-          const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement | null;
-          if (btn) btn.disabled = true;
-        }
-        await refreshNfts();
+    nftStatusesCache = statuses;
+    const ownedKeys = new Set(statuses.filter((s) => s.owned).map((s) => nftHoldingKey(s)));
+    nftSelectedKeys = new Set([...nftSelectedKeys].filter((k) => ownedKeys.has(k)));
+
+    let metaByKey = new Map<string, NftDisplayMeta>();
+    try {
+      metaByKey = await hydrateNftDisplayMetaList(statuses, {
+        rpcUrl: net.config.rpcUrl,
+        explorerBase: explorer,
+        networkIsTestnet: isTestnet,
       });
-      li.appendChild(rmBtn);
-      listEl.appendChild(li);
+    } catch {
+      metaByKey = new Map();
     }
+
+    for (const group of groupHoldingsByCollection(statuses)) {
+      const header = document.createElement('li');
+      header.className = 'nft-collection-header';
+      const colLink = document.createElement('a');
+      colLink.href = observerNftCollectionUrl(explorer, group.collectionHex, isTestnet);
+      colLink.target = '_blank';
+      colLink.rel = 'noopener noreferrer';
+      colLink.textContent = `Collection ${shortHexLabel(group.collectionHex, 6, 4)} · ${group.items.length}`;
+      header.appendChild(colLink);
+      listEl.appendChild(header);
+
+      for (const item of group.items) {
+        const key = nftHoldingKey(item);
+        const meta = metaByKey.get(key);
+        const li = document.createElement('li');
+        li.className = 'nft-item-row';
+        const status = item.error
+          ? 'Error'
+          : item.owned
+            ? 'Owned'
+            : item.exists
+              ? 'Not yours'
+              : 'Not found';
+        const title =
+          meta?.name?.trim() || item.label || shortHexLabel(item.tokenIdHex, 8, 6);
+
+        if (item.owned) {
+          const check = document.createElement('input');
+          check.type = 'checkbox';
+          check.className = 'nft-check';
+          check.checked = nftSelectedKeys.has(key);
+          check.setAttribute('aria-label', `Select ${title}`);
+          check.addEventListener('change', () => {
+            if (check.checked) nftSelectedKeys.add(key);
+            else nftSelectedKeys.delete(key);
+            nftConfirmBatch = false;
+            updateNftTransferChrome();
+          });
+          li.appendChild(check);
+        }
+
+        const thumbWrap = document.createElement('a');
+        thumbWrap.className = 'nft-thumb';
+        thumbWrap.href = observerNftItemUrl(
+          explorer,
+          item.collectionHex,
+          item.tokenIdHex,
+          isTestnet
+        );
+        thumbWrap.target = '_blank';
+        thumbWrap.rel = 'noopener noreferrer';
+        if (meta?.imageUrl) {
+          const img = document.createElement('img');
+          img.src = meta.imageUrl;
+          img.alt = '';
+          img.loading = 'lazy';
+          img.addEventListener('error', () => {
+            img.remove();
+            thumbWrap.textContent = 'NFT';
+          });
+          thumbWrap.appendChild(img);
+        } else {
+          thumbWrap.textContent = 'NFT';
+        }
+        li.appendChild(thumbWrap);
+
+        const body = document.createElement('div');
+        body.className = 'nft-item-body';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'nft-item-title';
+        titleEl.textContent = `${status} · ${title}`;
+        body.appendChild(titleEl);
+        if (meta?.description) {
+          const desc = document.createElement('div');
+          desc.className = 'nft-item-desc';
+          desc.textContent = meta.description;
+          body.appendChild(desc);
+        } else if (meta?.unresolved && !meta.imageUrl) {
+          const desc = document.createElement('div');
+          desc.className = 'nft-item-desc muted';
+          desc.textContent = 'No metadata URI';
+          body.appendChild(desc);
+        }
+        li.appendChild(body);
+
+        const actions = document.createElement('div');
+        actions.className = 'nft-item-actions';
+        const link = document.createElement('a');
+        link.href = observerNftItemUrl(
+          explorer,
+          item.collectionHex,
+          item.tokenIdHex,
+          isTestnet
+        );
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Profile';
+        actions.appendChild(link);
+        if (item.owned) {
+          const xfer = document.createElement('button');
+          xfer.type = 'button';
+          xfer.className = 'btn-small';
+          xfer.textContent = 'Transfer';
+          xfer.addEventListener('click', () => {
+            nftSelectedKeys = new Set([key]);
+            nftConfirmBatch = false;
+            updateNftTransferChrome();
+          });
+          actions.appendChild(xfer);
+        }
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button';
+        rmBtn.className = 'btn-small btn-disconnect';
+        rmBtn.textContent = 'Remove';
+        rmBtn.addEventListener('click', async () => {
+          await removeNftWatchEntry(
+            ownerHex,
+            selectedNetworkId,
+            item.collectionHex,
+            item.tokenIdHex
+          );
+          nftSelectedKeys.delete(key);
+          await refreshNfts();
+        });
+        actions.appendChild(rmBtn);
+        li.appendChild(actions);
+        listEl.appendChild(li);
+      }
+    }
+    updateNftTransferChrome();
   } catch (e) {
     if (errEl) {
       errEl.textContent = e instanceof Error ? e.message : String(e);
@@ -802,8 +957,11 @@ document.getElementById('form-nft-transfer')?.addEventListener('submit', async (
   if (!errEl || !okEl || !toEl) return;
   errEl.classList.add('hidden');
   okEl.classList.add('hidden');
-  if (!nftTransferTarget?.owned) {
-    errEl.textContent = 'Select an owned NFT first.';
+  const targets = nftStatusesCache.filter(
+    (s) => s.owned && nftSelectedKeys.has(nftHoldingKey(s))
+  );
+  if (targets.length === 0) {
+    errEl.textContent = 'Select one or more owned NFTs first.';
     errEl.classList.remove('hidden');
     return;
   }
@@ -813,39 +971,63 @@ document.getElementById('form-nft-transfer')?.addEventListener('submit', async (
     errEl.classList.remove('hidden');
     return;
   }
-  const toHex = toEl.value.replace(/\s/g, '').replace(/^0x/i, '');
-  if (toHex.length !== 64 || !/^[0-9a-fA-F]+$/.test(toHex)) {
-    errEl.textContent = 'Invalid address: must be 64 hex characters';
-    errEl.classList.remove('hidden');
+  if (!nftConfirmBatch) {
+    nftConfirmBatch = true;
+    const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement | null;
+    if (btn) {
+      btn.textContent =
+        targets.length > 1
+          ? `Confirm ${targets.length} transfers`
+          : 'Confirm transfer';
+      btn.disabled = false;
+    }
+    const sel = document.getElementById('nft-transfer-selected');
+    if (sel) {
+      sel.textContent = `Confirm: ${targets.length} separate transfer_nft tx(s) (protocol has no batch).`;
+    }
     return;
   }
   const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement;
   btn.disabled = true;
+  btn.textContent = 'Transferring…';
   try {
-    const toId = accountIdFromHex(toHex);
-    const collectionId = accountIdFromHex(nftTransferTarget.collectionHex);
-    const calldata = encodeReferenceTransferNftCalldata(toId, nftTransferTarget.tokenIdHex);
-    const nonce = await net.getNonce(accountId);
-    const signedHex = await net.buildContractCall(accountId, collectionId, calldata, nonce, privateKey);
-    const result = await net.submitTransaction(signedHex);
-    if (result.success) {
-      okEl.textContent = result.txHash ? `Submitted: ${result.txHash.slice(0, 16)}…` : 'Submitted.';
+    const result = await transferOwnedNfts({
+      network: net,
+      accountId,
+      privateKey,
+      recipientHex: toEl.value,
+      targets: targets.map((t) => ({
+        collectionHex: t.collectionHex,
+        tokenIdHex: t.tokenIdHex,
+      })),
+    });
+    if (result.failed === 0) {
+      okEl.textContent =
+        result.txCount === 1
+          ? result.results[0]?.txHash
+            ? `Submitted: ${result.results[0].txHash.slice(0, 16)}…`
+            : 'Submitted.'
+          : `All ${result.submitted} transfers submitted (${result.txCount} txs).`;
       okEl.classList.remove('hidden');
-      nftTransferTarget = null;
+      nftSelectedKeys = new Set();
+      nftConfirmBatch = false;
       toEl.value = '';
-      const sel = document.getElementById('nft-transfer-selected');
-      if (sel) sel.textContent = 'Select Transfer on an owned item.';
+      updateNftTransferChrome();
       window.setTimeout(() => {
         void refreshNfts();
       }, 2000);
     } else {
-      errEl.textContent = result.error ?? 'Submit failed';
+      errEl.textContent = `${result.submitted} submitted, ${result.failed} failed.`;
       errEl.classList.remove('hidden');
+      nftConfirmBatch = false;
+      updateNftTransferChrome();
       btn.disabled = false;
     }
   } catch (err) {
     errEl.textContent = err instanceof Error ? err.message : String(err);
     errEl.classList.remove('hidden');
+    nftConfirmBatch = false;
+    updateNftTransferChrome();
     btn.disabled = false;
   }
 });

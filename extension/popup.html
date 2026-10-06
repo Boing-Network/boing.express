@@ -159,8 +159,9 @@
         <section id="panel-nfts" class="tab-panel" role="tabpanel" aria-labelledby="tab-nfts" hidden>
           <div class="card">
             <h2 class="label">NFTs</h2>
-            <p class="hint">Auto-scans recent blocks for mint_batch / transfer_nft to this account (≤256 blocks), then verifies ownership. Older items: add manually. Open details on boing.observer.</p>
-            <ul id="nft-list" class="connected-sites-list" aria-label="Watched NFTs"></ul>
+            <p class="hint">Auto-scans ≤256 recent blocks for mint_batch / transfer_nft. Retries missing blocks once, then skips with status. Gallery shows metadata when available. Older items: add manually.</p>
+            <p id="nft-scan-status" class="hint" aria-live="polite"></p>
+            <ul id="nft-list" class="connected-sites-list nft-list" aria-label="Watched NFTs"></ul>
             <p id="nft-empty" class="hint">No watched NFTs yet.</p>
             <p id="nft-error" class="error hidden"></p>
           </div>
@@ -173,7 +174,8 @@
           </form>
           <form id="form-nft-transfer" class="form card">
             <h2 class="label">Transfer NFT</h2>
-            <p class="hint" id="nft-transfer-selected">Select Transfer on an owned item.</p>
+            <p class="hint" id="nft-transfer-selected">Select owned items (checkboxes) or Transfer on a row.</p>
+            <p class="hint">Protocol has no batch transfer_nft — multi-select sends one tx per item.</p>
             <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
             <p id="nft-transfer-error" class="error hidden"></p>
             <p id="nft-transfer-success" class="success hidden" aria-live="polite"></p>
