@@ -134,6 +134,7 @@ Add these under **Variables** if you want to override RPC endpoints in the GitHu
 |----------|--------|-------------|
 | `VITE_BOING_TESTNET_RPC` | `https://testnet-rpc.boing.network` | Boing testnet JSON-RPC URL. Confirm the official URL from the Boing testnet docs or status pages. |
 | `VITE_BOING_MAINNET_RPC` | Optional | Boing mainnet JSON-RPC URL. Mainnet is disabled unless this is explicitly set at build time. |
+| `VITE_FRESHMINT_MARKETPLACE_URL` | Optional | FreshMint marketplace base URL (chiku524/FreshMint-Marketplace). Enables a "FreshMint" link-out per NFT collection in the wallet. Hidden until FreshMint has a published production URL. |
 
 If these variables are **not** set, the app defaults to the official testnet RPC and keeps mainnet disabled. Setting them in GitHub is useful if Boing provides different public RPC URLs later.
 
@@ -141,6 +142,7 @@ If these variables are **not** set, the app defaults to the official testnet RPC
 
 - **Name:** `VITE_BOING_TESTNET_RPC` → **Value:** `https://testnet-rpc.boing.network`
 - **Name:** `VITE_BOING_MAINNET_RPC` → **Value:** official public mainnet RPC when published (leave unset until then)
+- **Name:** `VITE_FRESHMINT_MARKETPLACE_URL` → **Value:** FreshMint production URL, once published (leave unset until then)
 
 ---
 
