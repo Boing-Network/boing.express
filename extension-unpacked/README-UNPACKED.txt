@@ -9,7 +9,7 @@ Load in Chrome
 1. Open chrome://extensions
 2. Turn on "Developer mode"
 3. Click "Load unpacked"
-4. Choose this folder: C:\Users\chiku\Desktop\vibe-code\boing.express\extension-unpacked
+4. Choose this folder: /agent/repos/boing.express/extension-unpacked
 
 Submitting to Chrome Web Store
 -------------------------------
