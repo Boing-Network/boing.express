@@ -264,7 +264,7 @@ async function refreshConnectedSites(): Promise<void> {
   }
 }
 
-type TabId = 'wallet' | 'transactions' | 'nfts' | 'stake' | 'faucet';
+type TabId = 'wallet' | 'transactions' | 'assets' | 'stake' | 'faucet';
 
 function switchTab(tabId: TabId): void {
   document.querySelectorAll('.tab-btn').forEach((el) => {
@@ -801,9 +801,12 @@ $('btn-import-back').addEventListener('click', () => {
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     const tabId = (btn as HTMLElement).getAttribute('data-tab');
-    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'nfts' || tabId === 'stake' || tabId === 'faucet')
+    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'assets' || tabId === 'stake' || tabId === 'faucet')
       switchTab(tabId);
-    if (tabId === 'nfts') void refreshNfts();
+    if (tabId === 'assets') {
+      void refreshDashboardBalance();
+      void refreshNfts();
+    }
   });
 });
 

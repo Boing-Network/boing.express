@@ -20,12 +20,12 @@ import { SiteLogo } from '../components/SiteLogo';
 import { NftHoldingsPanel } from '../components/NftHoldingsPanel';
 import styles from './Dashboard.module.css';
 
-type WalletTabId = 'wallet' | 'transactions' | 'nfts' | 'stake' | 'faucet';
+type WalletTabId = 'wallet' | 'transactions' | 'assets' | 'stake' | 'faucet';
 
 const WALLET_TABS: { id: WalletTabId; label: string }[] = [
   { id: 'wallet', label: 'Wallet' },
   { id: 'transactions', label: 'Transactions' },
-  { id: 'nfts', label: 'NFTs' },
+  { id: 'assets', label: 'Assets' },
   { id: 'stake', label: 'Stake' },
   { id: 'faucet', label: 'Faucet' },
 ];
@@ -672,50 +672,11 @@ export function Dashboard() {
               </section>
             )}
 
-            <section className={`${styles.section} ${styles.balanceHero}`}>
-              <div className={styles.balanceHeader}>
-                <p className={styles.balanceLabel}>Available balance</p>
-                <button
-                  type="button"
-                  className={styles.refreshBtn}
-                  onClick={refreshData}
-                  disabled={refreshing || !accountId}
-                  aria-label="Refresh balance and chain data"
-                >
-                  {refreshing ? '…' : '↻'}
-                </button>
-              </div>
-              <p className={styles.balance}>
-                {displayBalance} <span className={styles.symbol}>{balance?.symbol ?? 'BOING'}</span>
-              </p>
-              {chainHeight != null && (
-                <p className={styles.chainHeight} aria-label="Chain height">
-                  Block #{chainHeight.toLocaleString()}
-                </p>
-              )}
-              {network.config.chainId && (
-                <p className={styles.chainHeight} aria-label="Chain ID for dApps">
-                  Chain ID {network.config.chainId}{' '}
-                  <span className={styles.chainIdDecimal}>(decimal {chainIdHexToDecimal(network.config.chainId)})</span>
-                </p>
-              )}
-              <p className={styles.chainIdNote}>
-                This is the ID Boing Express reports to sites like boing.finance. Block headers on Boing L1 do not carry
-                chain ID — private devnets often still use <code className={styles.inlineCode}>6913</code> for compatibility;
-                confirm with your operator if unsure.
-              </p>
-              {balanceError && (
-                <p className={styles.error}>
-                  {balanceError}
-                  <button type="button" className={styles.retryBtn} onClick={refreshData}>
-                    Retry
-                  </button>
-                </p>
-              )}
-            </section>
-
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Address</h2>
+              <p className={styles.addressHint}>
+                Account hub — coins and collectibles are on the Assets tab.
+              </p>
           {accountList.length > 1 && (
             <div className={styles.accountSwitchRow}>
               <label htmlFor="web-account-select" className={styles.accountSwitchLabel}>
@@ -769,7 +730,18 @@ export function Dashboard() {
             )}
           </div>
           <p className={styles.addressHint}>
-            Use this address to receive BOING. On testnet, use the Faucet tab to request funds.
+            Use this address to receive BOING. On testnet, use the Faucet tab to request funds. Holdings are under Assets.
+          </p>
+          {network.config.chainId && (
+            <p className={styles.chainHeight} aria-label="Chain ID for dApps">
+              Chain ID {network.config.chainId}{' '}
+              <span className={styles.chainIdDecimal}>(decimal {chainIdHexToDecimal(network.config.chainId)})</span>
+            </p>
+          )}
+          <p className={styles.chainIdNote}>
+            This is the ID Boing Express reports to sites like boing.finance. Block headers on Boing L1 do not carry
+            chain ID — private devnets often still use <code className={styles.inlineCode}>6913</code> for compatibility;
+            confirm with your operator if unsure.
           </p>
         </section>
 
@@ -992,22 +964,60 @@ export function Dashboard() {
           </div>
 
           <div
-            id="panel-nfts"
+            id="panel-assets"
             role="tabpanel"
-            aria-labelledby="tab-nfts"
-            hidden={activeTab !== 'nfts'}
-            className={`${styles.tabPanel} ${activeTab === 'nfts' ? styles.tabPanelActive : ''}`}
+            aria-labelledby="tab-assets"
+            hidden={activeTab !== 'assets'}
+            className={`${styles.tabPanel} ${activeTab === 'assets' ? styles.tabPanelActive : ''}`}
           >
-            {accountId && (
-              <NftHoldingsPanel
-                accountId={accountId}
-                network={network}
-                rpcUrl={network.config.rpcUrl}
-                getPrivateKey={getPrivateKey}
-                addressHint={addressHint}
-                onTxRecorded={refreshTxHistory}
-              />
-            )}
+            <div className={styles.assetsComposition} data-testid="assets-composition">
+              <header className={styles.assetsHeader}>
+                <h2 className={styles.assetsTitle}>Assets</h2>
+                <p className={styles.assetsLede}>Coins and collectibles for this account.</p>
+              </header>
+              <section className={`${styles.section} ${styles.balanceHero} ${styles.assetsCoins}`}>
+                <div className={styles.balanceHeader}>
+                  <p className={styles.balanceLabel}>Coins</p>
+                  <button
+                    type="button"
+                    className={styles.refreshBtn}
+                    onClick={refreshData}
+                    disabled={refreshing || !accountId}
+                    aria-label="Refresh balance and chain data"
+                  >
+                    {refreshing ? '…' : '↻'}
+                  </button>
+                </div>
+                <p className={styles.balance}>
+                  {displayBalance} <span className={styles.symbol}>{balance?.symbol ?? 'BOING'}</span>
+                </p>
+                {chainHeight != null && (
+                  <p className={styles.chainHeight} aria-label="Chain height">
+                    Block #{chainHeight.toLocaleString()}
+                  </p>
+                )}
+                {balanceError && (
+                  <p className={styles.error}>
+                    {balanceError}
+                    <button type="button" className={styles.retryBtn} onClick={refreshData}>
+                      Retry
+                    </button>
+                  </p>
+                )}
+              </section>
+              <div className={styles.assetsCollectibles}>
+                {accountId && (
+                  <NftHoldingsPanel
+                    accountId={accountId}
+                    network={network}
+                    rpcUrl={network.config.rpcUrl}
+                    getPrivateKey={getPrivateKey}
+                    addressHint={addressHint}
+                    onTxRecorded={refreshTxHistory}
+                  />
+                )}
+              </div>
+            </div>
           </div>
 
           {showStakeTab && (
