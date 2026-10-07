@@ -92,26 +92,15 @@
       <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
         <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet">Wallet</button>
         <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transactions">Tx</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-nfts" aria-selected="false" aria-controls="panel-nfts" data-tab="nfts">NFTs</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-assets" aria-selected="false" aria-controls="panel-assets" data-tab="assets" data-testid="wallet-tab-assets">Assets</button>
         <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
         <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>
       <div class="tab-panels">
         <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
-          <div class="balance-hero card">
-            <div class="balance-hero-row">
-              <div class="balance-hero-left">
-                <p class="balance-label">Available balance</p>
-                <p class="balance"><span id="balance">…</span> <span id="symbol" class="balance-symbol">BOING</span></p>
-                <p id="balance-error" class="error hidden"></p>
-              </div>
-              <button type="button" id="btn-balance-retry" class="btn-icon btn-retry hidden" aria-label="Retry loading balance" title="Retry">
-                <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              </button>
-            </div>
-          </div>
           <div class="card card-address">
             <h2 class="label">Address</h2>
+            <p class="hint">Account hub — coins and NFTs live under Assets.</p>
             <div class="row">
               <code id="address" class="address"></code>
               <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
@@ -156,31 +145,49 @@
             </form>
           </div>
         </section>
-        <section id="panel-nfts" class="tab-panel" role="tabpanel" aria-labelledby="tab-nfts" hidden>
-          <div class="card">
-            <h2 class="label">NFTs</h2>
-            <p class="hint">Auto-scans ≤256 recent blocks for mint_batch / transfer_nft. Retries missing blocks once, then skips with status. Gallery shows metadata when available. Older items: add manually.</p>
-            <p id="nft-scan-status" class="hint" aria-live="polite"></p>
-            <ul id="nft-list" class="connected-sites-list nft-list" aria-label="Watched NFTs"></ul>
-            <p id="nft-empty" class="hint">No watched NFTs yet.</p>
-            <p id="nft-error" class="error hidden"></p>
+        <section id="panel-assets" class="tab-panel" role="tabpanel" aria-labelledby="tab-assets" hidden>
+          <div class="assets-composition" data-testid="assets-composition">
+            <header class="assets-header">
+              <h2 class="assets-title">Assets</h2>
+              <p class="assets-lede">Coins and collectibles for this account.</p>
+            </header>
+            <div class="balance-hero assets-coins">
+              <div class="balance-hero-row">
+                <div class="balance-hero-left">
+                  <p class="balance-label">Coins</p>
+                  <p class="balance"><span id="balance">…</span> <span id="symbol" class="balance-symbol">BOING</span></p>
+                  <p id="balance-error" class="error hidden"></p>
+                </div>
+                <button type="button" id="btn-balance-retry" class="btn-icon btn-retry hidden" aria-label="Retry loading balance" title="Retry">
+                  <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="assets-collectibles">
+              <h3 class="assets-section-label">Collectibles</h3>
+              <p class="hint">Auto-scans ≤256 recent blocks for mint_batch / transfer_nft. Gallery shows metadata when available. Older items: add manually.</p>
+              <p id="nft-scan-status" class="hint" aria-live="polite"></p>
+              <ul id="nft-list" class="connected-sites-list nft-list" aria-label="Watched NFTs"></ul>
+              <p id="nft-empty" class="hint">No watched NFTs yet.</p>
+              <p id="nft-error" class="error hidden"></p>
+              <form id="form-nft-add" class="form assets-subform">
+                <h3 class="assets-section-label">Add NFT</h3>
+                <input type="text" id="nft-collection" placeholder="Collection (64 hex)" class="input" aria-label="NFT collection" data-testid="nft-add-collection" />
+                <input type="text" id="nft-token-id" placeholder="Token id (64 hex or 1, 2, …)" class="input" aria-label="NFT token id" data-testid="nft-add-token-id" />
+                <p id="nft-add-error" class="error hidden"></p>
+                <button type="submit" class="btn-secondary" aria-label="Add NFT to watchlist">Add to watchlist</button>
+              </form>
+              <form id="form-nft-transfer" class="form assets-subform">
+                <h3 class="assets-section-label">Transfer NFT</h3>
+                <p class="hint" id="nft-transfer-selected">Select owned items (checkboxes) or Transfer on a row.</p>
+                <p class="hint">Protocol has no batch transfer_nft — multi-select sends one tx per item.</p>
+                <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
+                <p id="nft-transfer-error" class="error hidden"></p>
+                <p id="nft-transfer-success" class="success hidden" aria-live="polite"></p>
+                <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
+              </form>
+            </div>
           </div>
-          <form id="form-nft-add" class="form card">
-            <h2 class="label">Add NFT</h2>
-            <input type="text" id="nft-collection" placeholder="Collection (64 hex)" class="input" aria-label="NFT collection" data-testid="nft-add-collection" />
-            <input type="text" id="nft-token-id" placeholder="Token id (64 hex or 1, 2, …)" class="input" aria-label="NFT token id" data-testid="nft-add-token-id" />
-            <p id="nft-add-error" class="error hidden"></p>
-            <button type="submit" class="btn-secondary" aria-label="Add NFT to watchlist">Add to watchlist</button>
-          </form>
-          <form id="form-nft-transfer" class="form card">
-            <h2 class="label">Transfer NFT</h2>
-            <p class="hint" id="nft-transfer-selected">Select owned items (checkboxes) or Transfer on a row.</p>
-            <p class="hint">Protocol has no batch transfer_nft — multi-select sends one tx per item.</p>
-            <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
-            <p id="nft-transfer-error" class="error hidden"></p>
-            <p id="nft-transfer-success" class="success hidden" aria-live="polite"></p>
-            <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
-          </form>
         </section>
         <section id="panel-stake" class="tab-panel" role="tabpanel" aria-labelledby="tab-stake" hidden>
           <div id="staking-section" class="staking-panel">

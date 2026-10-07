@@ -40,13 +40,12 @@ export const DOCS: Record<string, Doc> = {
         <p>
           Your address is a 64-character hex string (32-byte Ed25519 public key). Use it to receive BOING and when requesting from the testnet faucet. Copy it from the dashboard or open it on the explorer.
         </p>
-        <h2>Balance</h2>
+        <h2>Assets</h2>
         <p>
-          The dashboard shows your balance for the selected network (Testnet or Mainnet). Use the refresh button (↻) to sync with the chain. Balance auto-refreshes when you return to the tab and every 45 seconds. If the fetch fails, use Retry.
+          The <strong>Assets</strong> tab is one holdings surface: your BOING (coins) balance and NFT collectibles together. Use the refresh button (↻) to sync balance with the chain. Balance also auto-refreshes when you return to the tab and every 45 seconds. If the fetch fails, use Retry.
         </p>
-        <h2>NFTs</h2>
         <p>
-          Opening the NFTs tab scans up to the last <strong>256 blocks</strong> for <code>mint_batch</code> and <code>transfer_nft</code> calls that credit your address (unavailable heights are retried then skipped with a status note), saves finds to a local watchlist, and verifies ownership via the on-chain XOR owner slot. The gallery shows name/image/description when metadata resolves, grouped by collection, with links to{' '}
+          Opening Assets scans up to the last <strong>256 blocks</strong> for <code>mint_batch</code> and <code>transfer_nft</code> calls that credit your address (unavailable heights are retried then skipped with a status note), saves finds to a local watchlist, and verifies ownership via the on-chain XOR owner slot. The gallery shows name/image/description when metadata resolves, grouped by collection, with links to{' '}
           <a href="https://boing.observer" target="_blank" rel="noopener noreferrer">boing.observer</a>{' '}
           item profiles. Multi-select transfer sends one <code>transfer_nft</code> tx per item (no on-chain batch). This is not a full-history indexer — older mints outside the window need a manual add until a durable owner index exists.
         </p>

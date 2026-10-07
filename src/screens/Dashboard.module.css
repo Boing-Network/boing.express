@@ -852,6 +852,41 @@
   }
 }
 
+.assetsComposition {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: tabPanelEnter 0.3s var(--ease-out);
+}
+
+.assetsHeader {
+  margin: 0 0 1rem;
+}
+
+.assetsTitle {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.assetsLede {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.assetsCoins {
+  margin-bottom: 0;
+}
+
+.assetsCollectibles {
+  margin-top: 0.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(0, 232, 200, 0.18);
+}
+
 .balanceHero {
   background: linear-gradient(145deg, rgba(0, 232, 200, 0.08) 0%, rgba(0, 180, 216, 0.04) 100%);
   border-color: rgba(0, 232, 200, 0.25);

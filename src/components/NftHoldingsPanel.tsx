@@ -373,7 +373,7 @@ export function NftHoldingsPanel({
     <>
       <section className={styles.section}>
         <div className={styles.balanceHeader}>
-          <h2 className={styles.sectionTitle}>NFTs</h2>
+          <h2 className={styles.sectionTitle}>Collectibles</h2>
           <button
             type="button"
             className={styles.refreshBtn}
