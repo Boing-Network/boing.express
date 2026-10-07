@@ -38,7 +38,7 @@
     "@cloudflare/workers-types": "^4.20250429.0",
     "@vitejs/plugin-react": "^4.3.3",
     "boing-sdk": "github:Boing-Network/boing.network#b3b4426fb38735c4d83d487b4cfdfdb20eb4209f&path:/boing-sdk",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.4",
     "typescript": "~5.6.2",
     "vite": "^5.4.10",
     "vitest": "^4.0.18",
