@@ -2,6 +2,8 @@
 
 Non-custodial wallet for **Boing Network**. Keys are generated and stored **only in your browser**. Live at **[boing.express](https://boing.express)**.
 
+**Boundary:** Boing Express is a **Boing-native** wallet (`window.boing`, 32-byte AccountIds, Ed25519). It is **not** MetaMask and does **not** run an EVM (no ethers/revm/geth execution). EVM wallets belong with **boing.finance** on EVM chains.
+
 > 👋 **Everyday users:** create or import a wallet, copy your 64-character address, get testnet BOING from [the faucet](https://boing.network/faucet), send, stake. The Chrome/Firefox extension adds “Connect wallet” for dApps.  
 > 🛠️ **Developers:** inject `window.boing`. Methods: `boing_requestAccounts`, `boing_sendTransaction`, DEX list RPCs. See [docs/WALLET_CONNECTION_AND_API.md](docs/WALLET_CONNECTION_AND_API.md).  
 > 🛰️ **Operators:** `VITE_BOING_TESTNET_RPC` defaults to `https://testnet-rpc.boing.network`. Mainnet stays **off** until `VITE_BOING_MAINNET_RPC` is a distinct URL.

@@ -10,6 +10,7 @@ import { signMessage } from '../src/crypto/keys';
 import { buildSignedTransactionHex } from '../src/boing/signing';
 import { transactionIdFromTransaction } from '../src/boing/bincode';
 import { accountIdFromHex, accountIdToHex } from '../src/boing/types';
+import { mergeSuggestedAccessListHex } from '../src/boing/accessList';
 import {
   assertFromMatchesSender,
   buildTransactionApprovalDetail,
@@ -468,23 +469,48 @@ async function signOrSendBoingTransaction(
   }
 
     try {
+      let submitHex = rpcHex;
+      let workingTx = tx;
       try {
-        const sim = (await simulateTransaction(rpcUrl, rpcHex)) as {
-          success?: boolean;
-          error?: string;
-          suggested_access_list?: { read: string[]; write: string[] };
-          access_list_covers_suggestion?: boolean;
-        };
+        const runSim = async (hex: string) =>
+          (await simulateTransaction(rpcUrl, hex)) as {
+            success?: boolean;
+            error?: string;
+            suggested_access_list?: { read: string[]; write: string[] };
+            access_list_covers_suggestion?: boolean;
+          };
+
+        let sim = await runSim(submitHex);
         if (sim && typeof sim === 'object' && sim.success === false) {
-          throw providerError(
-            PROVIDER_ERROR_CODES.INTERNAL_ERROR,
-            'BOING_SIMULATION_FAILED',
-            sim.error ?? 'Simulation reported failure.',
-            {
-              suggested_access_list: sim.suggested_access_list,
-              access_list_covers_suggestion: sim.access_list_covers_suggestion,
-            }
-          );
+          const suggested = sim.suggested_access_list;
+          const covers = sim.access_list_covers_suggestion;
+          const canRetry =
+            covers === false &&
+            suggested &&
+            ((suggested.read?.length ?? 0) > 0 || (suggested.write?.length ?? 0) > 0);
+
+          if (canRetry) {
+            workingTx = {
+              ...workingTx,
+              access_list: mergeSuggestedAccessListHex(workingTx.access_list, suggested),
+            };
+            const retriedNoPrefix = await buildSignedTransactionHex(workingTx, unlockedState.privateKey);
+            submitHex = retriedNoPrefix.startsWith('0x') ? retriedNoPrefix : `0x${retriedNoPrefix}`;
+            sim = await runSim(submitHex);
+          }
+
+          if (sim && typeof sim === 'object' && sim.success === false) {
+            throw providerError(
+              PROVIDER_ERROR_CODES.INTERNAL_ERROR,
+              'BOING_SIMULATION_FAILED',
+              sim.error ?? 'Simulation reported failure.',
+              {
+                suggested_access_list: sim.suggested_access_list,
+                access_list_covers_suggestion: sim.access_list_covers_suggestion,
+                access_list_auto_merged: Boolean(canRetry),
+              }
+            );
+          }
         }
       } catch (e) {
         if (e instanceof BoingProviderError) throw e;
@@ -496,11 +522,11 @@ async function signOrSendBoingTransaction(
         }
       }
 
-    const tx_hash = await submitTransaction(rpcUrl, rpcHex);
-    maybeWatchMintBatchFromTx(tx, networkId);
+    const tx_hash = await submitTransaction(rpcUrl, submitHex);
+    maybeWatchMintBatchFromTx(workingTx, networkId);
     return {
       tx_hash,
-      tx_id: transactionIdFromTransaction(tx),
+      tx_id: transactionIdFromTransaction(workingTx),
     };
   } catch (e) {
     if (e instanceof BoingProviderError) throw e;
