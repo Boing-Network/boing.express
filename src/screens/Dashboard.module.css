@@ -926,6 +926,44 @@
   color: var(--muted);
 }
 
+.nftCompanions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+  margin: 0.15rem 0 0.45rem;
+  padding: 0.2rem 0 0.15rem;
+}
+
+.nftCompanionsLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nftCompanionsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nftCompanionItem {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+}
+
+.nftCompanionsKind {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
 .nftMono {
   font-size: 0.8rem;
   word-break: break-all;

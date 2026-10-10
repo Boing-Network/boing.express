@@ -38,6 +38,11 @@ import {
   type FreshmintCollectionLink,
 } from '../boing/freshmintMarketplace';
 import {
+  companionsByCollection,
+  listLinkedNftTokenLinks,
+  observerCompanionAccountUrl,
+} from '../boing/linkedNftTokenRegistry';
+import {
   addNftWatchEntries,
   listNftWatchlist,
   removeNftWatchEntry,
@@ -125,6 +130,9 @@ export function NftHoldingsPanel({
   const [freshmintLinkByCollection, setFreshmintLinkByCollection] = useState<
     Map<string, FreshmintCollectionLink>
   >(new Map());
+  /** Collection → companion fungible token AccountIds from on-chain registry. */
+  const [companionsByColl, setCompanionsByColl] = useState<Map<string, string[]>>(new Map());
+  const [companionsNote, setCompanionsNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addCollection, setAddCollection] = useState('');
   const [addTokenId, setAddTokenId] = useState('');
@@ -149,6 +157,7 @@ export function NftHoldingsPanel({
     setError(null);
     setDiscoveryNote(null);
     setOwnerIndexNote(null);
+    setCompanionsNote(null);
     try {
       // Durable NFT-by-owner index first (observer proxy to the owner-indexer Worker) —
       // covers holdings older than the bounded scan window below. Graceful no-op when
@@ -181,6 +190,31 @@ export function NftHoldingsPanel({
         network.config.id
       );
       setDiscoveryNote(formatDiscoveryNote(discovery));
+
+      // On-chain NFT↔token companions (read-only registry scan; skip tombstones).
+      try {
+        const listed = await listLinkedNftTokenLinks(rpcUrl, { networkIsTestnet: isTestnet });
+        if (listed.ok) {
+          setCompanionsByColl(companionsByCollection(listed.links));
+          setCompanionsNote(
+            listed.links.length > 0
+              ? `Registry: ${listed.links.length} active companion link(s)`
+              : null
+          );
+        } else {
+          setCompanionsByColl(new Map());
+          if (listed.error && listed.registryId) {
+            setCompanionsNote(`Companions unavailable: ${listed.error}`);
+          } else {
+            setCompanionsNote(null);
+          }
+        }
+      } catch (e) {
+        setCompanionsByColl(new Map());
+        setCompanionsNote(
+          `Companions unavailable: ${e instanceof Error ? e.message : String(e)}`
+        );
+      }
 
       const entries = await listNftWatchlist(ownerHex, network.config.id);
       if (entries.length === 0) {
@@ -391,10 +425,16 @@ export function NftHoldingsPanel({
           <code className={styles.inlineCode}>transfer_nft</code> to this account (window ≤
           {NFT_DISCOVERY_SCAN_WINDOW} blocks). Blocks that fail to fetch (pruned RPC) are retried
           every refresh and tracked as an open gap instead of being silently skipped. Grouped by
-          collection; media from on-chain metadata (observer profiles for full detail).
+          collection; media from on-chain metadata (observer profiles for full detail). Linked
+          fungible companions come from the on-chain NFT↔token registry (read-only).
         </p>
         {ownerIndexNote && <p className={styles.addressHint}>{ownerIndexNote}</p>}
         {discoveryNote && <p className={styles.addressHint}>{discoveryNote}</p>}
+        {companionsNote && (
+          <p className={styles.addressHint} data-testid="companions-note">
+            {companionsNote}
+          </p>
+        )}
         {error && <p className={styles.error}>{error}</p>}
         {statuses.length === 0 && !loading && (
           <p className={styles.addressHint}>
@@ -414,7 +454,9 @@ export function NftHoldingsPanel({
             )}
           </div>
         )}
-        {groups.map(({ collectionHex, items }) => (
+        {groups.map(({ collectionHex, items }) => {
+          const companions = companionsByColl.get(collectionHex) ?? [];
+          return (
           <div key={collectionHex} className={styles.nftCollectionBlock}>
             <div className={styles.nftCollectionHeader}>
               <span className={styles.nftCollectionLabel}>Collection</span>
@@ -447,6 +489,33 @@ export function NftHoldingsPanel({
                 </a>
               )}
             </div>
+            {companions.length > 0 && (
+              <div
+                className={styles.nftCompanions}
+                data-testid="nft-companions"
+                aria-label="Linked companion tokens"
+              >
+                <span className={styles.nftCompanionsLabel}>Companions</span>
+                <ul className={styles.nftCompanionsList}>
+                  {companions.map((tokenHex) => (
+                    <li key={tokenHex} className={styles.nftCompanionItem}>
+                      <span className={styles.nftCompanionsKind}>Token</span>
+                      <code className={styles.nftMono} title={tokenHex}>
+                        {shortHexLabel(tokenHex, 8, 6)}
+                      </code>
+                      <a
+                        href={observerCompanionAccountUrl(explorerBase, tokenHex, isTestnet)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.explorerLink}
+                      >
+                        View on observer
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <ul className={styles.nftItemList}>
               {items.map((item) => {
                 const key = holdingKey(item);
@@ -579,7 +648,8 @@ export function NftHoldingsPanel({
               })}
             </ul>
           </div>
-        ))}
+          );
+        })}
         {statuses.length > 0 && (
           <p className={styles.addressHint}>
             {owned.length} owned · {watchedNotOwned.length} watched (other owner) · {missing.length}{' '}

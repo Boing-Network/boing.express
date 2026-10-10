@@ -66,7 +66,7 @@ Official collection↔fungible links are **enforced on-chain** (not display-only
 | **Selectors** | `0xE0`–`0xE6` (claim / register / unlink / links_count / get_link_at / get_asset_claimer / transfer_asset_claimer) |
 | **Model** | Dual **asset claimer**; many-to-many; mutable |
 
-**Boing Express** surfaces reference NFT holdings and can sign/submit `contract_call` txs that claim/register/unlink via the provider. It does **not** yet resolve or list peer links in the Assets UI. dApps should query the registry with **`boing_simulateContractCall`** (or HTTPS RPC) using SDK calldata helpers, and treat `boing.linked_nft_token.v1` metadata as an optional cache only.
+**Boing Express** surfaces reference NFT holdings and, on Assets refresh, **reads** active companion peers from the registry (`links_count` / `get_link_at` via **`boing_simulateContractCall`**, skipping tombstones) and lists them under matching collections with an optional observer account link. It can also sign/submit `contract_call` txs that claim/register/unlink via the provider for dApps. Treat `boing.linked_nft_token.v1` metadata as an optional cache only — the on-chain registry is authority.
 
 ---
 
