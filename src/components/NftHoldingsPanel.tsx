@@ -130,9 +130,8 @@ export function NftHoldingsPanel({
   const [freshmintLinkByCollection, setFreshmintLinkByCollection] = useState<
     Map<string, FreshmintCollectionLink>
   >(new Map());
-  /** Collection → companion fungible token AccountIds from on-chain registry. */
+  /** Collection → linked fungible token ids from on-chain registry (display only). */
   const [companionsByColl, setCompanionsByColl] = useState<Map<string, string[]>>(new Map());
-  const [companionsNote, setCompanionsNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addCollection, setAddCollection] = useState('');
   const [addTokenId, setAddTokenId] = useState('');
@@ -157,7 +156,6 @@ export function NftHoldingsPanel({
     setError(null);
     setDiscoveryNote(null);
     setOwnerIndexNote(null);
-    setCompanionsNote(null);
     try {
       // Durable NFT-by-owner index first (observer proxy to the owner-indexer Worker) —
       // covers holdings older than the bounded scan window below. Graceful no-op when
@@ -191,29 +189,14 @@ export function NftHoldingsPanel({
       );
       setDiscoveryNote(formatDiscoveryNote(discovery));
 
-      // On-chain NFT↔token companions (read-only registry scan; skip tombstones).
+      // Linked NFT↔token peers (read-only; omit UI chrome when none / on failure).
       try {
         const listed = await listLinkedNftTokenLinks(rpcUrl, { networkIsTestnet: isTestnet });
-        if (listed.ok) {
-          setCompanionsByColl(companionsByCollection(listed.links));
-          setCompanionsNote(
-            listed.links.length > 0
-              ? `Registry: ${listed.links.length} active companion link(s)`
-              : null
-          );
-        } else {
-          setCompanionsByColl(new Map());
-          if (listed.error && listed.registryId) {
-            setCompanionsNote(`Companions unavailable: ${listed.error}`);
-          } else {
-            setCompanionsNote(null);
-          }
-        }
-      } catch (e) {
-        setCompanionsByColl(new Map());
-        setCompanionsNote(
-          `Companions unavailable: ${e instanceof Error ? e.message : String(e)}`
+        setCompanionsByColl(
+          listed.ok ? companionsByCollection(listed.links) : new Map()
         );
+      } catch {
+        setCompanionsByColl(new Map());
       }
 
       const entries = await listNftWatchlist(ownerHex, network.config.id);
@@ -425,16 +408,11 @@ export function NftHoldingsPanel({
           <code className={styles.inlineCode}>transfer_nft</code> to this account (window ≤
           {NFT_DISCOVERY_SCAN_WINDOW} blocks). Blocks that fail to fetch (pruned RPC) are retried
           every refresh and tracked as an open gap instead of being silently skipped. Grouped by
-          collection; media from on-chain metadata (observer profiles for full detail). Linked
-          fungible companions come from the on-chain NFT↔token registry (read-only).
+          collection; media from on-chain metadata (explorer profiles for full detail). When a
+          collection has a related coin, it appears under that collection.
         </p>
         {ownerIndexNote && <p className={styles.addressHint}>{ownerIndexNote}</p>}
         {discoveryNote && <p className={styles.addressHint}>{discoveryNote}</p>}
-        {companionsNote && (
-          <p className={styles.addressHint} data-testid="companions-note">
-            {companionsNote}
-          </p>
-        )}
         {error && <p className={styles.error}>{error}</p>}
         {statuses.length === 0 && !loading && (
           <p className={styles.addressHint}>
@@ -493,13 +471,12 @@ export function NftHoldingsPanel({
               <div
                 className={styles.nftCompanions}
                 data-testid="nft-companions"
-                aria-label="Linked companion tokens"
+                aria-label="Linked coins"
               >
-                <span className={styles.nftCompanionsLabel}>Companions</span>
                 <ul className={styles.nftCompanionsList}>
                   {companions.map((tokenHex) => (
                     <li key={tokenHex} className={styles.nftCompanionItem}>
-                      <span className={styles.nftCompanionsKind}>Token</span>
+                      <span className={styles.nftCompanionsLabel}>Linked coin</span>
                       <code className={styles.nftMono} title={tokenHex}>
                         {shortHexLabel(tokenHex, 8, 6)}
                       </code>
@@ -509,7 +486,7 @@ export function NftHoldingsPanel({
                         rel="noopener noreferrer"
                         className={styles.explorerLink}
                       >
-                        View on observer
+                        View in explorer
                       </a>
                     </li>
                   ))}

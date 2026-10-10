@@ -927,10 +927,6 @@
 }
 
 .nftCompanions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 0.75rem;
   margin: 0.15rem 0 0.45rem;
   padding: 0.2rem 0 0.15rem;
 }
@@ -957,11 +953,6 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.35rem 0.5rem;
-}
-
-.nftCompanionsKind {
-  font-size: 0.7rem;
-  color: var(--muted);
 }
 
 .nftMono {
