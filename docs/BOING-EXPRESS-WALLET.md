@@ -55,6 +55,19 @@ sequenceDiagram
 | Input | Hex-encoded **signed** `SignedTransaction` | **Contract** id + **calldata** (+ optional sender / block) |
 | Use case | Preflight a tx you already built and signed | Quote / dry-run **without** building or signing a full tx |
 
+### Linked NFT↔token pairs (dApp / SDK discovery)
+
+Official collection↔fungible links are **enforced on-chain** (not display-only metadata). Protocol + SDK: [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) and **boing-sdk** `linkedNftTokenRegistry.ts` (`buildLinkedNftTokenRegisterFlowTxs`, `encodeLinkedNftToken*`, …).
+
+| Field | Public testnet |
+|-------|----------------|
+| **Registry AccountId** | `0xebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8` |
+| **CREATE2 salt** | `BOING_NFT_TOKEN_LINK_REG_V1` |
+| **Selectors** | `0xE0`–`0xE6` (claim / register / unlink / links_count / get_link_at / get_asset_claimer / transfer_asset_claimer) |
+| **Model** | Dual **asset claimer**; many-to-many; mutable |
+
+**Boing Express** surfaces reference NFT holdings and can sign/submit `contract_call` txs that claim/register/unlink via the provider. It does **not** yet resolve or list peer links in the Assets UI. dApps should query the registry with **`boing_simulateContractCall`** (or HTTPS RPC) using SDK calldata helpers, and treat `boing.linked_nft_token.v1` metadata as an optional cache only.
+
 ---
 
 ## Related docs in this repo
