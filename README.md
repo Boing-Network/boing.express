@@ -23,7 +23,7 @@ flowchart LR
 ## ✨ Features
 
 - **Boing Network:** Ed25519 addresses (32-byte AccountId, 64-char hex), send/receive BOING, testnet faucet, staking (Bond/Unbond/ClaimUnbond)
-- **Assets / NFTs:** BOING balance plus reference-NFT watchlist, recent-block discovery, and `transfer_nft` (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)). Official NFT↔fungible **linked pairs** are on-chain (not resolved in the Assets tab yet) — [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md)
+- **Assets / NFTs:** BOING balance plus reference-NFT watchlist, recent-block discovery, and `transfer_nft` (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)). Official NFT↔fungible **companion peers** are read from the on-chain registry and shown under matching collections — [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md)
 - **Signing:** BLAKE3 signable hash + Ed25519; bincode layout matches `boing-primitives`
 - **Security:** Client-only key generation, password-encrypted storage (AES-GCM), keys never sent to any server
 - **Extension:** Injects `window.boing` for dApp connect; Connected sites management in the popup

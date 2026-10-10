@@ -38,6 +38,11 @@ import {
   type FreshmintCollectionLink,
 } from '../boing/freshmintMarketplace';
 import {
+  companionsByCollection,
+  listLinkedNftTokenLinks,
+  observerCompanionAccountUrl,
+} from '../boing/linkedNftTokenRegistry';
+import {
   addNftWatchEntries,
   listNftWatchlist,
   removeNftWatchEntry,
@@ -125,6 +130,8 @@ export function NftHoldingsPanel({
   const [freshmintLinkByCollection, setFreshmintLinkByCollection] = useState<
     Map<string, FreshmintCollectionLink>
   >(new Map());
+  /** Collection → linked fungible token ids from on-chain registry (display only). */
+  const [companionsByColl, setCompanionsByColl] = useState<Map<string, string[]>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const [addCollection, setAddCollection] = useState('');
   const [addTokenId, setAddTokenId] = useState('');
@@ -181,6 +188,16 @@ export function NftHoldingsPanel({
         network.config.id
       );
       setDiscoveryNote(formatDiscoveryNote(discovery));
+
+      // Linked NFT↔token peers (read-only; omit UI chrome when none / on failure).
+      try {
+        const listed = await listLinkedNftTokenLinks(rpcUrl, { networkIsTestnet: isTestnet });
+        setCompanionsByColl(
+          listed.ok ? companionsByCollection(listed.links) : new Map()
+        );
+      } catch {
+        setCompanionsByColl(new Map());
+      }
 
       const entries = await listNftWatchlist(ownerHex, network.config.id);
       if (entries.length === 0) {
@@ -391,7 +408,8 @@ export function NftHoldingsPanel({
           <code className={styles.inlineCode}>transfer_nft</code> to this account (window ≤
           {NFT_DISCOVERY_SCAN_WINDOW} blocks). Blocks that fail to fetch (pruned RPC) are retried
           every refresh and tracked as an open gap instead of being silently skipped. Grouped by
-          collection; media from on-chain metadata (observer profiles for full detail).
+          collection; media from on-chain metadata (explorer profiles for full detail). When a
+          collection has a related coin, it appears under that collection.
         </p>
         {ownerIndexNote && <p className={styles.addressHint}>{ownerIndexNote}</p>}
         {discoveryNote && <p className={styles.addressHint}>{discoveryNote}</p>}
@@ -414,7 +432,9 @@ export function NftHoldingsPanel({
             )}
           </div>
         )}
-        {groups.map(({ collectionHex, items }) => (
+        {groups.map(({ collectionHex, items }) => {
+          const companions = companionsByColl.get(collectionHex) ?? [];
+          return (
           <div key={collectionHex} className={styles.nftCollectionBlock}>
             <div className={styles.nftCollectionHeader}>
               <span className={styles.nftCollectionLabel}>Collection</span>
@@ -447,6 +467,32 @@ export function NftHoldingsPanel({
                 </a>
               )}
             </div>
+            {companions.length > 0 && (
+              <div
+                className={styles.nftCompanions}
+                data-testid="nft-companions"
+                aria-label="Linked coins"
+              >
+                <ul className={styles.nftCompanionsList}>
+                  {companions.map((tokenHex) => (
+                    <li key={tokenHex} className={styles.nftCompanionItem}>
+                      <span className={styles.nftCompanionsLabel}>Linked coin</span>
+                      <code className={styles.nftMono} title={tokenHex}>
+                        {shortHexLabel(tokenHex, 8, 6)}
+                      </code>
+                      <a
+                        href={observerCompanionAccountUrl(explorerBase, tokenHex, isTestnet)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.explorerLink}
+                      >
+                        View in explorer
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <ul className={styles.nftItemList}>
               {items.map((item) => {
                 const key = holdingKey(item);
@@ -579,7 +625,8 @@ export function NftHoldingsPanel({
               })}
             </ul>
           </div>
-        ))}
+          );
+        })}
         {statuses.length > 0 && (
           <p className={styles.addressHint}>
             {owned.length} owned · {watchedNotOwned.length} watched (other owner) · {missing.length}{' '}
