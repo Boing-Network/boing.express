@@ -68,6 +68,19 @@ Official collection↔fungible links are **enforced on-chain** (not display-only
 
 **Boing Express** surfaces reference NFT holdings and, on Assets refresh, **reads** active companion peers from the registry (`links_count` / `get_link_at` via **`boing_simulateContractCall`**, skipping tombstones) and lists them under matching collections with an optional observer account link. It can also sign/submit `contract_call` txs that claim/register/unlink via the provider for dApps. Treat `boing.linked_nft_token.v1` metadata as an optional cache only — the on-chain registry is authority.
 
+### Builder attestation (optional signal; read-only when surfaced)
+
+On-chain **builder attested** records are a **builder signal** for a (collection, token) pair — separate registry and claimer from companions. Companions remain project structure authority. Protocol + SDK: [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) and **boing-sdk** `builderAttestationRegistry.ts`.
+
+| Field | Public testnet |
+|-------|----------------|
+| **Registry AccountId** | `0x734077a9f926077d39e84ec278b77b7b600c840f7101809646d8797a6a9e1816` |
+| **CREATE2 salt** | `BOING_BUILDER_ATTEST_REG_V1` |
+| **Selectors** | `0xE0`–`0xE6` (claim / attest / revoke / attestations_count / get_attestation_at / get_asset_claimer / transfer_asset_claimer) |
+| **Model** | Dual **asset claimer** (independent of companions); append + tombstone revoke |
+
+**Boing Express** may later show a compact **Builder attested** line under a matching collection/project (read via `attestations_count` / `get_attestation_at`, skip tombstones). Optional env: `VITE_BOING_BUILDER_ATTESTATION_REGISTRY`. Write/attest flows stay in dApps (boing.finance). Soft wallet-signed JSON proofs are **not** network authority.
+
 ---
 
 ## Related docs in this repo

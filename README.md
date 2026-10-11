@@ -23,7 +23,7 @@ flowchart LR
 ## ✨ Features
 
 - **Boing Network:** Ed25519 addresses (32-byte AccountId, 64-char hex), send/receive BOING, testnet faucet, staking (Bond/Unbond/ClaimUnbond)
-- **Assets / NFTs:** BOING balance plus reference-NFT watchlist, recent-block discovery, and `transfer_nft` (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)). Official NFT↔fungible **companion peers** are read from the on-chain registry and shown under matching collections — [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md)
+- **Assets / NFTs:** BOING balance plus reference-NFT watchlist, recent-block discovery, and `transfer_nft` (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)). Official NFT↔fungible **companion peers** are read from the on-chain registry and shown under matching collections — [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md). Optional on-chain **builder attested** signal (separate registry; read-only when surfaced) — [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md)
 - **Signing:** BLAKE3 signable hash + Ed25519; bincode layout matches `boing-primitives`
 - **Security:** Client-only key generation, password-encrypted storage (AES-GCM), keys never sent to any server
 - **Extension:** Injects `window.boing` for dApp connect; Connected sites management in the popup
@@ -93,6 +93,7 @@ Recommended pre-review copy: `pnpm run build:extension:unpacked` → load **`ext
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Portal / protocol handoff |
 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Aqua Personal tokens |
 | Upstream [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) | On-chain NFT↔token link registry (SDK / dApp discovery) |
+| Upstream [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) | On-chain builder attestation registry (builder signal; companions remain project authority) |
 
 ## License
 
