@@ -39,6 +39,18 @@ describe('createBoingAdapter', () => {
     expect(getBalanceSpy).not.toHaveBeenCalled();
   });
 
+  it('reads the nonce from boing_getAccount', async () => {
+    vi.spyOn(rpc, 'getAccount').mockResolvedValue({ balance: '1', nonce: '9' });
+    const adapter = createBoingAdapter(baseConfig);
+    await expect(adapter.getNonce(accountId)).resolves.toBe(9n);
+  });
+
+  it('does not fall back to a nonce RPC when boing_getAccount is unavailable', async () => {
+    vi.spyOn(rpc, 'getAccount').mockRejectedValue(new rpc.RpcClientError('Method not found', -32601));
+    const adapter = createBoingAdapter(baseConfig);
+    await expect(adapter.getNonce(accountId)).rejects.toThrow('Method not found');
+  });
+
   it('does not submit when simulate returns success: false', async () => {
     vi.spyOn(rpc, 'simulateTransaction').mockResolvedValue({
       success: false,

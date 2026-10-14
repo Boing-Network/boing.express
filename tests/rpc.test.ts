@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  getAccount,
   getBalance,
-  getNonce,
   getContractStorage,
   isMethodNotFoundError,
   listDexPools,
@@ -174,7 +174,7 @@ describe('rpc client', () => {
     await expect(getBalance('https://testnet-rpc.boing.network', '0xabc')).rejects.toThrow(
       'Network unavailable or RPC not responding. Check your connection and try again.'
     );
-    await expect(getNonce('https://testnet-rpc.boing.network', '0xabc')).rejects.toThrow(
+    await expect(getAccount('https://testnet-rpc.boing.network', '0xabc')).rejects.toThrow(
       'Network unavailable or RPC not responding. Check your connection and try again.'
     );
   });

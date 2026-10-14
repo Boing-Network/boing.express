@@ -234,7 +234,7 @@ export function faucetRequest(rpcUrl: string, hexAccountId: string): Promise<unk
 
 /**
  * Account state: balance and nonce (and optionally stake / unbond queue) as decimal strings (u128).
- * Prefer this over separate getBalance/getNonce so nonce is consistent with balance.
+ * Sole source of the account nonce (boing-node has no separate nonce method).
  */
 export interface BoingAccountState {
   balance: string;
@@ -277,12 +277,6 @@ export function getAccount(rpcUrl: string, hexAccountId: string): Promise<BoingA
  */
 export function getBalance(rpcUrl: string, hexAccountId: string): Promise<string> {
   return rpcCall<string>(rpcUrl, 'boing_getBalance', [hexAccountId]);
-}
-
-/** Legacy boing_getNonce fallback; current boing-node does not serve it (nonce comes from boing_getAccount). */
-export function getNonce(rpcUrl: string, hexAccountId: string): Promise<bigint> {
-  return rpcCall<string | number>(rpcUrl, 'boing_getNonce', [hexAccountId])
-    .then((n) => (typeof n === 'string' ? BigInt(n) : BigInt(n)));
 }
 
 /**

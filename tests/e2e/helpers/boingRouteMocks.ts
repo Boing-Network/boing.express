@@ -111,9 +111,6 @@ export async function installBoingNetworkMocks(context: BrowserContext): Promise
       case 'boing_getBalance':
         await fulfillJsonRpc(route, jsonRpcResult(id, '1000000'));
         return;
-      case 'boing_getNonce':
-        await fulfillJsonRpc(route, jsonRpcResult(id, '0'));
-        return;
       case 'boing_chainHeight':
         await fulfillJsonRpc(route, jsonRpcResult(id, 1));
         return;

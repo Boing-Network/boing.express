@@ -1,6 +1,6 @@
 /**
  * Boing Network adapter: implements NetworkAdapter using Boing RPC and signing.
- * Uses boing_getAccount for balance+nonce when available; falls back to getBalance+getNonce.
+ * Uses boing_getAccount for balance+nonce when available; balance falls back to boing_getBalance; nonce comes only from boing_getAccount.
  * Simulates transaction before submit when boing_simulateTransaction is available.
  */
 
@@ -62,14 +62,8 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
     },
 
     async getNonce(accountId: AccountId): Promise<bigint> {
-      const hex = accountIdToHex(accountId);
-      try {
-        const account = await rpc.getAccount(rpcUrl, hex);
-        return BigInt(account.nonce);
-      } catch (error) {
-        if (!rpc.isMethodNotFoundError(error)) throw error;
-        return rpc.getNonce(rpcUrl, hex);
-      }
+      const account = await rpc.getAccount(rpcUrl, accountIdToHex(accountId));
+      return BigInt(account.nonce);
     },
 
     async buildTransfer(
