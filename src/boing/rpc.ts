@@ -1,6 +1,6 @@
 /**
  * Boing JSON-RPC client. Aligned with boing-network docs/RPC-API-SPEC.md.
- * Methods: boing_getAccount, boing_getBalance, boing_getNonce, boing_submitTransaction,
+ * Methods: boing_getAccount, boing_getBalance, boing_submitTransaction,
  * boing_simulateTransaction, boing_simulateContractCall, boing_faucetRequest, boing_chainHeight,
  * boing_listDexPools, boing_listDexTokens, boing_getDexToken, boing_getContractStorage.
  */
@@ -279,7 +279,7 @@ export function getBalance(rpcUrl: string, hexAccountId: string): Promise<string
   return rpcCall<string>(rpcUrl, 'boing_getBalance', [hexAccountId]);
 }
 
-/** boing_getNonce([hex_account_id]) — fallback when getAccount is not available. */
+/** Legacy boing_getNonce fallback; current boing-node does not serve it (nonce comes from boing_getAccount). */
 export function getNonce(rpcUrl: string, hexAccountId: string): Promise<bigint> {
   return rpcCall<string | number>(rpcUrl, 'boing_getNonce', [hexAccountId])
     .then((n) => (typeof n === 'string' ? BigInt(n) : BigInt(n)));
