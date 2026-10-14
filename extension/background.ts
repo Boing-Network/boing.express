@@ -22,7 +22,6 @@ import {
 import {
   getAccount,
   getDexToken,
-  getNonce,
   listDexPools,
   listDexTokens,
   RpcClientError,
@@ -437,13 +436,9 @@ async function signOrSendBoingTransaction(
     try {
       const acc = await getAccount(rpcUrl, hexForRpc);
       nonceDefault = BigInt(acc.nonce);
-    } catch {
-      try {
-        nonceDefault = await getNonce(rpcUrl, hexForRpc);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_RPC_NONCE', `Could not load nonce: ${msg}`);
-      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_RPC_NONCE', `Could not load nonce: ${msg}`);
     }
   }
 
