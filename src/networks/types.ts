@@ -58,7 +58,7 @@ export interface NetworkAdapter {
   submitTransaction(signedTxHex: string): Promise<SubmitResult>;
 
   /** Request from faucet (if supported). Returns success/error. */
-  faucetRequest?(accountId: AccountId): Promise<{ success: boolean; error?: string }>;
+  faucetRequest?(accountId: AccountId): Promise<{ success: boolean; error?: string; amount?: string; warning?: string }>;
 
   /** Optional: current chain height for sync status. */
   getChainHeight?(): Promise<number>;

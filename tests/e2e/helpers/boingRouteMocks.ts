@@ -94,6 +94,8 @@ export interface BoingMockOptions {
    * Hex args arrive lowercase without 0x. Use for mocked token balances / NFT owner slots.
    */
   storage?: (contractHex: string, keyHex: string) => string | null;
+  /** boing_faucetRequest behaviour (default: ok, 10 BOING). */
+  faucet?: 'ok' | 'cooldown' | 'empty';
 }
 
 /** Signed tx hex → payload discriminant (u32 LE after nonce u64 + sender 32 bytes). */
@@ -197,7 +199,13 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
         await fulfillJsonRpc(route, jsonRpcResult(id, null));
         return;
       case 'boing_faucetRequest':
-        await fulfillJsonRpc(route, jsonRpcResult(id, { success: true }));
+        if (opts.faucet === 'cooldown') {
+          await fulfillJsonRpc(route, JSON.stringify({ jsonrpc: '2.0', id, error: { code: -32016, message: 'Faucet cooldown: try again in 42 seconds.' } }));
+        } else if (opts.faucet === 'empty') {
+          await fulfillJsonRpc(route, JSON.stringify({ jsonrpc: '2.0', id, error: { code: -32000, message: 'Faucet balance too low.' } }));
+        } else {
+          await fulfillJsonRpc(route, jsonRpcResult(id, { ok: true, amount: 10, tip_height: 84, connected_peers: 0, message: 'Check your wallet; tx is in the mempool.' }));
+        }
         return;
       case 'boing_listDexPools':
         await fulfillJsonRpc(route, jsonRpcResult(id, { pools: [], nextCursor: null }));

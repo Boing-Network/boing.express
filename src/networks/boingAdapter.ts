@@ -236,11 +236,15 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
   };
 
   if (config.isTestnet) {
-    adapter.faucetRequest = async (accountId: AccountId): Promise<{ success: boolean; error?: string }> => {
+    adapter.faucetRequest = async (accountId: AccountId): Promise<{ success: boolean; error?: string; amount?: string; warning?: string }> => {
       try {
         const hex = accountIdToHex(accountId);
-        await rpc.faucetRequest(rpcUrl, hex);
-        return { success: true };
+        const res = (await rpc.faucetRequest(rpcUrl, hex)) as { amount?: number | string; warning?: string } | null;
+        return {
+          success: true,
+          amount: res && res.amount != null ? String(res.amount) : undefined,
+          warning: res && typeof res.warning === 'string' ? res.warning : undefined,
+        };
       } catch (e) {
         return {
           success: false,

@@ -231,8 +231,16 @@ export function getContractStorage(
 export function faucetRequest(rpcUrl: string, hexAccountId: string): Promise<unknown> {
   return rpcCall<unknown>(rpcUrl, 'boing_faucetRequest', [hexAccountId]).catch((e: Error) => {
     const msg = e.message;
-    if (msg.includes('Rate limit')) throw e;
+    const code = (e as { code?: number }).code;
+    if (code === -32016 || msg.includes('Rate limit') || msg.includes('cooldown')) {
+      throw new Error(
+        msg.toLowerCase().includes('faucet cooldown')
+          ? `${msg} (one request per address every 60 seconds)`
+          : 'Faucet cooldown: one request per address every 60 seconds. Try again in a minute.'
+      );
+    }
     if (msg.includes('Method not found')) throw new Error('Faucet is not enabled on this network.');
+    if (msg.includes('balance too low')) throw new Error('The testnet faucet is empty right now. Please report it (boing.network/support) and try again later.');
     throw e;
   });
 }

@@ -79,6 +79,7 @@ export function Dashboard() {
   const [sending, setSending] = useState(false);
   const [faucetStatus, setFaucetStatus] = useState<'idle' | 'loading' | 'ok' | 'err'>('idle');
   const [faucetError, setFaucetError] = useState('');
+  const [faucetResult, setFaucetResult] = useState<{ amount?: string; warning?: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [stake, setStake] = useState<string | null>(null);
   const [stakeError, setStakeError] = useState<string | null>(null);
@@ -295,9 +296,11 @@ export function Dashboard() {
     if (!accountId || !network.faucetRequest) return;
     setFaucetStatus('loading');
     setFaucetError('');
+    setFaucetResult(null);
     try {
       const result = await network.faucetRequest(accountId);
       if (result.success) {
+        setFaucetResult({ amount: result.amount, warning: result.warning });
         markGotTestnetBoing();
         setOnboarding(getOnboardingState());
         setFaucetStatus('ok');
@@ -1060,6 +1063,10 @@ export function Dashboard() {
                 </span>
               </p>
             )}
+            <p className={styles.faucetHint} data-testid="stake-min-hint">
+              You can bond any amount. Running a validator needs at least 10,000 BOING staked, which the faucet
+              cannot cover (it sends a small amount per request, once a minute).
+            </p>
             {network.buildBond && (
               <form onSubmit={handleBond} className={styles.form}>
                 <input
@@ -1175,6 +1182,20 @@ export function Dashboard() {
                     Open faucet page
                   </button>
                 </div>
+                {faucetStatus === 'ok' && faucetResult && (
+                  <p className={styles.success} data-testid="faucet-success">
+                    {faucetResult.amount ? `${faucetResult.amount} testnet BOING requested.` : 'Testnet BOING requested.'} It arrives with the
+                    next block (a few seconds); your balance updates automatically.
+                    {accountExplorerUrl && (
+                      <>
+                        {' '}
+                        <a href={accountExplorerUrl} target="_blank" rel="noopener noreferrer">View on Boing Observer</a>.
+                      </>
+                    )}{' '}
+                    Next: send your first transfer from the Transfer tab (about 1 BOING fee).
+                    {faucetResult.warning && <><br />Note: {faucetResult.warning}</>}
+                  </p>
+                )}
                 {faucetError && <p className={styles.error}>{faucetError}</p>}
               </section>
             </div>
