@@ -152,7 +152,7 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
       <div className={`${styles.wrap} page-app`}>
         <div className={styles.card}>
           <img src={`${ASSETS}/${MASCOT_BY_STEP.choose}`} alt="" className={styles.mascot} aria-hidden />
-          <h1 className={styles.title}>Boing Wallet</h1>
+          <h1 className={styles.title}>Boing Express</h1>
           <p className={styles.subtitle}>The DeFi that always bounces back. Non-custodial wallet for Boing Network.</p>
           <div className={styles.actions}>
             <button type="button" className={styles.primary} data-testid="wallet-landing-create" onClick={() => setStep('create')}>

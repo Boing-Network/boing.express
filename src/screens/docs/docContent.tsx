@@ -9,7 +9,7 @@ export const DOCS: Record<string, Doc> = {
     content: (
       <>
         <p>
-          Boing Wallet is a non-custodial wallet for <a href="https://boing.network" target="_blank" rel="noopener noreferrer">Boing Network</a>.
+          Boing Express is a non-custodial wallet for <a href="https://boing.network" target="_blank" rel="noopener noreferrer">Boing Network</a>.
           Your keys are generated and stored only on your device; we never see your private key.
         </p>
         <h2>Quick start</h2>
@@ -84,7 +84,7 @@ export const DOCS: Record<string, Doc> = {
     content: (
       <>
         <p>
-          Boing Wallet is also available as a browser extension for Chrome and Firefox, with the same flows: create/import wallet, view address and balance, send BOING, use the faucet, switch networks, and stake (Bond/Unbond). The extension also provides <code>window.boing</code> for dApp &quot;Connect wallet&quot; and a Connected sites list in the popup.
+          Boing Express is also available as a browser extension for Chrome and Firefox, with the same flows: create/import wallet, view address and balance, send BOING, use the faucet, switch networks, and stake (Bond/Unbond). The extension also provides <code>window.boing</code> for dApp &quot;Connect wallet&quot; and a Connected sites list in the popup.
         </p>
         <h2>Building the extension</h2>
         <p>From the project root:</p>
@@ -107,7 +107,7 @@ export const DOCS: Record<string, Doc> = {
       <>
         <h2>Your responsibility</h2>
         <p>
-          Boing Wallet is non-custodial. You are responsible for backing up your private key and keeping your password safe. We cannot recover your key or reset your password.
+          Boing Express is non-custodial. You are responsible for backing up your private key and keeping your password safe. We cannot recover your key or reset your password.
         </p>
         <h2>Best practices</h2>
         <ul>
@@ -133,7 +133,7 @@ export const DOCS: Record<string, Doc> = {
         <h2>I lost my private key. Can you help?</h2>
         <p>We cannot recover or reset keys. If you didn’t back up the key and you clear site data or use another device, the wallet cannot be recovered.</p>
 
-        <h2>Is Boing Wallet open source?</h2>
+        <h2>Is Boing Express open source?</h2>
         <p>Yes. The project is available on GitHub; you can build and run it yourself.</p>
 
         <h2>Which networks are supported?</h2>
@@ -216,7 +216,7 @@ export const DOCS: Record<string, Doc> = {
           <li><a href="https://boing.observer" target="_blank" rel="noopener noreferrer">Boing Observer</a> — Explorer</li>
           <li><a href="https://boing.network/docs/rpc-api" target="_blank" rel="noopener noreferrer">RPC API</a> — Network API docs</li>
         </ul>
-        <h2>Boing Wallet (Boing Express)</h2>
+        <h2>Boing Express</h2>
         <ul>
           <li><Link to="/">Home</Link> — Landing page</li>
           <li><Link to="/wallet">Wallet</Link> — Create, import, or unlock</li>

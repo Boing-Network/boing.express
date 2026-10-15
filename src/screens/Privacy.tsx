@@ -46,7 +46,7 @@ export function Privacy() {
           <p>
             To show balances and send transactions, the wallet sends requests to Boing Network RPC
             endpoints (for example <code>testnet-rpc.boing.network</code> and an official public mainnet RPC when published).
-            These requests include your public address (account ID) and transaction data as needed.
+            These requests include your public address and transaction data as needed.
             Private keys are never sent. RPC providers may log requests according to their own policies.
           </p>
 
