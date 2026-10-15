@@ -18,6 +18,7 @@ import type { BalanceResult } from '../networks/types';
 import { chainIdHexToDecimal } from '../networks/chainIds';
 import { SiteLogo } from '../components/SiteLogo';
 import { NftHoldingsPanel } from '../components/NftHoldingsPanel';
+import { RevealPrivateKeyPanel } from '../components/RevealPrivateKeyPanel';
 import styles from './Dashboard.module.css';
 
 type WalletTabId = 'wallet' | 'transactions' | 'assets' | 'stake' | 'faucet';
@@ -874,6 +875,7 @@ export function Dashboard() {
                 </div>
               )}
             </section>
+            <RevealPrivateKeyPanel />
           </div>
 
           <div
@@ -1144,7 +1146,7 @@ export function Dashboard() {
               <section className={styles.section}>
                 <h2 className={styles.sectionTitle}>Testnet faucet</h2>
                 <p className={styles.faucetHint}>
-                  Get testnet BOING for development and testing.
+                  Get testnet BOING for development and testing (one request per 60 seconds). Same faucet as boing.network/faucet, which also has wallet onboarding.
                 </p>
                 <div className={styles.faucetRow}>
                   {network.faucetRequest ? (
