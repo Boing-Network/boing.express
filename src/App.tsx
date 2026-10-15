@@ -16,6 +16,7 @@ import { DocPage } from './screens/docs/DocPage';
 import { Privacy } from './screens/Privacy';
 import { Support } from './screens/Support';
 import { Terms } from './screens/Terms';
+import { WebSign } from './screens/WebSign';
 import { useWallet } from './context/WalletContext';
 
 function WalletApp() {
@@ -65,6 +66,7 @@ function AppContent() {
         <Route index element={<DocPage slug="getting-started" />} />
         <Route path=":slug" element={<DocPage />} />
       </Route>
+      <Route path="/connect" element={<WebSign />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/support" element={<Support />} />
       <Route path="/terms" element={<Terms />} />
@@ -85,7 +87,8 @@ function getPageKey(pathname: string): string {
 function AppShell() {
   const location = useLocation();
   const pageKey = getPageKey(location.pathname);
-  const [introDone, setIntroDone] = useState(false);
+  // The web signing page (/connect) must not be hidden behind the intro animation.
+  const [introDone, setIntroDone] = useState(() => location.pathname.startsWith('/connect'));
   const handleIntroComplete = useCallback(() => setIntroDone(true), []);
 
   /* Colosseum-style stone + engraved vein + neon; intro overlays until complete. */

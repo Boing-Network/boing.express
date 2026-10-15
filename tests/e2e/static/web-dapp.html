@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Boing web signing test dApp</title></head>
+<body>
+<h1>Web signing test dApp</h1>
+<button id="connect">Connect</button>
+<button id="sign-tx">Sign transfer</button>
+<button id="sign-self">Sign self-transfer</button>
+<button id="sign-msg">Sign message</button>
+<pre id="out"></pre>
+<script>
+// Minimal popup client for e2e (mirrors boing-sdk boingWebWallet.ts).
+const WALLET = new URLSearchParams(location.search).get('wallet') || 'http://127.0.0.1:4174';
+const CHAIN = '0x1b01';
+let account = null;
+const out = (v) => { document.getElementById('out').textContent = JSON.stringify(v); };
+function rid() { const b = new Uint8Array(16); crypto.getRandomValues(b); return Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); }
+function request(method, params) {
+  const popup = window.open(WALLET + '/connect?mode=popup', 'boing_web_' + Date.now(), 'width=420,height=680');
+  const now = Date.now();
+  const req = { v: 1, type: 'boing_web_request', id: rid(), method, params, origin: location.origin,
+    returnUrl: location.origin + location.pathname, chainId: CHAIN, issuedAt: now, expiresAt: now + 5 * 60000 };
+  return new Promise((resolve, reject) => {
+    function onMsg(ev) {
+      if (ev.origin !== WALLET || ev.source !== popup) return;
+      const d = ev.data || {};
+      if (d.type === 'boing_web_ready') { popup.postMessage(req, WALLET); return; }
+      if (d.type !== 'boing_web_response' || d.id !== req.id || d.origin !== location.origin || d.chainId !== CHAIN) return;
+      window.removeEventListener('message', onMsg);
+      d.error ? reject(d.error) : resolve(d.result);
+    }
+    window.addEventListener('message', onMsg);
+  });
+}
+const run = (p) => p.then((r) => out({ ok: r }), (e) => out({ error: e }));
+document.getElementById('connect').onclick = () => run(request('boing_requestAccounts', []).then((a) => (account = a[0], a)));
+document.getElementById('sign-tx').onclick = () => run(request('boing_signTransaction', [{ type: 'transfer', to: '0x' + '22'.repeat(32), amount: '5', nonce: '0' }]));
+document.getElementById('sign-self').onclick = () => run(request('boing_signTransaction', [{ type: 'contract_call', contract: '0x' + '33'.repeat(32),
+  calldata: '0x' + '00'.repeat(31) + '01' + account.replace(/^0x/, '') + '00'.repeat(31) + '05', nonce: '0' }]));
+document.getElementById('sign-msg').onclick = () => run(request('boing_signMessage', ['hello boing']));
+</script>
+</body>
+</html>

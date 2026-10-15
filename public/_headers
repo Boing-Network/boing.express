@@ -1,0 +1,11 @@
+# Cloudflare Pages response headers. boing.express must never be framed (clickjacking protection for
+# the wallet and the /connect web signing flow, docs/WEB-SIGNING-FLOW.md).
+/*
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/connect
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer
