@@ -40,6 +40,20 @@ import {
 import { hydrateNftDisplayMetaList, type NftDisplayMeta } from '../src/boing/nftMetadata';
 import { transferOwnedNfts } from '../src/boing/nftTransfer';
 import { addNftWatchEntries, listNftWatchlist, removeNftWatchEntry } from '../src/storage/nftWatchlist';
+import { addTokenWatchEntry, listTokenWatchlist, removeTokenWatchEntry } from '../src/storage/tokenWatchlist';
+import { addTxHistory, getTxHistory, type TxHistoryEntry } from '../src/storage/txHistory';
+import { loadTokenHoldings, type TokenHolding } from '../src/boing/tokenHoldings';
+import { buildReferenceFungibleTransfer } from '../src/boing/referenceFungible';
+import { normalizeHex64 } from '../src/boing/referenceNft';
+import {
+  formatBulkReport,
+  parseBulkCsv,
+  runSequentialBulkTransfer,
+  validateBulkRows,
+  type BulkRowInput,
+  type BulkRowResult,
+  type BulkRowValid,
+} from '../src/boing/bulkTransfer';
 import { buildSignedTransactionHex } from '../src/boing/signing';
 import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
@@ -265,7 +279,7 @@ async function refreshConnectedSites(): Promise<void> {
   }
 }
 
-type TabId = 'wallet' | 'transactions' | 'assets' | 'stake' | 'faucet';
+type TabId = 'wallet' | 'transactions' | 'transfer' | 'stake' | 'faucet' | 'settings';
 
 function switchTab(tabId: TabId): void {
   document.querySelectorAll('.tab-btn').forEach((el) => {
@@ -286,7 +300,15 @@ function switchTab(tabId: TabId): void {
     panel.classList.add('active');
     panel.removeAttribute('hidden');
   }
+  const gear = document.getElementById('btn-settings');
+  if (gear) {
+    gear.classList.toggle('active', tabId === 'settings');
+    gear.setAttribute('aria-expanded', tabId === 'settings' ? 'true' : 'false');
+  }
+  if (tabId !== 'settings') lastMainTab = tabId;
 }
+
+let lastMainTab: TabId = 'wallet';
 
 let lastStakeRaw = '0';
 let lastPendingUnbondRaw = '0';
@@ -361,6 +383,8 @@ function refreshAccountSelect(): void {
 let nftSelectedKeys = new Set<string>();
 let nftConfirmBatch = false;
 let nftStatusesCache: NftHoldingStatus[] = [];
+/** Display titles of watched NFTs (filled by refreshNfts) for the Transfer tab picker. */
+const nftTitles = new Map<string, string>();
 
 function nftHoldingKey(item: { collectionHex: string; tokenIdHex: string }): string {
   return `${item.collectionHex}:${item.tokenIdHex}`;
@@ -391,14 +415,52 @@ function formatNftDiscoveryNote(discovery: NftDiscoveryResult): string {
   return parts.join(' · ');
 }
 
+function renderNftTransferPick(): void {
+  const pick = document.getElementById('nft-transfer-pick');
+  if (!pick) return;
+  pick.replaceChildren();
+  const owned = nftStatusesCache.filter((s) => s.owned);
+  if (owned.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'hint';
+    li.textContent = 'No owned NFTs found. Holdings are listed on the Wallet tab.';
+    pick.appendChild(li);
+    return;
+  }
+  for (const item of owned) {
+    const key = nftHoldingKey(item);
+    const title = nftTitles.get(key) ?? shortHexLabel(item.tokenIdHex, 8, 6);
+    const li = document.createElement('li');
+    li.className = 'nft-pick-row';
+    const label = document.createElement('label');
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.className = 'nft-check';
+    check.checked = nftSelectedKeys.has(key);
+    check.setAttribute('aria-label', `Select ${title}`);
+    check.addEventListener('change', () => {
+      if (check.checked) nftSelectedKeys.add(key);
+      else nftSelectedKeys.delete(key);
+      nftConfirmBatch = false;
+      updateNftTransferChrome();
+    });
+    const span = document.createElement('span');
+    span.textContent = `${title} · ${shortHexLabel(item.collectionHex, 6, 4)}`;
+    label.append(check, span);
+    li.appendChild(label);
+    pick.appendChild(li);
+  }
+}
+
 function updateNftTransferChrome(): void {
+  renderNftTransferPick();
   const sel = document.getElementById('nft-transfer-selected');
   const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement | null;
   const n = nftSelectedKeys.size;
   if (sel) {
     sel.textContent =
       n === 0
-        ? 'Select owned items (checkboxes) or Transfer on a row.'
+        ? 'Select owned items above.'
         : n === 1
           ? 'Selected 1 owned item (1 transfer_nft tx).'
           : `Selected ${n} owned items → ${n} separate transfer_nft txs (no on-chain batch).`;
@@ -503,21 +565,7 @@ async function refreshNfts(): Promise<void> {
               : 'Not found';
         const title =
           meta?.name?.trim() || item.label || shortHexLabel(item.tokenIdHex, 8, 6);
-
-        if (item.owned) {
-          const check = document.createElement('input');
-          check.type = 'checkbox';
-          check.className = 'nft-check';
-          check.checked = nftSelectedKeys.has(key);
-          check.setAttribute('aria-label', `Select ${title}`);
-          check.addEventListener('change', () => {
-            if (check.checked) nftSelectedKeys.add(key);
-            else nftSelectedKeys.delete(key);
-            nftConfirmBatch = false;
-            updateNftTransferChrome();
-          });
-          li.appendChild(check);
-        }
+        nftTitles.set(key, title);
 
         const thumbWrap = document.createElement('a');
         thumbWrap.className = 'nft-thumb';
@@ -584,6 +632,9 @@ async function refreshNfts(): Promise<void> {
           xfer.addEventListener('click', () => {
             nftSelectedKeys = new Set([key]);
             nftConfirmBatch = false;
+            nftTitles.set(key, title);
+            switchTab('transfer');
+            setTransferMode('nft');
             updateNftTransferChrome();
           });
           actions.appendChild(xfer);
@@ -623,8 +674,6 @@ async function goDashboard(): Promise<void> {
 
   refreshAccountSelect();
   ($('address') as HTMLElement).textContent = formatAddress(accountId, false);
-  const addressTxEl = document.getElementById('address-tx-tab');
-  if (addressTxEl) addressTxEl.textContent = formatAddress(accountId, false);
   ($('balance') as HTMLElement).textContent = '…';
   repopulateNetworkSelect();
 
@@ -635,9 +684,13 @@ async function goDashboard(): Promise<void> {
   showScreen('dashboard');
   switchTab('wallet');
   refreshConnectedSites();
+  setTransferMode('boing');
+  resetBulk();
+  refreshTxHistory();
   await refreshDashboardBalance();
   await refreshStake();
   void refreshNfts();
+  void refreshTokens();
 }
 
 // --- Choose
@@ -802,11 +855,17 @@ $('btn-import-back').addEventListener('click', () => {
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     const tabId = (btn as HTMLElement).getAttribute('data-tab');
-    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'assets' || tabId === 'stake' || tabId === 'faucet')
+    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'transfer' || tabId === 'stake' || tabId === 'faucet')
       switchTab(tabId);
-    if (tabId === 'assets') {
+    if (tabId === 'wallet') {
       void refreshDashboardBalance();
       void refreshNfts();
+      void refreshTokens();
+    }
+    if (tabId === 'transactions') refreshTxHistory();
+    if (tabId === 'transfer') {
+      void refreshDashboardBalance();
+      updateNftTransferChrome();
     }
   });
 });
@@ -818,6 +877,24 @@ $('network-select').addEventListener('change', (e) => {
   refreshStake();
   updateFaucetVisibility();
   updateStakingVisibility();
+  refreshTxHistory();
+  void refreshNfts();
+  void refreshTokens();
+});
+
+// --- Settings (gear): connected sites, export private key, advanced tx
+document.getElementById('btn-settings')?.addEventListener('click', () => {
+  if (document.getElementById('panel-settings')?.hasAttribute('hidden')) {
+    switchTab('settings');
+    void refreshConnectedSites();
+  } else {
+    revealSession.clear();
+    switchTab(lastMainTab);
+  }
+});
+document.getElementById('btn-settings-back')?.addEventListener('click', () => {
+  revealSession.clear();
+  switchTab(lastMainTab);
 });
 
 // --- Reveal private key (password re-entry, in-memory only, hidden by default, auto-clear; never sent to background/dApps)
@@ -957,6 +1034,7 @@ document.getElementById('btn-native-tx-submit')?.addEventListener('click', async
     const hex = signedHexNo0x.startsWith('0x') ? signedHexNo0x : `0x${signedHexNo0x}`;
     const result = await net.submitTransaction(hex);
     if (result.success) {
+      if (result.txHash) recordTx(result.txHash, 'contract_call', tx.payload.kind);
       okEl.textContent = result.txHash ? `Submitted: ${result.txHash.slice(0, 20)}…` : 'Submitted.';
       okEl.classList.remove('hidden');
       await maybeWatchMintBatch(tx);
@@ -1054,6 +1132,9 @@ document.getElementById('form-nft-transfer')?.addEventListener('submit', async (
         tokenIdHex: t.tokenIdHex,
       })),
     });
+    for (const r of result.results) {
+      if (r.success && r.txHash) recordTx(r.txHash, 'nft_send', `NFT ${shortHexLabel(r.tokenIdHex, 6, 4)} → ${shortHexLabel(toEl.value.replace(/^0x/i, ''), 6, 4)}`);
+    }
     if (result.failed === 0) {
       okEl.textContent =
         result.txCount === 1
@@ -1090,15 +1171,6 @@ $('btn-copy').addEventListener('click', async () => {
   const addr = formatAddress(accountId, false);
   await navigator.clipboard.writeText(addr);
   const btn = $('btn-copy');
-  btn.textContent = 'Copied';
-  setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
-});
-
-$('btn-copy-tx-tab').addEventListener('click', async () => {
-  if (!accountId) return;
-  const addr = formatAddress(accountId, false);
-  await navigator.clipboard.writeText(addr);
-  const btn = $('btn-copy-tx-tab');
   btn.textContent = 'Copied';
   setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
 });
@@ -1145,6 +1217,7 @@ $('form-send').addEventListener('submit', async (e) => {
     const signedHex = await net.buildTransfer(accountId, toId, amount, nonce, privateKey);
     const result = await net.submitTransaction(signedHex);
     if (result.success) {
+      if (result.txHash) recordTx(result.txHash, 'send', `${amount} BOING → ${shortHexLabel(toHex, 6, 4)}`);
       showSuccess('send-success', result.txHash ? `Sent! ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
       ($('send-amount') as HTMLInputElement).value = '';
       ($('send-to') as HTMLInputElement).value = '';
@@ -1363,6 +1436,495 @@ if (btnSyncMeta) {
     }
   });
 }
+
+// --- Tx history (local, per address + network)
+function txAddressHint(): string {
+  if (!accountId) return '';
+  const a = formatAddress(accountId, false);
+  return `${a.slice(0, 8)}…${a.slice(-8)}`;
+}
+
+function recordTx(txHash: string, type: TxHistoryEntry['type'], summary?: string): void {
+  addTxHistory(txAddressHint(), selectedNetworkId, txHash, type, summary);
+  refreshTxHistory();
+}
+
+const TX_TYPE_LABEL: Record<TxHistoryEntry['type'], string> = {
+  send: 'Send BOING',
+  bond: 'Bond',
+  unbond: 'Unbond',
+  claim_unbond: 'Claim unbond',
+  token_send: 'Send token',
+  nft_send: 'Send NFT',
+  contract_call: 'Contract call',
+};
+
+function refreshTxHistory(): void {
+  const list = document.getElementById('tx-history-list');
+  const empty = document.getElementById('tx-history-empty');
+  const explorerLink = document.getElementById('tx-history-explorer') as HTMLAnchorElement | null;
+  if (!list || !empty || !accountId) return;
+  const explorer = (getCurrentNetwork().config.explorerUrl ?? '').replace(/\/$/, '');
+  if (explorerLink) {
+    explorerLink.classList.toggle('hidden', !explorer);
+    if (explorer) explorerLink.href = `${explorer}/account/${formatAddress(accountId, false)}`;
+  }
+  const entries = getTxHistory(txAddressHint(), selectedNetworkId);
+  list.replaceChildren();
+  empty.classList.toggle('hidden', entries.length > 0);
+  for (const e of entries) {
+    const li = document.createElement('li');
+    li.className = 'tx-history-row';
+    li.setAttribute('data-testid', 'tx-history-row');
+    const main = document.createElement('div');
+    main.className = 'tx-history-main';
+    const title = document.createElement('span');
+    title.className = 'tx-history-type';
+    title.textContent = TX_TYPE_LABEL[e.type] ?? e.type;
+    const when = document.createElement('span');
+    when.className = 'tx-history-time';
+    when.textContent = new Date(e.timestamp).toLocaleString();
+    main.append(title, when);
+    li.appendChild(main);
+    if (e.summary) {
+      const sum = document.createElement('div');
+      sum.className = 'tx-history-summary';
+      sum.textContent = e.summary;
+      li.appendChild(sum);
+    }
+    const hash = e.txHash.startsWith('0x') ? e.txHash : `0x${e.txHash}`;
+    const link = document.createElement(explorer ? 'a' : 'code') as HTMLElement;
+    link.className = 'tx-history-hash';
+    link.textContent = `${hash.slice(0, 12)}…${hash.slice(-8)}`;
+    if (explorer && link instanceof HTMLAnchorElement) {
+      link.href = `${explorer}/tx/${hash}`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+    }
+    li.appendChild(link);
+    list.appendChild(li);
+  }
+}
+
+// --- Transfer tab: asset mode switch
+type TransferMode = 'boing' | 'token' | 'nft' | 'bulk';
+
+function setTransferMode(mode: TransferMode): void {
+  document.querySelectorAll<HTMLElement>('[data-transfer-mode]').forEach((b) => {
+    const on = b.dataset.transferMode === mode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  for (const m of ['boing', 'token', 'nft', 'bulk'] as const) {
+    document.getElementById(`transfer-pane-${m}`)?.classList.toggle('hidden', m !== mode);
+  }
+  if (mode === 'nft') updateNftTransferChrome();
+  if (mode === 'token' || mode === 'bulk') populateAssetSelects();
+}
+
+document.querySelectorAll<HTMLElement>('[data-transfer-mode]').forEach((b) => {
+  b.addEventListener('click', () => setTransferMode(b.dataset.transferMode as TransferMode));
+});
+
+// --- Fungible tokens (Wallet list + Transfer > Token)
+let tokenHoldings: TokenHolding[] = [];
+
+async function refreshTokens(): Promise<void> {
+  if (!accountId) return;
+  const list = document.getElementById('token-list');
+  const empty = document.getElementById('token-empty');
+  const err = document.getElementById('token-error');
+  if (!list || !empty) return;
+  err?.classList.add('hidden');
+  const ownerHex = accountIdToHex(accountId);
+  try {
+    const watch = await listTokenWatchlist(ownerHex, selectedNetworkId);
+    tokenHoldings = await loadTokenHoldings({ rpcUrl: getCurrentNetwork().config.rpcUrl, ownerHex, watchlist: watch });
+  } catch (e) {
+    tokenHoldings = [];
+    if (err) {
+      err.textContent = e instanceof Error ? e.message : String(e);
+      err.classList.remove('hidden');
+    }
+  }
+  list.replaceChildren();
+  empty.classList.toggle('hidden', tokenHoldings.length > 0);
+  for (const t of tokenHoldings) {
+    const li = document.createElement('li');
+    li.className = 'token-row';
+    li.setAttribute('data-testid', 'token-row');
+    const left = document.createElement('div');
+    left.className = 'token-row-left';
+    const sym = document.createElement('span');
+    sym.className = 'token-symbol';
+    sym.textContent = t.symbol;
+    const id = document.createElement('span');
+    id.className = 'token-id';
+    id.textContent = shortHexLabel(t.tokenHex, 6, 4);
+    id.title = t.tokenHex;
+    left.append(sym, id);
+    const bal = document.createElement('span');
+    bal.className = 'token-balance';
+    bal.textContent = t.error ? 'unavailable' : t.balanceDisplay;
+    if (t.error) bal.title = t.error;
+    li.append(left, bal);
+    if (t.watched) {
+      const rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'btn-small btn-disconnect';
+      rm.textContent = '×';
+      rm.setAttribute('aria-label', `Stop watching ${t.symbol}`);
+      rm.addEventListener('click', async () => {
+        await removeTokenWatchEntry(ownerHex, selectedNetworkId, t.tokenHex);
+        void refreshTokens();
+      });
+      li.appendChild(rm);
+    }
+    list.appendChild(li);
+  }
+  populateAssetSelects();
+}
+
+function populateAssetSelects(): void {
+  const fill = (sel: HTMLSelectElement | null, includeBoing: boolean) => {
+    if (!sel) return;
+    const prev = sel.value;
+    sel.replaceChildren();
+    if (includeBoing) sel.appendChild(new Option(`BOING · ${lastDisplayBalance}`, 'boing'));
+    for (const t of tokenHoldings) {
+      if (t.balanceRaw == null) continue;
+      sel.appendChild(new Option(`${t.symbol} · ${t.balanceDisplay}`, t.tokenHex));
+    }
+    if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  };
+  fill(document.getElementById('token-send-asset') as HTMLSelectElement | null, false);
+  fill(document.getElementById('bulk-asset') as HTMLSelectElement | null, true);
+  const btn = document.getElementById('btn-token-send') as HTMLButtonElement | null;
+  if (btn) btn.disabled = tokenHoldings.every((t) => t.balanceRaw == null);
+}
+
+document.getElementById('form-token-add')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!accountId) return;
+  hideError('token-add-error');
+  const c = (document.getElementById('token-add-contract') as HTMLInputElement).value;
+  const symbol = (document.getElementById('token-add-symbol') as HTMLInputElement).value.trim();
+  const decRaw = (document.getElementById('token-add-decimals') as HTMLInputElement).value.trim();
+  let tokenHex: string;
+  try {
+    tokenHex = normalizeHex64(c);
+  } catch {
+    showError('token-add-error', 'Token contract must be 64 hex characters.');
+    return;
+  }
+  const decimals = decRaw === '' ? undefined : Number(decRaw);
+  if (decimals != null && (!Number.isInteger(decimals) || decimals < 0 || decimals > 38)) {
+    showError('token-add-error', 'Decimals must be a whole number 0–38.');
+    return;
+  }
+  await addTokenWatchEntry(accountIdToHex(accountId), selectedNetworkId, { tokenHex, symbol: symbol || undefined, decimals });
+  (document.getElementById('token-add-contract') as HTMLInputElement).value = '';
+  (document.getElementById('token-add-symbol') as HTMLInputElement).value = '';
+  (document.getElementById('token-add-decimals') as HTMLInputElement).value = '';
+  await refreshTokens();
+});
+
+function selectedToken(selId: string): TokenHolding | null {
+  const v = (document.getElementById(selId) as HTMLSelectElement | null)?.value ?? '';
+  return tokenHoldings.find((t) => t.tokenHex === v) ?? null;
+}
+
+document.getElementById('btn-token-send-max')?.addEventListener('click', () => {
+  const t = selectedToken('token-send-asset');
+  if (t?.balanceRaw != null) (document.getElementById('token-send-amount') as HTMLInputElement).value = formatBalance(t.balanceRaw, t.decimals, t.decimals);
+});
+
+document.getElementById('form-token-send')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!accountId || !privateKey) return;
+  hideError('token-send-error');
+  ($('token-send-success') as HTMLElement).classList.add('hidden');
+  const t = selectedToken('token-send-asset');
+  if (!t || t.balanceRaw == null) {
+    showError('token-send-error', 'Pick a token first (add one on the Wallet tab).');
+    return;
+  }
+  const toHex = ($('token-send-to') as HTMLInputElement).value.replace(/\s/g, '').replace(/^0x/i, '').toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(toHex)) {
+    showError('token-send-error', 'Invalid address: 64 hex chars required');
+    return;
+  }
+  const v = validateBulkRows([{ to: toHex, amount: ($('token-send-amount') as HTMLInputElement).value }], {
+    senderHex: accountIdToHex(accountId),
+    decimals: t.decimals,
+    balance: BigInt(t.balanceRaw),
+  });
+  if (!v.ok) {
+    showError('token-send-error', v.issues.map((i) => i.message.replace(/^Row 1: /, '')).join(' '));
+    return;
+  }
+  const amount = v.rows[0]!.amount;
+  const btn = $('btn-token-send') as HTMLButtonElement;
+  btn.disabled = true;
+  const prev = btn.textContent;
+  btn.textContent = 'Sending…';
+  try {
+    const net = getCurrentNetwork();
+    const nonce = await net.getNonce(accountId);
+    const signed = await buildReferenceFungibleTransfer({ network: net, sender: accountId, tokenHex: t.tokenHex, toHex, amount, nonce, privateKey });
+    const res = await net.submitTransaction(signed);
+    if (!res.success) throw new Error(res.error ?? 'Submit failed');
+    if (res.txHash) recordTx(res.txHash, 'token_send', `${formatBalance(amount.toString(), t.decimals, t.decimals)} ${t.symbol} → ${shortHexLabel(toHex, 6, 4)}`);
+    showSuccess('token-send-success', res.txHash ? `Sent! ${res.txHash.slice(0, 16)}…` : 'Transaction submitted');
+    ($('token-send-amount') as HTMLInputElement).value = '';
+    ($('token-send-to') as HTMLInputElement).value = '';
+    window.setTimeout(() => void refreshTokens(), 2000);
+  } catch (err) {
+    showError('token-send-error', err instanceof Error ? err.message : String(err));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prev ?? 'Send token';
+  }
+});
+
+// --- Bulk transfer: rows + CSV → validate → review → sequential signed txs (stop on first failure, no retries)
+let bulkValidated: BulkRowValid[] = [];
+let bulkCancel = false;
+let bulkReportText = '';
+
+function bulkAsset(): { kind: 'boing'; decimals: number; symbol: string; balance: bigint | null } | { kind: 'token'; token: TokenHolding; decimals: number; symbol: string; balance: bigint | null } {
+  const v = (document.getElementById('bulk-asset') as HTMLSelectElement | null)?.value ?? 'boing';
+  const t = tokenHoldings.find((x) => x.tokenHex === v);
+  if (t) return { kind: 'token', token: t, decimals: t.decimals, symbol: t.symbol, balance: t.balanceRaw == null ? null : BigInt(t.balanceRaw) };
+  let bal: bigint | null = null;
+  try {
+    bal = BigInt(lastBalanceRaw);
+  } catch {
+    bal = null;
+  }
+  return { kind: 'boing', decimals: BOING_DECIMALS, symbol: 'BOING', balance: bal };
+}
+
+function addBulkRow(to = '', amount = ''): void {
+  const wrap = document.getElementById('bulk-rows');
+  if (!wrap) return;
+  const row = document.createElement('div');
+  row.className = 'bulk-row';
+  row.setAttribute('data-testid', 'bulk-row');
+  const toEl = document.createElement('input');
+  toEl.className = 'input bulk-to';
+  toEl.placeholder = 'Recipient (64 hex)';
+  toEl.value = to;
+  toEl.setAttribute('aria-label', 'Bulk recipient');
+  toEl.setAttribute('data-testid', 'bulk-row-to');
+  const amtEl = document.createElement('input');
+  amtEl.className = 'input bulk-amount';
+  amtEl.placeholder = 'Amount';
+  amtEl.inputMode = 'decimal';
+  amtEl.value = amount;
+  amtEl.setAttribute('aria-label', 'Bulk amount');
+  amtEl.setAttribute('data-testid', 'bulk-row-amount');
+  const rm = document.createElement('button');
+  rm.type = 'button';
+  rm.className = 'btn-small btn-disconnect';
+  rm.textContent = '×';
+  rm.setAttribute('aria-label', 'Remove row');
+  rm.addEventListener('click', () => {
+    row.remove();
+    if (!wrap.children.length) addBulkRow();
+  });
+  row.append(toEl, amtEl, rm);
+  wrap.appendChild(row);
+}
+
+function readBulkRows(): BulkRowInput[] {
+  const rows: BulkRowInput[] = [];
+  document.querySelectorAll<HTMLElement>('#bulk-rows .bulk-row').forEach((r, i) => {
+    const to = (r.querySelector('.bulk-to') as HTMLInputElement).value.trim();
+    const amount = (r.querySelector('.bulk-amount') as HTMLInputElement).value.trim();
+    if (!to && !amount) return;
+    rows.push({ to, amount, source: `Row ${i + 1}` });
+  });
+  return rows;
+}
+
+function showBulkStage(stage: 'edit' | 'review' | 'progress'): void {
+  for (const s of ['edit', 'review', 'progress'] as const) document.getElementById(`bulk-${s}`)?.classList.toggle('hidden', s !== stage);
+}
+
+function showBulkIssues(messages: string[]): void {
+  const ul = document.getElementById('bulk-issues');
+  if (!ul) return;
+  ul.replaceChildren(...messages.map((m) => Object.assign(document.createElement('li'), { textContent: m })));
+  ul.classList.toggle('hidden', messages.length === 0);
+}
+
+function resetBulk(): void {
+  bulkValidated = [];
+  bulkReportText = '';
+  bulkCancel = false;
+  const wrap = document.getElementById('bulk-rows');
+  if (wrap) wrap.replaceChildren();
+  addBulkRow();
+  showBulkIssues([]);
+  showBulkStage('edit');
+}
+
+function fmtBulkAmount(v: bigint): string {
+  const a = bulkAsset();
+  return `${formatBalance(v.toString(), a.decimals, a.decimals)} ${a.symbol}`;
+}
+
+document.getElementById('btn-bulk-add-row')?.addEventListener('click', () => addBulkRow());
+document.getElementById('btn-bulk-clear')?.addEventListener('click', () => resetBulk());
+document.getElementById('btn-bulk-csv-import')?.addEventListener('click', () => {
+  const ta = document.getElementById('bulk-csv') as HTMLTextAreaElement | null;
+  if (!ta) return;
+  const { rows, issues } = parseBulkCsv(ta.value);
+  const wrap = document.getElementById('bulk-rows');
+  // Drop the trailing empty row(s) before appending.
+  wrap?.querySelectorAll<HTMLElement>('.bulk-row').forEach((r) => {
+    const to = (r.querySelector('.bulk-to') as HTMLInputElement).value.trim();
+    const am = (r.querySelector('.bulk-amount') as HTMLInputElement).value.trim();
+    if (!to && !am) r.remove();
+  });
+  for (const r of rows) addBulkRow(r.to, r.amount);
+  if (!wrap?.children.length) addBulkRow();
+  showBulkIssues(issues.map((i) => i.message));
+  if (issues.length === 0) ta.value = '';
+});
+
+document.getElementById('btn-bulk-review')?.addEventListener('click', () => {
+  if (!accountId) return;
+  const a = bulkAsset();
+  const v = validateBulkRows(readBulkRows(), { senderHex: accountIdToHex(accountId), decimals: a.decimals, balance: a.balance });
+  if (!v.ok) {
+    showBulkIssues(v.issues.map((i) => i.message));
+    return;
+  }
+  showBulkIssues([]);
+  bulkValidated = v.rows;
+  const list = document.getElementById('bulk-review-list');
+  list?.replaceChildren(
+    ...v.rows.map((r) => {
+      const li = document.createElement('li');
+      li.setAttribute('data-testid', 'bulk-review-row');
+      const code = document.createElement('code');
+      code.textContent = `0x${r.toHex}`;
+      const amt = document.createElement('span');
+      amt.className = 'bulk-amount-cell';
+      amt.textContent = fmtBulkAmount(r.amount);
+      li.append(code, amt);
+      return li;
+    })
+  );
+  $('bulk-review-total').textContent = fmtBulkAmount(v.total);
+  $('bulk-review-summary').textContent = `${v.rows.length} transfer${v.rows.length === 1 ? '' : 's'} of ${a.symbol} on ${getCurrentNetwork().config.name}. ${v.rows.length} signatures, sent one after another.`;
+  showBulkStage('review');
+});
+
+document.getElementById('btn-bulk-back')?.addEventListener('click', () => showBulkStage('edit'));
+document.getElementById('btn-bulk-cancel')?.addEventListener('click', () => {
+  bulkCancel = true;
+  ($('btn-bulk-cancel') as HTMLButtonElement).disabled = true;
+});
+document.getElementById('btn-bulk-done')?.addEventListener('click', () => resetBulk());
+document.getElementById('btn-bulk-copy-report')?.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(bulkReportText);
+    $('btn-bulk-copy-report').textContent = 'Copied';
+  } catch {
+    /* clipboard unavailable */
+  }
+});
+
+const BULK_STATUS_LABEL: Record<BulkRowResult['status'], string> = {
+  pending: 'Waiting',
+  signing: 'Sending…',
+  submitted: 'Submitted',
+  failed: 'Failed',
+  not_sent: 'Not sent',
+};
+
+function renderBulkProgress(results: BulkRowResult[]): void {
+  const list = document.getElementById('bulk-progress-list');
+  if (!list) return;
+  list.replaceChildren(
+    ...results.map((r) => {
+      const li = document.createElement('li');
+      li.className = `bulk-status-${r.status}`;
+      li.setAttribute('data-testid', 'bulk-progress-row');
+      li.setAttribute('data-status', r.status);
+      const head = document.createElement('div');
+      head.className = 'bulk-progress-head';
+      const who = document.createElement('code');
+      who.textContent = `${shortHexLabel(r.toHex, 8, 6)} · ${fmtBulkAmount(r.amount)}`;
+      const st = document.createElement('span');
+      st.className = 'bulk-status';
+      st.textContent = BULK_STATUS_LABEL[r.status];
+      head.append(who, st);
+      li.appendChild(head);
+      if (r.txHash || r.error) {
+        const d = document.createElement('div');
+        d.className = r.status === 'failed' ? 'error' : 'hint';
+        d.textContent = r.error ?? `Tx ${r.txHash}`;
+        li.appendChild(d);
+      }
+      return li;
+    })
+  );
+  const done = results.filter((r) => r.status === 'submitted').length;
+  $('bulk-progress-summary').textContent = `${done} of ${results.length} submitted…`;
+}
+
+document.getElementById('btn-bulk-confirm')?.addEventListener('click', async () => {
+  if (!accountId || !privateKey || bulkValidated.length === 0) return;
+  const sender = accountId;
+  const key = privateKey;
+  const net = getCurrentNetwork();
+  const a = bulkAsset();
+  bulkCancel = false;
+  ($('btn-bulk-cancel') as HTMLButtonElement).disabled = false;
+  $('btn-bulk-cancel').classList.remove('hidden');
+  $('btn-bulk-done').classList.add('hidden');
+  $('btn-bulk-copy-report').classList.add('hidden');
+  $('btn-bulk-copy-report').textContent = 'Copy report';
+  showBulkStage('progress');
+  let report;
+  try {
+    const startNonce = await net.getNonce(sender);
+    report = await runSequentialBulkTransfer({
+      rows: bulkValidated,
+      startNonce,
+      sign: (row, nonce) =>
+        a.kind === 'token'
+          ? buildReferenceFungibleTransfer({ network: net, sender, tokenHex: a.token.tokenHex, toHex: row.toHex, amount: row.amount, nonce, privateKey: key })
+          : net.buildTransfer(sender, accountIdFromHex(row.toHex), row.amount, nonce, key),
+      submit: (hex) => net.submitTransaction(hex),
+      onProgress: renderBulkProgress,
+      shouldCancel: () => bulkCancel,
+    });
+  } catch (err) {
+    $('bulk-progress-summary').textContent = `Could not start: ${err instanceof Error ? err.message : String(err)}. Nothing was sent.`;
+    $('btn-bulk-cancel').classList.add('hidden');
+    $('btn-bulk-done').classList.remove('hidden');
+    return;
+  }
+  for (const r of report.results) {
+    if (r.status === 'submitted' && r.txHash) recordTx(r.txHash, a.kind === 'token' ? 'token_send' : 'send', `Bulk #${r.row + 1}: ${fmtBulkAmount(r.amount)} → ${shortHexLabel(r.toHex, 6, 4)}`);
+  }
+  renderBulkProgress(report.results);
+  bulkReportText = formatBulkReport(report, fmtBulkAmount);
+  $('bulk-progress-summary').textContent = bulkReportText.split('\n')[0] ?? '';
+  $('btn-bulk-cancel').classList.add('hidden');
+  $('btn-bulk-done').classList.remove('hidden');
+  $('btn-bulk-copy-report').classList.remove('hidden');
+  bulkValidated = [];
+  window.setTimeout(() => {
+    void refreshDashboardBalance();
+    void refreshTokens();
+  }, 2000);
+});
 
 // Init: refresh /api/networks meta, restore saved network, then choose / unlock / dashboard
 showLoading();

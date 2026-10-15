@@ -76,6 +76,9 @@
       <div class="dashboard-header">
         <div class="header-row">
           <select id="network-select" class="select select-network" aria-label="Select network"></select>
+          <button type="button" id="btn-settings" class="btn-icon" aria-label="Settings" title="Settings" aria-expanded="false" aria-controls="panel-settings" data-testid="wallet-header-settings">
+            <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
           <button type="button" id="btn-lock" class="btn-icon" aria-label="Lock wallet" title="Lock wallet" data-testid="wallet-header-lock">
             <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </button>
@@ -90,87 +93,19 @@
         </div>
       </div>
       <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
-        <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet">Wallet</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transactions">Tx</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-assets" aria-selected="false" aria-controls="panel-assets" data-tab="assets" data-testid="wallet-tab-assets">Assets</button>
+        <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet" data-testid="wallet-tab-wallet">Wallet</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transaction history" data-testid="wallet-tab-transactions">Tx</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-transfer" aria-selected="false" aria-controls="panel-transfer" data-tab="transfer" data-testid="wallet-tab-transfer">Transfer</button>
         <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
         <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>
       <div class="tab-panels">
         <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
-          <div class="card card-address">
-            <h2 class="label">Address</h2>
-            <p class="hint">Account hub — coins and NFTs live under Assets.</p>
-            <div class="row">
-              <code id="address" class="address"></code>
-              <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
-            </div>
-          </div>
-          <div class="card card-connected-sites">
-            <h2 class="label">Connected sites</h2>
-            <p class="hint" id="connected-sites-hint">Sites that can see your address and request signatures.</p>
-            <ul id="connected-sites-list" class="connected-sites-list" aria-label="List of connected sites"></ul>
-            <p id="connected-sites-empty" class="connected-sites-empty hidden">No sites connected.</p>
-          </div>
-          <details class="card advanced-tx-card">
-            <summary class="label">Advanced: native transaction JSON</summary>
-            <p class="hint">Paste a Boing dApp transaction object (e.g. <code>contract_call</code> with <code>access_list</code>). Signs with the unlocked key and submits via the selected network RPC.</p>
-            <textarea id="native-tx-json" class="textarea" rows="5" placeholder='{"type":"transfer","to":"0x…","amount":"1"}' aria-label="Native transaction JSON"></textarea>
-            <p id="native-tx-error" class="error hidden"></p>
-            <p id="native-tx-success" class="success hidden" aria-live="polite"></p>
-            <button type="button" id="btn-native-tx-submit" class="btn-secondary" aria-label="Sign and send native transaction">Sign &amp; send</button>
-          </details>
-          <details class="card reveal-key-card" data-testid="reveal-private-key">
-            <summary class="label">Reveal private key</summary>
-            <p class="error" role="note">Anyone with this key controls this account and its funds. Never share it, paste it into a website, or send it to anyone (Boing will never ask). Use it only in tools you trust, such as the boing CLI (BOING_SECRET_HEX).</p>
-            <form id="form-reveal-key">
-              <input type="password" id="reveal-key-password" placeholder="Wallet password" class="input" autocomplete="current-password" aria-label="Wallet password" />
-              <button type="submit" id="btn-reveal-key" class="btn-secondary">Reveal</button>
-            </form>
-            <div id="reveal-key-output" class="hidden">
-              <p class="hint">Hidden automatically after 30 seconds or when this popup closes.</p>
-              <code id="reveal-key-value" style="display:block;word-break:break-all;user-select:none" aria-label="Private key"></code>
-              <button type="button" id="btn-reveal-key-toggle" class="btn-secondary">Show</button>
-              <button type="button" id="btn-reveal-key-copy" class="btn-secondary">Copy</button>
-              <button type="button" id="btn-reveal-key-done" class="btn-secondary">Done</button>
-            </div>
-            <p id="reveal-key-error" class="error hidden"></p>
-          </details>
-        </section>
-        <section id="panel-transactions" class="tab-panel" role="tabpanel" aria-labelledby="tab-transactions" hidden>
-          <div class="card">
-            <h2 class="label">Receive</h2>
-            <p class="hint">Share your address to receive BOING.</p>
-            <div class="row">
-              <code id="address-tx-tab" class="address address-tx"></code>
-              <button type="button" id="btn-copy-tx-tab" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
-            </div>
-          </div>
-          <div class="card">
-            <h2 class="label">Send BOING</h2>
-            <form id="form-send" class="form">
-              <input type="text" id="send-to" placeholder="e.g. 7f3a2b1c4d5e6f7890abcdef... (64 hex)" class="input" aria-label="Recipient address" />
-              <p class="send-hint" aria-hidden="true">64 hex characters. 0x prefix optional.</p>
-              <div class="row row-amount">
-                <input type="text" id="send-amount" placeholder="Amount (whole BOING, e.g. 100)" class="input" aria-label="Amount to send" inputmode="numeric" />
-                <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
-              </div>
-              <p id="send-error" class="error hidden"></p>
-              <p id="send-success" class="success hidden" aria-live="polite"></p>
-              <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING">Send</button>
-            </form>
-          </div>
-        </section>
-        <section id="panel-assets" class="tab-panel" role="tabpanel" aria-labelledby="tab-assets" hidden>
           <div class="assets-composition" data-testid="assets-composition">
-            <header class="assets-header">
-              <h2 class="assets-title">Assets</h2>
-              <p class="assets-lede">Coins and collectibles for this account.</p>
-            </header>
             <div class="balance-hero assets-coins">
               <div class="balance-hero-row">
                 <div class="balance-hero-left">
-                  <p class="balance-label">Coins</p>
+                  <p class="balance-label">Balance</p>
                   <p class="balance"><span id="balance">…</span> <span id="symbol" class="balance-symbol">BOING</span></p>
                   <p id="balance-error" class="error hidden"></p>
                 </div>
@@ -178,30 +113,141 @@
                   <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 </button>
               </div>
+              <div class="row address-row">
+                <code id="address" class="address" title="Your address (share it to receive)"></code>
+                <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
+              </div>
+            </div>
+            <div class="assets-tokens" data-testid="wallet-tokens">
+              <h3 class="assets-section-label">Tokens</h3>
+              <ul id="token-list" class="connected-sites-list token-list" aria-label="Fungible tokens"></ul>
+              <p id="token-empty" class="hint">No tokens found. Add a token contract to watch it.</p>
+              <p id="token-error" class="error hidden"></p>
+              <details class="assets-subform">
+                <summary class="hint">Add token</summary>
+                <form id="form-token-add" class="form">
+                  <input type="text" id="token-add-contract" placeholder="Token contract (64 hex)" class="input" aria-label="Token contract" data-testid="token-add-contract" />
+                  <div class="row">
+                    <input type="text" id="token-add-symbol" placeholder="Symbol (optional)" class="input" aria-label="Token symbol" />
+                    <input type="text" id="token-add-decimals" placeholder="Decimals" class="input input-narrow" inputmode="numeric" aria-label="Token decimals" />
+                  </div>
+                  <p id="token-add-error" class="error hidden"></p>
+                  <button type="submit" class="btn-secondary" data-testid="token-add-submit">Watch token</button>
+                </form>
+              </details>
             </div>
             <div class="assets-collectibles">
               <h3 class="assets-section-label">Collectibles</h3>
-              <p class="hint">Auto-scans ≤256 recent blocks for mint_batch / transfer_nft. Gallery shows metadata when available. Older items: add manually.</p>
               <p id="nft-scan-status" class="hint" aria-live="polite"></p>
               <ul id="nft-list" class="connected-sites-list nft-list" aria-label="Watched NFTs"></ul>
               <p id="nft-empty" class="hint">No watched NFTs yet.</p>
               <p id="nft-error" class="error hidden"></p>
-              <form id="form-nft-add" class="form assets-subform">
-                <h3 class="assets-section-label">Add NFT</h3>
-                <input type="text" id="nft-collection" placeholder="Collection (64 hex)" class="input" aria-label="NFT collection" data-testid="nft-add-collection" />
-                <input type="text" id="nft-token-id" placeholder="Token id (64 hex or 1, 2, …)" class="input" aria-label="NFT token id" data-testid="nft-add-token-id" />
-                <p id="nft-add-error" class="error hidden"></p>
-                <button type="submit" class="btn-secondary" aria-label="Add NFT to watchlist">Add to watchlist</button>
-              </form>
-              <form id="form-nft-transfer" class="form assets-subform">
-                <h3 class="assets-section-label">Transfer NFT</h3>
-                <p class="hint" id="nft-transfer-selected">Select owned items (checkboxes) or Transfer on a row.</p>
-                <p class="hint">Protocol has no batch transfer_nft — multi-select sends one tx per item.</p>
-                <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
-                <p id="nft-transfer-error" class="error hidden"></p>
-                <p id="nft-transfer-success" class="success hidden" aria-live="polite"></p>
-                <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
-              </form>
+              <details class="assets-subform">
+                <summary class="hint">Add NFT (older than the 256-block auto-scan)</summary>
+                <form id="form-nft-add" class="form">
+                  <input type="text" id="nft-collection" placeholder="Collection (64 hex)" class="input" aria-label="NFT collection" data-testid="nft-add-collection" />
+                  <input type="text" id="nft-token-id" placeholder="Token id (64 hex or 1, 2, …)" class="input" aria-label="NFT token id" data-testid="nft-add-token-id" />
+                  <p id="nft-add-error" class="error hidden"></p>
+                  <button type="submit" class="btn-secondary" aria-label="Add NFT to watchlist">Add to watchlist</button>
+                </form>
+              </details>
+            </div>
+          </div>
+        </section>
+        <section id="panel-transactions" class="tab-panel" role="tabpanel" aria-labelledby="tab-transactions" hidden>
+          <div class="card">
+            <div class="card-title-row">
+              <h2 class="label">Recent transactions</h2>
+              <a id="tx-history-explorer" class="btn-text hidden" target="_blank" rel="noopener noreferrer">Explorer</a>
+            </div>
+            <p class="hint">Sent from this device. Full history is on the explorer.</p>
+            <ul id="tx-history-list" class="connected-sites-list tx-history-list" aria-label="Recent transactions" data-testid="tx-history-list"></ul>
+            <p id="tx-history-empty" class="hint">No transactions yet.</p>
+          </div>
+        </section>
+        <section id="panel-transfer" class="tab-panel" role="tabpanel" aria-labelledby="tab-transfer" hidden>
+          <div class="segmented" role="tablist" aria-label="Asset to transfer">
+            <button type="button" class="segmented-btn active" data-transfer-mode="boing" aria-selected="true" data-testid="transfer-mode-boing">BOING</button>
+            <button type="button" class="segmented-btn" data-transfer-mode="token" aria-selected="false" data-testid="transfer-mode-token">Token</button>
+            <button type="button" class="segmented-btn" data-transfer-mode="nft" aria-selected="false" data-testid="transfer-mode-nft">NFT</button>
+            <button type="button" class="segmented-btn" data-transfer-mode="bulk" aria-selected="false" data-testid="transfer-mode-bulk">Bulk</button>
+          </div>
+          <div class="card transfer-pane" id="transfer-pane-boing" data-testid="transfer-pane-boing">
+            <h2 class="label">Send BOING</h2>
+            <form id="form-send" class="form">
+              <input type="text" id="send-to" placeholder="Recipient (64 hex, 0x optional)" class="input" aria-label="Recipient address" data-testid="send-to" />
+              <div class="row row-amount">
+                <input type="text" id="send-amount" placeholder="Amount (whole BOING, e.g. 100)" class="input" aria-label="Amount to send" inputmode="numeric" data-testid="send-amount" />
+                <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
+              </div>
+              <p id="send-error" class="error hidden"></p>
+              <p id="send-success" class="success hidden" aria-live="polite"></p>
+              <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING" data-testid="send-submit">Send</button>
+            </form>
+          </div>
+          <div class="card transfer-pane hidden" id="transfer-pane-token" data-testid="transfer-pane-token">
+            <h2 class="label">Send token</h2>
+            <p class="hint">Boing reference tokens (v1 and v2). Sending to your own address is refused (v1 self-transfer bug).</p>
+            <form id="form-token-send" class="form">
+              <select id="token-send-asset" class="select" aria-label="Token" data-testid="token-send-asset"></select>
+              <input type="text" id="token-send-to" placeholder="Recipient (64 hex)" class="input" aria-label="Token recipient" data-testid="token-send-to" />
+              <div class="row row-amount">
+                <input type="text" id="token-send-amount" placeholder="Amount" class="input" aria-label="Token amount" inputmode="decimal" data-testid="token-send-amount" />
+                <button type="button" id="btn-token-send-max" class="btn-small" aria-label="Use full token balance">Max</button>
+              </div>
+              <p id="token-send-error" class="error hidden"></p>
+              <p id="token-send-success" class="success hidden" aria-live="polite"></p>
+              <button type="submit" id="btn-token-send" class="btn-primary" data-testid="token-send-submit">Send token</button>
+            </form>
+          </div>
+          <div class="card transfer-pane hidden" id="transfer-pane-nft" data-testid="transfer-pane-nft">
+            <h2 class="label">Transfer NFT</h2>
+            <form id="form-nft-transfer" class="form">
+              <ul id="nft-transfer-pick" class="connected-sites-list nft-pick-list" aria-label="Owned NFTs to transfer"></ul>
+              <p class="hint" id="nft-transfer-selected">Select owned items.</p>
+              <p class="hint">No batch transfer_nft on-chain: multi-select sends one tx per item.</p>
+              <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
+              <p id="nft-transfer-error" class="error hidden"></p>
+              <p id="nft-transfer-success" class="success hidden" aria-live="polite"></p>
+              <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
+            </form>
+          </div>
+          <div class="card transfer-pane hidden" id="transfer-pane-bulk" data-testid="transfer-pane-bulk">
+            <h2 class="label">Bulk transfer</h2>
+            <div id="bulk-edit">
+              <p class="hint">One asset, many recipients. Sent as separate transactions in order (not atomic); stops at the first failure.</p>
+              <select id="bulk-asset" class="select" aria-label="Asset for bulk transfer" data-testid="bulk-asset"></select>
+              <div id="bulk-rows" class="bulk-rows" data-testid="bulk-rows"></div>
+              <div class="row">
+                <button type="button" id="btn-bulk-add-row" class="btn-small" data-testid="bulk-add-row">+ Row</button>
+                <button type="button" id="btn-bulk-clear" class="btn-small btn-disconnect">Clear</button>
+              </div>
+              <details class="assets-subform">
+                <summary class="hint">Paste CSV (address,amount per line)</summary>
+                <textarea id="bulk-csv" class="textarea" rows="4" placeholder="0x7f3a…,100&#10;0x91bc…,25" aria-label="CSV rows" data-testid="bulk-csv"></textarea>
+                <button type="button" id="btn-bulk-csv-import" class="btn-secondary" data-testid="bulk-csv-import">Add CSV rows</button>
+              </details>
+              <ul id="bulk-issues" class="bulk-issues error hidden" data-testid="bulk-issues"></ul>
+              <button type="button" id="btn-bulk-review" class="btn-primary" data-testid="bulk-review">Review</button>
+            </div>
+            <div id="bulk-review" class="hidden" data-testid="bulk-review-screen">
+              <p class="hint" id="bulk-review-summary"></p>
+              <ol id="bulk-review-list" class="bulk-review-list" data-testid="bulk-review-list"></ol>
+              <p class="bulk-total">Total: <strong id="bulk-review-total" data-testid="bulk-review-total"></strong></p>
+              <p class="error" role="note">Each row is its own transaction. If one fails, earlier rows stay sent and later rows are not sent. Keep this popup open until it finishes.</p>
+              <div class="row">
+                <button type="button" id="btn-bulk-back" class="btn-secondary" data-testid="bulk-back">Edit</button>
+                <button type="button" id="btn-bulk-confirm" class="btn-primary" data-testid="bulk-confirm">Sign &amp; send all</button>
+              </div>
+            </div>
+            <div id="bulk-progress" class="hidden" data-testid="bulk-progress">
+              <p class="hint" id="bulk-progress-summary" aria-live="polite" data-testid="bulk-progress-summary"></p>
+              <ol id="bulk-progress-list" class="bulk-review-list" data-testid="bulk-progress-list"></ol>
+              <div class="row">
+                <button type="button" id="btn-bulk-cancel" class="btn-secondary" data-testid="bulk-cancel">Stop after current</button>
+                <button type="button" id="btn-bulk-copy-report" class="btn-small hidden" data-testid="bulk-copy-report">Copy report</button>
+                <button type="button" id="btn-bulk-done" class="btn-primary hidden" data-testid="bulk-done">Done</button>
+              </div>
             </div>
           </div>
         </section>
@@ -242,6 +288,42 @@
               <p id="faucet-error" class="error hidden"></p>
             </div>
           </section>
+        </section>
+        <section id="panel-settings" class="tab-panel settings-panel" role="region" aria-label="Settings" hidden data-testid="settings-panel">
+          <div class="settings-head">
+            <button type="button" id="btn-settings-back" class="btn-text" aria-label="Back to wallet" data-testid="settings-back">← Back</button>
+            <h2 class="assets-title">Settings</h2>
+          </div>
+          <div class="card card-connected-sites" data-testid="settings-connected-sites">
+            <h2 class="label">Connected sites</h2>
+            <p class="hint" id="connected-sites-hint">Sites that can see your address and request signatures.</p>
+            <ul id="connected-sites-list" class="connected-sites-list" aria-label="List of connected sites"></ul>
+            <p id="connected-sites-empty" class="connected-sites-empty hidden">No sites connected.</p>
+          </div>
+          <details class="card reveal-key-card" data-testid="reveal-private-key">
+            <summary class="label">Export private key</summary>
+            <p class="error" role="note">Anyone with this key controls this account and its funds. Never share it, paste it into a website, or send it to anyone (Boing will never ask). Use it only in tools you trust, such as the boing CLI (BOING_SECRET_HEX).</p>
+            <form id="form-reveal-key">
+              <input type="password" id="reveal-key-password" placeholder="Wallet password" class="input" autocomplete="current-password" aria-label="Wallet password" />
+              <button type="submit" id="btn-reveal-key" class="btn-secondary">Reveal</button>
+            </form>
+            <div id="reveal-key-output" class="hidden">
+              <p class="hint">Hidden automatically after 30 seconds or when this popup closes.</p>
+              <code id="reveal-key-value" style="display:block;word-break:break-all;user-select:none" aria-label="Private key"></code>
+              <button type="button" id="btn-reveal-key-toggle" class="btn-secondary">Show</button>
+              <button type="button" id="btn-reveal-key-copy" class="btn-secondary">Copy</button>
+              <button type="button" id="btn-reveal-key-done" class="btn-secondary">Done</button>
+            </div>
+            <p id="reveal-key-error" class="error hidden"></p>
+          </details>
+          <details class="card advanced-tx-card">
+            <summary class="label">Advanced: native transaction JSON</summary>
+            <p class="hint">Paste a Boing dApp transaction object (e.g. <code>contract_call</code> with <code>access_list</code>). Signs with the unlocked key and submits via the selected network RPC.</p>
+            <textarea id="native-tx-json" class="textarea" rows="5" placeholder='{"type":"transfer","to":"0x…","amount":"1"}' aria-label="Native transaction JSON"></textarea>
+            <p id="native-tx-error" class="error hidden"></p>
+            <p id="native-tx-success" class="success hidden" aria-live="polite"></p>
+            <button type="button" id="btn-native-tx-submit" class="btn-secondary" aria-label="Sign and send native transaction">Sign &amp; send</button>
+          </details>
         </section>
       </div>
     </div>
