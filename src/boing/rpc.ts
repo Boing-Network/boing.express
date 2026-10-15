@@ -149,6 +149,11 @@ export function submitTransaction(rpcUrl: string, hexSignedTx: string): Promise<
 }
 
 /** Current chain height. */
+/** `boing_health` (includes `rpc_surface` capability flags such as `tx_payload_batch`). */
+export function health(rpcUrl: string): Promise<unknown> {
+  return rpcCall<unknown>(rpcUrl, 'boing_health', []);
+}
+
 export function chainHeight(rpcUrl: string): Promise<number> {
   return rpcCall<number>(rpcUrl, 'boing_chainHeight', []);
 }

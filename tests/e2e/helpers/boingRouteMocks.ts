@@ -81,7 +81,24 @@ export interface BoingMockOptions {
   failSubmitAt?: number;
   /** Receives every signed tx hex passed to `boing_submitTransaction`, in order. */
   submitted?: string[];
+  /** Advertise native batch support in `boing_health.rpc_surface`. */
+  batchSupport?: boolean;
+  /** Reject batch payloads like a pre-batch node (bincode variant error) on simulate + submit. */
+  rejectBatchDecode?: boolean;
+  /** `gas_used` returned by `boing_simulateTransaction` (default: field omitted). */
+  simulateGasUsed?: number;
 }
+
+/** Signed tx hex → payload discriminant (u32 LE after nonce u64 + sender 32 bytes). */
+function payloadVariantOfSignedHex(hex: string): number {
+  const h = hex.replace(/^0x/i, '');
+  const off = (8 + 32) * 2;
+  const b = h.slice(off, off + 8);
+  if (b.length < 8) return -1;
+  return parseInt(b.slice(6, 8) + b.slice(4, 6) + b.slice(2, 4) + b.slice(0, 2), 16);
+}
+
+const BATCH_DECODE_ERROR = 'Invalid transaction: invalid value: integer `9`, expected variant index 0 <= i < 9';
 
 export async function installBoingNetworkMocks(context: BrowserContext, opts: BoingMockOptions = {}): Promise<void> {
   let submitCount = 0;
@@ -122,15 +139,39 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
       case 'boing_chainHeight':
         await fulfillJsonRpc(route, jsonRpcResult(id, 1));
         return;
-      case 'boing_simulateTransaction':
-        await fulfillJsonRpc(route, jsonRpcResult(id, { success: true }));
+      case 'boing_health':
+        if (!opts.batchSupport) break;
+        await fulfillJsonRpc(
+          route,
+          jsonRpcResult(id, {
+            ok: true,
+            head_height: 1,
+            rpc_surface: { tx_payload_batch: true, tx_batch_max_calls: 16, tx_batch_max_calldata_bytes: 65536 },
+          })
+        );
         return;
+      case 'boing_simulateTransaction': {
+        const hex = String((payload.params ?? [])[0] ?? '');
+        if (opts.rejectBatchDecode && payloadVariantOfSignedHex(hex) === 9) {
+          await fulfillJsonRpc(route, jsonRpcError(id, -32602, BATCH_DECODE_ERROR));
+          return;
+        }
+        await fulfillJsonRpc(
+          route,
+          jsonRpcResult(id, opts.simulateGasUsed != null ? { success: true, gas_used: opts.simulateGasUsed } : { success: true })
+        );
+        return;
+      }
       case 'boing_simulateContractCall':
         await fulfillJsonRpc(route, jsonRpcResult(id, { success: true, gas_used: '0', return_data: '0x' }));
         return;
       case 'boing_submitTransaction': {
         submitCount += 1;
         const hex = String((payload.params ?? [])[0] ?? '');
+        if (opts.rejectBatchDecode && payloadVariantOfSignedHex(hex) === 9) {
+          await fulfillJsonRpc(route, jsonRpcError(id, -32602, BATCH_DECODE_ERROR));
+          return;
+        }
         opts.submitted?.push(hex);
         if (opts.failSubmitAt === submitCount) {
           await fulfillJsonRpc(route, jsonRpcError(id, -32000, 'E2E mock: insufficient balance for fee'));
@@ -158,8 +199,8 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
         await fulfillJsonRpc(route, jsonRpcResult(id, null));
         return;
       default:
-        await fulfillJsonRpc(route, jsonRpcError(id, -32601, 'Method not found (E2E mock)'));
-        return;
+        break;
     }
+    await fulfillJsonRpc(route, jsonRpcError(id, -32601, 'Method not found (E2E mock)'));
   });
 }

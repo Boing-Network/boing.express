@@ -46,6 +46,7 @@ const TX_TYPE_LABEL: Record<TxHistoryEntry['type'], string> = {
   token_send: 'Send token',
   nft_send: 'Send NFT',
   contract_call: 'Contract call',
+  batch: 'Batch',
 };
 
 export function Dashboard() {
@@ -873,7 +874,19 @@ export function Dashboard() {
                     return (
                       <li key={`${entry.txHash}-${entry.timestamp}`} className={styles.txHistoryItem} data-testid="tx-history-row">
                         <span className={styles.txType}>{TX_TYPE_LABEL[entry.type] ?? entry.type}</span>
-                        <span className={styles.txSummary}>{entry.summary ?? new Date(entry.timestamp).toLocaleString()}</span>
+                        <span className={styles.txSummary}>
+                          {entry.summary ?? new Date(entry.timestamp).toLocaleString()}
+                          {entry.steps && entry.steps.length > 0 && (
+                            <details className={styles.subDetails} data-testid="tx-history-steps">
+                              <summary className={styles.addressHint}>{entry.steps.length} steps</summary>
+                              <ol className={styles.bulkList}>
+                                {entry.steps.map((s, i) => (
+                                  <li key={i}>{s.replace(/^\d+\.\s*/, '')}</li>
+                                ))}
+                              </ol>
+                            </details>
+                          )}
+                        </span>
                         {explorerBase ? (
                           <a className={styles.txHash} href={`${explorerBase}/tx/${hash}`} target="_blank" rel="noopener noreferrer">
                             {hash.slice(0, 12)}…
@@ -1004,6 +1017,9 @@ export function Dashboard() {
                 holdings={tokens.holdings}
                 onRowSent={(hash, kind, summary) => {
                   if (hash) addTxHistory(addressHint, network.config.id, hash, kind, summary);
+                }}
+                onBatchSent={(hash, summary, steps) => {
+                  if (hash) addTxHistory(addressHint, network.config.id, hash, 'batch', summary, steps);
                 }}
                 onFinished={() => {
                   refreshTxHistory();

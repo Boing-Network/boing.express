@@ -1,8 +1,10 @@
 /**
- * Bulk transfers (many recipients, one asset). The Boing tx format has no batch payload
- * (transfer / contract_call / deploy / bond / unbond / claim_unbond / qa_pool_vote only), so a bulk send is
- * N independent signed transactions with consecutive nonces. It is NOT atomic: rows before a failure stay
- * sent. The runner stops at the first failure and never retries. See docs/BULK-TRANSFER.md.
+ * Bulk transfers (many recipients; BOING and tokens can be mixed).
+ * - Batch path: nodes that advertise `tx_payload_batch` accept ONE signed tx with up to 16 steps,
+ *   applied all-or-nothing (see helpers at the bottom of this file).
+ * - Sequential fallback (older nodes, or more than 16 rows): N independent signed transactions with
+ *   consecutive nonces. NOT atomic: rows before a failure stay sent. Stops at the first failure and never
+ *   retries. See docs/BULK-TRANSFER.md.
  */
 
 export const BULK_MAX_ROWS = 100;
@@ -224,4 +226,129 @@ export function formatBulkReport(report: BulkRunReport, fmtAmount: (v: bigint) =
         : `All ${report.submitted} transfers submitted.`
       : `Stopped at row ${report.failedRow + 1}: ${report.submitted} of ${report.results.length} submitted; the rest were not sent.`;
   return [summary, ...lines].join('\n');
+}
+
+// ---------------------------------------------------------------------------------------------
+// Native atomic batch (node release with `TransactionPayload::Batch`, see boing.network
+// docs/NATIVE-BATCH-TRANSACTIONS.md). Up to 16 steps in ONE signed tx: all succeed or none do.
+// ---------------------------------------------------------------------------------------------
+
+/** Protocol cap on steps per batch tx (`MAX_BATCH_CALLS`). */
+export const BATCH_MAX_STEPS = 16;
+/** Gas schedule mirrored from boing-execution (`GAS_BATCH_BASE`, `GAS_PER_BATCH_*`). */
+export const BATCH_GAS_BASE = 21_000n;
+export const BATCH_GAS_PER_STEP = 7_000n;
+/** 21 000 gas = 1 BOING (`GAS_UNITS_PER_BOING`, `GAS_PRICE` = 1). */
+export const GAS_UNITS_PER_BOING = 21_000n;
+
+export type BulkMode = 'batch' | 'sequential';
+
+/** Batch when the node advertises support and the rows fit in one tx; otherwise one tx per row. */
+export function planBulkMode(rowCount: number, batchSupported: boolean, maxSteps = BATCH_MAX_STEPS): BulkMode {
+  return batchSupported && rowCount >= 1 && rowCount <= Math.min(maxSteps, BATCH_MAX_STEPS) ? 'batch' : 'sequential';
+}
+
+/** Fee in BOING for a batch: envelope + per-step gas + interpreter gas of token steps (from simulation, if known). */
+export function estimateBatchFee(stepCount: number, interpreterGas = 0n): { gas: bigint; fee: bigint } {
+  const gas = BATCH_GAS_BASE + BATCH_GAS_PER_STEP * BigInt(stepCount) + interpreterGas;
+  return { gas, fee: (gas + GAS_UNITS_PER_BOING - 1n) / GAS_UNITS_PER_BOING };
+}
+
+/** Fee from a simulated batch's total `gas_used` (already includes envelope + steps). */
+export function feeFromGas(gasUsed: bigint): bigint {
+  return gasUsed <= 0n ? 0n : (gasUsed + GAS_UNITS_PER_BOING - 1n) / GAS_UNITS_PER_BOING;
+}
+
+/**
+ * `true` when an RPC error means "this node cannot decode a batch payload" (pre-batch release):
+ * bincode reports an out-of-range enum variant. Such a rejection means nothing was sent.
+ */
+export function isBatchUnsupportedError(message: string | undefined): boolean {
+  if (!message) return false;
+  return /variant index|unknown variant|expected variant|invalid value: integer `9`/i.test(message);
+}
+
+/** One row of a mixed-asset bulk send. `assetKey` is `'boing'` or a token contract hex. */
+export interface MixedBulkRowInput extends BulkRowInput {
+  assetKey: string;
+}
+
+export interface BulkAssetInfo {
+  symbol: string;
+  decimals: number;
+  /** Spendable balance in smallest units; null = unknown. */
+  balance: bigint | null;
+}
+
+export interface MixedBulkRowValid extends BulkRowValid {
+  assetKey: string;
+}
+
+export interface MixedBulkValidation {
+  ok: boolean;
+  rows: MixedBulkRowValid[];
+  issues: BulkIssue[];
+  /** Total per asset key (smallest units). */
+  totals: Record<string, bigint>;
+}
+
+/**
+ * Validate rows that may use different assets. Each asset is checked against its own decimals and
+ * balance; duplicate recipients are only an error within the same asset.
+ */
+export function validateMixedBulkRows(
+  input: MixedBulkRowInput[],
+  opts: { senderHex: string; assets: Record<string, BulkAssetInfo>; maxRows?: number }
+): MixedBulkValidation {
+  const issues: BulkIssue[] = [];
+  const max = opts.maxRows ?? BULK_MAX_ROWS;
+  if (input.length === 0) issues.push({ row: -1, field: 'row', message: 'Add at least one recipient.' });
+  if (input.length > max) issues.push({ row: -1, field: 'row', message: `Too many rows (${input.length}); the limit is ${max}.` });
+  const groups = new Map<string, number[]>();
+  input.forEach((r, i) => {
+    const g = groups.get(r.assetKey) ?? [];
+    g.push(i);
+    groups.set(r.assetKey, g);
+  });
+  const rows: MixedBulkRowValid[] = [];
+  const totals: Record<string, bigint> = {};
+  for (const [assetKey, idxs] of groups) {
+    const info = opts.assets[assetKey];
+    if (!info) {
+      for (const i of idxs) issues.push({ row: i, field: 'row', message: `${input[i]!.source ?? `Row ${i + 1}`}: asset not available` });
+      continue;
+    }
+    const sub = validateBulkRows(
+      idxs.map((i) => input[i]!),
+      {
+        senderHex: opts.senderHex,
+        decimals: info.decimals,
+        balance: info.balance,
+        maxRows: Number.MAX_SAFE_INTEGER,
+      }
+    );
+    for (const is of sub.issues) {
+      issues.push({
+        ...is,
+        row: is.row < 0 ? -1 : idxs[is.row]!,
+        message: is.field === 'total' ? `${info.symbol}: ${is.message}` : is.message,
+      });
+    }
+    for (const r of sub.rows) rows.push({ ...r, row: idxs[r.row]!, assetKey });
+    totals[assetKey] = sub.total;
+  }
+  rows.sort((a, b) => a.row - b.row);
+  return { ok: issues.length === 0 && rows.length === input.length, rows, issues, totals };
+}
+
+/** Human summary for the single Tx-history entry of a batch. */
+export function batchHistorySummary(
+  rows: MixedBulkRowValid[],
+  fmt: (assetKey: string, v: bigint) => string,
+  shortHex: (hex: string) => string
+): { summary: string; steps: string[] } {
+  const steps = rows.map((r, i) => `${i + 1}. ${fmt(r.assetKey, r.amount)} → ${shortHex(r.toHex)}`);
+  const assets = new Set(rows.map((r) => r.assetKey)).size;
+  const summary = `Batch of ${rows.length} (atomic)${assets > 1 ? `, ${assets} assets` : `: ${fmt(rows[0]!.assetKey, rows.reduce((a, r) => a + r.amount, 0n))} total`}`;
+  return { summary, steps };
 }

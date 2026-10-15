@@ -8,9 +8,11 @@ const MAX_ENTRIES = 50;
 
 export interface TxHistoryEntry {
   txHash: string;
-  type: 'send' | 'bond' | 'unbond' | 'claim_unbond' | 'token_send' | 'nft_send' | 'contract_call';
+  type: 'send' | 'bond' | 'unbond' | 'claim_unbond' | 'token_send' | 'nft_send' | 'contract_call' | 'batch';
   /** Short human summary, e.g. "10 BOING → 7f3a…9c21" (optional; older entries have none). */
   summary?: string;
+  /** Batch entries: one line per step, in order (max 16). */
+  steps?: string[];
   networkId: string;
   addressHint: string; // first 8 + last 8 of address
   timestamp: number;
@@ -29,7 +31,8 @@ export function addTxHistory(
   networkId: string,
   txHash: string,
   type: TxHistoryEntry['type'],
-  summary?: string
+  summary?: string,
+  steps?: string[]
 ): void {
   if (!isValidTxHash(txHash)) return;
   try {
@@ -43,6 +46,7 @@ export function addTxHistory(
       addressHint,
       timestamp: Date.now(),
       ...(summary ? { summary: summary.slice(0, 120) } : {}),
+      ...(steps && steps.length ? { steps: steps.slice(0, 16).map((x) => x.slice(0, 120)) } : {}),
     });
     const trimmed = entries.slice(0, MAX_ENTRIES);
     localStorage.setItem(key, JSON.stringify(trimmed));

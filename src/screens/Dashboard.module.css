@@ -1223,7 +1223,7 @@
 
 .bulkRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(64px, 120px) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(64px, 96px) minmax(64px, 110px) auto;
   gap: 6px;
   align-items: center;
 }
@@ -1257,7 +1257,7 @@
 
 @media (max-width: 420px) {
   .bulkRow {
-    grid-template-columns: minmax(0, 1fr) 72px auto;
+    grid-template-columns: minmax(0, 1fr) 64px 64px auto;
   }
 
   .segmentedBtn {

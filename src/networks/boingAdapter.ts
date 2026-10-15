@@ -13,6 +13,8 @@ import * as rpc from '../boing/rpc';
 import type { NetworkAdapter, BalanceResult, SubmitResult } from './types';
 import type { NetworkConfig } from './types';
 import type { Transaction, Payload } from '../boing/types';
+import type { BatchStep } from './types';
+import { buildBatchTransaction, nodeBatchMaxCalls, nodeSupportsNativeBatch, signTransactionInput } from 'boing-sdk';
 
 /**
  * Native BOING ledger amounts are whole on-chain units (RPC u128 decimal strings).
@@ -186,6 +188,50 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
         { kind: 'contract_call', contract, calldata },
         privateKey
       );
+    },
+
+    async getBatchSupport(): Promise<{ supported: boolean; maxSteps: number }> {
+      try {
+        const h = (await rpc.health(rpcUrl)) as Parameters<typeof nodeSupportsNativeBatch>[0];
+        return { supported: nodeSupportsNativeBatch(h), maxSteps: nodeBatchMaxCalls(h as Parameters<typeof nodeBatchMaxCalls>[0]) };
+      } catch {
+        return { supported: false, maxSteps: 16 };
+      }
+    },
+
+    async buildBatch(
+      sender: AccountId,
+      steps: BatchStep[],
+      nonce: bigint,
+      privateKey: Uint8Array
+    ): Promise<string> {
+      const senderHex = `0x${accountIdToHex(sender).replace(/^0x/i, '')}`;
+      const norm = (h: string) => `0x${h.replace(/^0x/i, '').toLowerCase()}`;
+      const tx = buildBatchTransaction({
+        nonce,
+        senderHex,
+        calls: steps.map((s) =>
+          s.kind === 'transfer'
+            ? { kind: 'transfer' as const, toHex: norm(s.toHex), amount: s.amount }
+            : { kind: 'contractCall' as const, contractHex: norm(s.contractHex), calldata: s.calldata }
+        ),
+      });
+      return signTransactionInput(tx, privateKey);
+    },
+
+    async simulateGas(signedTxHex: string): Promise<{ success: boolean; gasUsed?: bigint; error?: string }> {
+      try {
+        const r = (await rpc.simulateTransaction(rpcUrl, signedTxHex)) as {
+          success?: boolean;
+          gas_used?: number | string;
+          error?: string;
+        } | null;
+        if (!r || typeof r !== 'object') return { success: true };
+        const gas = r.gas_used != null ? BigInt(r.gas_used) : undefined;
+        return { success: r.success !== false, gasUsed: gas, error: r.error };
+      } catch (e) {
+        return { success: false, error: e instanceof Error ? e.message : String(e) };
+      }
     },
   };
 

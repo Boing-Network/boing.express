@@ -31,6 +31,11 @@ export interface SubmitResult {
   error?: string;
 }
 
+/** One step of a native atomic batch (mirrors boing-sdk `BuildBatchCall`). */
+export type BatchStep =
+  | { kind: 'transfer'; toHex: string; amount: bigint }
+  | { kind: 'contractCall'; contractHex: string; calldata: Uint8Array };
+
 export interface NetworkAdapter {
   config: NetworkConfig;
 
@@ -104,4 +109,13 @@ export interface NetworkAdapter {
     nonce: bigint,
     privateKey: Uint8Array
   ): Promise<string>;
+
+  /** Optional: does the node accept native batch txs (`boing_health.rpc_surface.tx_payload_batch`)? */
+  getBatchSupport?(): Promise<{ supported: boolean; maxSteps: number }>;
+
+  /** Optional: build + sign ONE atomic batch tx (≤ 16 steps). */
+  buildBatch?(sender: AccountId, steps: BatchStep[], nonce: bigint, privateKey: Uint8Array): Promise<string>;
+
+  /** Optional: dry-run a signed tx and report gas (`boing_simulateTransaction`). */
+  simulateGas?(signedTxHex: string): Promise<{ success: boolean; gasUsed?: bigint; error?: string }>;
 }
