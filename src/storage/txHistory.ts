@@ -4,11 +4,13 @@
  */
 
 const STORAGE_KEY = 'boing-express-tx-history';
-const MAX_ENTRIES = 20;
+const MAX_ENTRIES = 50;
 
 export interface TxHistoryEntry {
   txHash: string;
-  type: 'send' | 'bond' | 'unbond' | 'claim_unbond';
+  type: 'send' | 'bond' | 'unbond' | 'claim_unbond' | 'token_send' | 'nft_send' | 'contract_call';
+  /** Short human summary, e.g. "10 BOING → 7f3a…9c21" (optional; older entries have none). */
+  summary?: string;
   networkId: string;
   addressHint: string; // first 8 + last 8 of address
   timestamp: number;
@@ -26,7 +28,8 @@ export function addTxHistory(
   addressHint: string,
   networkId: string,
   txHash: string,
-  type: TxHistoryEntry['type']
+  type: TxHistoryEntry['type'],
+  summary?: string
 ): void {
   if (!isValidTxHash(txHash)) return;
   try {
@@ -39,6 +42,7 @@ export function addTxHistory(
       networkId,
       addressHint,
       timestamp: Date.now(),
+      ...(summary ? { summary: summary.slice(0, 120) } : {}),
     });
     const trimmed = entries.slice(0, MAX_ENTRIES);
     localStorage.setItem(key, JSON.stringify(trimmed));
