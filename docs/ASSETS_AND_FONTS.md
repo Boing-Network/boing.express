@@ -38,7 +38,7 @@ Official Boing Network design system assets. All are used in the web app.
 ### Locations
 
 - **Web app:** `public/assets/` (copied to `dist/` on build)
-- **Extension:** `extension/assets/` (mirror for extension package)
+- **Extension:** only `extension/icons/` (generated from `extension/favicon.svg`) and `extension/fonts/`. The extension build does not copy `public/` (`publicDir: false`).
 
 ---
 
