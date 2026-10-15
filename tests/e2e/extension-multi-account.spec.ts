@@ -145,6 +145,10 @@ describePopup('Extension popup (E2E)', () => {
       await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
       await expect(popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-header-lock"]')).toBeVisible({ timeout: 45_000 });
 
+      // Export lives in Settings (gear), not on the Wallet tab.
+      await expect(popup.getByTestId('reveal-private-key')).toBeHidden();
+      await popup.getByTestId('wallet-header-settings').click();
+      await expect(popup.getByTestId('settings-panel')).toBeVisible();
       const card = popup.getByTestId('reveal-private-key');
       await card.locator('summary').click();
       await popup.locator('#reveal-key-password').fill('wrong-password-123');
@@ -163,6 +167,14 @@ describePopup('Extension popup (E2E)', () => {
       await popup.locator('#btn-reveal-key-done').click();
       await expect(popup.locator('#reveal-key-output')).toHaveClass(/hidden/);
       await expect(popup.locator('#reveal-key-value')).toHaveText('');
+
+      // Leaving Settings clears a revealed key too.
+      await popup.locator('#reveal-key-password').fill(E2E_PASSWORD);
+      await popup.locator('#btn-reveal-key').click();
+      await expect(popup.locator('#reveal-key-output')).not.toHaveClass(/hidden/, { timeout: 30_000 });
+      await popup.getByTestId('settings-back').click();
+      await expect(popup.locator('#reveal-key-value')).toHaveText('');
+      await expect(popup.getByTestId('settings-panel')).toBeHidden();
     } finally {
       await Promise.race([context.close(), new Promise<void>((resolve) => setTimeout(resolve, 12_000))]);
       try {
@@ -172,4 +184,4 @@ describePopup('Extension popup (E2E)', () => {
       }
     }
   });
-});
+});

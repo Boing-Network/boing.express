@@ -76,7 +76,15 @@ function shouldMockJsonRpcUrl(url: URL): boolean {
  * Stub `GET https://boing.network/api/networks` and POSTs to Boing JSON-RPC hosts used by the wallet build.
  * Call right after `launchPersistentContext`, before opening the popup.
  */
-export async function installBoingNetworkMocks(context: BrowserContext): Promise<void> {
+export interface BoingMockOptions {
+  /** 1-based index of the `boing_submitTransaction` call that should fail (JSON-RPC error). */
+  failSubmitAt?: number;
+  /** Receives every signed tx hex passed to `boing_submitTransaction`, in order. */
+  submitted?: string[];
+}
+
+export async function installBoingNetworkMocks(context: BrowserContext, opts: BoingMockOptions = {}): Promise<void> {
+  let submitCount = 0;
   await context.route(
     (url: URL) => url.hostname === 'boing.network' && url.pathname.startsWith('/api/networks'),
     async (route) => {
@@ -120,8 +128,22 @@ export async function installBoingNetworkMocks(context: BrowserContext): Promise
       case 'boing_simulateContractCall':
         await fulfillJsonRpc(route, jsonRpcResult(id, { success: true, gas_used: '0', return_data: '0x' }));
         return;
-      case 'boing_submitTransaction':
-        await fulfillJsonRpc(route, jsonRpcResult(id, '0x' + 'ab'.repeat(32)));
+      case 'boing_submitTransaction': {
+        submitCount += 1;
+        const hex = String((payload.params ?? [])[0] ?? '');
+        opts.submitted?.push(hex);
+        if (opts.failSubmitAt === submitCount) {
+          await fulfillJsonRpc(route, jsonRpcError(id, -32000, 'E2E mock: insufficient balance for fee'));
+          return;
+        }
+        await fulfillJsonRpc(route, jsonRpcResult(id, '0x' + submitCount.toString(16).padStart(64, '0')));
+        return;
+      }
+      case 'boing_getContractStorage':
+        await fulfillJsonRpc(route, jsonRpcResult(id, { value: '0x' + '0'.repeat(64) }));
+        return;
+      case 'boing_getBlockByHeight':
+        await fulfillJsonRpc(route, jsonRpcResult(id, null));
         return;
       case 'boing_faucetRequest':
         await fulfillJsonRpc(route, jsonRpcResult(id, { success: true }));
