@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { SiteLogo } from './SiteLogo';
+import { BoingAppsMenu } from './BoingAppsMenu';
 import styles from './SiteHeader.module.css';
 
 export type SiteHeaderLink = {
@@ -78,6 +79,7 @@ export function SiteHeader({ links }: Props) {
           {links.map((link) => (
             <NavLink key={link.label} link={link} className="" />
           ))}
+          <BoingAppsMenu />
         </nav>
         <button
           type="button"
@@ -115,6 +117,7 @@ export function SiteHeader({ links }: Props) {
         {links.map((link) => (
           <NavLink key={link.label} link={link} className="" onNavigate={closeMenu} />
         ))}
+        <BoingAppsMenu />
       </nav>
     </>
   );
