@@ -45,6 +45,7 @@ import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networ
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
 import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
 import { normalizeBoingNetworkId } from './config';
+import { RevealError, createRevealSession, revealActivePrivateKeyHex, type RevealState } from '../src/security/revealPrivateKey';
 import {
   buildExtensionNetworksCatalog,
   loadExtensionMetaCacheAsync,
@@ -819,8 +820,57 @@ $('network-select').addEventListener('change', (e) => {
   updateStakingVisibility();
 });
 
+// --- Reveal private key (password re-entry, in-memory only, hidden by default, auto-clear; never sent to background/dApps)
+const revealSession = createRevealSession((s: RevealState) => {
+  const out = document.getElementById('reveal-key-output');
+  const form = document.getElementById('form-reveal-key');
+  const val = document.getElementById('reveal-key-value');
+  const toggle = document.getElementById('btn-reveal-key-toggle');
+  const copyBtn = document.getElementById('btn-reveal-key-copy');
+  if (!out || !form || !val || !toggle) return;
+  out.classList.toggle('hidden', !s.keyHex);
+  form.classList.toggle('hidden', !!s.keyHex);
+  val.textContent = s.keyHex ? (s.visible ? s.keyHex : '•'.repeat(64)) : '';
+  (val as HTMLElement).style.userSelect = s.visible ? 'all' : 'none';
+  toggle.textContent = s.visible ? 'Hide' : 'Show';
+  if (!s.keyHex && copyBtn) copyBtn.textContent = 'Copy';
+});
+document.getElementById('form-reveal-key')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError('reveal-key-error');
+  const input = document.getElementById('reveal-key-password') as HTMLInputElement | null;
+  const password = input?.value ?? '';
+  if (input) input.value = '';
+  try {
+    const hex = await revealActivePrivateKeyHex(password, {
+      unlock: unlockWallet,
+      expectedAddressHex: getStoredWallet()?.addressHex ?? null,
+    });
+    revealSession.set(hex);
+  } catch (err) {
+    showError('reveal-key-error', err instanceof RevealError ? err.message : 'Could not reveal the key.');
+  }
+});
+document.getElementById('btn-reveal-key-toggle')?.addEventListener('click', () => revealSession.toggleVisible());
+document.getElementById('btn-reveal-key-done')?.addEventListener('click', () => revealSession.clear());
+document.getElementById('btn-reveal-key-copy')?.addEventListener('click', async () => {
+  const hex = revealSession.getState().keyHex;
+  if (!hex) return;
+  try {
+    await navigator.clipboard.writeText(hex);
+    const b = document.getElementById('btn-reveal-key-copy');
+    if (b) b.textContent = 'Copied';
+  } catch {
+    showError('reveal-key-error', 'Copy failed. Select the key manually.');
+  }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') revealSession.clear();
+});
+window.addEventListener('pagehide', () => revealSession.clear());
 $('btn-lock').addEventListener('click', () => {
   accountId = null;
+  revealSession.clear();
   privateKey = null;
   chrome.runtime.sendMessage({ type: 'WALLET_LOCK' });
   renderChoose();
