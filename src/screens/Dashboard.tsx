@@ -19,17 +19,34 @@ import { chainIdHexToDecimal } from '../networks/chainIds';
 import { SiteLogo } from '../components/SiteLogo';
 import { NftHoldingsPanel } from '../components/NftHoldingsPanel';
 import { RevealPrivateKeyPanel } from '../components/RevealPrivateKeyPanel';
+import { ConnectedSitesPanel } from '../components/ConnectedSitesPanel';
+import { TokenHoldingsPanel } from '../components/TokenHoldingsPanel';
+import { TokenSendForm } from '../components/TokenSendForm';
+import { BulkTransferPanel } from '../components/BulkTransferPanel';
+import { useTokenHoldings } from '../components/useTokenHoldings';
+import type { TxHistoryEntry } from '../storage/txHistory';
 import styles from './Dashboard.module.css';
 
-type WalletTabId = 'wallet' | 'transactions' | 'assets' | 'stake' | 'faucet';
+type WalletTabId = 'wallet' | 'transactions' | 'transfer' | 'stake' | 'faucet' | 'settings';
+type TransferMode = 'boing' | 'token' | 'nft' | 'bulk';
 
-const WALLET_TABS: { id: WalletTabId; label: string }[] = [
+const WALLET_TABS: { id: Exclude<WalletTabId, 'settings'>; label: string; aria?: string }[] = [
   { id: 'wallet', label: 'Wallet' },
-  { id: 'transactions', label: 'Transactions' },
-  { id: 'assets', label: 'Assets' },
+  { id: 'transactions', label: 'Tx', aria: 'Transaction history' },
+  { id: 'transfer', label: 'Transfer' },
   { id: 'stake', label: 'Stake' },
   { id: 'faucet', label: 'Faucet' },
 ];
+
+const TX_TYPE_LABEL: Record<TxHistoryEntry['type'], string> = {
+  send: 'Send BOING',
+  bond: 'Bond',
+  unbond: 'Unbond',
+  claim_unbond: 'Claim unbond',
+  token_send: 'Send token',
+  nft_send: 'Send NFT',
+  contract_call: 'Contract call',
+};
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -90,7 +107,15 @@ export function Dashboard() {
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [txHashCopied, setTxHashCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<WalletTabId>('wallet');
+  const [activeTab, setActiveTabRaw] = useState<WalletTabId>('wallet');
+  const [lastMainTab, setLastMainTab] = useState<WalletTabId>('wallet');
+  const [transferMode, setTransferMode] = useState<TransferMode>('boing');
+  const [nftPreselect, setNftPreselect] = useState<string | null>(null);
+  const tokens = useTokenHoldings(accountId, network);
+  const setActiveTab = useCallback((t: WalletTabId) => {
+    setActiveTabRaw(t);
+    if (t !== 'settings') setLastMainTab(t);
+  }, []);
 
   const showStakeTab = Boolean(network.buildBond || network.buildUnbond || network.buildClaimUnbond);
   const showFaucetTab = Boolean(network.config.isTestnet);
@@ -245,7 +270,7 @@ export function Dashboard() {
       const result = await network.submitTransaction(signedHex);
       if (result.success) {
         if (result.txHash) {
-          addTxHistory(addressHint, network.config.id, result.txHash, 'send');
+          addTxHistory(addressHint, network.config.id, result.txHash, 'send', `${amount} BOING → ${toHex.slice(0, 6)}…${toHex.slice(-4)}`);
           refreshTxHistory();
           markSentTx();
           setOnboarding(getOnboardingState());
@@ -562,6 +587,21 @@ export function Dashboard() {
           >
             {networkDiscovery.status === 'loading' ? 'Syncing…' : 'Sync network'}
           </button>
+          <button
+            type="button"
+            className={`${styles.lockBtn} ${styles.gearBtn} ${activeTab === 'settings' ? styles.gearBtnActive : ''}`}
+            onClick={() => setActiveTab(activeTab === 'settings' ? lastMainTab : 'settings')}
+            aria-label="Settings"
+            aria-expanded={activeTab === 'settings'}
+            aria-controls="panel-settings"
+            title="Settings"
+            data-testid="wallet-header-settings"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </button>
           <button type="button" className={styles.lockBtn} onClick={lock} data-testid="wallet-header-lock">
             Lock
           </button>
@@ -615,7 +655,7 @@ export function Dashboard() {
 
       <main className={styles.main}>
         <nav className={styles.tabBar} role="tablist" aria-label="Wallet sections">
-          {WALLET_TABS.map(({ id, label }) => {
+          {WALLET_TABS.map(({ id, label, aria }) => {
             if (id === 'stake' && !showStakeTab) return null;
             if (id === 'faucet' && !showFaucetTab) return null;
             const selected = activeTab === id;
@@ -630,6 +670,7 @@ export function Dashboard() {
                 className={`${styles.tabBtn} ${selected ? styles.tabBtnActive : ''}`}
                 onClick={() => setActiveTab(id)}
                 data-testid={`wallet-tab-${id}`}
+                aria-label={aria}
               >
                 {label}
               </button>
@@ -673,11 +714,40 @@ export function Dashboard() {
               </section>
             )}
 
+            <div className={styles.assetsComposition} data-testid="assets-composition">
+              <section className={`${styles.section} ${styles.balanceHero} ${styles.assetsCoins}`}>
+                <div className={styles.balanceHeader}>
+                  <p className={styles.balanceLabel}>Balance</p>
+                  <button
+                    type="button"
+                    className={styles.refreshBtn}
+                    onClick={refreshData}
+                    disabled={refreshing || !accountId}
+                    aria-label="Refresh balance and chain data"
+                  >
+                    {refreshing ? '…' : '↻'}
+                  </button>
+                </div>
+                <p className={styles.balance}>
+                  {displayBalance} <span className={styles.symbol}>{balance?.symbol ?? 'BOING'}</span>
+                </p>
+                {chainHeight != null && (
+                  <p className={styles.chainHeight} aria-label="Chain height">
+                    Block #{chainHeight.toLocaleString()}
+                  </p>
+                )}
+                {balanceError && (
+                  <p className={styles.error}>
+                    {balanceError}
+                    <button type="button" className={styles.retryBtn} onClick={refreshData}>
+                      Retry
+                    </button>
+                  </p>
+                )}
+              </section>
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Address</h2>
-              <p className={styles.addressHint}>
-                Account hub — coins and collectibles are on the Assets tab.
-              </p>
+
           {accountList.length > 1 && (
             <div className={styles.accountSwitchRow}>
               <label htmlFor="web-account-select" className={styles.accountSwitchLabel}>
@@ -731,7 +801,7 @@ export function Dashboard() {
             )}
           </div>
           <p className={styles.addressHint}>
-            Use this address to receive BOING. On testnet, use the Faucet tab to request funds. Holdings are under Assets.
+            Use this address to receive BOING, tokens and NFTs. On testnet, use the Faucet tab to request funds. Send from the Transfer tab.
           </p>
           {network.config.chainId && (
             <p className={styles.chainHeight} aria-label="Chain ID for dApps">
@@ -746,136 +816,35 @@ export function Dashboard() {
           </p>
         </section>
 
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Deploy contract (QA Pillar)</h2>
-              <p className={styles.faucetHint}>
-                Validate contract bytecode before deployment. REJECT → blocked. ALLOW → deploy. UNSURE → community QA pool.
-              </p>
-              <form onSubmit={handleQaValidate} className={styles.form}>
-                <textarea
-                  placeholder="Contract bytecode (hex, e.g. 0x6080604052...)"
-                  value={qaBytecode}
-                  onChange={(e) => {
-                    setQaBytecode(e.target.value);
-                    setQaResult(null);
-                  }}
-                  className={styles.qaTextarea}
-                  rows={4}
-                  spellCheck={false}
-                  aria-label="Contract bytecode"
+              {accountId && (
+                <TokenHoldingsPanel
+                  accountId={accountId}
+                  networkId={network.config.id}
+                  holdings={tokens.holdings}
+                  loading={tokens.loading}
+                  error={tokens.error}
+                  onChanged={() => void tokens.refresh()}
                 />
-                <div className={styles.qaPurposeRow}>
-                  <label htmlFor="qa-purpose" className={styles.qaLabel}>Purpose (optional, for boing_qaCheck)</label>
-                  <select
-                    id="qa-purpose"
-                    value={qaPurpose}
-                    onChange={(e) => setQaPurpose(e.target.value)}
-                    className={styles.qaPurposeSelect}
-                    aria-label="Purpose category"
-                  >
-                    <option value="">— None —</option>
-                    {VALID_PURPOSE_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.qaPurposeRow}>
-                  <label htmlFor="qa-description-hash" className={styles.qaLabel}>Description hash (optional)</label>
-                  <input
-                    id="qa-description-hash"
-                    type="text"
-                    placeholder="0x..."
-                    value={qaDescriptionHash}
-                    onChange={(e) => setQaDescriptionHash(e.target.value)}
-                    className={styles.input}
-                    aria-label="Description hash"
-                  />
-                </div>
-                <label className={styles.qaCheckbox}>
-                  <input
-                    type="checkbox"
-                    checked={qaUseRpc}
-                    onChange={(e) => setQaUseRpc(e.target.checked)}
-                  />
-                  Also call boing_qaCheck (when available)
-                </label>
-                <div className={styles.qaButtonRow}>
-                  <button type="submit" className={styles.primary} disabled={qaValidating}>
-                    {qaValidating ? 'Validating…' : 'Validate'}
-                  </button>
-                </div>
-                {qaResult && (
-                  <div
-                    className={
-                      qaResult.result === 'allow'
-                        ? styles.qaAllow
-                        : qaResult.result === 'reject'
-                          ? styles.qaReject
-                          : styles.qaUnsure
-                    }
-                    role="status"
-                  >
-                    <strong>{qaResult.result.toUpperCase()}</strong>
-                    {qaResult.ruleId && <span className={styles.qaRuleId}> ({qaResult.ruleId})</span>}
-                    {qaResult.message && <p className={styles.qaMessage}>{qaResult.message}</p>}
-                    {qaResult.docUrl && (
-                      <p className={styles.qaMessage}>
-                        <a href={qaResult.docUrl} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
-                          Open canonical QA guidance
-                        </a>
-                      </p>
-                    )}
-                  </div>
-                )}
-              </form>
-            </section>
-
-            <section className={styles.section}>
-              <button
-                type="button"
-                className={styles.rpcToggle}
-                onClick={() => setShowRpcOverride(!showRpcOverride)}
-                aria-expanded={showRpcOverride}
-              >
-                {showRpcOverride ? '−' : '+'} RPC override (dev)
-              </button>
-              {showRpcOverride && (
-                <div className={styles.rpcOverrideForm}>
-                  <p className={styles.faucetHint}>
-                    Override RPC URL for the current network (e.g. http://localhost:8545 for local node). Leave empty to use default.
-                    Chain ID above does not change — it stays the testnet/mainnet value Boing Express uses for{' '}
-                    <code className={styles.inlineCode}>boing_chainId</code>. Custom RPC must still match that network (same
-                    genesis / operator expectations).
-                  </p>
-                  <div className={styles.rpcOverrideRow}>
-                    <label htmlFor="rpc-override" className={styles.qaLabel}>
-                      {network.config.name} RPC URL
-                    </label>
-                    <input
-                      id="rpc-override"
-                      type="text"
-                      placeholder={network.config.rpcUrl}
-                      value={rpcOverrideInput}
-                      onChange={(e) => setRpcOverrideInput(e.target.value)}
-                      className={styles.input}
-                    />
-                    <button
-                      type="button"
-                      className={styles.secondary}
-                      onClick={() => {
-                        setRpcOverride(network.config.id, rpcOverrideInput);
-                      }}
-                    >
-                      Save
-                    </button>
-                  </div>
-                  {rpcOverrides[network.config.id] && (
-                    <p className={styles.success}>Using override: {rpcOverrides[network.config.id]}</p>
-                  )}
-                </div>
               )}
-            </section>
-            <RevealPrivateKeyPanel />
+              <div className={styles.assetsCollectibles}>
+                {accountId && activeTab === 'wallet' && (
+                  <NftHoldingsPanel
+                    accountId={accountId}
+                    network={network}
+                    rpcUrl={network.config.rpcUrl}
+                    getPrivateKey={getPrivateKey}
+                    addressHint={addressHint}
+                    onTxRecorded={refreshTxHistory}
+                    mode="view"
+                    onTransferItem={(key) => {
+                      setNftPreselect(key);
+                      setTransferMode('nft');
+                      setActiveTab('transfer');
+                    }}
+                  />
+                )}
+              </div>
+            </div>
           </div>
 
           <div
@@ -886,140 +855,163 @@ export function Dashboard() {
             className={`${styles.tabPanel} ${activeTab === 'transactions' ? styles.tabPanelActive : ''}`}
           >
             <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Receive</h2>
-              <p className={styles.addressHint}>Share your address to receive BOING.</p>
-              <div className={styles.addressRow}>
-                <code className={styles.address}>{address}</code>
-                <button type="button" className={styles.copyBtn} onClick={copyAddress}>
-                  {copied ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-            </section>
-
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Send BOING</h2>
-              {isMainnet && sendAmount.trim() && (
-                <div className={styles.mainnetWarning} role="alert">
-                  You are on Mainnet. Real BOING is at risk. Double-check the amount and recipient.
-                </div>
-              )}
-              <form onSubmit={handleSend} className={styles.form}>
-                <input
-                  type="text"
-                  placeholder="To address (64 hex or 0x…)"
-                  value={sendTo}
-                  onChange={(e) => setSendTo(e.target.value)}
-                  className={styles.input}
-                />
-                <div className={styles.sendAmountRow}>
-                  <input
-                    type="text"
-                    placeholder="Amount in BOING (whole units, e.g. 100)"
-                    value={sendAmount}
-                    onChange={(e) => setSendAmount(e.target.value)}
-                    className={styles.input}
-                    inputMode="decimal"
-                  />
-                  <button
-                    type="button"
-                    className={styles.maxBtn}
-                    onClick={() => setSendAmount(displayBalance !== '…' && displayBalance !== '—' ? displayBalance : '')}
-                  >
-                    Max
-                  </button>
-                </div>
-                {sendError && <p className={styles.error}>{sendError}</p>}
-                {sendSuccess && (
-                  <p className={styles.success}>
-                    {sendSuccess}
-                    {lastTxHash && (
-                      <>
-                        {' · '}
-                        <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>
-                          {txHashCopied ? 'Copied' : 'Copy tx hash'}
-                        </button>
-                      </>
-                    )}
-                  </p>
+              <div className={styles.balanceHeader}>
+                <h2 className={styles.sectionTitle}>Transaction history</h2>
+                {explorerBase && (
+                  <a href={accountExplorerUrl} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
+                    Full history on explorer
+                  </a>
                 )}
-                <button type="submit" className={styles.primary} disabled={sending}>
-                  {sending ? 'Sending…' : 'Send'}
-                </button>
-              </form>
-            </section>
-
-            {txHistory.length > 0 && (
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Recent transactions</h2>
-                <ul className={styles.txHistoryList}>
-                  {txHistory.slice(0, 10).map((entry) => (
-                    <li key={entry.txHash} className={styles.txHistoryItem}>
-                      <span className={styles.txType}>{entry.type}</span>
-                      <code className={styles.txHash}>
-                        {typeof entry.txHash === 'string' ? `${entry.txHash.slice(0, 16)}…` : '—'}
-                      </code>
-                    </li>
-                  ))}
+              </div>
+              <p className={styles.addressHint}>Transactions sent from this browser. Incoming transfers are on the explorer.</p>
+              {txHistory.length === 0 ? (
+                <p className={styles.addressHint} data-testid="tx-history-empty">No transactions yet.</p>
+              ) : (
+                <ul className={styles.txHistoryList} data-testid="tx-history-list">
+                  {txHistory.map((entry) => {
+                    const hash = entry.txHash.startsWith('0x') ? entry.txHash : `0x${entry.txHash}`;
+                    return (
+                      <li key={`${entry.txHash}-${entry.timestamp}`} className={styles.txHistoryItem} data-testid="tx-history-row">
+                        <span className={styles.txType}>{TX_TYPE_LABEL[entry.type] ?? entry.type}</span>
+                        <span className={styles.txSummary}>{entry.summary ?? new Date(entry.timestamp).toLocaleString()}</span>
+                        {explorerBase ? (
+                          <a className={styles.txHash} href={`${explorerBase}/tx/${hash}`} target="_blank" rel="noopener noreferrer">
+                            {hash.slice(0, 12)}…
+                          </a>
+                        ) : (
+                          <code className={styles.txHash}>{hash.slice(0, 12)}…</code>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
-              </section>
-            )}
+              )}
+            </section>
           </div>
 
           <div
-            id="panel-assets"
+            id="panel-transfer"
             role="tabpanel"
-            aria-labelledby="tab-assets"
-            hidden={activeTab !== 'assets'}
-            className={`${styles.tabPanel} ${activeTab === 'assets' ? styles.tabPanelActive : ''}`}
+            aria-labelledby="tab-transfer"
+            hidden={activeTab !== 'transfer'}
+            className={`${styles.tabPanel} ${activeTab === 'transfer' ? styles.tabPanelActive : ''}`}
           >
-            <div className={styles.assetsComposition} data-testid="assets-composition">
-              <header className={styles.assetsHeader}>
-                <h2 className={styles.assetsTitle}>Assets</h2>
-                <p className={styles.assetsLede}>Coins and collectibles for this account.</p>
-              </header>
-              <section className={`${styles.section} ${styles.balanceHero} ${styles.assetsCoins}`}>
-                <div className={styles.balanceHeader}>
-                  <p className={styles.balanceLabel}>Coins</p>
-                  <button
-                    type="button"
-                    className={styles.refreshBtn}
-                    onClick={refreshData}
-                    disabled={refreshing || !accountId}
-                    aria-label="Refresh balance and chain data"
-                  >
-                    {refreshing ? '…' : '↻'}
-                  </button>
-                </div>
-                <p className={styles.balance}>
-                  {displayBalance} <span className={styles.symbol}>{balance?.symbol ?? 'BOING'}</span>
-                </p>
-                {chainHeight != null && (
-                  <p className={styles.chainHeight} aria-label="Chain height">
-                    Block #{chainHeight.toLocaleString()}
-                  </p>
-                )}
-                {balanceError && (
-                  <p className={styles.error}>
-                    {balanceError}
-                    <button type="button" className={styles.retryBtn} onClick={refreshData}>
-                      Retry
-                    </button>
-                  </p>
-                )}
-              </section>
-              <div className={styles.assetsCollectibles}>
-                {accountId && (
-                  <NftHoldingsPanel
-                    accountId={accountId}
-                    network={network}
-                    rpcUrl={network.config.rpcUrl}
-                    getPrivateKey={getPrivateKey}
-                    addressHint={addressHint}
-                    onTxRecorded={refreshTxHistory}
-                  />
-                )}
-              </div>
+            <div className={styles.segmented} role="tablist" aria-label="Asset to transfer">
+              {(['boing', 'token', 'nft', 'bulk'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="tab"
+                  aria-selected={transferMode === m}
+                  className={`${styles.segmentedBtn} ${transferMode === m ? styles.segmentedBtnActive : ''}`}
+                  onClick={() => setTransferMode(m)}
+                  data-testid={`transfer-mode-${m}`}
+                >
+                  {m === 'boing' ? 'BOING' : m === 'token' ? 'Token' : m === 'nft' ? 'NFT' : 'Bulk'}
+                </button>
+              ))}
             </div>
+            {transferMode === 'boing' && (
+              <section className={styles.section} data-testid="transfer-pane-boing">
+                <h2 className={styles.sectionTitle}>Send BOING</h2>
+                {isMainnet && sendAmount.trim() && (
+                  <div className={styles.mainnetWarning} role="alert">
+                    You are on Mainnet. Real BOING is at risk. Double-check the amount and recipient.
+                  </div>
+                )}
+                <form onSubmit={handleSend} className={styles.form}>
+                  <input
+                    type="text"
+                    placeholder="To address (64 hex or 0x…)"
+                    value={sendTo}
+                    onChange={(e) => setSendTo(e.target.value)}
+                    className={styles.input}
+                    aria-label="Recipient address"
+                    data-testid="send-to"
+                  />
+                  <div className={styles.sendAmountRow}>
+                    <input
+                      type="text"
+                      placeholder="Amount in BOING (whole units, e.g. 100)"
+                      value={sendAmount}
+                      onChange={(e) => setSendAmount(e.target.value)}
+                      className={styles.input}
+                      inputMode="decimal"
+                      aria-label="Amount to send"
+                      data-testid="send-amount"
+                    />
+                    <button
+                      type="button"
+                      className={styles.maxBtn}
+                      onClick={() => setSendAmount(displayBalance !== '…' && displayBalance !== '—' ? displayBalance : '')}
+                    >
+                      Max
+                    </button>
+                  </div>
+                  {sendError && <p className={styles.error} data-testid="send-error">{sendError}</p>}
+                  {sendSuccess && (
+                    <p className={styles.success} data-testid="send-success">
+                      {sendSuccess}
+                      {lastTxHash && (
+                        <>
+                          {' · '}
+                          <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>
+                            {txHashCopied ? 'Copied' : 'Copy tx hash'}
+                          </button>
+                        </>
+                      )}
+                    </p>
+                  )}
+                  <button type="submit" className={styles.primary} disabled={sending} data-testid="send-submit">
+                    {sending ? 'Sending…' : 'Send'}
+                  </button>
+                </form>
+              </section>
+
+            )}
+            {transferMode === 'token' && accountId && (
+              <TokenSendForm
+                accountId={accountId}
+                network={network}
+                getPrivateKey={getPrivateKey}
+                holdings={tokens.holdings}
+                onSent={(hash, summary) => {
+                  if (hash) addTxHistory(addressHint, network.config.id, hash, 'token_send', summary);
+                  refreshTxHistory();
+                  window.setTimeout(() => void tokens.refresh(), 2000);
+                }}
+              />
+            )}
+            {transferMode === 'nft' && accountId && activeTab === 'transfer' && (
+              <NftHoldingsPanel
+                key={nftPreselect ?? 'none'}
+                accountId={accountId}
+                network={network}
+                rpcUrl={network.config.rpcUrl}
+                getPrivateKey={getPrivateKey}
+                addressHint={addressHint}
+                onTxRecorded={refreshTxHistory}
+                mode="transfer"
+                initialSelectedKey={nftPreselect}
+              />
+            )}
+            {transferMode === 'bulk' && accountId && (
+              <BulkTransferPanel
+                accountId={accountId}
+                network={network}
+                getPrivateKey={getPrivateKey}
+                balance={balance}
+                holdings={tokens.holdings}
+                onRowSent={(hash, kind, summary) => {
+                  if (hash) addTxHistory(addressHint, network.config.id, hash, kind, summary);
+                }}
+                onFinished={() => {
+                  refreshTxHistory();
+                  scheduleBalanceCatchUp();
+                  window.setTimeout(() => void tokens.refresh(), 2000);
+                }}
+              />
+            )}
           </div>
 
           {showStakeTab && (
@@ -1171,6 +1163,153 @@ export function Dashboard() {
               </section>
             </div>
           )}
+          <div
+            id="panel-settings"
+            role="region"
+            aria-label="Settings"
+            hidden={activeTab !== 'settings'}
+            className={`${styles.tabPanel} ${activeTab === 'settings' ? styles.tabPanelActive : ''}`}
+            data-testid="settings-panel"
+          >
+            <div className={styles.settingsHeader}>
+              <button type="button" className={styles.copyBtn} onClick={() => setActiveTab(lastMainTab)} data-testid="settings-back">
+                ← Back
+              </button>
+              <h2 className={styles.assetsTitle}>Settings</h2>
+            </div>
+            {activeTab === 'settings' && <ConnectedSitesPanel />}
+            {activeTab === 'settings' && <RevealPrivateKeyPanel />}
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Deploy contract (QA Pillar)</h2>
+              <p className={styles.faucetHint}>
+                Validate contract bytecode before deployment. REJECT → blocked. ALLOW → deploy. UNSURE → community QA pool.
+              </p>
+              <form onSubmit={handleQaValidate} className={styles.form}>
+                <textarea
+                  placeholder="Contract bytecode (hex, e.g. 0x6080604052...)"
+                  value={qaBytecode}
+                  onChange={(e) => {
+                    setQaBytecode(e.target.value);
+                    setQaResult(null);
+                  }}
+                  className={styles.qaTextarea}
+                  rows={4}
+                  spellCheck={false}
+                  aria-label="Contract bytecode"
+                />
+                <div className={styles.qaPurposeRow}>
+                  <label htmlFor="qa-purpose" className={styles.qaLabel}>Purpose (optional, for boing_qaCheck)</label>
+                  <select
+                    id="qa-purpose"
+                    value={qaPurpose}
+                    onChange={(e) => setQaPurpose(e.target.value)}
+                    className={styles.qaPurposeSelect}
+                    aria-label="Purpose category"
+                  >
+                    <option value="">— None —</option>
+                    {VALID_PURPOSE_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.qaPurposeRow}>
+                  <label htmlFor="qa-description-hash" className={styles.qaLabel}>Description hash (optional)</label>
+                  <input
+                    id="qa-description-hash"
+                    type="text"
+                    placeholder="0x..."
+                    value={qaDescriptionHash}
+                    onChange={(e) => setQaDescriptionHash(e.target.value)}
+                    className={styles.input}
+                    aria-label="Description hash"
+                  />
+                </div>
+                <label className={styles.qaCheckbox}>
+                  <input
+                    type="checkbox"
+                    checked={qaUseRpc}
+                    onChange={(e) => setQaUseRpc(e.target.checked)}
+                  />
+                  Also call boing_qaCheck (when available)
+                </label>
+                <div className={styles.qaButtonRow}>
+                  <button type="submit" className={styles.primary} disabled={qaValidating}>
+                    {qaValidating ? 'Validating…' : 'Validate'}
+                  </button>
+                </div>
+                {qaResult && (
+                  <div
+                    className={
+                      qaResult.result === 'allow'
+                        ? styles.qaAllow
+                        : qaResult.result === 'reject'
+                          ? styles.qaReject
+                          : styles.qaUnsure
+                    }
+                    role="status"
+                  >
+                    <strong>{qaResult.result.toUpperCase()}</strong>
+                    {qaResult.ruleId && <span className={styles.qaRuleId}> ({qaResult.ruleId})</span>}
+                    {qaResult.message && <p className={styles.qaMessage}>{qaResult.message}</p>}
+                    {qaResult.docUrl && (
+                      <p className={styles.qaMessage}>
+                        <a href={qaResult.docUrl} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
+                          Open canonical QA guidance
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </form>
+            </section>
+
+            <section className={styles.section}>
+              <button
+                type="button"
+                className={styles.rpcToggle}
+                onClick={() => setShowRpcOverride(!showRpcOverride)}
+                aria-expanded={showRpcOverride}
+              >
+                {showRpcOverride ? '−' : '+'} RPC override (dev)
+              </button>
+              {showRpcOverride && (
+                <div className={styles.rpcOverrideForm}>
+                  <p className={styles.faucetHint}>
+                    Override RPC URL for the current network (e.g. http://localhost:8545 for local node). Leave empty to use default.
+                    Chain ID above does not change — it stays the testnet/mainnet value Boing Express uses for{' '}
+                    <code className={styles.inlineCode}>boing_chainId</code>. Custom RPC must still match that network (same
+                    genesis / operator expectations).
+                  </p>
+                  <div className={styles.rpcOverrideRow}>
+                    <label htmlFor="rpc-override" className={styles.qaLabel}>
+                      {network.config.name} RPC URL
+                    </label>
+                    <input
+                      id="rpc-override"
+                      type="text"
+                      placeholder={network.config.rpcUrl}
+                      value={rpcOverrideInput}
+                      onChange={(e) => setRpcOverrideInput(e.target.value)}
+                      className={styles.input}
+                    />
+                    <button
+                      type="button"
+                      className={styles.secondary}
+                      onClick={() => {
+                        setRpcOverride(network.config.id, rpcOverrideInput);
+                      }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                  {rpcOverrides[network.config.id] && (
+                    <p className={styles.success}>Using override: {rpcOverrides[network.config.id]}</p>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
+
         </div>
       </main>
     </div>

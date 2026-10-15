@@ -1122,3 +1122,146 @@
     padding-left: 0;
   }
 }
+
+/* --- Redesign: settings gear, tokens, transfer modes, bulk transfer --- */
+.gearBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gearBtnActive {
+  border-color: var(--express-primary, #00e8c8);
+  color: var(--express-primary, #00e8c8);
+}
+
+.settingsHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.connectedOrigin {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tokenSymbol {
+  font-weight: 600;
+  min-width: 3.5rem;
+}
+
+.tokenBalance {
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.subDetails {
+  margin-top: 0.75rem;
+}
+
+.subDetails > summary {
+  cursor: pointer;
+}
+
+.subDetails > .form,
+.subDetails > textarea {
+  margin-top: 0.5rem;
+}
+
+.inlineRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.inlineRow > .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border, var(--border));
+  border-radius: var(--radius-sm, 8px);
+}
+
+.segmentedBtn {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary, var(--muted));
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segmentedBtnActive {
+  background: rgba(0, 232, 200, 0.14);
+  color: var(--express-primary, #00e8c8);
+}
+
+.bulkRows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bulkRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(64px, 120px) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.bulkIssues {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.bulkList {
+  margin: 0.5rem 0;
+  padding-left: 1.4rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.bulkList li {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-color);
+  overflow-wrap: anywhere;
+}
+
+.txSummary {
+  flex: 2;
+  min-width: 0;
+  color: var(--text-secondary, var(--muted));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .bulkRow {
+    grid-template-columns: minmax(0, 1fr) 72px auto;
+  }
+
+  .segmentedBtn {
+    font-size: 0.75rem;
+    padding: 7px 2px;
+  }
+}

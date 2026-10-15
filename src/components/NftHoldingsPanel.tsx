@@ -61,6 +61,14 @@ export interface NftHoldingsPanelProps {
   getPrivateKey: () => Uint8Array | null;
   addressHint: string;
   onTxRecorded?: () => void;
+  /**
+   * `view` (Wallet tab): gallery + add-to-watchlist, no selection; a row's Transfer calls `onTransferItem`.
+   * `transfer` (Transfer tab): owned items only, with selection and the transfer form.
+   */
+  mode?: 'view' | 'transfer';
+  onTransferItem?: (key: string) => void;
+  /** Pre-select one item (`collectionHex:tokenIdHex`) in transfer mode. */
+  initialSelectedKey?: string | null;
 }
 
 function holdingKey(item: { collectionHex: string; tokenIdHex: string }): string {
@@ -120,7 +128,11 @@ export function NftHoldingsPanel({
   getPrivateKey,
   addressHint,
   onTxRecorded,
+  mode = 'view',
+  onTransferItem,
+  initialSelectedKey,
 }: NftHoldingsPanelProps) {
+  const transferMode = mode === 'transfer';
   const [statuses, setStatuses] = useState<NftHoldingStatus[]>([]);
   const [metaByKey, setMetaByKey] = useState<Map<string, NftDisplayMeta>>(new Map());
   const [loading, setLoading] = useState(false);
@@ -138,7 +150,9 @@ export function NftHoldingsPanel({
   const [addError, setAddError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
   const [transferTo, setTransferTo] = useState('');
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
+    () => new Set(transferMode && initialSelectedKey ? [initialSelectedKey] : [])
+  );
   const [confirmBatch, setConfirmBatch] = useState(false);
   const [transferError, setTransferError] = useState('');
   const [transferSuccess, setTransferSuccess] = useState('');
@@ -293,7 +307,7 @@ export function NftHoldingsPanel({
   }
 
   const owned = filterOwnedHoldings(statuses);
-  const groups = groupHoldingsByCollection(statuses);
+  const groups = groupHoldingsByCollection(transferMode ? owned : statuses);
   const watchedNotOwned = statuses.filter((s) => s.exists && !s.owned && !s.error);
   const missing = statuses.filter((s) => !s.exists && !s.error);
   const selectedCount = selectedKeys.size;
@@ -390,7 +404,7 @@ export function NftHoldingsPanel({
     <>
       <section className={styles.section}>
         <div className={styles.balanceHeader}>
-          <h2 className={styles.sectionTitle}>Collectibles</h2>
+          <h2 className={styles.sectionTitle}>{transferMode ? 'Owned NFTs' : 'Collectibles'}</h2>
           <button
             type="button"
             className={styles.refreshBtn}
@@ -420,7 +434,7 @@ export function NftHoldingsPanel({
             holdings.
           </p>
         )}
-        {owned.length > 0 && (
+        {transferMode && owned.length > 0 && (
           <div className={styles.nftSelectBar}>
             <button type="button" className={styles.copyBtn} onClick={selectAllOwned}>
               Select all owned ({owned.length})
@@ -517,7 +531,7 @@ export function NftHoldingsPanel({
                 return (
                   <li key={key} className={styles.nftItem}>
                     <div className={styles.nftGalleryRow}>
-                      {item.owned ? (
+                      {!transferMode ? null : item.owned ? (
                         <label className={styles.nftCheck}>
                           <input
                             type="checkbox"
@@ -601,23 +615,30 @@ export function NftHoldingsPanel({
                         <button
                           type="button"
                           className={styles.copyBtn}
+                          data-testid="nft-row-transfer"
                           onClick={() => {
+                            if (!transferMode) {
+                              onTransferItem?.(key);
+                              return;
+                            }
                             setSelectedKeys(new Set([key]));
                             setConfirmBatch(false);
                             setTransferError('');
                             setTransferSuccess('');
                           }}
                         >
-                          Transfer
+                          {transferMode ? 'Select only' : 'Transfer'}
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className={styles.copyBtn}
-                        onClick={() => void handleRemove(item)}
-                      >
-                        Remove
-                      </button>
+                      {!transferMode && (
+                        <button
+                          type="button"
+                          className={styles.copyBtn}
+                          onClick={() => void handleRemove(item)}
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                     {item.error && <p className={styles.error}>{item.error}</p>}
                   </li>
@@ -635,6 +656,7 @@ export function NftHoldingsPanel({
         )}
       </section>
 
+      {!transferMode && (
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Add NFT</h2>
         <p className={styles.faucetHint}>
@@ -667,7 +689,9 @@ export function NftHoldingsPanel({
           </button>
         </form>
       </section>
+      )}
 
+      {transferMode && (
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Transfer NFT</h2>
         <p className={styles.faucetHint}>
@@ -682,7 +706,7 @@ export function NftHoldingsPanel({
           </p>
         ) : (
           <p className={styles.addressHint}>
-            Select owned items above (checkboxes) or use Transfer on a single row.
+            Select owned items above (checkboxes).
           </p>
         )}
         <form onSubmit={(ev) => void handleTransfer(ev)} className={styles.form}>
@@ -731,6 +755,7 @@ export function NftHoldingsPanel({
           recipient).
         </p>
       </section>
+      )}
     </>
   );
 }

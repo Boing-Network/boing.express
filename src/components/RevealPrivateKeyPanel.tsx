@@ -63,7 +63,7 @@ export function RevealPrivateKeyPanel() {
   const seconds = Math.round(REVEAL_AUTO_HIDE_MS / 1000);
   return (
     <details className={styles.section} data-testid="reveal-private-key">
-      <summary className={styles.sectionTitle}>Reveal private key</summary>
+      <summary className={styles.sectionTitle}>Export private key</summary>
       <p className={styles.error} role="note">
         Anyone with this key controls this account and its funds. Never share it, paste it into a website, or send
         it to anyone (Boing will never ask). Use it only in tools you trust, such as the <code>boing</code> CLI
@@ -107,4 +107,4 @@ export function RevealPrivateKeyPanel() {
       {error && <p className={styles.error}>{error}</p>}
     </details>
   );
-}
+}
