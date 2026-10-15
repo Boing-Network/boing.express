@@ -438,7 +438,7 @@ async function signOrSendBoingTransaction(
       nonceDefault = BigInt(acc.nonce);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_RPC_NONCE', `Could not load nonce: ${msg}`);
+      throw providerError(PROVIDER_ERROR_CODES.INTERNAL_ERROR, 'BOING_RPC_NONCE', `Couldn't reach the Boing network to prepare this transaction (account nonce lookup failed). Check your connection or switch RPC in Boing Express, then try again. Details: ${msg}`);
     }
   }
 
