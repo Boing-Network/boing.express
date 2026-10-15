@@ -1,84 +1,81 @@
 # Bulk transfers in Boing Express
 
-## What ships now (sequential, not atomic)
+The Transfer tab's **Bulk** mode sends BOING, reference fungible tokens and reference NFTs to many
+recipients. Rows can mix assets. The same code (`src/components/BulkTransferPanel.tsx`,
+`src/boing/bulkTransfer.ts`) runs in the web wallet and the extension popup. The extension picks it up
+in its next release.
 
-The Transfer tab's **Bulk** mode (web wallet and extension popup) sends one asset (BOING or a reference
-fungible token) to many recipients.
+## Two ways a bulk send goes out
 
-**Why sequential.** `TransactionPayload` in `boing-primitives` has no batch variant. Its variants are
-`Transfer`, `ContractCall`, `ContractDeploy*`, `Bond`, `Unbond`, `ClaimUnbond` and `QaPoolVote`. There is
-also no multi-recipient selector in the reference token or NFT templates. A bulk send is therefore N
-independent signed transactions.
+| | **Atomic batch** (preferred) | **Sequential fallback** |
+|---|---|---|
+| When | The node advertises `boing_health.rpc_surface.tx_payload_batch: true` **and** there are 1–16 rows | Older node (no flag, or it cannot decode a batch), or more than 16 rows |
+| Transactions | **One** (`TransactionPayload::Batch`, variant 9), one signature, one nonce | One per row, consecutive nonces |
+| Approval | One "Sign & send batch" | One "Sign & send all" (signs each row in turn) |
+| Failure | **All-or-nothing**: if any step fails on-chain, every step is reverted and balances are unchanged (the nonce is still used) | Stops at the first failed row; earlier rows stay sent, later rows are not sent; no retries |
+| Fee | One estimate for the whole batch (simulated with `boing_simulateTransaction`, else ≈ 21 000 + 7 000 gas per step; 21 000 gas = 1 BOING) | Normal fee per tx |
+| Tx history | **One** "Batch" entry; expand it to see every step | One entry per row |
 
-**Flow.**
+The batch limit of **16 steps** is the protocol cap (`MAX_BATCH_CALLS`). The node can advertise a lower
+`tx_batch_max_calls`; the wallet uses the smaller value. See boing.network
+`docs/NATIVE-BATCH-TRANSACTIONS.md` for the protocol side.
 
-1. **Input.** Rows can be entered by hand or pasted as CSV (`address,amount`; comma, semicolon, tab or
-   space; header, blank and `#` lines are skipped).
-2. **Validation** (`src/boing/bulkTransfer.ts`, shared by both UIs):
-   - The address must be 64 hex characters.
-   - Sending to your own address is refused. This matters most for v1 reference tokens, where a
-     self-transfer doubles the balance.
-   - A duplicate recipient is an error; merge the rows instead.
-   - Amounts must be positive and use no more decimals than the asset allows (nothing is silently
-     truncated).
-   - The total must not exceed the spendable balance.
-   - At most 100 rows.
-3. **Review.** A review screen lists every row and the total. Nothing is signed before
-   "Sign & send all".
-4. **Run** (`runSequentialBulkTransfer`):
-   - Reads the nonce once, then signs row *i* with `startNonce + i`. The nonce only advances after the
-     node accepts the submit, so a failure never leaves a gap.
-   - Each submit goes through the adapter's normal simulate-then-submit path.
-   - **Stops at the first failure** (signing error, simulation failure, RPC error). Later rows are
-     marked *Not sent*. There are **no retries**.
-   - "Stop after current" cancels between rows.
-   - The final report lists which rows were submitted (with tx hashes), the failure and its error, and
-     the rows not sent. It can be copied.
-5. **History.** Submitted rows are recorded in local tx history (Tx tab).
+**Detecting support.** At Review the wallet calls `boing_health`. If the flag is missing it uses the
+sequential path. If the flag is present but the node still rejects the batch with a bincode
+"variant index" error (during the review simulation or at submit), the wallet marks batches unsupported for
+the session and returns to Review in sequential mode. Nothing was sent in that case, and the user approves
+again.
 
-**Limits to know.**
+## Rows
 
-- *Submitted* means the node accepted the tx into its mempool, not that it is in a block. A tx can
-  still drop later (for example if the fee policy changes). Check the explorer for final status.
-- Closing the popup or tab during a run stops it. Rows already submitted stay submitted.
-- Fees are paid per transaction. The balance check covers the transfer amounts only.
+Each row has a recipient and an asset picker:
 
-## Proposal (not built): native atomic batch transfer
+- **BOING** or a **token** (from the Wallet tab's token list: watchlist + DEX directory) → enter an amount.
+- **An NFT you hold** → no amount; the row sends exactly that one token id. The NFT list is the same
+  source as the Wallet tab's NFTs: the local NFT watchlist (filled by discovery / the owner index), with
+  on-chain ownership checked via the owner storage slot. Only items you currently own are offered.
 
-**Goal:** one signed transaction that pays many recipients and succeeds or fails as a whole.
+NFT steps are `transfer_nft(to, token_id)` contract calls on the collection (selector `0x04`). Token steps
+are the reference token `transfer(to, amount)` call. BOING steps are native transfers.
 
-There are two options.
+## Validation (before anything is signed)
 
-### Option A: new payload variant `TransferBatch` (protocol change)
+- Recipient must be 64 hex characters (0x optional). Sending to your own address is refused (for every
+  asset).
+- BOING / token rows: positive amounts with no more decimals than the asset allows (nothing is silently
+  truncated); the same recipient twice for the same asset is an error (merge the rows); the per-asset total
+  must not exceed that asset's balance. In batch mode the BOING total plus the estimated fee must also fit.
+- NFT rows: you must hold the NFT; the same NFT may appear only once; an amount other than empty / `1` is
+  an error.
+- At most 100 rows (more than 16 always uses the sequential path).
 
-```text
-TransferBatch { transfers: Vec<(AccountId, u128)> }   // appended as the next enum index
+## CSV import
+
+Paste one row per line. Separators: comma, semicolon, tab or spaces. Blank lines and `#` comments are
+skipped; a first line such as `address,amount,asset` is treated as a header.
+
+```
+# address, amount            → uses the "Asset for new rows" picker
+0x7f3a…c21,100
+# address, amount, asset     → asset = BOING, a token symbol (case-insensitive) or token contract hex
+0x91bc…0de,25.5,TKN
+0x91bc…0de,3,BOING
+# NFT: no amount             → nft:<collection hex>:<token id>
+0x5c0d…a11,nft:0xcdcd…cdcd:7
+0x5c0d…a11,,nft:cdcd…cdcd:0x00…2a
 ```
 
-- **Execution.** Check `sum(amount) <= balance` with overflow checks, debit once, credit each
-  recipient, and bump the nonce once. Either everything applies or nothing does.
-- **Access list.** Write `{sender} ∪ recipients`, which lets the parallel scheduler keep working.
-- **Limits.** Cap the number of entries (for example 256). Gas is a base cost plus a per-recipient cost.
-- **Wallet side.** The bincode encoder, the signing preview ("N recipients, total X") and dApp
-  `boing_sendTransaction` support.
-- **Cost.** This changes the consensus/VM transaction format, so it needs a coordinated node upgrade,
-  a version gate, and changes to boing-sdk, the explorer and the indexers. It is out of scope for a
-  wallet change and needs explicit protocol sign-off.
+The token id is a sequential decimal id (`7`) or a 64-hex token id word. Unknown assets and ambiguous
+symbols are reported per line and those lines are not imported.
 
-### Option B: batch-transfer contract template (no protocol change)
+## What "submitted" means
 
-- **The contract.** A reference "batch sender" contract whose `batch_transfer(token, [(to, amount)…])`
-  calls the token's `transfer_from(sender, to, amount)` for each row. Those calls happen inside one
-  `ContractCall`, so a revert anywhere reverts all of them. This assumes the VM supports nested
-  contract calls with all-or-nothing rollback; verify that before building. For native BOING, the contract would need a
-  native-value transfer opcode, which the VM currently lacks, so B covers tokens only.
-- **Requirements.** v2 tokens, because the user must first `approve` the batch contract for the total.
-  v1 tokens have no `transfer_from`.
-- **Access list.** It must include the token contract plus the storage slots it touches.
-- **Wallet UX.** Two transactions (approve, then batch), or one if the allowance is already enough.
-  The review screen stays the same.
-- **Deployment.** It goes through the QA pillar like any other template.
+"Submitted" means the node accepted the transaction into its mempool. It does not mean it is in a block.
+For a batch, the all-or-nothing outcome is decided when the block executes it. Check the receipt on the
+explorer.
 
-**Recommendation.** Ship Option B first for v2 tokens: it has no consensus change and reuses
-`transfer_from`. Keep the sequential runner as the fallback for native BOING and v1 tokens. Consider
-Option A only if native BOING batch payouts become a common need.
+## Limits and follow-ups
+
+- Tx history is per browser/device (local storage).
+- Fees are not counted in the sequential-mode balance check.
+- More than 16 rows could be split into several atomic batches; today they fall back to sequential.

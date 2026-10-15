@@ -103,3 +103,92 @@ describe('batchHistorySummary', () => {
     expect(mixed.summary).toBe('Batch of 2 (atomic), 2 assets');
   });
 });
+
+import { nftAssetKey, nftTokenIdLabel, parseBulkCsv, resolveCsvAsset } from '../src/boing/bulkTransfer';
+
+const COLL = 'cd'.repeat(32);
+const id7 = (7).toString(16).padStart(64, '0');
+
+describe('NFT rows', () => {
+  const assets = { boing: { symbol: 'BOING', decimals: 0, balance: 100n } };
+  const nfts = [
+    { collectionHex: COLL, tokenIdHex: id7 },
+    { collectionHex: COLL, tokenIdHex: (8).toString(16).padStart(64, '0') },
+  ];
+  const k7 = nftAssetKey(COLL, id7);
+
+  it('valid NFT rows have amount 1 and carry collection + token id', () => {
+    const v = validateMixedBulkRows(
+      [
+        { to: A, amount: '', assetKey: k7 },
+        { to: A, amount: '3', assetKey: 'boing' },
+      ],
+      { senderHex: ME, assets, nfts }
+    );
+    expect(v.ok).toBe(true);
+    expect(v.rows[0]).toMatchObject({ row: 0, amount: 1n, nft: { collectionHex: COLL, tokenIdHex: id7 } });
+    expect(v.totals).toEqual({ boing: 3n });
+  });
+
+  it('guards: duplicate NFT, self-send, not held, stray amount', () => {
+    const v = validateMixedBulkRows(
+      [
+        { to: A, amount: '', assetKey: k7, source: 'Row 1' },
+        { to: B, amount: '', assetKey: k7, source: 'Row 2' },
+        { to: ME, amount: '', assetKey: nftAssetKey(COLL, (8).toString(16).padStart(64, '0')), source: 'Row 3' },
+        { to: B, amount: '', assetKey: nftAssetKey(COLL, (9).toString(16).padStart(64, '0')), source: 'Row 4' },
+        { to: B, amount: '2', assetKey: nftAssetKey(COLL, (8).toString(16).padStart(64, '0')), source: 'Row 5' },
+      ],
+      { senderHex: ME, assets, nfts }
+    );
+    const m = v.issues.map((i) => i.message).join('\n');
+    expect(v.ok).toBe(false);
+    expect(m).toMatch(/Row 2: same NFT as Row 1/);
+    expect(m).toMatch(/Row 3: cannot send to your own address/);
+    expect(m).toMatch(/Row 4: you do not hold this NFT \(#9\)/);
+    expect(m).toMatch(/Row 5: NFT rows have no amount/);
+  });
+
+  it('token id labels', () => {
+    expect(nftTokenIdLabel(id7)).toBe('#7');
+    expect(nftTokenIdLabel('ab'.repeat(32))).toBe('#abab…abab');
+  });
+
+  it('batch history summary counts NFTs', () => {
+    const rows = [
+      { row: 0, toHex: A, amount: 1n, amountInput: '1', assetKey: k7, nft: { collectionHex: COLL, tokenIdHex: id7 } },
+      { row: 1, toHex: B, amount: 2n, amountInput: '2', assetKey: 'boing' },
+    ];
+    const s = batchHistorySummary(rows, (k, v) => (k.startsWith('nft:') ? 'NFT #7' : `${v} BOING`), (h) => h.slice(0, 4));
+    expect(s.summary).toBe('Batch of 2 (atomic), 2 asset types, 1 NFT');
+    expect(s.steps[0]).toBe('1. NFT #7 → 2222');
+  });
+});
+
+describe('CSV asset column', () => {
+  it('parses address,amount / address,amount,asset / NFT forms', () => {
+    const { rows, issues } = parseBulkCsv(
+      ['address,amount,asset', `0x${A},5`, `${A},2.5,TKN`, `${B},nft:${COLL}:7`, `${B},,nft:${COLL}:8`, `${B},1,nft:${COLL}:9`, 'x,y,z,w'].join('\n')
+    );
+    expect(rows.slice(0, 5).map((r) => [r.amount, r.asset])).toEqual([
+      ['5', undefined],
+      ['2.5', 'TKN'],
+      ['', `nft:${COLL}:7`],
+      ['', `nft:${COLL}:8`],
+      ['', `nft:${COLL}:9`],
+    ]);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.message).toMatch(/expected "address,amount\[,asset\]"/);
+  });
+
+  it('resolves assets', () => {
+    const tokens = [{ tokenHex: '0x' + 'ab'.repeat(32), symbol: 'TKN' }];
+    expect(resolveCsvAsset(undefined, { defaultKey: 'boing', tokens })).toEqual({ key: 'boing' });
+    expect(resolveCsvAsset('boing', { defaultKey: 'x', tokens })).toEqual({ key: 'boing' });
+    expect(resolveCsvAsset('tkn', { defaultKey: 'boing', tokens })).toEqual({ key: tokens[0]!.tokenHex });
+    expect(resolveCsvAsset('ab'.repeat(32), { defaultKey: 'boing', tokens })).toEqual({ key: tokens[0]!.tokenHex });
+    expect(resolveCsvAsset(`nft:0x${COLL}:7`, { defaultKey: 'boing', tokens })).toEqual({ key: nftAssetKey(COLL, id7) });
+    expect(resolveCsvAsset('XYZ', { defaultKey: 'boing', tokens })).toHaveProperty('error');
+    expect(resolveCsvAsset(`nft:${COLL}:0`, { defaultKey: 'boing', tokens })).toHaveProperty('error');
+  });
+});

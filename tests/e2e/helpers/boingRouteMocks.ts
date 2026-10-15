@@ -87,6 +87,13 @@ export interface BoingMockOptions {
   rejectBatchDecode?: boolean;
   /** `gas_used` returned by `boing_simulateTransaction` (default: field omitted). */
   simulateGasUsed?: number;
+  /** Tokens returned by `boing_listDexTokens` (mocked fungible holdings). */
+  dexTokens?: Array<{ id: string; symbol: string; decimals: number }>;
+  /**
+   * `boing_getContractStorage` override: return a 64-hex word (no 0x) for `(contract, key)`, or null for zero.
+   * Hex args arrive lowercase without 0x. Use for mocked token balances / NFT owner slots.
+   */
+  storage?: (contractHex: string, keyHex: string) => string | null;
 }
 
 /** Signed tx hex → payload discriminant (u32 LE after nonce u64 + sender 32 bytes). */
@@ -180,9 +187,12 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
         await fulfillJsonRpc(route, jsonRpcResult(id, '0x' + submitCount.toString(16).padStart(64, '0')));
         return;
       }
-      case 'boing_getContractStorage':
-        await fulfillJsonRpc(route, jsonRpcResult(id, { value: '0x' + '0'.repeat(64) }));
+      case 'boing_getContractStorage': {
+        const [c, k] = ((payload.params ?? []) as unknown[]).map((x) => String(x ?? '').replace(/^0x/i, '').toLowerCase());
+        const word = opts.storage?.(c ?? '', k ?? '') ?? null;
+        await fulfillJsonRpc(route, jsonRpcResult(id, { value: '0x' + (word ?? '0'.repeat(64)).padStart(64, '0') }));
         return;
+      }
       case 'boing_getBlockByHeight':
         await fulfillJsonRpc(route, jsonRpcResult(id, null));
         return;
@@ -193,7 +203,7 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
         await fulfillJsonRpc(route, jsonRpcResult(id, { pools: [], nextCursor: null }));
         return;
       case 'boing_listDexTokens':
-        await fulfillJsonRpc(route, jsonRpcResult(id, { tokens: [], nextCursor: null }));
+        await fulfillJsonRpc(route, jsonRpcResult(id, { tokens: opts.dexTokens ?? [], nextCursor: null }));
         return;
       case 'boing_getDexToken':
         await fulfillJsonRpc(route, jsonRpcResult(id, null));

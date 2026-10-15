@@ -94,3 +94,103 @@ test.describe('bulk transfer: native atomic batch (mocked RPC)', () => {
     await expect(page.getByTestId('bulk-review-fee')).toHaveCount(0);
   });
 });
+
+const TOK = 'ab'.repeat(32);
+const COLL = 'cd'.repeat(32);
+
+/** Mocked holdings: 1000.00 TKN (2 decimals) and every token id in COLL owned by `owner()`. */
+function holdingsMocks(owner: () => string) {
+  return {
+    dexTokens: [{ id: `0x${TOK}`, symbol: 'TKN', decimals: 2 }],
+    storage: (contract: string, _key: string) => {
+      if (contract === TOK) return (100_000).toString(16);
+      if (contract === COLL) return owner();
+      return null;
+    },
+  };
+}
+
+async function seedNftWatchlist(page: Page, me: string, ids: number[]) {
+  const owner = me.replace(/^0x/i, '').toLowerCase();
+  await page.evaluate(
+    ([key, entries]) => localStorage.setItem(key as string, entries as string),
+    [
+      `boing-express-nft-watchlist:${owner}:boing-testnet`,
+      JSON.stringify(ids.map((n) => ({ collectionHex: COLL, tokenIdHex: n.toString(16).padStart(64, '0'), addedAt: 1 }))),
+    ]
+  );
+}
+
+async function myAddress(page: Page): Promise<string> {
+  return ((await page.getByTestId('assets-composition').locator('code').first().textContent()) ?? '').trim().replace(/^0x/i, '').toLowerCase();
+}
+
+test.describe('bulk transfer: mixed BOING + token + NFT (mocked holdings)', () => {
+  test.use({ viewport: { width: 380, height: 900 } });
+
+  test('one atomic batch with NFT steps; review + Tx history list them', async ({ context, page }) => {
+    const submitted: string[] = [];
+    let me = '';
+    await installBoingNetworkMocks(context, { submitted, batchSupport: true, simulateGasUsed: 98_000, ...holdingsMocks(() => me) });
+    await importWallet(page);
+    me = await myAddress(page);
+    await seedNftWatchlist(page, me, [7, 8]);
+    await openBulk(page, `${A},5\n${B},12.5,TKN\n${C},nft:${COLL}:7\n${A},,nft:${COLL}:8`);
+
+    await expect(page.getByTestId('bulk-review-screen')).toHaveAttribute('data-mode', 'batch');
+    const list = page.getByTestId('bulk-review-row');
+    await expect(list).toHaveCount(4);
+    await expect(list.nth(1)).toContainText('12.5 TKN');
+    await expect(list.nth(2)).toContainText('NFT');
+    await expect(list.nth(2)).toContainText('#7');
+    await expect(list.nth(3)).toContainText('#8');
+    await expect(page.getByTestId('bulk-review-total')).toHaveText('5 BOING + 12.5 TKN + 2 NFTs');
+    await expect(page.getByTestId('bulk-review-fee')).toHaveText('Network fee: 5 BOING for the whole batch');
+    const shot = process.env.BULK_MIXED_SCREENSHOT;
+    if (shot) await page.screenshot({ path: shot, fullPage: true });
+
+    await page.getByTestId('bulk-confirm').click();
+    await expect(page.getByTestId('bulk-progress-summary')).toContainText('Batch of 4 submitted as one transaction', { timeout: 30_000 });
+    expect(submitted).toHaveLength(1);
+    expect(variantOf(submitted[0]!)).toBe(9);
+
+    await page.getByTestId('wallet-tab-transactions').click();
+    const row = page.getByTestId('tx-history-row').first();
+    await expect(row).toContainText('2 NFTs');
+    await row.getByTestId('tx-history-steps').locator('summary').click();
+    const steps = row.getByTestId('tx-history-steps').locator('li');
+    await expect(steps).toHaveCount(4);
+    await expect(steps.nth(2)).toContainText('NFT');
+  });
+
+  test('guards: same NFT twice, sending to yourself, NFT you do not hold', async ({ context, page }) => {
+    let me = '';
+    await installBoingNetworkMocks(context, { batchSupport: true, ...holdingsMocks(() => me) });
+    await importWallet(page);
+    me = await myAddress(page);
+    await seedNftWatchlist(page, me, [7]);
+    await openBulk(page, `${A},nft:${COLL}:7\n${B},nft:${COLL}:7\n${me},nft:${COLL}:9`);
+    const issues = page.getByTestId('bulk-issues');
+    await expect(issues).toContainText('same NFT as Row 1');
+    await expect(issues).toContainText('cannot send to your own address');
+    await expect(issues).toContainText('you do not hold this NFT (#9)');
+    await expect(page.getByTestId('bulk-review-screen')).toHaveCount(0);
+  });
+
+  test('sequential fallback sends NFT rows as contract calls', async ({ context, page }) => {
+    const submitted: string[] = [];
+    let me = '';
+    await installBoingNetworkMocks(context, { submitted, ...holdingsMocks(() => me) });
+    await importWallet(page);
+    me = await myAddress(page);
+    await seedNftWatchlist(page, me, [7]);
+    await openBulk(page, `${A},nft:${COLL}:7\n${B},2,TKN\n${C},3`);
+    await expect(page.getByTestId('bulk-review-screen')).toHaveAttribute('data-mode', 'sequential');
+    await page.getByTestId('bulk-confirm').click();
+    await expect(page.getByTestId('bulk-progress-summary')).toHaveText(/All 3 transfers submitted/, { timeout: 60_000 });
+    expect(submitted.map(variantOf)).toEqual([1, 1, 0]);
+    expect(submitted.map(nonceOfSignedHex)).toEqual([0, 1, 2]);
+    // NFT calldata: selector 0x04, recipient A, token id 7.
+    expect(submitted[0]).toContain(`${'00'.repeat(31)}04${A}${(7).toString(16).padStart(64, '0')}`);
+  });
+});

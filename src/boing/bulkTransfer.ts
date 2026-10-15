@@ -9,9 +9,13 @@
 
 export const BULK_MAX_ROWS = 100;
 
+import { normalizeHex64, parseTokenIdInput } from './referenceNft';
+
 export interface BulkRowInput {
   to: string;
   amount: string;
+  /** Optional third CSV column (asset): `BOING`, token symbol / hex, or `nft:<collection>:<tokenId>`. */
+  asset?: string;
   /** Where the row came from, for error messages (e.g. "CSV line 3"). */
   source?: string;
 }
@@ -38,7 +42,10 @@ export interface BulkValidation {
 }
 
 /**
- * Parse pasted CSV: one `address,amount` per line. Separators: comma, semicolon, tab or spaces.
+ * Parse pasted CSV. One row per line; separators: comma, semicolon, tab or spaces.
+ * - `address,amount` — uses the panel's default asset
+ * - `address,amount,asset` — asset = `BOING`, a token symbol or token contract hex
+ * - `address,nft:<collectionHex>:<tokenId>` (or `address,,nft:…` / `address,1,nft:…`) — one NFT, no amount
  * Blank lines and `#` comments are skipped; a first line without a hex address (e.g. `address,amount`) is a header.
  */
 export function parseBulkCsv(text: string): { rows: BulkRowInput[]; issues: BulkIssue[] } {
@@ -55,8 +62,21 @@ export function parseBulkCsv(text: string): { rows: BulkRowInput[]; issues: Bulk
       if (parts.length >= 1 && !/^(0x)?[0-9a-f]{8,}$/i.test(parts[0]!) && /addr|to|recipient/i.test(parts[0]!)) return;
     }
     const source = `CSV line ${i + 1}`;
+    if (parts.length === 2 && /^nft:/i.test(parts[1]!)) {
+      rows.push({ to: parts[0]!, amount: '', asset: parts[1]!, source });
+      return;
+    }
+    if (parts.length === 3) {
+      const nft = /^nft:/i.test(parts[2]!);
+      rows.push({ to: parts[0]!, amount: nft ? '' : parts[1]!, asset: parts[2]!, source });
+      return;
+    }
     if (parts.length !== 2) {
-      issues.push({ row: rows.length, field: 'row', message: `${source}: expected "address,amount", got ${parts.length} field(s)` });
+      issues.push({
+        row: rows.length,
+        field: 'row',
+        message: `${source}: expected "address,amount[,asset]" or "address,nft:<collection>:<tokenId>", got ${parts.length} field(s)`,
+      });
       rows.push({ to: parts[0] ?? '', amount: parts[1] ?? '', source });
       return;
     }
@@ -268,7 +288,55 @@ export function isBatchUnsupportedError(message: string | undefined): boolean {
   return /variant index|unknown variant|expected variant|invalid value: integer `9`/i.test(message);
 }
 
-/** One row of a mixed-asset bulk send. `assetKey` is `'boing'` or a token contract hex. */
+/** NFT asset keys look like `nft:<collection64>:<tokenId64>` (lowercase hex, no 0x). */
+export function nftAssetKey(collectionHex: string, tokenIdHex: string): string {
+  return `nft:${normalizeHex64(collectionHex)}:${normalizeHex64(tokenIdHex)}`;
+}
+
+export function isNftAssetKey(key: string): boolean {
+  return key.startsWith('nft:');
+}
+
+export function parseNftAssetKey(key: string): { collectionHex: string; tokenIdHex: string } | null {
+  const m = /^nft:([0-9a-f]{64}):([0-9a-f]{64})$/.exec(key);
+  return m ? { collectionHex: m[1]!, tokenIdHex: m[2]! } : null;
+}
+
+/** Short display for an NFT token id word: sequential ids as `#5`, opaque words as `#ab12…cd34`. */
+export function nftTokenIdLabel(tokenIdHex: string): string {
+  const v = BigInt(`0x${tokenIdHex}`);
+  return v > 0n && v < 1n << 64n ? `#${v}` : `#${tokenIdHex.slice(0, 4)}…${tokenIdHex.slice(-4)}`;
+}
+
+/**
+ * Resolve the CSV asset column to an asset key. Empty → `defaultKey`.
+ * Returns `{ error }` for unknown tokens or malformed NFT references.
+ */
+export function resolveCsvAsset(
+  raw: string | undefined,
+  opts: { defaultKey: string; tokens: Array<{ tokenHex: string; symbol: string }> }
+): { key: string } | { error: string } {
+  const t = (raw ?? '').trim();
+  if (!t) return { key: opts.defaultKey };
+  if (/^boing$/i.test(t)) return { key: 'boing' };
+  if (/^nft:/i.test(t)) {
+    const [, coll = '', id = ''] = t.split(':');
+    try {
+      return { key: nftAssetKey(coll, parseTokenIdInput(id)) };
+    } catch (e) {
+      return { error: `bad NFT reference "${t}" (use nft:<collection hex>:<token id>): ${e instanceof Error ? e.message : String(e)}` };
+    }
+  }
+  const hex = t.replace(/^0x/i, '').toLowerCase();
+  const byHex = /^[0-9a-f]{64}$/.test(hex) ? opts.tokens.find((x) => x.tokenHex.replace(/^0x/i, '').toLowerCase() === hex) : undefined;
+  if (byHex) return { key: byHex.tokenHex };
+  const bySym = opts.tokens.filter((x) => x.symbol.toLowerCase() === t.toLowerCase());
+  if (bySym.length === 1) return { key: bySym[0]!.tokenHex };
+  if (bySym.length > 1) return { error: `token symbol "${t}" is ambiguous; use the token contract hex` };
+  return { error: `unknown asset "${t}" (not BOING, a held token, or nft:…)` };
+}
+
+/** One row of a mixed-asset bulk send. `assetKey` is `'boing'`, a token contract hex, or an NFT key (`nft:…`). */
 export interface MixedBulkRowInput extends BulkRowInput {
   assetKey: string;
 }
@@ -282,6 +350,15 @@ export interface BulkAssetInfo {
 
 export interface MixedBulkRowValid extends BulkRowValid {
   assetKey: string;
+  /** Set for NFT rows (amount is always 1). */
+  nft?: { collectionHex: string; tokenIdHex: string };
+}
+
+/** An NFT the user holds (same source as the Wallet tab: watchlist + ownership probe). */
+export interface OwnedNft {
+  collectionHex: string;
+  tokenIdHex: string;
+  label?: string;
 }
 
 export interface MixedBulkValidation {
@@ -298,19 +375,54 @@ export interface MixedBulkValidation {
  */
 export function validateMixedBulkRows(
   input: MixedBulkRowInput[],
-  opts: { senderHex: string; assets: Record<string, BulkAssetInfo>; maxRows?: number }
+  opts: { senderHex: string; assets: Record<string, BulkAssetInfo>; maxRows?: number; nfts?: OwnedNft[] }
 ): MixedBulkValidation {
   const issues: BulkIssue[] = [];
   const max = opts.maxRows ?? BULK_MAX_ROWS;
   if (input.length === 0) issues.push({ row: -1, field: 'row', message: 'Add at least one recipient.' });
   if (input.length > max) issues.push({ row: -1, field: 'row', message: `Too many rows (${input.length}); the limit is ${max}.` });
   const groups = new Map<string, number[]>();
+  const rows: MixedBulkRowValid[] = [];
+  const sender = opts.senderHex.replace(/^0x/i, '').toLowerCase();
+  const owned = new Set((opts.nfts ?? []).map((n) => nftAssetKey(n.collectionHex, n.tokenIdHex)));
+  const seenNft = new Map<string, number>();
+  const label = (i: number) => input[i]?.source ?? `Row ${i + 1}`;
   input.forEach((r, i) => {
+    if (isNftAssetKey(r.assetKey)) {
+      const toHex = r.to.replace(/\s/g, '').replace(/^0x/i, '').toLowerCase();
+      const nft = parseNftAssetKey(r.assetKey);
+      let bad = false;
+      if (!/^[0-9a-f]{64}$/.test(toHex)) {
+        issues.push({ row: i, field: 'to', message: `${label(i)}: address must be 64 hex characters (0x optional)` });
+        bad = true;
+      } else if (toHex === sender) {
+        issues.push({ row: i, field: 'to', message: `${label(i)}: cannot send to your own address` });
+        bad = true;
+      }
+      if (!nft) {
+        issues.push({ row: i, field: 'row', message: `${label(i)}: invalid NFT reference` });
+        bad = true;
+      } else if (!owned.has(r.assetKey)) {
+        issues.push({ row: i, field: 'row', message: `${label(i)}: you do not hold this NFT (${nftTokenIdLabel(nft.tokenIdHex)})` });
+        bad = true;
+      } else if (seenNft.has(r.assetKey)) {
+        issues.push({ row: i, field: 'row', message: `${label(i)}: same NFT as ${label(seenNft.get(r.assetKey)!)}; an NFT can only be sent once` });
+        bad = true;
+      } else {
+        seenNft.set(r.assetKey, i);
+      }
+      const amt = r.amount.trim();
+      if (amt !== '' && amt !== '1') {
+        issues.push({ row: i, field: 'amount', message: `${label(i)}: NFT rows have no amount` });
+        bad = true;
+      }
+      if (!bad && nft) rows.push({ row: i, toHex, amount: 1n, amountInput: '1', assetKey: r.assetKey, nft });
+      return;
+    }
     const g = groups.get(r.assetKey) ?? [];
     g.push(i);
     groups.set(r.assetKey, g);
   });
-  const rows: MixedBulkRowValid[] = [];
   const totals: Record<string, bigint> = {};
   for (const [assetKey, idxs] of groups) {
     const info = opts.assets[assetKey];
@@ -348,7 +460,12 @@ export function batchHistorySummary(
   shortHex: (hex: string) => string
 ): { summary: string; steps: string[] } {
   const steps = rows.map((r, i) => `${i + 1}. ${fmt(r.assetKey, r.amount)} → ${shortHex(r.toHex)}`);
-  const assets = new Set(rows.map((r) => r.assetKey)).size;
+  const assets = new Set(rows.map((r) => (isNftAssetKey(r.assetKey) ? 'nft' : r.assetKey))).size;
+  const nfts = rows.filter((r) => isNftAssetKey(r.assetKey)).length;
+  if (nfts > 0) {
+    const kinds = assets > 1 ? `, ${assets} asset types` : '';
+    return { summary: `Batch of ${rows.length} (atomic)${kinds}, ${nfts} NFT${nfts === 1 ? '' : 's'}`, steps };
+  }
   const summary = `Batch of ${rows.length} (atomic)${assets > 1 ? `, ${assets} assets` : `: ${fmt(rows[0]!.assetKey, rows.reduce((a, r) => a + r.amount, 0n))} total`}`;
   return { summary, steps };
 }

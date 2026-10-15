@@ -1,8 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { AccountId } from '../boing/types';
 import { accountIdFromHex, accountIdToHex } from '../boing/types';
 import { formatBalance } from '../boing/amount';
-import { shortHexLabel } from '../boing/referenceNft';
+import { encodeReferenceTransferNftCalldata, shortHexLabel } from '../boing/referenceNft';
+import { filterOwnedHoldings, probeNftWatchlist } from '../boing/nftHoldings';
+import { listNftWatchlist } from '../storage/nftWatchlist';
 import {
   BATCH_MAX_STEPS,
   BULK_MAX_ROWS,
@@ -10,7 +12,13 @@ import {
   estimateBatchFee,
   feeFromGas,
   isBatchUnsupportedError,
+  isNftAssetKey,
+  nftAssetKey,
+  nftTokenIdLabel,
   parseBulkCsv,
+  parseNftAssetKey,
+  resolveCsvAsset,
+  type OwnedNft,
   planBulkMode,
   runSequentialBulkTransfer,
   validateMixedBulkRows,
@@ -49,7 +57,7 @@ export function BulkTransferPanel(props: {
   getPrivateKey: () => Uint8Array | null;
   balance: BalanceResult | null;
   holdings: TokenHolding[];
-  onRowSent: (txHash: string | undefined, kind: 'send' | 'token_send', summary: string) => void;
+  onRowSent: (txHash: string | undefined, kind: 'send' | 'token_send' | 'nft_send', summary: string) => void;
   /** One Tx-history entry for a whole atomic batch. */
   onBatchSent?: (txHash: string | undefined, summary: string, steps: string[]) => void;
   onFinished: () => void;
@@ -74,6 +82,37 @@ export function BulkTransferPanel(props: {
   const [cancelRequested, setCancelRequested] = useState(false);
   /** Set once the node rejected a batch payload it could not decode (pre-batch release). */
   const batchUnsupportedRef = useRef(false);
+  /** NFTs the user holds — same source as the Wallet tab (watchlist + on-chain owner probe). */
+  const [nfts, setNfts] = useState<OwnedNft[]>([]);
+  const [nftsLoading, setNftsLoading] = useState(true);
+  const ownerHexForNfts = accountIdToHex(props.accountId);
+  const rpcUrlForNfts = props.network.config.rpcUrl;
+  const networkIdForNfts = props.network.config.id;
+  useEffect(() => {
+    let alive = true;
+    setNftsLoading(true);
+    void (async () => {
+      try {
+        const entries = await listNftWatchlist(ownerHexForNfts, networkIdForNfts);
+        const probed = entries.length ? await probeNftWatchlist(rpcUrlForNfts, props.accountId, entries) : [];
+        if (alive) setNfts(filterOwnedHoldings(probed).map((h) => ({ collectionHex: h.collectionHex, tokenIdHex: h.tokenIdHex, label: h.label })));
+      } catch {
+        if (alive) setNfts([]);
+      } finally {
+        if (alive) setNftsLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerHexForNfts, rpcUrlForNfts, networkIdForNfts]);
+  const nftLabel = (key: string) => {
+    const p = parseNftAssetKey(key);
+    if (!p) return 'NFT';
+    const n = nfts.find((x) => nftAssetKey(x.collectionHex, x.tokenIdHex) === key);
+    return `NFT ${n?.label ?? shortHexLabel(p.collectionHex, 4, 4)} ${nftTokenIdLabel(p.tokenIdHex)}`;
+  };
 
   const tokens = props.holdings.filter((t) => t.balanceRaw != null);
   const assets: Record<string, BulkAssetInfo> = {
@@ -85,6 +124,7 @@ export function BulkTransferPanel(props: {
   };
   for (const t of tokens) assets[t.tokenHex] = { symbol: t.symbol, decimals: t.decimals, balance: BigInt(t.balanceRaw!) };
   const fmtAsset = (key: string, v: bigint) => {
+    if (isNftAssetKey(key)) return nftLabel(key);
     const a = assets[key] ?? assets[BOING_KEY]!;
     return `${formatBalance(v.toString(), a.decimals, a.decimals)} ${a.symbol}`;
   };
@@ -97,29 +137,44 @@ export function BulkTransferPanel(props: {
   function inputs(): MixedBulkRowInput[] {
     return rows
       .map((r, i) => ({ to: r.to.trim(), amount: r.amount.trim(), assetKey: r.asset, source: `Row ${i + 1}` }))
-      .filter((r) => r.to || r.amount);
+      .filter((r) => r.to || r.amount || isNftAssetKey(r.assetKey));
   }
 
   function importCsv() {
     const parsed = parseBulkCsv(csv);
+    const msgs = parsed.issues.map((i) => i.message);
     const kept = rows.filter((r) => r.to.trim() || r.amount.trim());
-    const added = parsed.rows.map((r) => newRow(r.to, r.amount));
+    const added: Row[] = [];
+    for (const r of parsed.rows) {
+      const res = resolveCsvAsset(r.asset, { defaultKey: defaultAsset, tokens });
+      if ('error' in res) {
+        msgs.push(`${r.source ?? 'CSV'}: ${res.error}`);
+        continue;
+      }
+      added.push(newRow(r.to, isNftAssetKey(res.key) ? '' : r.amount, res.key));
+    }
     const next = [...kept, ...added];
     setRows(next.length ? next : [newRow()]);
-    setIssues(parsed.issues.map((i) => i.message));
-    if (parsed.issues.length === 0) setCsv('');
+    setIssues(msgs);
+    if (msgs.length === 0) setCsv('');
   }
 
   function stepsFor(vrows: MixedBulkRowValid[]): BatchStep[] {
-    return vrows.map((r) =>
-      r.assetKey === BOING_KEY
-        ? { kind: 'transfer', toHex: `0x${r.toHex}`, amount: r.amount }
-        : { kind: 'contractCall', contractHex: r.assetKey, calldata: encodeReferenceFungibleTransferCalldata(r.toHex, r.amount) }
+    return vrows.map((r): BatchStep =>
+      r.nft
+        ? {
+            kind: 'contractCall',
+            contractHex: r.nft.collectionHex,
+            calldata: encodeReferenceTransferNftCalldata(accountIdFromHex(r.toHex), r.nft.tokenIdHex),
+          }
+        : r.assetKey === BOING_KEY
+          ? { kind: 'transfer', toHex: `0x${r.toHex}`, amount: r.amount }
+          : { kind: 'contractCall', contractHex: r.assetKey, calldata: encodeReferenceFungibleTransferCalldata(r.toHex, r.amount) }
     );
   }
 
   async function review() {
-    const v = validateMixedBulkRows(inputs(), { senderHex: accountIdToHex(props.accountId), assets });
+    const v = validateMixedBulkRows(inputs(), { senderHex: accountIdToHex(props.accountId), assets, nfts });
     if (!v.ok) {
       setIssues(v.issues.map((i) => i.message));
       return;
@@ -259,7 +314,18 @@ export function BulkTransferPanel(props: {
         rows: vrows,
         startNonce,
         sign: (row, nonce) => {
-          const assetKey = (row as MixedBulkRowValid).assetKey;
+          const mr = row as MixedBulkRowValid;
+          if (mr.nft) {
+            if (!net.buildContractCall) throw new Error('This network cannot send NFTs');
+            return net.buildContractCall(
+              sender,
+              accountIdFromHex(mr.nft.collectionHex),
+              encodeReferenceTransferNftCalldata(accountIdFromHex(mr.toHex), mr.nft.tokenIdHex),
+              nonce,
+              pk
+            );
+          }
+          const assetKey = mr.assetKey;
           return assetKey && assetKey !== BOING_KEY
             ? buildReferenceFungibleTransfer({ network: net, sender, tokenHex: assetKey, toHex: row.toHex, amount: row.amount, nonce, privateKey: pk })
             : net.buildTransfer(sender, accountIdFromHex(row.toHex), row.amount, nonce, pk);
@@ -274,7 +340,8 @@ export function BulkTransferPanel(props: {
     }
     for (const r of rep.results) {
       const vr = vrows.find((x) => x.row === r.row)!;
-      if (r.status === 'submitted') props.onRowSent(r.txHash, vr.assetKey === BOING_KEY ? 'send' : 'token_send', `Bulk #${r.row + 1}: ${rowSummary(vr)}`);
+      if (r.status === 'submitted')
+        props.onRowSent(r.txHash, vr.nft ? 'nft_send' : vr.assetKey === BOING_KEY ? 'send' : 'token_send', `Bulk #${r.row + 1}: ${rowSummary(vr)}`);
     }
     setProgress(rep.results);
     setReport(rep);
@@ -315,10 +382,12 @@ export function BulkTransferPanel(props: {
     : '';
   const submittedCount = progress.filter((p) => p.status === 'submitted').length;
   const progressAsset = (row: number) => runRows.find((r) => r.row === row)?.assetKey ?? BOING_KEY;
+  const nftCount = validated ? validated.rows.filter((r) => r.nft).length : 0;
   const totalsLine = validated
-    ? Object.entries(validated.totals)
-        .map(([k, v]) => fmtAsset(k, v))
-        .join(' + ')
+    ? [
+        ...Object.entries(validated.totals).map(([k, v]) => fmtAsset(k, v)),
+        ...(nftCount ? [`${nftCount} NFT${nftCount === 1 ? '' : 's'}`] : []),
+      ].join(' + ')
     : '';
 
   return (
@@ -327,7 +396,7 @@ export function BulkTransferPanel(props: {
       {stage === 'edit' && (
         <div className={styles.form}>
           <p className={styles.faucetHint}>
-            Up to {BULK_MAX_ROWS} recipients; BOING and tokens can be mixed. Up to {BATCH_MAX_STEPS} rows go out as one atomic batch
+            Up to {BULK_MAX_ROWS} recipients; BOING, tokens and NFTs you hold can be mixed{nftsLoading ? ' (loading NFTs…)' : ''}. Up to {BATCH_MAX_STEPS} rows go out as one atomic batch
             transaction (one signature, all-or-nothing) on nodes that support it; otherwise each row is its own transaction.
           </p>
           <label className={styles.addressHint}>
@@ -367,16 +436,37 @@ export function BulkTransferPanel(props: {
                       {t.symbol}
                     </option>
                   ))}
+                  {nfts.length > 0 && (
+                    <optgroup label="NFTs">
+                      {nfts.map((n) => {
+                        const k = nftAssetKey(n.collectionHex, n.tokenIdHex);
+                        return (
+                          <option key={k} value={k}>
+                            {nftLabel(k)}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  )}
+                  {isNftAssetKey(r.asset) && !nfts.some((n) => nftAssetKey(n.collectionHex, n.tokenIdHex) === r.asset) && (
+                    <option value={r.asset}>{nftLabel(r.asset)} (not held)</option>
+                  )}
                 </select>
-                <input
-                  className={styles.input}
-                  placeholder="Amount"
-                  value={r.amount}
-                  inputMode="decimal"
-                  onChange={(e) => setRows(rows.map((x) => (x.id === r.id ? { ...x, amount: e.target.value } : x)))}
-                  aria-label={`Amount row ${i + 1}`}
-                  data-testid="bulk-row-amount"
-                />
+                {isNftAssetKey(r.asset) ? (
+                  <span className={styles.addressHint} data-testid="bulk-row-nft-id" title="NFT rows send exactly one token">
+                    {nftTokenIdLabel(parseNftAssetKey(r.asset)?.tokenIdHex ?? '0'.repeat(64))}
+                  </span>
+                ) : (
+                  <input
+                    className={styles.input}
+                    placeholder="Amount"
+                    value={r.amount}
+                    inputMode="decimal"
+                    onChange={(e) => setRows(rows.map((x) => (x.id === r.id ? { ...x, amount: e.target.value } : x)))}
+                    aria-label={`Amount row ${i + 1}`}
+                    data-testid="bulk-row-amount"
+                  />
+                )}
                 <button
                   type="button"
                   className={styles.copyBtn}
@@ -397,13 +487,13 @@ export function BulkTransferPanel(props: {
             </button>
           </div>
           <details className={styles.subDetails}>
-            <summary className={styles.addressHint}>Paste CSV (address,amount per line; uses the asset for new rows)</summary>
+            <summary className={styles.addressHint}>Paste CSV (address,amount[,asset] or address,nft:collection:tokenId)</summary>
             <textarea
               className={styles.input}
               rows={4}
               value={csv}
               onChange={(e) => setCsv(e.target.value)}
-              placeholder={'0x7f3a…,100\n0x91bc…,25'}
+              placeholder={'0x7f3a…,100\n0x91bc…,25,TKN\n0x5c0d…,nft:<collection>:7'}
               aria-label="CSV rows"
               data-testid="bulk-csv"
             />

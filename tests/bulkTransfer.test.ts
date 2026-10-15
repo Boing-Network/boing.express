@@ -25,7 +25,7 @@ describe('parseBulkCsv', () => {
     expect(rows[0]!.source).toBe('CSV line 2');
   });
   it('flags rows with the wrong number of fields', () => {
-    const { rows, issues } = parseBulkCsv(`${A},1,2\n${B}`);
+    const { rows, issues } = parseBulkCsv(`${A},1,2,3\n${B}`);
     expect(rows).toHaveLength(2);
     expect(issues.map((i) => i.row)).toEqual([0, 1]);
   });
