@@ -66,10 +66,22 @@ export function Landing() {
           </div>
         </section>
 
+        <section className={styles.features} aria-labelledby="first-steps-title">
+          <div className="section-header">
+            <span className="section-eyebrow">New here?</span>
+            <h2 id="first-steps-title" className="section-title">First steps</h2>
+          </div>
+          <ol style={{ maxWidth: 640, margin: '0 auto', lineHeight: 1.7 }}>
+            <li><Link to="/wallet">Create a wallet</Link> and save your private key backup.</li>
+            <li>Get free testnet BOING in the wallet&apos;s Faucet tab or at <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">boing.network/faucet</a>.</li>
+            <li>Send BOING, then look up the transaction on <a href="https://boing.observer" target="_blank" rel="noopener noreferrer">Boing Observer</a>.</li>
+            <li>To use dApps like <a href="https://boing.finance" target="_blank" rel="noopener noreferrer">boing.finance</a>, <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">add the Chrome extension</a> (desktop Chrome, Edge or Brave).</li>
+          </ol>
+        </section>
+
         <section className={styles.features}>
           <div className="section-header">
-            <span className="section-eyebrow">Why Boing Express</span>
-            <h2 className="section-title">Your Wallet, Your Rules</h2>
+            <span className="section-eyebrow">Why Boing Express</span>            <h2 className="section-title">Your Wallet, Your Rules</h2>
             <p className="section-subtitle">Everything you need to interact with the Boing Network, with nothing you don&apos;t.</p>
           </div>
           <div className={styles.featureGrid}>
