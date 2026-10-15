@@ -115,6 +115,22 @@ function parseCreate2Salt(o: Record<string, unknown>): Uint8Array | null {
 
 export type BoingDappTxRequestJson = Record<string, unknown>;
 
+/**
+ * `true` when `calldata` is a reference-style `transfer(to, amount)` (selector `0x01`, 96 bytes — reference
+ * fungible, secured fungible, LP share token) sent to the signer itself. On v1 of those templates a
+ * self-transfer credits without debiting (balance doubling, known bug); on v2 it is a no-op.
+ */
+export function isReferenceSelfTransferCalldata(sender: AccountId, calldata: Uint8Array): boolean {
+  if (calldata.length !== 96) return false;
+  for (let i = 0; i < 31; i++) if (calldata[i] !== 0) return false;
+  if (calldata[31] !== 0x01) return false;
+  for (let i = 0; i < 32; i++) if (calldata[32 + i] !== sender[i]) return false;
+  return true;
+}
+
+export const SELF_TRANSFER_REFUSED =
+  'Refusing token transfer to your own address: v1 Boing reference tokens double the balance on self-transfer (known bug). Send to a different address.';
+
 export function transactionSummary(tx: Transaction): string {
   const from = formatAddress(tx.sender, true);
   const n = tx.nonce.toString();
@@ -368,6 +384,7 @@ export function transactionFromDappJson(
     case 'contract_call': {
       const contract = accountIdFromHex(String(o.contract ?? ''));
       const calldata = hexToBytesFlexible(String(o.calldata ?? '0x'), 'calldata');
+      if (isReferenceSelfTransferCalldata(sender, calldata)) throw new Error(SELF_TRANSFER_REFUSED);
       payload = { kind: 'contract_call', contract, calldata };
       break;
     }

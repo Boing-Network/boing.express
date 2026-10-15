@@ -3,6 +3,7 @@ import {
   accessListFromDappJson,
   assertValidQaPurposeCategory,
   buildTransactionApprovalDetail,
+  isReferenceSelfTransferCalldata,
   transactionFromDappJson,
   transactionSummary,
 } from '../src/boing/dappTxRequest';
@@ -254,5 +255,25 @@ describe('buildTransactionApprovalDetail', () => {
     expect(d.txType).toBe('contract_deploy_meta');
     expect(d.rows.some((r) => r.label === 'Asset' && r.value.includes('Coin'))).toBe(true);
     expect(d.rows.some((r) => r.label === 'Bytecode')).toBe(true);
+  });
+});
+
+describe('dappTxRequest self-transfer guard (v1 token balance-doubling bug)', () => {
+  const word = (b: Uint8Array) => Buffer.from(b).toString('hex');
+  const sel = `${'00'.repeat(31)}01`;
+  const amt = `${'00'.repeat(31)}05`;
+  const token = `0x${'7e'.repeat(32)}`;
+  it('refuses a reference transfer(to = signer)', () => {
+    expect(() =>
+      transactionFromDappJson({ type: 'contract_call', contract: token, calldata: `0x${sel}${word(sender)}${amt}` }, sender, 0n)
+    ).toThrow(/own address/);
+  });
+  it('allows transfers to others and non-transfer calls', () => {
+    const other = new Uint8Array(32).fill(3);
+    expect(() =>
+      transactionFromDappJson({ type: 'contract_call', contract: token, calldata: `0x${sel}${word(other)}${amt}` }, sender, 0n)
+    ).not.toThrow();
+    const mint = `${'00'.repeat(31)}02`;
+    expect(isReferenceSelfTransferCalldata(sender, Buffer.from(`${mint}${word(sender)}${amt}`, 'hex'))).toBe(false);
   });
 });
