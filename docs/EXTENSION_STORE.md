@@ -171,7 +171,7 @@ Set these as **user environment variables** (never commit them, never put them i
 | `CHROME_REFRESH_TOKEN` | Refresh token for the publisher account (scope `https://www.googleapis.com/auth/chromewebstore`) |
 | `CHROME_EXTENSION_ID` | Store item ID (`hhknjdhknnghccmfnfafbkapjljicbfh`) |
 
-Bump `"version"` in `extension/manifest.base.json` first; the store rejects a version that is not higher than the live one. Uses `chrome-webstore-upload-cli` v3 (Chrome Web Store API v1.1, no publisher ID needed).
+Bump `"version"` in `extension/manifest.base.json` first; the store rejects a version that is not higher than the live one. pnpm is pinned via `packageManager` (`pnpm@9.15.9`); newer global pnpm or `corepack enable` switches to it automatically. Uses `chrome-webstore-upload-cli` v3 (Chrome Web Store API v1.1, no publisher ID needed).
 
 ---
 
