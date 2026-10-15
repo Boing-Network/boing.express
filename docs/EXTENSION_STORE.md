@@ -158,6 +158,21 @@ For more: https://boing.express and https://boing.express/docs
 3. Test send with 64-hex address and amount.
 4. Lock/unlock with password.
 
+## Upload via API (draft by default)
+
+`pnpm run publish:extension` builds, zips (`zip:extension`, testnet RPC pinned) and uploads `boing-wallet-extension.zip` to the existing store item as a **draft**. It never publishes unless you pass `-- --publish` (submits the uploaded draft for review). `-- --skip-zip` re-uploads an existing zip.
+
+Set these as **user environment variables** (never commit them, never put them in `.env` files in the repo):
+
+| Variable | Meaning |
+|----------|---------|
+| `CHROME_CLIENT_ID` | Google Cloud OAuth client ID with the Chrome Web Store API enabled |
+| `CHROME_CLIENT_SECRET` | OAuth client secret |
+| `CHROME_REFRESH_TOKEN` | Refresh token for the publisher account (scope `https://www.googleapis.com/auth/chromewebstore`) |
+| `CHROME_EXTENSION_ID` | Store item ID (`hhknjdhknnghccmfnfafbkapjljicbfh`) |
+
+Bump `"version"` in `extension/manifest.base.json` first; the store rejects a version that is not higher than the live one. Uses `chrome-webstore-upload-cli` v3 (Chrome Web Store API v1.1, no publisher ID needed).
+
 ---
 
 ## Part 3: References
