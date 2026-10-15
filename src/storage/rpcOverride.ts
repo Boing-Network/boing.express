@@ -26,7 +26,3 @@ export function setRpcOverride(networkId: string, url: string): void {
     // Ignore
   }
 }
-
-export function getRpcOverride(networkId: string): string | undefined {
-  return getRpcOverrides()[networkId];
-}

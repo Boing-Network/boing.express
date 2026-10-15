@@ -23,10 +23,6 @@ export function resolveMainnetRpcUrl(value: string | null | undefined): string {
   return normalizeRpcUrl(value);
 }
 
-export function isConfiguredMainnetRpc(value: string | null | undefined): boolean {
-  return resolveMainnetRpcUrl(value).length > 0;
-}
-
 export function toExtensionHostPermission(rpcUrl: string): string | null {
   const normalized = normalizeRpcUrl(rpcUrl);
   if (!normalized) return null;

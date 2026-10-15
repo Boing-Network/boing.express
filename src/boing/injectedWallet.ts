@@ -17,29 +17,9 @@ const ETH_ACCOUNTS = 'eth_requestAccounts';
  */
 export const BOING_WALLET_RPC_METHODS_NATIVE_DAPP = [BOING_CHAIN, BOING_ACCOUNTS, BOING_SEND] as const;
 
-export function explainEthSendTransactionInsufficientForBoingNativeCall(): string {
-  return [
-    'Boing `contract_call` transactions use 32-byte account ids, explicit access lists, and bincode signing—not the implicit 20-byte `to`/`data` shape most `eth_sendTransaction` wallets assume.',
-    'Use Boing Express (or an injected provider that implements `boing_sendTransaction` / `boing_chainId`) or sign server-side with `boing-sdk` and `boing_submitTransaction`.',
-    `Methods to look for: ${BOING_WALLET_RPC_METHODS_NATIVE_DAPP.join(', ')}.`,
-  ].join('\n');
-}
-
 export type Eip1193Requester = {
   request: (args: { method: string; params?: unknown }) => Promise<unknown>;
 };
-
-function asRequester(v: unknown): Eip1193Requester | undefined {
-  if (v != null && typeof v === 'object' && typeof (v as Eip1193Requester).request === 'function') {
-    return v as Eip1193Requester;
-  }
-  return undefined;
-}
-
-export function getInjectedEip1193Provider(globalObj: typeof globalThis = globalThis): Eip1193Requester | undefined {
-  const g = globalObj as Record<string, unknown>;
-  return asRequester(g.boing) ?? asRequester(g.ethereum);
-}
 
 export async function providerSupportsBoingNativeRpc(provider: Eip1193Requester): Promise<boolean> {
   try {

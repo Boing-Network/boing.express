@@ -67,7 +67,3 @@ export function getSession(): { publicKey: Uint8Array; privateKey: Uint8Array } 
     return null;
   }
 }
-
-export function hasSession(): boolean {
-  return getSession() !== null;
-}

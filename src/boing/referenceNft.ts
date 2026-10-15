@@ -109,13 +109,6 @@ export function encodeReferenceTransferNftCalldata(
   return out;
 }
 
-export function encodeReferenceTransferNftCalldataHex(
-  to: AccountId,
-  tokenIdHex32: string
-): string {
-  return bytesToHex64(encodeReferenceTransferNftCalldata(to, tokenIdHex32));
-}
-
 /** Normalize `boing_getContractStorage` result (`{ value }` or bare hex) to 64 hex chars. */
 export function contractStorageWordToHex64(word: unknown): string | null {
   let raw: string | null = null;
