@@ -35,25 +35,24 @@
     "boing-sdk": "github:Boing-Network/boing.network#672448e0130d2b06e0fd9823f0fd69a8baf16254&path:/boing-sdk",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.30.6"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250429.0",
+    "@cloudflare/workers-types": "^5.20261015.1",
     "@playwright/test": "^1.51.0",
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.3",
+    "@vitejs/plugin-react": "^4.7.0",
     "chrome-webstore-upload-cli": "^3.5.0",
     "sharp": "^0.35.5",
     "typescript": "~5.6.2",
-    "vite": "^5.4.10",
-    "vitest": "^3.2.7",
+    "vite": "^6.4.4",
+    "vitest": "^4.1.12",
     "wrangler": "^4.151.0"
   },
   "pnpm": {
     "overrides": {
-      "tinypool": "^2.1.2",
       "undici@7": "^7.29.1",
       "ws@8": "^8.21.0",
       "sharp": "^0.35.5",
