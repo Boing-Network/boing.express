@@ -7,6 +7,7 @@
  */
 
 import { signMessage } from '../src/crypto/keys';
+import { looksLikeTransactionPreimage, TX_PREIMAGE_MESSAGE_REFUSED } from '../src/boing/messageSigning';
 import { buildSignedTransactionHex } from '../src/boing/signing';
 import { transactionIdFromTransaction } from '../src/boing/bincode';
 import { accountIdFromHex, accountIdToHex } from '../src/boing/types';
@@ -340,6 +341,14 @@ function hexToBytes(hex: string): Uint8Array {
     out[i] = parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
   }
   return out;
+}
+
+/** Refuse messages laid out like a transaction preimage for the signer (see src/boing/messageSigning.ts). */
+function assertNotTransactionPreimage(messageParam: unknown, signerHex: string): void {
+  const bytes = messageToBytes(messageParam);
+  if (looksLikeTransactionPreimage(bytes, accountIdFromHex(signerHex))) {
+    throw providerError(PROVIDER_ERROR_CODES.INVALID_PARAMS, 'BOING_MESSAGE_LOOKS_LIKE_TX', TX_PREIMAGE_MESSAGE_REFUSED);
+  }
 }
 
 function messageToBytes(message: unknown): Uint8Array {
@@ -698,6 +707,7 @@ async function processPendingUnlockQueue(): Promise<void> {
         const networkId = await getSelectedNetworkId();
         const chainId = chainIdForNetwork(networkId);
         const message = typeof messageParam === 'string' ? messageParam : String(messageParam);
+        assertNotTransactionPreimage(messageParam, unlockedState.accountHex);
         await requestSignatureApproval({
           origin: item.origin,
           chainId,
@@ -1136,6 +1146,7 @@ async function handleProviderRequest(
       const networkId = await getSelectedNetworkId();
       const chainId = chainIdForNetwork(networkId);
       const message = typeof messageParam === 'string' ? messageParam : String(messageParam);
+      assertNotTransactionPreimage(messageParam, unlockedState.accountHex);
       await requestSignatureApproval({
         origin,
         chainId,
