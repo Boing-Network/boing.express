@@ -6,6 +6,8 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
+  // Website public/ files (favicons, _headers, sitemap...) don't belong in the extension.
+  publicDir: false,
   build: {
     outDir: 'extension',
     emptyOutDir: false,

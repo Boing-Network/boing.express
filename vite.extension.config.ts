@@ -10,6 +10,8 @@ export default defineConfig(({ mode }) => {
   const mainnetRpc = resolveMainnetRpcUrl(env.VITE_BOING_MAINNET_RPC);
 
   return {
+    // Website public/ files (favicons, _headers, sitemap...) don't belong in the extension.
+    publicDir: false,
     build: {
       outDir: 'extension',
       emptyOutDir: false,

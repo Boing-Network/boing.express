@@ -47,3 +47,6 @@ tests/e2e/helpers/*.d.ts
 
 # Chrome Web Store upload artifact (pnpm run zip:extension)
 boing-wallet-extension.zip
+
+# Extension build: hashed lazy-chunk source maps (not shipped; zip excludes *.map)
+extension/boingMetaExtension-*.js.map
