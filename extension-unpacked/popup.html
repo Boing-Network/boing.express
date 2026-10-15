@@ -120,6 +120,22 @@
             <p id="native-tx-success" class="success hidden" aria-live="polite"></p>
             <button type="button" id="btn-native-tx-submit" class="btn-secondary" aria-label="Sign and send native transaction">Sign &amp; send</button>
           </details>
+          <details class="card reveal-key-card" data-testid="reveal-private-key">
+            <summary class="label">Reveal private key</summary>
+            <p class="error" role="note">Anyone with this key controls this account and its funds. Never share it, paste it into a website, or send it to anyone (Boing will never ask). Use it only in tools you trust, such as the boing CLI (BOING_SECRET_HEX).</p>
+            <form id="form-reveal-key">
+              <input type="password" id="reveal-key-password" placeholder="Wallet password" class="input" autocomplete="current-password" aria-label="Wallet password" />
+              <button type="submit" id="btn-reveal-key" class="btn-secondary">Reveal</button>
+            </form>
+            <div id="reveal-key-output" class="hidden">
+              <p class="hint">Hidden automatically after 30 seconds or when this popup closes.</p>
+              <code id="reveal-key-value" style="display:block;word-break:break-all;user-select:none" aria-label="Private key"></code>
+              <button type="button" id="btn-reveal-key-toggle" class="btn-secondary">Show</button>
+              <button type="button" id="btn-reveal-key-copy" class="btn-secondary">Copy</button>
+              <button type="button" id="btn-reveal-key-done" class="btn-secondary">Done</button>
+            </div>
+            <p id="reveal-key-error" class="error hidden"></p>
+          </details>
         </section>
         <section id="panel-transactions" class="tab-panel" role="tabpanel" aria-labelledby="tab-transactions" hidden>
           <div class="card">
