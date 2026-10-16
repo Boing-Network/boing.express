@@ -9,6 +9,26 @@ import { BulkTransferPanel } from '../src/components/BulkTransferPanel';
 
 import { SendConfirm, type SendConfirmProps } from '../src/components/SendConfirm';
 import { AddressQrModal } from '../src/components/AddressQrModal';
+import { NamesPanel, type NamesPanelProps } from '../src/components/NamesPanel';
+import { PendingNameBanner } from '../src/components/PendingNameBanner';
+import { ClaimNameStep, type ClaimNameStepProps } from '../src/components/ClaimNameStep';
+
+type PendingProps = Parameters<typeof PendingNameBanner>[0];
+
+/** Settings → Names (same component as the web wallet). */
+export function renderNamesIsland(el: HTMLElement, props: NamesPanelProps, key: string): void {
+  rootFor(el).render(createElement(NamesPanel, { ...props, key }));
+}
+
+/** Wallet tab banner that finishes the name picked at creation once the account is funded. */
+export function renderPendingNameIsland(el: HTMLElement, props: PendingProps, key: string): void {
+  rootFor(el).render(createElement(PendingNameBanner, { ...props, key }));
+}
+
+/** Optional pick-a-name step after creating a wallet. */
+export function renderClaimNameIsland(el: HTMLElement, props: ClaimNameStepProps): void {
+  rootFor(el).render(createElement(ClaimNameStep, props));
+}
 
 type ValidatorProps = Parameters<typeof ValidatorPanel>[0];
 type BulkProps = Parameters<typeof BulkTransferPanel>[0];

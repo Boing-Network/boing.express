@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWallet } from '../context/WalletContext';
 import styles from './Welcome.module.css';
-import { displayName, getNameInfo, normalizeName, rentFor, type NameInfo } from '../boing/names';
+import { ClaimNameStep } from '../components/ClaimNameStep';
 import { setPendingName } from '../storage/pendingName';
 
 export type WelcomeProps = {
@@ -54,35 +54,6 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [copiedBackup, setCopiedBackup] = useState(false);
-  const [wantName, setWantName] = useState('');
-  const [nameCheck, setNameCheck] = useState<NameInfo | null>(null);
-  const [namesLive, setNamesLive] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (step !== 'claim-name') return;
-    void getNameInfo(network.config.rpcUrl, 'boing')
-      .then((i) => setNamesLive(Boolean(i?.registry?.enabled && i.registry.active)))
-      .catch(() => setNamesLive(false));
-  }, [step, network.config.rpcUrl]);
-
-  useEffect(() => {
-    setNameCheck(null);
-    const v = normalizeName(wantName);
-    if (step !== 'claim-name' || !v.ok) return;
-    let live = true;
-    const t = window.setTimeout(() => {
-      void getNameInfo(network.config.rpcUrl, v.label)
-        .then((i) => {
-          if (live) setNameCheck(i);
-        })
-        .catch(() => {});
-    }, 300);
-    return () => {
-      live = false;
-      window.clearTimeout(t);
-    };
-  }, [wantName, step, network.config.rpcUrl]);
-
   async function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -341,56 +312,19 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
   }
 
   if (step === 'claim-name') {
-    const v = normalizeName(wantName);
     return (
       <div className={`${styles.wrap} ${styles.heroWrap} page-app`}>
-        <div className={`${styles.card} ${styles.heroCard}`} data-testid="wallet-claim-name">
-          <img src={`${ASSETS}/${MASCOT_BY_STEP.create}`} alt="" className={styles.mascot} aria-hidden />
-          <h1 className={styles.title}>Pick a name (optional)</h1>
-          <p className={styles.subtitle}>
-            Get a <strong>.boing</strong> name so friends can send to <em>you.boing</em> instead of a long address. It is claimed
-            automatically once your wallet has BOING for the rent (6+ letters: 1 BOING a year).
-          </p>
-          {namesLive === false && <p className={styles.subtitle}>Names are not live on this network yet. You can skip for now.</p>}
-          <input
-            type="text"
-            className={styles.input}
-            placeholder="yourname"
-            value={wantName}
-            onChange={(e) => setWantName(e.target.value)}
-            aria-label="Name to claim"
-            data-testid="wallet-claim-name-input"
-            autoCapitalize="none"
-            spellCheck={false}
-          />
-          {wantName.trim() && !v.ok && <p className={styles.error}>{v.error}</p>}
-          {v.ok && nameCheck && (
-            <p className={nameCheck.available ? styles.nameOk : styles.error} data-testid="wallet-claim-name-status">
-              {nameCheck.available
-                ? `${displayName(v.label)} is available: ${rentFor(v.label, 1).toString()} BOING / year`
-                : nameCheck.reserved
-                  ? `${displayName(v.label)} is reserved`
-                  : `${displayName(v.label)} is taken`}
-            </p>
-          )}
-          {error && <p className={styles.error}>{error}</p>}
-          <button
-            type="button"
-            className={styles.primary}
-            data-testid="wallet-claim-name-reserve"
-            disabled={loading || !v.ok || !nameCheck?.available || namesLive === false}
-            onClick={() => {
-              if (!v.ok) return;
-              setPendingName({ name: v.label, createdAt: Date.now() });
-              void finishCreate();
-            }}
-          >
-            {v.ok ? `Claim ${displayName(v.label)} after funding` : 'Claim after funding'}
-          </button>
-          <button type="button" className={styles.textBtn} data-testid="wallet-claim-name-skip" disabled={loading} onClick={() => void finishCreate()}>
-            Skip for now
-          </button>
-        </div>
+        <ClaimNameStep
+          rpcUrl={network.config.rpcUrl}
+          mascotSrc={`${ASSETS}/${MASCOT_BY_STEP.create}`}
+          busy={loading}
+          error={error}
+          onReserve={(label) => {
+            setPendingName({ name: label, createdAt: Date.now() });
+            void finishCreate();
+          }}
+          onSkip={() => void finishCreate()}
+        />
       </div>
     );
   }

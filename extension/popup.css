@@ -919,3 +919,68 @@ details.assets-subform > .form, details.assets-subform > .textarea { margin-top:
 .overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.72); display: flex; align-items: flex-start; justify-content: center; padding: 14px 10px; overflow-y: auto; }
 .overlay.hidden { display: none; }
 #overlay-island { width: 100%; }
+
+.primary-name {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--accent, #7dd3fc);
+  word-break: break-all;
+}
+
+
+/* React islands from the web wallet (claim-name step, Settings -> Names, pending-name banner) */
+.names-root { margin-bottom: 12px; }
+#claim-name-root input,
+#names-root input,
+#names-root select,
+#pending-name-root input {
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  min-width: 0;
+}
+#claim-name-root input { width: 100%; }
+#names-root input { flex: 1 1 auto; }
+#claim-name-root input:focus,
+#names-root input:focus,
+#names-root select:focus {
+  outline: none;
+  border-color: var(--accent-neon);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+#claim-name-root button,
+#names-root button,
+#pending-name-root button {
+  padding: 8px 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+}
+#claim-name-root button:hover:not(:disabled),
+#names-root button:hover:not(:disabled),
+#pending-name-root button:hover:not(:disabled) {
+  border-color: var(--accent-neon);
+  color: var(--accent-neon);
+}
+#claim-name-root button[data-testid="wallet-claim-name-reserve"],
+#names-root button[data-testid="names-claim"] {
+  width: 100%;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: #0a0e1a;
+  border: none;
+  font-weight: 700;
+}
+#claim-name-root button[data-testid="wallet-claim-name-skip"] {
+  background: none;
+  border: none;
+  color: var(--muted);
+}
+#claim-name-root button:disabled,
+#names-root button:disabled { opacity: 0.6; cursor: not-allowed; }

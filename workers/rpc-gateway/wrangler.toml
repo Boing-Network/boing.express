@@ -9,7 +9,15 @@ name = "boing-express-rpc-gateway"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
+# Public hostname (Cloudflare creates the DNS record + cert on deploy).
+# Also reachable at https://boing-express-rpc-gateway.nico-chikuji.workers.dev
+routes = [
+  { pattern = "rpc-gateway.boing.express", custom_domain = true }
+]
+
 [vars]
+# Public testnet node (not a secret). Override per environment with a dashboard var if needed.
+BOING_UPSTREAM_RPC_URL = "https://testnet-rpc.boing.network"
 GATEWAY_CORS_ORIGIN = "*"
 # Response cache for POST /v1/rpc (HTTP 200 only). Cap in code at 3600s.
 GATEWAY_CACHE_TTL_SECONDS = "15"
@@ -22,6 +30,5 @@ GATEWAY_RATE_LIMIT_PER_MINUTE = "300"
 binding = "RATE_LIMIT_KV"
 id = "4ebdfa981c304ffda1b33d00ef3e390f"
 
-# Production: set secrets (do not commit):
-#   wrangler secret put BOING_UPSTREAM_RPC_URL
+# Production: optional secret (do not commit):
 #   wrangler secret put GATEWAY_API_KEY   # optional API key

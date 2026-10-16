@@ -11,9 +11,18 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const extensionPathArg = path.resolve(path.join(root, 'extension')).replace(/\\/g, '/');
 export const E2E_PASSWORD = 'TestWallet99!';
 
+/** After backup: skip the optional pick-a-name step if it is shown (it is not when adding an account). */
+export async function skipClaimNameIfShown(popup: Page): Promise<void> {
+  const skip = popup.locator('#screen-claim-name:not(.hidden) [data-testid="wallet-claim-name-skip"]');
+  const dash = popup.locator('#screen-dashboard:not(.hidden)');
+  await expect(skip.or(dash).first()).toBeVisible({ timeout: 45_000 });
+  if (await skip.isVisible()) await skip.click();
+}
+
 /** Launch the unpacked extension with mocked RPC, create a wallet, and land on the dashboard. */
 export async function openPopupWithNewWallet(
-  mock: BoingMockOptions = {}
+  mock: BoingMockOptions = {},
+  opts: { beforeClaimName?: (popup: Page) => Promise<void> } = {}
 ): Promise<{ context: BrowserContext; popup: Page; close: () => Promise<void> }> {
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boing-e2e-redesign-'));
   const context = await chromium.launchPersistentContext(userDataDir, {
@@ -35,6 +44,8 @@ export async function openPopupWithNewWallet(
   await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
   await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-ack"]').check();
   await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
+  if (opts.beforeClaimName) await opts.beforeClaimName(popup);
+  else await skipClaimNameIfShown(popup);
   await expect(popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-header-lock"]')).toBeVisible({ timeout: 45_000 });
   await expect(popup.locator('#balance')).toHaveText('1000000', { timeout: 30_000 });
   const close = async () => {

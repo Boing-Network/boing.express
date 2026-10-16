@@ -1,3 +1,4 @@
+import { skipClaimNameIfShown } from './helpers/popup';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -43,6 +44,7 @@ const PASSWORD = 'TestWallet99!';
     await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
     await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-ack"]').check();
     await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
+    await skipClaimNameIfShown(popup);
     await expect(popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-header-lock"]')).toBeVisible({ timeout: 45_000 });
     await popup.waitForTimeout(1500);
     const tabs = popup.locator('.tab-bar .tab-btn');

@@ -4,7 +4,8 @@
  */
 
 // Ensure Ed25519 SHA-512 shim is set before any wallet code (create/import/unlock/sign).
-import { resolveRecipient } from '../src/boing/names';
+import { resolveRecipient, reverseName } from '../src/boing/names';
+import { setPendingName } from '../src/storage/pendingName';
 import '../src/crypto/keys';
 
 import {
@@ -45,7 +46,7 @@ import { addTokenWatchEntry, listTokenWatchlist, removeTokenWatchEntry } from '.
 import { addTxHistory, getTxHistory, type TxHistoryEntry } from '../src/storage/txHistory';
 import { chainRowToDisplay, fetchChainTxPage, mergeTxHistory, type DisplayTxEntry } from '../src/boing/chainTxHistory';
 import { mergeWithDefaultTokens } from '../src/boing/defaultTokens';
-import { confirmSendIsland, renderBulkIsland, renderValidatorIsland, showAddressQrIsland } from './popupIslands';
+import { confirmSendIsland, renderBulkIsland, renderClaimNameIsland, renderNamesIsland, renderPendingNameIsland, renderValidatorIsland, showAddressQrIsland } from './popupIslands';
 import { loadTokenHoldings, type TokenHolding } from '../src/boing/tokenHoldings';
 import { buildReferenceFungibleTransfer } from '../src/boing/referenceFungible';
 import { encodeReferenceTransferNftCalldata, normalizeHex64 } from '../src/boing/referenceNft';
@@ -101,7 +102,7 @@ const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
 const BOING_DECIMALS = 0;
 
-type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'backup' | 'dashboard' | 'add-pick';
+type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'backup' | 'claim-name' | 'dashboard' | 'add-pick';
 
 let currentScreen: Screen = 'choose';
 /** True when create/import screens are adding a second+ account from the dashboard. */
@@ -219,6 +220,55 @@ function applyBalance(balance: { value: string; decimals: number; symbol: string
   lastBalanceRaw = balance.value;
   ($('balance') as HTMLElement).textContent = displayStr;
   ($('symbol') as HTMLElement).textContent = balance.symbol;
+  mountNameIslands();
+}
+
+function namesRpcUrl(): string {
+  return (getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog)).config.rpcUrl;
+}
+
+let primaryNameSeq = 0;
+async function refreshPrimaryName(): Promise<void> {
+  const el = document.getElementById('primary-name');
+  if (!el || !accountId) return;
+  const seq = ++primaryNameSeq;
+  let name: string | null = null;
+  try {
+    const r = await reverseName(namesRpcUrl(), accountIdToHex(accountId));
+    name = r ? r.display || `${r.name}.boing` : null;
+  } catch {
+    name = null;
+  }
+  if (seq !== primaryNameSeq) return;
+  el.textContent = name ?? '';
+  el.classList.toggle('hidden', !name);
+}
+
+/** Mount the web wallet's name components (pending-name banner + Settings → Names). */
+function mountNameIslands(): void {
+  if (!accountId) return;
+  const network = getCurrentNetwork();
+  let bal: bigint | null = null;
+  try { bal = BigInt(lastBalanceRaw); } catch { bal = null; }
+  const getPrivateKey = () => privateKey;
+  const pendingEl = document.getElementById('pending-name-root');
+  if (pendingEl) {
+    renderPendingNameIsland(pendingEl, {
+      accountId, network, getPrivateKey, balance: bal,
+      onDone: () => { void refreshPrimaryName(); void refreshDashboardBalance(); },
+    }, islandKey());
+  }
+  const namesEl = document.getElementById('names-root');
+  if (namesEl) {
+    renderNamesIsland(namesEl, {
+      accountId, network, getPrivateKey, balance: bal,
+      onTx: (hash, summary) => {
+        recordTx(hash, 'contract_call', summary);
+        void refreshDashboardBalance();
+        void refreshPrimaryName();
+      },
+    }, islandKey());
+  }
 }
 
 async function refreshDashboardBalance(): Promise<void> {
@@ -728,6 +778,8 @@ async function goDashboard(): Promise<void> {
   await refreshStake();
   void refreshNfts();
   void refreshTokens();
+  mountNameIslands();
+  void refreshPrimaryName();
 }
 
 // --- Choose
@@ -802,6 +854,31 @@ document.getElementById('backup-acknowledged')?.addEventListener('change', () =>
 });
 
 $('btn-backup-continue').addEventListener('click', async () => {
+  if (addingAccountMode) {
+    await finishBackup();
+    return;
+  }
+  const root = $('claim-name-root') as HTMLElement;
+  const render = (busy: boolean) =>
+    renderClaimNameIsland(root, {
+      rpcUrl: namesRpcUrl(),
+      mascotSrc: 'images/mascot-default.webp',
+      busy,
+      onReserve: (label) => {
+        setPendingName({ name: label, createdAt: Date.now() });
+        render(true);
+        void finishBackup();
+      },
+      onSkip: () => {
+        render(true);
+        void finishBackup();
+      },
+    });
+  render(false);
+  showScreen('claim-name');
+});
+
+async function finishBackup(): Promise<void> {
   const password = pendingBackupPassword;
   pendingBackupPassword = '';
   hideError('backup-error');
@@ -817,9 +894,10 @@ $('btn-backup-continue').addEventListener('click', async () => {
     });
     await goDashboard();
   } catch (err) {
+    showScreen('backup');
     showError('backup-error', err instanceof Error ? err.message : 'Failed to unlock');
   }
-});
+}
 $('btn-create-back').addEventListener('click', () => {
   if (addingAccountMode) {
     addingAccountMode = false;
@@ -1144,8 +1222,12 @@ document.getElementById('form-nft-transfer')?.addEventListener('submit', async (
     return;
   }
   let nftToHex: string;
+  let nftToName: string | undefined;
   try {
-    nftToHex = parseTransferRecipientHex(toEl.value, accountIdToHex(accountId));
+    const r = await resolveRecipient(namesRpcUrl(), toEl.value);
+    if (!r.ok) throw new Error(r.error);
+    nftToHex = parseTransferRecipientHex(r.hex, accountIdToHex(accountId));
+    nftToName = r.name;
   } catch (err) {
     errEl.textContent = err instanceof Error ? err.message : String(err);
     errEl.classList.remove('hidden');
@@ -1157,18 +1239,27 @@ document.getElementById('form-nft-transfer')?.addEventListener('submit', async (
   const okToSend = await confirmSendIsland({
     title: targets.length > 1 ? `Send ${targets.length} NFTs` : 'Send NFT',
     to: nftToHex,
+    toName: nftToName,
     amount: targets.map((t) => `#${shortHexLabel(t.tokenIdHex, 4, 4)}`).join(', '),
     network: net,
     txCount: targets.length,
     mascotSrc: 'images/mascot-default.webp',
-    buildSigned: async () =>
-      net.buildContractCall!(
+    buildSigned: async () => {
+      if (nftToName) {
+        // Re-resolve at confirm so a name re-pointed meanwhile can't redirect the NFT.
+        const again = await resolveRecipient(namesRpcUrl(), nftToName);
+        if (!again.ok || again.hex.toLowerCase() !== nftToHex.toLowerCase()) {
+          throw new Error(`${nftToName} changed target; review the recipient again.`);
+        }
+      }
+      return net.buildContractCall!(
         acct,
         accountIdFromHex(normalizeHex64(first.collectionHex)),
         encodeReferenceTransferNftCalldata(accountIdFromHex(nftToHex), normalizeHex64(first.tokenIdHex)),
         await net.getNonce(acct),
         pk
-      ),
+      );
+    },
   });
   if (!okToSend) return;
   const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement;
@@ -1179,7 +1270,7 @@ document.getElementById('form-nft-transfer')?.addEventListener('submit', async (
       network: net,
       accountId,
       privateKey,
-      recipientHex: toEl.value,
+      recipientHex: nftToHex,
       targets: targets.map((t) => ({
         collectionHex: t.collectionHex,
         tokenIdHex: t.tokenIdHex,

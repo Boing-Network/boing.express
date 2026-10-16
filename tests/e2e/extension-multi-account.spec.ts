@@ -1,3 +1,4 @@
+import { skipClaimNameIfShown } from './helpers/popup';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -88,6 +89,7 @@ describePopup('Extension popup (E2E)', () => {
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
       await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-ack"]').check();
       await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
+      await skipClaimNameIfShown(popup);
 
       await expect(popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-header-lock"]')).toBeVisible({
         timeout: 45_000,
@@ -105,6 +107,7 @@ describePopup('Extension popup (E2E)', () => {
       });
       await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-ack"]').check();
       await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
+      await skipClaimNameIfShown(popup);
 
       await expect(popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-account-switch"] option')).toHaveCount(
         2,
@@ -144,6 +147,7 @@ describePopup('Extension popup (E2E)', () => {
       expect(backupKey).toMatch(/^(0x)?[0-9a-f]{64}$/i);
       await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-ack"]').check();
       await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
+      await skipClaimNameIfShown(popup);
       await expect(popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-header-lock"]')).toBeVisible({ timeout: 45_000 });
 
       // Export lives in Settings (gear), not on the Wallet tab.

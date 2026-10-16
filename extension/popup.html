@@ -65,6 +65,9 @@
       <p id="backup-error" class="error hidden"></p>
       <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet" disabled data-testid="wallet-backup-continue">I've backed it up — Continue</button>
     </div>
+    <div id="screen-claim-name" class="screen hidden">
+      <div id="claim-name-root"></div>
+    </div>
     <div id="screen-import" class="screen hidden">
       <p class="subtitle">Enter 64-char hex private key.</p>
       <form id="form-import" class="form">
@@ -114,7 +117,9 @@
       </nav>
       <div class="tab-panels">
         <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
+          <div id="pending-name-root"></div>
           <div class="assets-composition" data-testid="assets-composition">
+            <p id="primary-name" class="primary-name hidden" data-testid="wallet-primary-name"></p>
             <div class="row address-row">
               <code id="address" class="address" title="Your address (share it to receive)"></code>
                 </div>
@@ -228,7 +233,7 @@
               <p class="hint" id="nft-transfer-selected">Select owned items.</p>
               <p class="hint">No batch transfer_nft on-chain: multi-select sends one tx per item.</p>
               <div class="row row-amount">
-                <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
+                <input type="text" id="nft-transfer-to" placeholder="To address (0x…) or name.boing" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
                 <button type="button" class="btn-small btn-scan" data-scan-field="nft-transfer-to" aria-label="Scan recipient QR code" data-testid="nft-transfer-to-scan">Scan QR</button>
               </div>
               <p id="nft-transfer-error" class="error hidden"></p>
@@ -294,6 +299,7 @@
             <button type="button" id="btn-add-account" class="btn-secondary" aria-label="Add account" data-testid="wallet-dashboard-add-account">Add account</button>
             <p class="hint">Create or import another key in the same vault. Your password stays the same.</p>
           </div>
+          <div id="names-root" class="names-root"></div>
           <div class="card card-connected-sites" data-testid="settings-connected-sites">
             <h2 class="label">Connected sites</h2>
             <p class="hint" id="connected-sites-hint">Sites that can see your address and request signatures.</p>
