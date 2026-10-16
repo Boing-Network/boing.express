@@ -27,6 +27,8 @@ export default defineConfig(({ mode }) => {
           entryFileNames: '[name].js',
           format: 'es',
           chunkFileNames: '[name]-[hash].js',
+          // CSS modules pulled in by the React islands (popupIslands.ts); linked from popup.html.
+          assetFileNames: (a) => ((a.names?.[0] ?? a.name ?? '').endsWith('.css') ? 'popup-islands.css' : 'assets/[name]-[hash][extname]'),
         },
       },
       sourcemap: true,

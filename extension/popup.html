@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Boing Express</title>
   <link rel="stylesheet" href="popup.css" />
+  <link rel="stylesheet" href="popup-islands.css" />
 </head>
 <body>
   <div id="app">
@@ -97,7 +98,8 @@
         <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transaction history" data-testid="wallet-tab-transactions">Tx</button>
         <button type="button" class="tab-btn" role="tab" id="tab-transfer" aria-selected="false" aria-controls="panel-transfer" data-tab="transfer" data-testid="wallet-tab-transfer">Transfer</button>
         <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
+        <button type="button" class="tab-btn hidden" role="tab" id="tab-validator" aria-selected="false" aria-controls="panel-validator" data-tab="validator" data-testid="wallet-tab-validator">Validator</button>
+            <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>
       <div class="tab-panels">
         <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
@@ -160,9 +162,14 @@
               <h2 class="label">Recent transactions</h2>
               <a id="tx-history-explorer" class="btn-text hidden" target="_blank" rel="noopener noreferrer">Explorer</a>
             </div>
-            <p class="hint">Sent from this device. Full history is on the explorer.</p>
+            <p class="hint" id="tx-history-hint">All transactions for this account on chain (sent, received, dApp-signed, faucet), plus pending ones from this device.</p>
+            <p id="tx-history-error" class="error hidden" role="alert" data-testid="tx-history-error"></p>
             <ul id="tx-history-list" class="connected-sites-list tx-history-list" aria-label="Recent transactions" data-testid="tx-history-list"></ul>
-            <p id="tx-history-empty" class="hint">No transactions yet.</p>
+            <p id="tx-history-empty" class="hint" data-testid="tx-history-empty">No transactions yet.</p>
+            <div class="row">
+              <button type="button" id="btn-tx-history-refresh" class="btn-small" data-testid="tx-history-refresh">Refresh</button>
+              <button type="button" id="btn-tx-history-more" class="btn-small hidden" data-testid="tx-history-more">Load older transactions</button>
+            </div>
           </div>
         </section>
         <section id="panel-transfer" class="tab-panel" role="tabpanel" aria-labelledby="tab-transfer" hidden>
@@ -212,43 +219,9 @@
               <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
             </form>
           </div>
-          <div class="card transfer-pane hidden" id="transfer-pane-bulk" data-testid="transfer-pane-bulk">
-            <h2 class="label">Bulk transfer</h2>
-            <div id="bulk-edit">
-              <p class="hint">One asset, many recipients. Sent as separate transactions in order (not atomic); stops at the first failure.</p>
-              <select id="bulk-asset" class="select" aria-label="Asset for bulk transfer" data-testid="bulk-asset"></select>
-              <div id="bulk-rows" class="bulk-rows" data-testid="bulk-rows"></div>
-              <div class="row">
-                <button type="button" id="btn-bulk-add-row" class="btn-small" data-testid="bulk-add-row">+ Row</button>
-                <button type="button" id="btn-bulk-clear" class="btn-small btn-disconnect">Clear</button>
-              </div>
-              <details class="assets-subform">
-                <summary class="hint">Paste CSV (address,amount per line)</summary>
-                <textarea id="bulk-csv" class="textarea" rows="4" placeholder="0x7f3a…,100&#10;0x91bc…,25" aria-label="CSV rows" data-testid="bulk-csv"></textarea>
-                <button type="button" id="btn-bulk-csv-import" class="btn-secondary" data-testid="bulk-csv-import">Add CSV rows</button>
-              </details>
-              <ul id="bulk-issues" class="bulk-issues error hidden" data-testid="bulk-issues"></ul>
-              <button type="button" id="btn-bulk-review" class="btn-primary" data-testid="bulk-review">Review</button>
-            </div>
-            <div id="bulk-review" class="hidden" data-testid="bulk-review-screen">
-              <p class="hint" id="bulk-review-summary"></p>
-              <ol id="bulk-review-list" class="bulk-review-list" data-testid="bulk-review-list"></ol>
-              <p class="bulk-total">Total: <strong id="bulk-review-total" data-testid="bulk-review-total"></strong></p>
-              <p class="error" role="note">Each row is its own transaction. If one fails, earlier rows stay sent and later rows are not sent. Keep this popup open until it finishes.</p>
-              <div class="row">
-                <button type="button" id="btn-bulk-back" class="btn-secondary" data-testid="bulk-back">Edit</button>
-                <button type="button" id="btn-bulk-confirm" class="btn-primary" data-testid="bulk-confirm">Sign &amp; send all</button>
-              </div>
-            </div>
-            <div id="bulk-progress" class="hidden" data-testid="bulk-progress">
-              <p class="hint" id="bulk-progress-summary" aria-live="polite" data-testid="bulk-progress-summary"></p>
-              <ol id="bulk-progress-list" class="bulk-review-list" data-testid="bulk-progress-list"></ol>
-              <div class="row">
-                <button type="button" id="btn-bulk-cancel" class="btn-secondary" data-testid="bulk-cancel">Stop after current</button>
-                <button type="button" id="btn-bulk-copy-report" class="btn-small hidden" data-testid="bulk-copy-report">Copy report</button>
-                <button type="button" id="btn-bulk-done" class="btn-primary hidden" data-testid="bulk-done">Done</button>
-              </div>
-            </div>
+          <div class="card transfer-pane hidden" id="transfer-pane-bulk">
+            <!-- Same mixed BOING / token / NFT bulk component as the web wallet (native batch when supported). -->
+            <div id="bulk-root"></div>
           </div>
         </section>
         <section id="panel-stake" class="tab-panel" role="tabpanel" aria-labelledby="tab-stake" hidden>
@@ -279,12 +252,16 @@
             </div>
           </div>
         </section>
+        <section id="panel-validator" class="tab-panel" role="tabpanel" aria-labelledby="tab-validator" hidden>
+          <div class="card"><div id="validator-root"></div></div>
+        </section>
         <section id="panel-faucet" class="tab-panel" role="tabpanel" aria-labelledby="tab-faucet" hidden>
           <section id="faucet-section" class="faucet-panel">
             <div class="card card-faucet">
-              <p class="subtitle">Get testnet BOING for development and testing.</p>
+              <p class="subtitle">Get testnet BOING for development and testing (one request per 60 seconds). Same faucet as boing.network/faucet.</p>
               <button type="button" id="btn-faucet" class="btn-primary btn-faucet" aria-label="Request testnet BOING from faucet">Request testnet BOING</button>
               <button type="button" id="btn-faucet-page" class="btn-secondary" aria-label="Open faucet page in new tab">Open faucet page</button>
+              <p id="faucet-success" class="success hidden" data-testid="faucet-success"></p>
               <p id="faucet-error" class="error hidden"></p>
             </div>
           </section>

@@ -125,17 +125,28 @@ describe('Extension popup redesign (E2E, mocked RPC)', () => {
       await expect(issues).toContainText('positive');
       await expect(issues).toContainText('exceeds balance');
       expect(submitted).toHaveLength(0);
+    } finally {
+      await close();
+    }
+  });
 
-      // Fix: clear, then 3 valid rows (2 manual + 1 CSV).
-      await popup.locator('#btn-bulk-clear').click();
+  test('bulk transfer (node without batch support): sequential nonces', async () => {
+    test.setTimeout(150_000);
+    const submitted: string[] = [];
+    const { popup, close } = await openPopupWithNewWallet({ submitted });
+    try {
+      await popup.getByTestId('wallet-tab-transfer').click();
+      await popup.getByTestId('transfer-mode-bulk').click();
       await popup.getByTestId('bulk-row-to').first().fill(A);
       await popup.getByTestId('bulk-row-amount').first().fill('10');
       await popup.getByTestId('bulk-add-row').click();
       await popup.getByTestId('bulk-row-to').nth(1).fill(`0x${B}`);
       await popup.getByTestId('bulk-row-amount').nth(1).fill('20');
+      await popup.locator('details:has([data-testid="bulk-csv"]) summary').click();
       await popup.getByTestId('bulk-csv').fill(`${C};30`);
       await popup.getByTestId('bulk-csv-import').click();
       await popup.getByTestId('bulk-review').click();
+      await expect(popup.getByTestId('bulk-review-screen')).toHaveAttribute('data-mode', 'sequential');
       await expect(popup.getByTestId('bulk-review-screen')).toBeVisible();
       await expect(popup.getByTestId('bulk-review-row')).toHaveCount(3);
       await expect(popup.getByTestId('bulk-review-total')).toHaveText('60 BOING');

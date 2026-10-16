@@ -42,6 +42,9 @@ import { transferOwnedNfts } from '../src/boing/nftTransfer';
 import { addNftWatchEntries, listNftWatchlist, removeNftWatchEntry } from '../src/storage/nftWatchlist';
 import { addTokenWatchEntry, listTokenWatchlist, removeTokenWatchEntry } from '../src/storage/tokenWatchlist';
 import { addTxHistory, getTxHistory, type TxHistoryEntry } from '../src/storage/txHistory';
+import { chainRowToDisplay, fetchChainTxPage, mergeTxHistory, type DisplayTxEntry } from '../src/boing/chainTxHistory';
+import { mergeWithDefaultTokens } from '../src/boing/defaultTokens';
+import { renderBulkIsland, renderValidatorIsland } from './popupIslands';
 import { loadTokenHoldings, type TokenHolding } from '../src/boing/tokenHoldings';
 import { buildReferenceFungibleTransfer } from '../src/boing/referenceFungible';
 import { normalizeHex64 } from '../src/boing/referenceNft';
@@ -220,6 +223,8 @@ function updateStakingVisibility(): void {
   const show = Boolean(net.buildBond || net.buildUnbond || net.buildClaimUnbond);
   if (section) section.classList.toggle('hidden', !show);
   if (tabBtn) tabBtn.classList.toggle('hidden', !show);
+  // Validator tab: testnet (open validator set) or any network that supports bonding.
+  document.getElementById('tab-validator')?.classList.toggle('hidden', !(net.config.isTestnet || net.buildBond));
 }
 
 function getConnectedSitesFromStorage(): Promise<string[]> {
@@ -279,7 +284,7 @@ async function refreshConnectedSites(): Promise<void> {
   }
 }
 
-type TabId = 'wallet' | 'transactions' | 'transfer' | 'stake' | 'faucet' | 'settings';
+type TabId = 'wallet' | 'transactions' | 'transfer' | 'stake' | 'validator' | 'faucet' | 'settings';
 
 function switchTab(tabId: TabId): void {
   document.querySelectorAll('.tab-btn').forEach((el) => {
@@ -685,7 +690,6 @@ async function goDashboard(): Promise<void> {
   switchTab('wallet');
   refreshConnectedSites();
   setTransferMode('boing');
-  resetBulk();
   refreshTxHistory();
   await refreshDashboardBalance();
   await refreshStake();
@@ -855,14 +859,18 @@ $('btn-import-back').addEventListener('click', () => {
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     const tabId = (btn as HTMLElement).getAttribute('data-tab');
-    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'transfer' || tabId === 'stake' || tabId === 'faucet')
+    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'transfer' || tabId === 'stake' || tabId === 'validator' || tabId === 'faucet')
       switchTab(tabId);
+    if (tabId === 'validator') mountValidatorIsland();
     if (tabId === 'wallet') {
       void refreshDashboardBalance();
       void refreshNfts();
       void refreshTokens();
     }
-    if (tabId === 'transactions') refreshTxHistory();
+    if (tabId === 'transactions') {
+      refreshTxHistory();
+      void loadChainHistory(null);
+    }
     if (tabId === 'transfer') {
       void refreshDashboardBalance();
       updateNftTransferChrome();
@@ -1246,9 +1254,31 @@ $('btn-faucet').addEventListener('click', async () => {
   faucetBtn.disabled = true;
   faucetBtn.textContent = 'Requesting…';
   ($('faucet-error') as HTMLElement).classList.add('hidden');
+  document.getElementById('faucet-success')?.classList.add('hidden');
   try {
     const result = await net.faucetRequest(accountId);
     if (result.success) {
+      const okEl = document.getElementById('faucet-success');
+      if (okEl) {
+        const explorer = (net.config.explorerUrl ?? '').replace(/\/$/, '');
+        okEl.replaceChildren(
+          document.createTextNode(
+            `${result.amount ? `${result.amount} testnet BOING requested.` : 'Testnet BOING requested.'} It arrives with the next block (a few seconds); your balance updates automatically. `
+          )
+        );
+        if (explorer) {
+          const a = document.createElement('a');
+          a.href = `${explorer}/account/${formatAddress(accountId, false)}`;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = 'View on Boing Observer';
+          okEl.append(a, document.createTextNode('. '));
+        }
+        okEl.append(document.createTextNode('Next: send your first transfer from the Transfer tab (about 1 BOING fee).'));
+        if (result.warning) okEl.append(document.createElement('br'), document.createTextNode(`Note: ${result.warning}`));
+        okEl.classList.remove('hidden');
+      }
+      for (const ms of [2000, 5000]) window.setTimeout(() => void refreshDashboardBalance(), ms);
       const balance = await net.getBalance(accountId);
       applyBalance(balance);
     } else {
@@ -1449,15 +1479,68 @@ function recordTx(txHash: string, type: TxHistoryEntry['type'], summary?: string
   refreshTxHistory();
 }
 
-const TX_TYPE_LABEL: Record<TxHistoryEntry['type'], string> = {
-  send: 'Send BOING',
-  bond: 'Bond',
-  unbond: 'Unbond',
-  claim_unbond: 'Claim unbond',
-  token_send: 'Send token',
-  nft_send: 'Send NFT',
-  contract_call: 'Contract call',
-};
+// Chain-backed history (boing_getAccountTransactions) merged with local entries (pending + richer summaries).
+let chainTx: DisplayTxEntry[] = [];
+let chainCursor: string | null = null;
+let chainLoaded = false;
+let chainUnsupported = false;
+let chainKey = '';
+let chainLoading = false;
+
+async function loadChainHistory(cursor: string | null): Promise<void> {
+  if (!accountId || chainLoading) return;
+  const net = getCurrentNetwork();
+  const key = `${accountIdToHex(accountId)}:${selectedNetworkId}`;
+  if (key !== chainKey) {
+    chainKey = key;
+    chainTx = [];
+    chainCursor = null;
+    chainLoaded = false;
+    chainUnsupported = false;
+  }
+  const errEl = document.getElementById('tx-history-error');
+  const refreshBtn = document.getElementById('btn-tx-history-refresh') as HTMLButtonElement | null;
+  chainLoading = true;
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = 'Loading…';
+  }
+  errEl?.classList.add('hidden');
+  try {
+    const page = await fetchChainTxPage(net.config.rpcUrl, accountIdToHex(accountId), cursor, 25);
+    if (key !== chainKey) return;
+    if (!page) {
+      chainUnsupported = true;
+      chainTx = [];
+      chainCursor = null;
+    } else {
+      chainUnsupported = false;
+      const rows = page.transactions.map((r) => chainRowToDisplay(r, BOING_DECIMALS));
+      if (!cursor) chainTx = rows;
+      else {
+        const seen = new Set(chainTx.map((e) => e.txHash));
+        chainTx = [...chainTx, ...rows.filter((e) => !seen.has(e.txHash))];
+      }
+      chainCursor = page.next_cursor;
+      chainLoaded = true;
+    }
+  } catch (e) {
+    if (errEl) {
+      errEl.textContent = `Could not load on-chain history: ${e instanceof Error ? e.message : String(e)}`;
+      errEl.classList.remove('hidden');
+    }
+  } finally {
+    chainLoading = false;
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = 'Refresh';
+    }
+    refreshTxHistory();
+  }
+}
+
+document.getElementById('btn-tx-history-refresh')?.addEventListener('click', () => void loadChainHistory(null));
+document.getElementById('btn-tx-history-more')?.addEventListener('click', () => void loadChainHistory(chainCursor));
 
 function refreshTxHistory(): void {
   const list = document.getElementById('tx-history-list');
@@ -1469,21 +1552,42 @@ function refreshTxHistory(): void {
     explorerLink.classList.toggle('hidden', !explorer);
     if (explorer) explorerLink.href = `${explorer}/account/${formatAddress(accountId, false)}`;
   }
-  const entries = getTxHistory(txAddressHint(), selectedNetworkId);
+  const key = `${accountIdToHex(accountId)}:${selectedNetworkId}`;
+  const sameAccount = key === chainKey;
+  const entries = mergeTxHistory(getTxHistory(txAddressHint(), selectedNetworkId), sameAccount ? chainTx : [], {
+    chainLoaded: sameAccount && chainLoaded,
+  });
+  const hint = document.getElementById('tx-history-hint');
+  if (hint) {
+    hint.textContent = chainUnsupported
+      ? 'This node does not serve account history yet; showing transactions sent from this device.'
+      : 'All transactions for this account on chain (sent, received, dApp-signed, faucet), plus pending ones from this device.';
+  }
+  document.getElementById('btn-tx-history-more')?.classList.toggle('hidden', !(sameAccount && chainCursor));
   list.replaceChildren();
+  empty.textContent = chainLoading && !chainLoaded ? 'Loading transactions…' : 'No transactions yet.';
   empty.classList.toggle('hidden', entries.length > 0);
   for (const e of entries) {
     const li = document.createElement('li');
     li.className = 'tx-history-row';
     li.setAttribute('data-testid', 'tx-history-row');
+    li.setAttribute('data-status', e.status);
+    li.setAttribute('data-source', e.source);
+    if (e.error) li.title = e.error;
     const main = document.createElement('div');
     main.className = 'tx-history-main';
     const title = document.createElement('span');
     title.className = 'tx-history-type';
-    title.textContent = TX_TYPE_LABEL[e.type] ?? e.type;
+    title.textContent = e.label;
     const when = document.createElement('span');
     when.className = 'tx-history-time';
-    when.textContent = new Date(e.timestamp).toLocaleString();
+    when.textContent = [
+      e.status === 'pending' ? 'Pending' : e.status === 'failed' ? 'Failed' : null,
+      e.blockHeight != null ? `Block ${e.blockHeight}` : null,
+      e.timestamp ? new Date(e.timestamp).toLocaleString() : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
     main.append(title, when);
     li.appendChild(main);
     if (e.summary) {
@@ -1491,6 +1595,21 @@ function refreshTxHistory(): void {
       sum.className = 'tx-history-summary';
       sum.textContent = e.summary;
       li.appendChild(sum);
+    }
+    if (e.steps && e.steps.length) {
+      const det = document.createElement('details');
+      det.setAttribute('data-testid', 'tx-history-steps');
+      const s = document.createElement('summary');
+      s.className = 'hint';
+      s.textContent = `${e.steps.length} steps`;
+      const ol = document.createElement('ol');
+      for (const st of e.steps) {
+        const item = document.createElement('li');
+        item.textContent = st.replace(/^\d+\.\s*/, '');
+        ol.appendChild(item);
+      }
+      det.append(s, ol);
+      li.appendChild(det);
     }
     const hash = e.txHash.startsWith('0x') ? e.txHash : `0x${e.txHash}`;
     const link = document.createElement(explorer ? 'a' : 'code') as HTMLElement;
@@ -1519,7 +1638,8 @@ function setTransferMode(mode: TransferMode): void {
     document.getElementById(`transfer-pane-${m}`)?.classList.toggle('hidden', m !== mode);
   }
   if (mode === 'nft') updateNftTransferChrome();
-  if (mode === 'token' || mode === 'bulk') populateAssetSelects();
+  if (mode === 'token') populateAssetSelects();
+  if (mode === 'bulk') mountBulkIsland();
 }
 
 document.querySelectorAll<HTMLElement>('[data-transfer-mode]').forEach((b) => {
@@ -1538,7 +1658,7 @@ async function refreshTokens(): Promise<void> {
   err?.classList.add('hidden');
   const ownerHex = accountIdToHex(accountId);
   try {
-    const watch = await listTokenWatchlist(ownerHex, selectedNetworkId);
+    const watch = mergeWithDefaultTokens(await listTokenWatchlist(ownerHex, selectedNetworkId), getCurrentNetwork().config.chainId);
     tokenHoldings = await loadTokenHoldings({ rpcUrl: getCurrentNetwork().config.rpcUrl, ownerHex, watchlist: watch });
   } catch (e) {
     tokenHoldings = [];
@@ -1598,9 +1718,9 @@ function populateAssetSelects(): void {
     if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
   };
   fill(document.getElementById('token-send-asset') as HTMLSelectElement | null, false);
-  fill(document.getElementById('bulk-asset') as HTMLSelectElement | null, true);
   const btn = document.getElementById('btn-token-send') as HTMLButtonElement | null;
-  if (btn) btn.disabled = tokenHoldings.every((t) => t.balanceRaw == null);
+  // Default tokens (USDC / BOING) are always listed; sending needs a positive balance.
+  if (btn) btn.disabled = !tokenHoldings.some((t) => t.balanceRaw != null && BigInt(t.balanceRaw) > 0n);
 }
 
 document.getElementById('form-token-add')?.addEventListener('submit', async (e) => {
@@ -1687,244 +1807,66 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
   }
 });
 
-// --- Bulk transfer: rows + CSV → validate → review → sequential signed txs (stop on first failure, no retries)
-let bulkValidated: BulkRowValid[] = [];
-let bulkCancel = false;
-let bulkReportText = '';
-
-function bulkAsset(): { kind: 'boing'; decimals: number; symbol: string; balance: bigint | null } | { kind: 'token'; token: TokenHolding; decimals: number; symbol: string; balance: bigint | null } {
-  const v = (document.getElementById('bulk-asset') as HTMLSelectElement | null)?.value ?? 'boing';
-  const t = tokenHoldings.find((x) => x.tokenHex === v);
-  if (t) return { kind: 'token', token: t, decimals: t.decimals, symbol: t.symbol, balance: t.balanceRaw == null ? null : BigInt(t.balanceRaw) };
-  let bal: bigint | null = null;
-  try {
-    bal = BigInt(lastBalanceRaw);
-  } catch {
-    bal = null;
-  }
-  return { kind: 'boing', decimals: BOING_DECIMALS, symbol: 'BOING', balance: bal };
+// --- Shared React components (same as the web wallet): mixed bulk + Validator tab
+function islandKey(): string {
+  return `${accountId ? accountIdToHex(accountId) : 'none'}:${selectedNetworkId}`;
 }
 
-function addBulkRow(to = '', amount = ''): void {
-  const wrap = document.getElementById('bulk-rows');
-  if (!wrap) return;
-  const row = document.createElement('div');
-  row.className = 'bulk-row';
-  row.setAttribute('data-testid', 'bulk-row');
-  const toEl = document.createElement('input');
-  toEl.className = 'input bulk-to';
-  toEl.placeholder = 'Recipient (64 hex)';
-  toEl.value = to;
-  toEl.setAttribute('aria-label', 'Bulk recipient');
-  toEl.setAttribute('data-testid', 'bulk-row-to');
-  const amtEl = document.createElement('input');
-  amtEl.className = 'input bulk-amount';
-  amtEl.placeholder = 'Amount';
-  amtEl.inputMode = 'decimal';
-  amtEl.value = amount;
-  amtEl.setAttribute('aria-label', 'Bulk amount');
-  amtEl.setAttribute('data-testid', 'bulk-row-amount');
-  const rm = document.createElement('button');
-  rm.type = 'button';
-  rm.className = 'btn-small btn-disconnect';
-  rm.textContent = '×';
-  rm.setAttribute('aria-label', 'Remove row');
-  rm.addEventListener('click', () => {
-    row.remove();
-    if (!wrap.children.length) addBulkRow();
-  });
-  row.append(toEl, amtEl, rm);
-  wrap.appendChild(row);
-}
-
-function readBulkRows(): BulkRowInput[] {
-  const rows: BulkRowInput[] = [];
-  document.querySelectorAll<HTMLElement>('#bulk-rows .bulk-row').forEach((r, i) => {
-    const to = (r.querySelector('.bulk-to') as HTMLInputElement).value.trim();
-    const amount = (r.querySelector('.bulk-amount') as HTMLInputElement).value.trim();
-    if (!to && !amount) return;
-    rows.push({ to, amount, source: `Row ${i + 1}` });
-  });
-  return rows;
-}
-
-function showBulkStage(stage: 'edit' | 'review' | 'progress'): void {
-  for (const s of ['edit', 'review', 'progress'] as const) document.getElementById(`bulk-${s}`)?.classList.toggle('hidden', s !== stage);
-}
-
-function showBulkIssues(messages: string[]): void {
-  const ul = document.getElementById('bulk-issues');
-  if (!ul) return;
-  ul.replaceChildren(...messages.map((m) => Object.assign(document.createElement('li'), { textContent: m })));
-  ul.classList.toggle('hidden', messages.length === 0);
-}
-
-function resetBulk(): void {
-  bulkValidated = [];
-  bulkReportText = '';
-  bulkCancel = false;
-  const wrap = document.getElementById('bulk-rows');
-  if (wrap) wrap.replaceChildren();
-  addBulkRow();
-  showBulkIssues([]);
-  showBulkStage('edit');
-}
-
-function fmtBulkAmount(v: bigint): string {
-  const a = bulkAsset();
-  return `${formatBalance(v.toString(), a.decimals, a.decimals)} ${a.symbol}`;
-}
-
-document.getElementById('btn-bulk-add-row')?.addEventListener('click', () => addBulkRow());
-document.getElementById('btn-bulk-clear')?.addEventListener('click', () => resetBulk());
-document.getElementById('btn-bulk-csv-import')?.addEventListener('click', () => {
-  const ta = document.getElementById('bulk-csv') as HTMLTextAreaElement | null;
-  if (!ta) return;
-  const { rows, issues } = parseBulkCsv(ta.value);
-  const wrap = document.getElementById('bulk-rows');
-  // Drop the trailing empty row(s) before appending.
-  wrap?.querySelectorAll<HTMLElement>('.bulk-row').forEach((r) => {
-    const to = (r.querySelector('.bulk-to') as HTMLInputElement).value.trim();
-    const am = (r.querySelector('.bulk-amount') as HTMLInputElement).value.trim();
-    if (!to && !am) r.remove();
-  });
-  for (const r of rows) addBulkRow(r.to, r.amount);
-  if (!wrap?.children.length) addBulkRow();
-  showBulkIssues(issues.map((i) => i.message));
-  if (issues.length === 0) ta.value = '';
-});
-
-document.getElementById('btn-bulk-review')?.addEventListener('click', () => {
-  if (!accountId) return;
-  const a = bulkAsset();
-  const v = validateBulkRows(readBulkRows(), { senderHex: accountIdToHex(accountId), decimals: a.decimals, balance: a.balance });
-  if (!v.ok) {
-    showBulkIssues(v.issues.map((i) => i.message));
-    return;
-  }
-  showBulkIssues([]);
-  bulkValidated = v.rows;
-  const list = document.getElementById('bulk-review-list');
-  list?.replaceChildren(
-    ...v.rows.map((r) => {
-      const li = document.createElement('li');
-      li.setAttribute('data-testid', 'bulk-review-row');
-      const code = document.createElement('code');
-      code.textContent = `0x${r.toHex}`;
-      const amt = document.createElement('span');
-      amt.className = 'bulk-amount-cell';
-      amt.textContent = fmtBulkAmount(r.amount);
-      li.append(code, amt);
-      return li;
-    })
-  );
-  $('bulk-review-total').textContent = fmtBulkAmount(v.total);
-  $('bulk-review-summary').textContent = `${v.rows.length} transfer${v.rows.length === 1 ? '' : 's'} of ${a.symbol} on ${getCurrentNetwork().config.name}. ${v.rows.length} signatures, sent one after another.`;
-  showBulkStage('review');
-});
-
-document.getElementById('btn-bulk-back')?.addEventListener('click', () => showBulkStage('edit'));
-document.getElementById('btn-bulk-cancel')?.addEventListener('click', () => {
-  bulkCancel = true;
-  ($('btn-bulk-cancel') as HTMLButtonElement).disabled = true;
-});
-document.getElementById('btn-bulk-done')?.addEventListener('click', () => resetBulk());
-document.getElementById('btn-bulk-copy-report')?.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(bulkReportText);
-    $('btn-bulk-copy-report').textContent = 'Copied';
-  } catch {
-    /* clipboard unavailable */
-  }
-});
-
-const BULK_STATUS_LABEL: Record<BulkRowResult['status'], string> = {
-  pending: 'Waiting',
-  signing: 'Sending…',
-  submitted: 'Submitted',
-  failed: 'Failed',
-  not_sent: 'Not sent',
-};
-
-function renderBulkProgress(results: BulkRowResult[]): void {
-  const list = document.getElementById('bulk-progress-list');
-  if (!list) return;
-  list.replaceChildren(
-    ...results.map((r) => {
-      const li = document.createElement('li');
-      li.className = `bulk-status-${r.status}`;
-      li.setAttribute('data-testid', 'bulk-progress-row');
-      li.setAttribute('data-status', r.status);
-      const head = document.createElement('div');
-      head.className = 'bulk-progress-head';
-      const who = document.createElement('code');
-      who.textContent = `${shortHexLabel(r.toHex, 8, 6)} · ${fmtBulkAmount(r.amount)}`;
-      const st = document.createElement('span');
-      st.className = 'bulk-status';
-      st.textContent = BULK_STATUS_LABEL[r.status];
-      head.append(who, st);
-      li.appendChild(head);
-      if (r.txHash || r.error) {
-        const d = document.createElement('div');
-        d.className = r.status === 'failed' ? 'error' : 'hint';
-        d.textContent = r.error ?? `Tx ${r.txHash}`;
-        li.appendChild(d);
-      }
-      return li;
-    })
-  );
-  const done = results.filter((r) => r.status === 'submitted').length;
-  $('bulk-progress-summary').textContent = `${done} of ${results.length} submitted…`;
-}
-
-document.getElementById('btn-bulk-confirm')?.addEventListener('click', async () => {
-  if (!accountId || !privateKey || bulkValidated.length === 0) return;
-  const sender = accountId;
-  const key = privateKey;
+function mountBulkIsland(): void {
+  const el = document.getElementById('bulk-root');
+  if (!el || !accountId) return;
   const net = getCurrentNetwork();
-  const a = bulkAsset();
-  bulkCancel = false;
-  ($('btn-bulk-cancel') as HTMLButtonElement).disabled = false;
-  $('btn-bulk-cancel').classList.remove('hidden');
-  $('btn-bulk-done').classList.add('hidden');
-  $('btn-bulk-copy-report').classList.add('hidden');
-  $('btn-bulk-copy-report').textContent = 'Copy report';
-  showBulkStage('progress');
-  let report;
+  let balance: { value: string; decimals: number; symbol: string } | null = null;
   try {
-    const startNonce = await net.getNonce(sender);
-    report = await runSequentialBulkTransfer({
-      rows: bulkValidated,
-      startNonce,
-      sign: (row, nonce) =>
-        a.kind === 'token'
-          ? buildReferenceFungibleTransfer({ network: net, sender, tokenHex: a.token.tokenHex, toHex: row.toHex, amount: row.amount, nonce, privateKey: key })
-          : net.buildTransfer(sender, accountIdFromHex(row.toHex), row.amount, nonce, key),
-      submit: (hex) => net.submitTransaction(hex),
-      onProgress: renderBulkProgress,
-      shouldCancel: () => bulkCancel,
-    });
-  } catch (err) {
-    $('bulk-progress-summary').textContent = `Could not start: ${err instanceof Error ? err.message : String(err)}. Nothing was sent.`;
-    $('btn-bulk-cancel').classList.add('hidden');
-    $('btn-bulk-done').classList.remove('hidden');
-    return;
+    balance = { value: BigInt(lastBalanceRaw).toString(), decimals: BOING_DECIMALS, symbol: 'BOING' };
+  } catch {
+    balance = null;
   }
-  for (const r of report.results) {
-    if (r.status === 'submitted' && r.txHash) recordTx(r.txHash, a.kind === 'token' ? 'token_send' : 'send', `Bulk #${r.row + 1}: ${fmtBulkAmount(r.amount)} → ${shortHexLabel(r.toHex, 6, 4)}`);
-  }
-  renderBulkProgress(report.results);
-  bulkReportText = formatBulkReport(report, fmtBulkAmount);
-  $('bulk-progress-summary').textContent = bulkReportText.split('\n')[0] ?? '';
-  $('btn-bulk-cancel').classList.add('hidden');
-  $('btn-bulk-done').classList.remove('hidden');
-  $('btn-bulk-copy-report').classList.remove('hidden');
-  bulkValidated = [];
-  window.setTimeout(() => {
-    void refreshDashboardBalance();
-    void refreshTokens();
-  }, 2000);
-});
+  renderBulkIsland(
+    el,
+    {
+      accountId,
+      network: net,
+      getPrivateKey: () => privateKey,
+      balance,
+      holdings: tokenHoldings,
+      onRowSent: (hash, kind, summary) => {
+        if (hash) recordTx(hash, kind, summary);
+      },
+      onBatchSent: (hash, summary, steps) => {
+        if (hash) {
+          addTxHistory(txAddressHint(), selectedNetworkId, hash, 'batch', summary, steps);
+          refreshTxHistory();
+        }
+      },
+      onFinished: () => {
+        window.setTimeout(() => {
+          void refreshDashboardBalance();
+          void refreshTokens();
+        }, 2000);
+      },
+    },
+    islandKey()
+  );
+}
+
+function mountValidatorIsland(): void {
+  const el = document.getElementById('validator-root');
+  if (!el || !accountId) return;
+  renderValidatorIsland(
+    el,
+    {
+      network: getCurrentNetwork(),
+      accountId,
+      getPrivateKey: () => privateKey,
+      onSubmitted: (hash, type) => {
+        recordTx(hash, type);
+        for (const ms of [2000, 5000]) window.setTimeout(() => void refreshDashboardBalance(), ms);
+      },
+    },
+    islandKey()
+  );
+}
 
 // Init: refresh /api/networks meta, restore saved network, then choose / unlock / dashboard
 showLoading();
