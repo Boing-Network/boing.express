@@ -9,6 +9,7 @@ import type { TokenHolding } from '../boing/tokenHoldings';
 import type { NetworkAdapter } from '../networks/types';
 import styles from '../screens/Dashboard.module.css';
 import { SendConfirm } from './SendConfirm';
+import { resolveRecipient } from '../boing/names';
 import { ScanQrButton } from './ScanQrButton';
 
 /** Transfer > Token: reference fungible transfer (v1/v2). Self-transfer is refused before signing. */
@@ -21,7 +22,7 @@ export function TokenSendForm(props: {
   /** Extension: open the scanner in a tab instead of inline. */
   onExternalScan?: () => void;
 }) {
-  const [review, setReview] = useState<{ toHex: string; amount: bigint; tokenHex: string } | null>(null);
+  const [review, setReview] = useState<{ toHex: string; toName?: string; amount: bigint; tokenHex: string } | null>(null);
   const usable = props.holdings.filter((t) => t.balanceRaw != null);
   const [tokenHex, setTokenHex] = useState('');
   const [to, setTo] = useState('');
@@ -42,7 +43,18 @@ export function TokenSendForm(props: {
       setError('Pick a token first (watch one on the Wallet tab).');
       return;
     }
-    const toHex = to.replace(/\s/g, '').replace(/^0x/i, '').toLowerCase();
+    let resolved: Awaited<ReturnType<typeof resolveRecipient>>;
+    try {
+      resolved = await resolveRecipient(props.network.config.rpcUrl, to);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      return;
+    }
+    if (!resolved.ok) {
+      setError(resolved.error);
+      return;
+    }
+    const toHex = resolved.hex;
     const v = validateBulkRows([{ to: toHex, amount }], {
       senderHex: accountIdToHex(props.accountId),
       decimals: token.decimals,
@@ -52,7 +64,7 @@ export function TokenSendForm(props: {
       setError(v.issues.map((i) => i.message.replace(/^Row 1: /, '')).join(' '));
       return;
     }
-    setReview({ toHex, amount: v.rows[0]!.amount, tokenHex: token.tokenHex });
+    setReview({ toHex, toName: resolved.name, amount: v.rows[0]!.amount, tokenHex: token.tokenHex });
   }
 
   function sign(r: { toHex: string; amount: bigint; tokenHex: string }) {
@@ -69,6 +81,10 @@ export function TokenSendForm(props: {
     setError('');
     setBusy(true);
     try {
+      if (review.toName) {
+        const again = await resolveRecipient(props.network.config.rpcUrl, review.toName);
+        if (!again.ok || again.hex !== review.toHex) throw new Error(`${review.toName}.boing changed since review. Go back and check the recipient.`);
+      }
       const signed = await sign(review)();
       const res = await props.network.submitTransaction(signed);
       if (!res.success) throw new Error(res.error ?? 'Submit failed');
@@ -90,6 +106,7 @@ export function TokenSendForm(props: {
         <SendConfirm
           title={`Send ${token.symbol}`}
           to={review.toHex}
+          toName={review.toName}
           amount={`${formatBalance(review.amount.toString(), token.decimals, token.decimals)} ${token.symbol}`}
           network={props.network}
           buildSigned={sign(review)}
@@ -121,7 +138,7 @@ export function TokenSendForm(props: {
             ))}
           </select>
           <div className={styles.inlineRow}>
-            <input className={styles.input} placeholder="Recipient (64 hex)" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Token recipient" data-testid="token-send-to" />
+            <input className={styles.input} placeholder="Recipient address or name.boing" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Token recipient" data-testid="token-send-to" />
             <ScanQrButton className={styles.copyBtn} testId="token-send-to-scan" onResult={(a) => setTo(a)} onExternal={props.onExternalScan} />
           </div>
           <div className={styles.inlineRow}>

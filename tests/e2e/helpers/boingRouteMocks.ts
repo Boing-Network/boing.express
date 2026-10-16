@@ -102,6 +102,8 @@ export interface BoingMockOptions {
   accountTransactions?: (params: unknown[]) => unknown;
   /** Override `boing_getAccount` result. */
   account?: () => unknown;
+  /** Generic hook checked first: return a result (anything but `undefined`) to answer `method`. */
+  rpc?: (method: string, params: unknown[]) => unknown;
 }
 
 /** Signed tx hex → payload discriminant (u32 LE after nonce u64 + sender 32 bytes). */
@@ -143,6 +145,14 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
     }
 
     const { method, id } = payload;
+
+    if (opts.rpc && method) {
+      const r = opts.rpc(method, payload.params ?? []);
+      if (r !== undefined) {
+        await fulfillJsonRpc(route, jsonRpcResult(id, r));
+        return;
+      }
+    }
 
     switch (method) {
       case 'boing_getAccount':

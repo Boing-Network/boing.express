@@ -1265,3 +1265,65 @@
     padding: 7px 2px;
   }
 }
+
+.nameRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.nameRowHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.nameBadge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(0, 229, 255, 0.15);
+  color: #7ff3ff;
+}
+.nameActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.namePending {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  background: rgba(0, 229, 255, 0.06);
+}
+
+
+.primaryName {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #7ff3ff;
+}
+
+
+.namesQueryRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.namesQueryRow .input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+.namesYears {
+  flex: 0 0 5.5rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  padding: 0 0.5rem;
+}
+

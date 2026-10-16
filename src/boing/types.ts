@@ -40,7 +40,15 @@ export type Payload =
   /** Rust `ValidatorUnjail` (index 12). */
   | { kind: 'validator_unjail'; node_id: AccountId }
   /** Rust `Batch` (index 9): up to 16 transfers / contract calls under one signature + nonce, applied atomically. */
-  | { kind: 'batch'; calls: BatchCall[] };
+  | { kind: 'batch'; calls: BatchCall[] }
+  /** Name registry (Rust variants 13-19, see NAME-REGISTRY-PROPOSAL.md). `name` is a normalized label. */
+  | { kind: 'name_commit'; commitment: Uint8Array }
+  | { kind: 'name_register'; name: string; salt: Uint8Array; target: AccountId; years: number }
+  | { kind: 'name_renew'; name: string; years: number }
+  | { kind: 'name_transfer'; name: string; new_owner: AccountId }
+  | { kind: 'name_set_target'; name: string; target: AccountId }
+  | { kind: 'name_set_primary'; name: string | null }
+  | { kind: 'name_release'; name: string };
 
 /** One step of a `batch` payload (Rust `BatchCall`: 0 = Transfer, 1 = ContractCall). */
 export type BatchCall =

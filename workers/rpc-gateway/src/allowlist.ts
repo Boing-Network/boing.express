@@ -14,6 +14,12 @@ export const DEFAULT_GATEWAY_METHOD_ALLOWLIST = [
   'boing_rpcSupportedMethods',
   'boing_getRpcMethodCatalog',
   'boing_getRpcOpenApi',
+  // .boing name registry (read-only lookups)
+  'boing_resolveName',
+  'boing_reverseName',
+  'boing_getNameInfo',
+  'boing_checkNames',
+  'boing_namesOwnedBy',
 ] as const;
 
 export function parseAllowlist(raw: string | undefined): Set<string> {

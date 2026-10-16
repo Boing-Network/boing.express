@@ -9,6 +9,8 @@ export type SendConfirmProps = {
   title: string;
   /** Recipient, 64 hex with or without 0x. */
   to: string;
+  /** When the user typed a `.boing` name: the normalized label (the resolved address is shown under it). */
+  toName?: string;
   /** Human amount line, e.g. "40 BOING" or "2 NFTs (#7, #8)". */
   amount: string;
   network: NetworkAdapter;
@@ -51,10 +53,25 @@ export function SendConfirm(p: SendConfirmProps) {
       <img src={p.mascotSrc ?? '/assets/mascot-default.png'} alt="" className={styles.mascot} aria-hidden />
       <h2 className={styles.title}>{p.title}</h2>
       <dl className={styles.rows}>
-        <div className={styles.row}>
-          <dt>To</dt>
-          <dd title={to} data-testid="send-confirm-to">{shortAddress(to, 8, 6)}</dd>
-        </div>
+        {p.toName ? (
+          <>
+            <div className={styles.row}>
+              <dt>To</dt>
+              <dd data-testid="send-confirm-to-name">{p.toName}.boing</dd>
+            </div>
+            <div className={styles.row}>
+              <dt>Resolves to</dt>
+              <dd title={to} data-testid="send-confirm-to" className={styles.resolved}>
+                {shortAddress(to, 10, 8)}
+              </dd>
+            </div>
+          </>
+        ) : (
+          <div className={styles.row}>
+            <dt>To</dt>
+            <dd title={to} data-testid="send-confirm-to">{shortAddress(to, 8, 6)}</dd>
+          </div>
+        )}
         <div className={styles.row}>
           <dt>Amount</dt>
           <dd className={styles.amount} data-testid="send-confirm-amount">{p.amount}</dd>

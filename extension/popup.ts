@@ -4,6 +4,7 @@
  */
 
 // Ensure Ed25519 SHA-512 shim is set before any wallet code (create/import/unlock/sign).
+import { resolveRecipient } from '../src/boing/names';
 import '../src/crypto/keys';
 
 import {
@@ -1235,12 +1236,22 @@ $('btn-send-max').addEventListener('click', () => {
 $('form-send').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!accountId || !privateKey) return;
-  const toHex = ($('send-to') as HTMLInputElement).value.replace(/\s/g, '').replace(/^0x/i, '');
   const amountStr = ($('send-amount') as HTMLInputElement).value;
   hideError('send-error');
   ($('send-success') as HTMLElement).classList.add('hidden');
-  if (toHex.length !== 64 || !/^[0-9a-fA-F]+$/.test(toHex)) {
-    showError('send-error', 'Invalid address: 64 hex chars required');
+  const rpcUrlForNames = (getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog)).config.rpcUrl;
+  let toName: string | undefined;
+  let toHex: string;
+  try {
+    const r = await resolveRecipient(rpcUrlForNames, ($('send-to') as HTMLInputElement).value);
+    if (!r.ok) {
+      showError('send-error', r.error);
+      return;
+    }
+    toHex = r.hex;
+    toName = r.name;
+  } catch (err) {
+    showError('send-error', err instanceof Error ? err.message : String(err));
     return;
   }
   if (accountId && toHex.toLowerCase() === accountIdToHex(accountId).toLowerCase()) {
@@ -1263,6 +1274,7 @@ $('form-send').addEventListener('submit', async (e) => {
     const ok = await confirmSendIsland({
       title: 'Send BOING',
       to: toHex,
+      toName,
       amount: `${amountStr.trim()} BOING`,
       network: cnet,
       mascotSrc: 'images/mascot-default.webp',
@@ -1278,6 +1290,10 @@ $('form-send').addEventListener('submit', async (e) => {
   }
   const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
   try {
+    if (toName) {
+      const again = await resolveRecipient(net.config.rpcUrl, toName);
+      if (!again.ok || again.hex !== toHex) throw new Error(`${toName}.boing changed since review. Check the recipient.`);
+    }
     const nonce = await net.getNonce(accountId);
     const toId = accountIdFromHex(toHex);
     const signedHex = await net.buildTransfer(accountId, toId, amount, nonce, privateKey);
@@ -1827,9 +1843,18 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
     showError('token-send-error', 'Pick a token first (add one on the Wallet tab).');
     return;
   }
-  const toHex = ($('token-send-to') as HTMLInputElement).value.replace(/\s/g, '').replace(/^0x/i, '').toLowerCase();
-  if (!/^[0-9a-f]{64}$/.test(toHex)) {
-    showError('token-send-error', 'Invalid address: 64 hex chars required');
+  let toHex: string;
+  let toName: string | undefined;
+  try {
+    const r = await resolveRecipient(getCurrentNetwork().config.rpcUrl, ($('token-send-to') as HTMLInputElement).value);
+    if (!r.ok) {
+      showError('token-send-error', r.error);
+      return;
+    }
+    toHex = r.hex;
+    toName = r.name;
+  } catch (err) {
+    showError('token-send-error', err instanceof Error ? err.message : String(err));
     return;
   }
   const v = validateBulkRows([{ to: toHex, amount: ($('token-send-amount') as HTMLInputElement).value }], {
@@ -1849,6 +1874,7 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
     const ok = await confirmSendIsland({
       title: `Send ${t.symbol}`,
       to: toHex,
+      toName,
       amount: `${formatBalance(amount.toString(), t.decimals, t.decimals)} ${t.symbol}`,
       network: cnet,
       mascotSrc: 'images/mascot-default.webp',
@@ -1863,6 +1889,10 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
   btn.textContent = 'Sending…';
   try {
     const net = getCurrentNetwork();
+    if (toName) {
+      const again = await resolveRecipient(net.config.rpcUrl, toName);
+      if (!again.ok || again.hex !== toHex) throw new Error(`${toName}.boing changed since review. Check the recipient.`);
+    }
     const nonce = await net.getNonce(accountId);
     const signed = await buildReferenceFungibleTransfer({ network: net, sender: accountId, tokenHex: t.tokenHex, toHex, amount, nonce, privateKey });
     const res = await net.submitTransaction(signed);

@@ -27,6 +27,9 @@ import { BulkTransferPanel } from '../components/BulkTransferPanel';
 import { ValidatorPanel } from '../components/ValidatorPanel';
 import { useTokenHoldings } from '../components/useTokenHoldings';
 import { SendConfirm } from '../components/SendConfirm';
+import { resolveRecipient, reverseName } from '../boing/names';
+import { NamesPanel } from '../components/NamesPanel';
+import { PendingNameBanner } from '../components/PendingNameBanner';
 import { AddressQrModal } from '../components/AddressQrModal';
 import { ScanQrButton } from '../components/ScanQrButton';
 import styles from './Dashboard.module.css';
@@ -68,7 +71,8 @@ export function Dashboard() {
   const [chainHeight, setChainHeight] = useState<number | null>(null);
   const [sendTo, setSendTo] = useState('');
   /** Validated send waiting for the review/confirm step. */
-  const [sendReview, setSendReview] = useState<{ toHex: string; amount: bigint; amountText: string } | null>(null);
+  const [primaryName, setPrimaryName] = useState<string | null>(null);
+  const [sendReview, setSendReview] = useState<{ toHex: string; toName?: string; amount: bigint; amountText: string } | null>(null);
   const [showQr, setShowQr] = useState(false);
   const [sendAmount, setSendAmount] = useState('');
   const [sendError, setSendError] = useState('');
@@ -130,6 +134,19 @@ export function Dashboard() {
 
   const address = accountId ? formatAddress(accountId, false) : '';
   const addressHint = address ? `${address.slice(0, 8)}…${address.slice(-8)}` : '';
+  useEffect(() => {
+    if (!address) return;
+    let live = true;
+    setPrimaryName(null);
+    void reverseName(network.config.rpcUrl, address)
+      .then((r) => {
+        if (live) setPrimaryName(r?.name ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [address, network.config.rpcUrl]);
 
   const refreshData = useCallback(async () => {
     if (!accountId) return;
@@ -287,11 +304,18 @@ export function Dashboard() {
     e.preventDefault();
     setSendError('');
     setSendSuccess('');
-    const toHex = sendTo.replace(/\s/g, '').replace(/^0x/i, '');
-    if (toHex.length !== 64 || !/^[0-9a-fA-F]+$/.test(toHex)) {
-      setSendError('Invalid address: must be 64 hex characters');
+    let resolved: Awaited<ReturnType<typeof resolveRecipient>>;
+    try {
+      resolved = await resolveRecipient(network.config.rpcUrl, sendTo);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : String(err));
       return;
     }
+    if (!resolved.ok) {
+      setSendError(resolved.error);
+      return;
+    }
+    const toHex = resolved.hex;
     if (accountId && toHex.toLowerCase() === accountIdToHex(accountId).toLowerCase()) {
       setSendError('Cannot send to yourself');
       return;
@@ -306,10 +330,10 @@ export function Dashboard() {
       setSendError('Insufficient balance');
       return;
     }
-    setSendReview({ toHex: toHex.toLowerCase(), amount, amountText: `${sendAmount.trim()} ${balance?.symbol ?? 'BOING'}` });
+    setSendReview({ toHex: toHex.toLowerCase(), toName: resolved.name, amount, amountText: `${sendAmount.trim()} ${balance?.symbol ?? 'BOING'}` });
   }
 
-  async function doSend(toHex: string, amount: bigint) {
+  async function doSend(toHex: string, amount: bigint, toName?: string) {
     setSendError('');
     const privateKey = getPrivateKey();
     if (!accountId || !privateKey) {
@@ -318,6 +342,14 @@ export function Dashboard() {
     }
     setSending(true);
     try {
+      if (toName) {
+        // Re-resolve at confirm time: refuse if the name now points somewhere else.
+        const again = await resolveRecipient(network.config.rpcUrl, toName);
+        if (!again.ok || again.hex !== toHex) {
+          setSendError(`${toName}.boing changed since review. Go back and check the recipient.`);
+          return;
+        }
+      }
       const nonce = await network.getNonce(accountId);
       const toId = accountIdFromHex(toHex);
       const signedHex = await network.buildTransfer(
@@ -330,7 +362,7 @@ export function Dashboard() {
       const result = await network.submitTransaction(signedHex);
       if (result.success) {
         if (result.txHash) {
-          addTxHistory(addressHint, network.config.id, result.txHash, 'send', `${amount} BOING → ${toHex.slice(0, 6)}…${toHex.slice(-4)}`);
+          addTxHistory(addressHint, network.config.id, result.txHash, 'send', `${amount} BOING → ${toName ? `${toName}.boing` : `${toHex.slice(0, 6)}…${toHex.slice(-4)}`}`);
           refreshTxHistory();
           markSentTx();
           setOnboarding(getOnboardingState());
@@ -799,6 +831,18 @@ export function Dashboard() {
               </section>
             )}
 
+            {accountId && (
+              <PendingNameBanner
+                accountId={accountId}
+                network={network}
+                getPrivateKey={getPrivateKey}
+                balance={balance ? BigInt(balance.value) : null}
+                onDone={(n) => {
+                  setPrimaryName(n);
+                  scheduleBalanceCatchUp();
+                }}
+              />
+            )}
             {showQr && address && <AddressQrModal address={address} onClose={() => setShowQr(false)} />}
             <div className={styles.assetsComposition} data-testid="assets-composition">
             <section className={styles.section}>
@@ -825,6 +869,11 @@ export function Dashboard() {
               </select>
               <p className={styles.accountSwitchHint}>Switching locks the wallet — unlock again with your password.</p>
             </div>
+          )}
+          {primaryName && (
+            <p className={styles.primaryName} data-testid="wallet-primary-name">
+              {primaryName}.boing
+            </p>
           )}
           <div className={styles.addressRow}>
             <code className={styles.address}>{address}</code>
@@ -1025,6 +1074,7 @@ export function Dashboard() {
                   <SendConfirm
                     title={`Send ${balance?.symbol ?? 'BOING'}`}
                     to={sendReview.toHex}
+                    toName={sendReview.toName}
                     amount={sendReview.amountText}
                     network={network}
                     buildSigned={async () => {
@@ -1038,7 +1088,7 @@ export function Dashboard() {
                       setSendReview(null);
                       setSendError('');
                     }}
-                    onConfirm={() => void doSend(sendReview.toHex, sendReview.amount)}
+                    onConfirm={() => void doSend(sendReview.toHex, sendReview.amount, sendReview.toName)}
                   />
                 ) : (
                 <>
@@ -1052,7 +1102,7 @@ export function Dashboard() {
                   <div className={styles.sendAmountRow}>
                     <input
                       type="text"
-                      placeholder="To address (64 hex or 0x…)"
+                      placeholder="To address or name.boing"
                       value={sendTo}
                       onChange={(e) => setSendTo(e.target.value)}
                       className={styles.input}
@@ -1360,6 +1410,20 @@ export function Dashboard() {
               </button>
               <p className={styles.addAccountHint}>Create or import another key in the same vault. Your password stays the same.</p>
             </section>
+            {activeTab === 'settings' && accountId && (
+              <NamesPanel
+                accountId={accountId}
+                network={network}
+                getPrivateKey={getPrivateKey}
+                balance={balance ? BigInt(balance.value) : null}
+                onTx={(hash, summary) => {
+                  if (hash) addTxHistory(addressHint, network.config.id, hash, 'send', summary);
+                  refreshTxHistory();
+                  scheduleBalanceCatchUp();
+                  void reverseName(network.config.rpcUrl, address).then((r) => setPrimaryName(r?.name ?? null)).catch(() => {});
+                }}
+              />
+            )}
             {activeTab === 'settings' && <ConnectedSitesPanel />}
             {activeTab === 'settings' && <RevealPrivateKeyPanel />}
             <section className={styles.section}>

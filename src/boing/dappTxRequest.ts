@@ -2,6 +2,7 @@
  * Parse dApp JSON transaction requests (boing_signTransaction / boing_sendTransaction).
  */
 
+import { namePayloadSummary } from './names';
 import type { AccountId, AccessList, BatchCall, Payload, Transaction } from './types';
 import { accountIdFromHex, accountIdToHex, formatAddress, MAX_BATCH_CALLS } from './types';
 import { emptyAccessList, suggestedAccessList } from './accessList';
@@ -204,6 +205,14 @@ export function transactionSummary(tx: Transaction): string {
       return `Boing tx | From ${from} | Nonce ${n} | Batch of ${p.calls.length} steps (one signature, atomic): ${p.calls
         .map((c) => batchStepLine(c))
         .join('; ')}`;
+    case 'name_commit':
+    case 'name_register':
+    case 'name_renew':
+    case 'name_transfer':
+    case 'name_set_target':
+    case 'name_set_primary':
+    case 'name_release':
+      return `Boing tx | From ${from} | Nonce ${n} | ${namePayloadSummary(p)}`;
     default: {
       const _e: never = p;
       return _e;
@@ -377,6 +386,16 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
               : 'Unjail validator',
       });
       rows.push({ label: 'Node', value: formatAddress(p.node_id, true) });
+      rows.push(accessListSummary(tx));
+      break;
+    case 'name_commit':
+    case 'name_register':
+    case 'name_renew':
+    case 'name_transfer':
+    case 'name_set_target':
+    case 'name_set_primary':
+    case 'name_release':
+      rows.push({ label: 'Operation', value: namePayloadSummary(p) ?? p.kind });
       rows.push(accessListSummary(tx));
       break;
     default: {

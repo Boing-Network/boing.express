@@ -30,6 +30,13 @@ export function suggestedAccessList(sender: AccountId, payload: Payload): Access
     case 'validator_register':
     case 'validator_deregister':
     case 'validator_unjail':
+    case 'name_commit':
+    case 'name_register':
+    case 'name_renew':
+    case 'name_transfer':
+    case 'name_set_target':
+    case 'name_set_primary':
+    case 'name_release':
       return { read: [sender], write: [sender] };
     case 'contract_deploy':
     case 'contract_deploy_purpose':

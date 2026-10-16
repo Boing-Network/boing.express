@@ -22,6 +22,23 @@ const VARIANT_BATCH = 9;
 const VARIANT_VALIDATOR_REGISTER = 10;
 const VARIANT_VALIDATOR_DEREGISTER = 11;
 const VARIANT_VALIDATOR_UNJAIL = 12;
+const VARIANT_NAME_COMMIT = 13;
+const VARIANT_NAME_REGISTER = 14;
+const VARIANT_NAME_RENEW = 15;
+const VARIANT_NAME_TRANSFER = 16;
+const VARIANT_NAME_SET_TARGET = 17;
+const VARIANT_NAME_SET_PRIMARY = 18;
+const VARIANT_NAME_RELEASE = 19;
+
+function need32(b: Uint8Array, what: string): Uint8Array {
+  if (b.length !== 32) throw new Error(`${what} must be 32 bytes`);
+  return b;
+}
+
+function yearsByte(y: number): Uint8Array {
+  if (!Number.isInteger(y) || y < 1 || y > 255) throw new Error('years must be an integer 1-255');
+  return new Uint8Array([y]);
+}
 
 function writeU32LE(buf: Uint8Array, offset: number, value: number): void {
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -191,6 +208,29 @@ export function encodePayload(p: Payload): Uint8Array {
       }
       return concatBytes(parts);
     }
+    case 'name_commit':
+      return concatBytes([enumTag(VARIANT_NAME_COMMIT), need32(p.commitment, 'commitment')]);
+    case 'name_register':
+      return concatBytes([
+        enumTag(VARIANT_NAME_REGISTER),
+        encodeString(p.name),
+        need32(p.salt, 'salt'),
+        need32(p.target, 'target'),
+        yearsByte(p.years),
+      ]);
+    case 'name_renew':
+      return concatBytes([enumTag(VARIANT_NAME_RENEW), encodeString(p.name), yearsByte(p.years)]);
+    case 'name_transfer':
+      return concatBytes([enumTag(VARIANT_NAME_TRANSFER), encodeString(p.name), need32(p.new_owner, 'new_owner')]);
+    case 'name_set_target':
+      return concatBytes([enumTag(VARIANT_NAME_SET_TARGET), encodeString(p.name), need32(p.target, 'target')]);
+    case 'name_set_primary':
+      return concatBytes([
+        enumTag(VARIANT_NAME_SET_PRIMARY),
+        p.name == null ? new Uint8Array([0]) : concatBytes([new Uint8Array([1]), encodeString(p.name)]),
+      ]);
+    case 'name_release':
+      return concatBytes([enumTag(VARIANT_NAME_RELEASE), encodeString(p.name)]);
     default: {
       const _exhaustive: never = p;
       return _exhaustive;

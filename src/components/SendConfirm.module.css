@@ -35,3 +35,9 @@
   box-shadow: 0 6px 20px rgba(0, 229, 255, 0.25);
 }
 .confirm:disabled { opacity: 0.55; cursor: default; }
+
+.resolved {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+

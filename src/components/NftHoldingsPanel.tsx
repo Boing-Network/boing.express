@@ -33,6 +33,7 @@ import { parseTransferRecipientHex, transferOwnedNfts } from '../boing/nftTransf
 import { accountIdFromHex } from '../boing/types';
 import { encodeReferenceTransferNftCalldata } from '../boing/referenceNft';
 import { SendConfirm } from './SendConfirm';
+import { resolveRecipient } from '../boing/names';
 import { ScanQrButton } from './ScanQrButton';
 import { fetchOwnerIndexHoldings, formatOwnerIndexNote, type OwnerIndexResult } from '../boing/nftOwnerIndex';
 import {
@@ -154,6 +155,7 @@ export function NftHoldingsPanel({
   const [addError, setAddError] = useState('');
   const [addSuccess, setAddSuccess] = useState('');
   const [transferTo, setTransferTo] = useState('');
+  const [nftRecipient, setNftRecipient] = useState<{ hex: string; name?: string } | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
     () => new Set(transferMode && initialSelectedKey ? [initialSelectedKey] : [])
   );
@@ -339,7 +341,10 @@ export function NftHoldingsPanel({
     }
     if (!confirmBatch) {
       try {
-        parseTransferRecipientHex(transferTo, accountIdToHex(accountId));
+        const r = await resolveRecipient(network.config.rpcUrl, transferTo);
+        if (!r.ok) throw new Error(r.error);
+        parseTransferRecipientHex(r.hex, accountIdToHex(accountId));
+        setNftRecipient(r);
       } catch (err) {
         setTransferError(err instanceof Error ? err.message : String(err));
         return;
@@ -356,11 +361,19 @@ export function NftHoldingsPanel({
 
     setTransferring(true);
     try {
+      let recipientHex = nftRecipient?.hex ?? transferTo;
+      if (nftRecipient?.name) {
+        const again = await resolveRecipient(network.config.rpcUrl, nftRecipient.name);
+        if (!again.ok || again.hex !== nftRecipient.hex) {
+          throw new Error(`${nftRecipient.name}.boing changed since review. Go back and check the recipient.`);
+        }
+        recipientHex = again.hex;
+      }
       const result = await transferOwnedNfts({
         network,
         accountId,
         privateKey,
-        recipientHex: transferTo,
+        recipientHex,
         targets: targets.map((t) => ({
           collectionHex: t.collectionHex,
           tokenIdHex: t.tokenIdHex,
@@ -725,14 +738,15 @@ export function NftHoldingsPanel({
           return (
             <SendConfirm
               title={selectedCount > 1 ? `Send ${selectedCount} NFTs` : 'Send NFT'}
-              to={transferTo.replace(/\s/g, '')}
+              to={nftRecipient?.hex ?? transferTo.replace(/\s/g, '')}
+              toName={nftRecipient?.name}
               amount={targets.map((t) => `#${shortHexLabel(t.tokenIdHex, 4, 4)}`).join(', ')}
               network={network}
               txCount={selectedCount}
               buildSigned={async () => {
                 const pk = getPrivateKey();
                 if (!pk || !first || !network.buildContractCall) throw new Error('Wallet locked');
-                const toHex = parseTransferRecipientHex(transferTo, accountIdToHex(accountId));
+                const toHex = parseTransferRecipientHex(nftRecipient?.hex ?? transferTo, accountIdToHex(accountId));
                 const calldata = encodeReferenceTransferNftCalldata(accountIdFromHex(toHex), normalizeHex64(first.tokenIdHex));
                 return network.buildContractCall(accountId, accountIdFromHex(normalizeHex64(first.collectionHex)), calldata, await network.getNonce(accountId), pk);
               }}
@@ -747,7 +761,7 @@ export function NftHoldingsPanel({
           <div className={styles.inlineRow}>
             <input
               type="text"
-              placeholder="To address (64 hex or 0x…)"
+              placeholder="To address or name.boing"
               value={transferTo}
               onChange={(e) => {
                 setTransferTo(e.target.value);
