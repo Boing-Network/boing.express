@@ -4,23 +4,33 @@
   <meta charset="UTF-8" />
   <title>Boing Express</title>
   <link rel="stylesheet" href="popup.css" />
+  <link rel="stylesheet" href="popup-islands.css" />
+  <link rel="stylesheet" href="popup-islands2.css" />
 </head>
 <body>
   <div id="app">
     <div class="header">
-      <h1 class="logo">Boing Express</h1>
+      <h1 class="logo" data-testid="popup-logo"><img src="logo-mark.svg" alt="" width="28" height="28" class="logo-mark" aria-hidden="true" />Boing Express</h1>
     </div>
     <div id="screen-loading" class="screen" aria-live="polite" aria-busy="true" aria-label="Loading wallet">
       <p class="loading-message">Loading…</p>
     </div>
-    <div id="screen-choose" class="screen hidden">
-      <p class="tagline">Authentic. Decentralized. Optimal. Quality-Assured.</p>
-      <div class="actions">
-        <button type="button" id="btn-create" class="btn-primary" aria-label="Create new wallet" data-testid="wallet-landing-create">Create wallet</button>
-        <button type="button" id="btn-import" class="btn-secondary" aria-label="Import wallet with private key" data-testid="wallet-landing-import">Import wallet</button>
+    <div id="screen-choose" class="screen hidden hero-screen">
+      <div class="hero-card">
+        <img src="images/mascot.webp" alt="" class="hero-mascot" aria-hidden="true" />
+        <h2 class="hero-title">Welcome to Boing Express</h2>
+        <p class="hero-subtitle">Your non-custodial wallet for Boing Network</p>
+        <div class="actions">
+          <button type="button" id="btn-create" class="btn-primary btn-hero" aria-label="Create new wallet" data-testid="wallet-landing-create">Create New Wallet</button>
+          <button type="button" id="btn-import" class="btn-secondary btn-hero-outline" aria-label="Import wallet with private key" data-testid="wallet-landing-import">Import Existing Wallet</button>
+        </div>
+        <p class="hero-keys" data-testid="wallet-keys-note"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Your keys never leave your device</p>
       </div>
     </div>
-    <div id="screen-unlock" class="screen hidden">
+    <div id="screen-unlock" class="screen hidden hero-screen">
+      <div class="hero-card">
+      <img src="images/mascot-default.webp" alt="" class="hero-mascot" aria-hidden="true" />
+      <h2 class="hero-title">Welcome back</h2>
       <p class="hint" id="unlock-hint"></p>
       <p class="hint unlock-pending-hint hidden" id="unlock-pending-hint" aria-live="polite"></p>
       <form id="form-unlock" class="form">
@@ -29,6 +39,8 @@
         <button type="submit" class="btn-primary" aria-label="Unlock wallet" data-testid="wallet-unlock-submit">Unlock</button>
       </form>
       <button type="button" id="btn-unlock-back" class="btn-text" aria-label="Back to wallet options">Back</button>
+      <p class="hero-keys"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Your keys never leave your device</p>
+      </div>
     </div>
     <div id="screen-create" class="screen hidden">
       <p class="subtitle">Generate a new keypair. Back up your key.</p>
@@ -53,6 +65,9 @@
       <p id="backup-error" class="error hidden"></p>
       <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet" disabled data-testid="wallet-backup-continue">I've backed it up — Continue</button>
     </div>
+    <div id="screen-claim-name" class="screen hidden">
+      <div id="claim-name-root"></div>
+    </div>
     <div id="screen-import" class="screen hidden">
       <p class="subtitle">Enter 64-char hex private key.</p>
       <form id="form-import" class="form">
@@ -76,6 +91,7 @@
       <div class="dashboard-header">
         <div class="header-row">
           <select id="network-select" class="select select-network" aria-label="Select network"></select>
+          <button type="button" id="btn-qr" class="btn-icon" aria-label="Show address QR code" title="Show address QR code" data-testid="wallet-header-qr"><svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg></button>
           <button type="button" id="btn-settings" class="btn-icon" aria-label="Settings" title="Settings" aria-expanded="false" aria-controls="panel-settings" data-testid="wallet-header-settings">
             <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
@@ -88,7 +104,7 @@
         <div class="header-row account-row">
           <label class="label-inline" for="account-select">Account</label>
           <select id="account-select" class="select select-account" aria-label="Active account" data-testid="wallet-account-switch"></select>
-          <button type="button" id="btn-add-account" class="btn-small" aria-label="Add account" data-testid="wallet-dashboard-add-account">Add</button>
+          <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address" title="Copy address" data-testid="wallet-header-copy">Copy</button>
           <button type="button" id="btn-remove-account" class="btn-small btn-disconnect hidden" aria-label="Remove active account">Remove</button>
         </div>
       </div>
@@ -96,32 +112,31 @@
         <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet" data-testid="wallet-tab-wallet">Wallet</button>
         <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transaction history" data-testid="wallet-tab-transactions">Tx</button>
         <button type="button" class="tab-btn" role="tab" id="tab-transfer" aria-selected="false" aria-controls="panel-transfer" data-tab="transfer" data-testid="wallet-tab-transfer">Transfer</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-validate" aria-selected="false" aria-controls="panel-validate" data-tab="validate" aria-label="Validate and stake" data-testid="wallet-tab-validate">Validate</button>
+            <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>
       <div class="tab-panels">
         <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
+          <div id="pending-name-root"></div>
           <div class="assets-composition" data-testid="assets-composition">
-            <div class="balance-hero assets-coins">
-              <div class="balance-hero-row">
-                <div class="balance-hero-left">
-                  <p class="balance-label">Balance</p>
-                  <p class="balance"><span id="balance">…</span> <span id="symbol" class="balance-symbol">BOING</span></p>
-                  <p id="balance-error" class="error hidden"></p>
+            <p id="primary-name" class="primary-name hidden" data-testid="wallet-primary-name"></p>
+            <div class="row address-row">
+              <code id="address" class="address" title="Your address (share it to receive)"></code>
                 </div>
-                <button type="button" id="btn-balance-retry" class="btn-icon btn-retry hidden" aria-label="Retry loading balance" title="Retry">
-                  <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                </button>
-              </div>
-              <div class="row address-row">
-                <code id="address" class="address" title="Your address (share it to receive)"></code>
-                <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
-              </div>
-            </div>
             <div class="assets-tokens" data-testid="wallet-tokens">
-              <h3 class="assets-section-label">Tokens</h3>
+              <h3 class="assets-section-label">Assets</h3>
+              <ul class="connected-sites-list token-list" aria-label="Native balance">
+                <li class="token-row token-native" data-testid="token-row-native">
+                  <div class="token-row-left"><span id="symbol" class="token-symbol">BOING</span><span class="token-id">native</span></div>
+                  <span class="token-balance" data-testid="native-balance"><span id="balance">…</span></span>
+                  <button type="button" id="btn-balance-retry" class="btn-icon btn-retry hidden" aria-label="Retry loading balance" title="Retry">
+                    <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  </button>
+                </li>
+              </ul>
+              <p id="balance-error" class="error hidden"></p>
               <ul id="token-list" class="connected-sites-list token-list" aria-label="Fungible tokens"></ul>
-              <p id="token-empty" class="hint">No tokens found. Add a token contract to watch it.</p>
+              <p id="token-empty" class="hint">No contract tokens found. Add a token contract to watch it.</p>
               <p id="token-error" class="error hidden"></p>
               <details class="assets-subform">
                 <summary class="hint">Add token</summary>
@@ -160,9 +175,14 @@
               <h2 class="label">Recent transactions</h2>
               <a id="tx-history-explorer" class="btn-text hidden" target="_blank" rel="noopener noreferrer">Explorer</a>
             </div>
-            <p class="hint">Sent from this device. Full history is on the explorer.</p>
+            <p class="hint" id="tx-history-hint">All transactions for this account on chain (sent, received, dApp-signed, faucet), plus pending ones from this device.</p>
+            <p id="tx-history-error" class="error hidden" role="alert" data-testid="tx-history-error"></p>
             <ul id="tx-history-list" class="connected-sites-list tx-history-list" aria-label="Recent transactions" data-testid="tx-history-list"></ul>
-            <p id="tx-history-empty" class="hint">No transactions yet.</p>
+            <p id="tx-history-empty" class="hint" data-testid="tx-history-empty">No transactions yet.</p>
+            <div class="row">
+              <button type="button" id="btn-tx-history-refresh" class="btn-small" data-testid="tx-history-refresh">Refresh</button>
+              <button type="button" id="btn-tx-history-more" class="btn-small hidden" data-testid="tx-history-more">Load older transactions</button>
+            </div>
           </div>
         </section>
         <section id="panel-transfer" class="tab-panel" role="tabpanel" aria-labelledby="tab-transfer" hidden>
@@ -175,14 +195,17 @@
           <div class="card transfer-pane" id="transfer-pane-boing" data-testid="transfer-pane-boing">
             <h2 class="label">Send BOING</h2>
             <form id="form-send" class="form">
-              <input type="text" id="send-to" placeholder="Recipient (64 hex, 0x optional)" class="input" aria-label="Recipient address" data-testid="send-to" />
+              <div class="row row-amount">
+                <input type="text" id="send-to" placeholder="Recipient address or name.boing" class="input" aria-label="Recipient address" data-testid="send-to" />
+                <button type="button" class="btn-small btn-scan" data-scan-field="send-to" aria-label="Scan recipient QR code" data-testid="send-to-scan">Scan QR</button>
+              </div>
               <div class="row row-amount">
                 <input type="text" id="send-amount" placeholder="Amount (whole BOING, e.g. 100)" class="input" aria-label="Amount to send" inputmode="numeric" data-testid="send-amount" />
                 <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
               </div>
               <p id="send-error" class="error hidden"></p>
               <p id="send-success" class="success hidden" aria-live="polite"></p>
-              <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING" data-testid="send-submit">Send</button>
+              <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Review BOING send" data-testid="send-submit">Review send</button>
             </form>
           </div>
           <div class="card transfer-pane hidden" id="transfer-pane-token" data-testid="transfer-pane-token">
@@ -190,14 +213,17 @@
             <p class="hint">Boing reference tokens (v1 and v2). Sending to your own address is refused (v1 self-transfer bug).</p>
             <form id="form-token-send" class="form">
               <select id="token-send-asset" class="select" aria-label="Token" data-testid="token-send-asset"></select>
-              <input type="text" id="token-send-to" placeholder="Recipient (64 hex)" class="input" aria-label="Token recipient" data-testid="token-send-to" />
+              <div class="row row-amount">
+                <input type="text" id="token-send-to" placeholder="Recipient address or name.boing" class="input" aria-label="Token recipient" data-testid="token-send-to" />
+                <button type="button" class="btn-small btn-scan" data-scan-field="token-send-to" aria-label="Scan recipient QR code" data-testid="token-send-to-scan">Scan QR</button>
+              </div>
               <div class="row row-amount">
                 <input type="text" id="token-send-amount" placeholder="Amount" class="input" aria-label="Token amount" inputmode="decimal" data-testid="token-send-amount" />
                 <button type="button" id="btn-token-send-max" class="btn-small" aria-label="Use full token balance">Max</button>
               </div>
               <p id="token-send-error" class="error hidden"></p>
               <p id="token-send-success" class="success hidden" aria-live="polite"></p>
-              <button type="submit" id="btn-token-send" class="btn-primary" data-testid="token-send-submit">Send token</button>
+              <button type="submit" id="btn-token-send" class="btn-primary" data-testid="token-send-submit">Review send</button>
             </form>
           </div>
           <div class="card transfer-pane hidden" id="transfer-pane-nft" data-testid="transfer-pane-nft">
@@ -206,53 +232,25 @@
               <ul id="nft-transfer-pick" class="connected-sites-list nft-pick-list" aria-label="Owned NFTs to transfer"></ul>
               <p class="hint" id="nft-transfer-selected">Select owned items.</p>
               <p class="hint">No batch transfer_nft on-chain: multi-select sends one tx per item.</p>
-              <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
+              <div class="row row-amount">
+                <input type="text" id="nft-transfer-to" placeholder="To address (0x…) or name.boing" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
+                <button type="button" class="btn-small btn-scan" data-scan-field="nft-transfer-to" aria-label="Scan recipient QR code" data-testid="nft-transfer-to-scan">Scan QR</button>
+              </div>
               <p id="nft-transfer-error" class="error hidden"></p>
               <p id="nft-transfer-success" class="success hidden" aria-live="polite"></p>
               <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
             </form>
           </div>
-          <div class="card transfer-pane hidden" id="transfer-pane-bulk" data-testid="transfer-pane-bulk">
-            <h2 class="label">Bulk transfer</h2>
-            <div id="bulk-edit">
-              <p class="hint">One asset, many recipients. Sent as separate transactions in order (not atomic); stops at the first failure.</p>
-              <select id="bulk-asset" class="select" aria-label="Asset for bulk transfer" data-testid="bulk-asset"></select>
-              <div id="bulk-rows" class="bulk-rows" data-testid="bulk-rows"></div>
-              <div class="row">
-                <button type="button" id="btn-bulk-add-row" class="btn-small" data-testid="bulk-add-row">+ Row</button>
-                <button type="button" id="btn-bulk-clear" class="btn-small btn-disconnect">Clear</button>
-              </div>
-              <details class="assets-subform">
-                <summary class="hint">Paste CSV (address,amount per line)</summary>
-                <textarea id="bulk-csv" class="textarea" rows="4" placeholder="0x7f3a…,100&#10;0x91bc…,25" aria-label="CSV rows" data-testid="bulk-csv"></textarea>
-                <button type="button" id="btn-bulk-csv-import" class="btn-secondary" data-testid="bulk-csv-import">Add CSV rows</button>
-              </details>
-              <ul id="bulk-issues" class="bulk-issues error hidden" data-testid="bulk-issues"></ul>
-              <button type="button" id="btn-bulk-review" class="btn-primary" data-testid="bulk-review">Review</button>
-            </div>
-            <div id="bulk-review" class="hidden" data-testid="bulk-review-screen">
-              <p class="hint" id="bulk-review-summary"></p>
-              <ol id="bulk-review-list" class="bulk-review-list" data-testid="bulk-review-list"></ol>
-              <p class="bulk-total">Total: <strong id="bulk-review-total" data-testid="bulk-review-total"></strong></p>
-              <p class="error" role="note">Each row is its own transaction. If one fails, earlier rows stay sent and later rows are not sent. Keep this popup open until it finishes.</p>
-              <div class="row">
-                <button type="button" id="btn-bulk-back" class="btn-secondary" data-testid="bulk-back">Edit</button>
-                <button type="button" id="btn-bulk-confirm" class="btn-primary" data-testid="bulk-confirm">Sign &amp; send all</button>
-              </div>
-            </div>
-            <div id="bulk-progress" class="hidden" data-testid="bulk-progress">
-              <p class="hint" id="bulk-progress-summary" aria-live="polite" data-testid="bulk-progress-summary"></p>
-              <ol id="bulk-progress-list" class="bulk-review-list" data-testid="bulk-progress-list"></ol>
-              <div class="row">
-                <button type="button" id="btn-bulk-cancel" class="btn-secondary" data-testid="bulk-cancel">Stop after current</button>
-                <button type="button" id="btn-bulk-copy-report" class="btn-small hidden" data-testid="bulk-copy-report">Copy report</button>
-                <button type="button" id="btn-bulk-done" class="btn-primary hidden" data-testid="bulk-done">Done</button>
-              </div>
-            </div>
+          <div class="card transfer-pane hidden" id="transfer-pane-bulk">
+            <!-- Same mixed BOING / token / NFT bulk component as the web wallet (native batch when supported). -->
+            <div id="bulk-root"></div>
           </div>
         </section>
-        <section id="panel-stake" class="tab-panel" role="tabpanel" aria-labelledby="tab-stake" hidden>
-          <div id="staking-section" class="staking-panel">
+        <section id="panel-validate" class="tab-panel" role="tabpanel" aria-labelledby="tab-validate" hidden>
+          <div class="card" id="validator-card"><div id="validator-root"></div></div>
+          <div id="staking-section" class="staking-panel" data-testid="stake-secondary">
+            <h2 class="label">Bond stake (optional)</h2>
+            <p class="hint" data-testid="stake-min-hint">Not needed to validate today: registering a validator above locks its own 100 BOING bond. Bonding is separate stake (any amount). A future stake-based validator mode would require at least 10,000 BOING bonded; it is not active on this network.</p>
             <div class="card balance-card">
               <p class="balance-label">Staked</p>
               <p class="balance"><span id="stake">…</span> <span id="stake-symbol" class="balance-symbol">BOING</span></p>
@@ -269,22 +267,24 @@
               <p id="unbond-error" class="error hidden"></p>
               <button type="submit" id="btn-unbond" class="btn-secondary" aria-label="Unbond BOING">Unbond</button>
             </form>
-            <div id="claim-unbond-card" class="card hidden">
+            <!-- Claim lives in the validator section above (one Claim button); kept for the legacy stake refresh code. -->
+            <div hidden><div id="claim-unbond-card" class="card hidden">
               <h2 class="label">Pending unbond</h2>
               <p class="balance"><span id="pending-unbond">0</span> <span class="balance-symbol">BOING</span></p>
               <p id="claim-unbond-hint" class="hint">Unlocks after the unbonding delay (~100 blocks).</p>
               <p id="claim-unbond-error" class="error hidden"></p>
               <p id="claim-unbond-success" class="success hidden" aria-live="polite"></p>
               <button type="button" id="btn-claim-unbond" class="btn-primary" aria-label="Claim matured unbond">Claim unbond</button>
-            </div>
+            </div></div>
           </div>
         </section>
         <section id="panel-faucet" class="tab-panel" role="tabpanel" aria-labelledby="tab-faucet" hidden>
           <section id="faucet-section" class="faucet-panel">
             <div class="card card-faucet">
-              <p class="subtitle">Get testnet BOING for development and testing.</p>
+              <p class="subtitle">Get testnet BOING for development and testing (one request per 60 seconds). Same faucet as boing.network/faucet.</p>
               <button type="button" id="btn-faucet" class="btn-primary btn-faucet" aria-label="Request testnet BOING from faucet">Request testnet BOING</button>
               <button type="button" id="btn-faucet-page" class="btn-secondary" aria-label="Open faucet page in new tab">Open faucet page</button>
+              <p id="faucet-success" class="success hidden" data-testid="faucet-success"></p>
               <p id="faucet-error" class="error hidden"></p>
             </div>
           </section>
@@ -294,6 +294,12 @@
             <button type="button" id="btn-settings-back" class="btn-text" aria-label="Back to wallet" data-testid="settings-back">← Back</button>
             <h2 class="assets-title">Settings</h2>
           </div>
+          <div class="card" data-testid="settings-accounts">
+            <h2 class="label">Accounts</h2>
+            <button type="button" id="btn-add-account" class="btn-secondary" aria-label="Add account" data-testid="wallet-dashboard-add-account">Add account</button>
+            <p class="hint">Create or import another key in the same vault. Your password stays the same.</p>
+          </div>
+          <div id="names-root" class="names-root"></div>
           <div class="card card-connected-sites" data-testid="settings-connected-sites">
             <h2 class="label">Connected sites</h2>
             <p class="hint" id="connected-sites-hint">Sites that can see your address and request signatures.</p>
@@ -335,6 +341,7 @@
       <a href="https://boing.express/terms" target="_blank" rel="noopener noreferrer" id="link-terms">Terms</a>
     </footer>
   </div>
+  <div id="overlay-root" class="overlay hidden" role="dialog" aria-modal="true"><div id="overlay-island"></div></div>
   <script src="popup.js" type="module"></script>
 </body>
 </html>
