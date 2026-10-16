@@ -98,6 +98,8 @@ export interface BoingMockOptions {
   faucet?: 'ok' | 'cooldown' | 'empty';
   /** `boing_getValidators` result (called each time, so it can depend on submitted txs). Omit: Method not found. */
   validators?: () => unknown;
+  /** `boing_getAccountTransactions` result for (params). Omit: Method not found (older node). */
+  accountTransactions?: (params: unknown[]) => unknown;
   /** Override `boing_getAccount` result. */
   account?: () => unknown;
 }
@@ -149,6 +151,10 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
       case 'boing_getValidators':
         if (!opts.validators) break;
         await fulfillJsonRpc(route, jsonRpcResult(id, opts.validators()));
+        return;
+      case 'boing_getAccountTransactions':
+        if (!opts.accountTransactions) break;
+        await fulfillJsonRpc(route, jsonRpcResult(id, opts.accountTransactions(payload.params ?? [])));
         return;
       case 'boing_getBalance':
         await fulfillJsonRpc(route, jsonRpcResult(id, '1000000'));

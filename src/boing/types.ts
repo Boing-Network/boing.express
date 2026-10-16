@@ -38,7 +38,17 @@ export type Payload =
   /** Rust `ValidatorDeregister` (index 11). */
   | { kind: 'validator_deregister'; node_id: AccountId }
   /** Rust `ValidatorUnjail` (index 12). */
-  | { kind: 'validator_unjail'; node_id: AccountId };
+  | { kind: 'validator_unjail'; node_id: AccountId }
+  /** Rust `Batch` (index 9): up to 16 transfers / contract calls under one signature + nonce, applied atomically. */
+  | { kind: 'batch'; calls: BatchCall[] };
+
+/** One step of a `batch` payload (Rust `BatchCall`: 0 = Transfer, 1 = ContractCall). */
+export type BatchCall =
+  | { kind: 'transfer'; to: AccountId; amount: bigint }
+  | { kind: 'contract_call'; contract: AccountId; calldata: Uint8Array };
+
+/** Max steps in one batch (Rust `MAX_BATCH_CALLS`). */
+export const MAX_BATCH_CALLS = 16;
 
 export interface AccessList {
   read: AccountId[];

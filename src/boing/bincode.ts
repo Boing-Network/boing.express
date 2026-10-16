@@ -18,6 +18,7 @@ const VARIANT_CLAIM_UNBOND = 7;
 /** Rust `TransactionPayload::QaPoolVote`. */
 const VARIANT_QA_POOL_VOTE = 8;
 /** Rust `TransactionPayload::ValidatorRegister / ValidatorDeregister / ValidatorUnjail` (9 = Batch). */
+const VARIANT_BATCH = 9;
 const VARIANT_VALIDATOR_REGISTER = 10;
 const VARIANT_VALIDATOR_DEREGISTER = 11;
 const VARIANT_VALIDATOR_UNJAIL = 12;
@@ -172,6 +173,23 @@ export function encodePayload(p: Payload): Uint8Array {
     case 'validator_unjail': {
       if (p.node_id.length !== 32) throw new Error('node_id must be 32 bytes');
       return concatBytes([enumTag(VARIANT_VALIDATOR_UNJAIL), p.node_id]);
+    }
+    case 'batch': {
+      const count = new Uint8Array(8);
+      writeU64LE(count, 0, BigInt(p.calls.length));
+      const parts: Uint8Array[] = [enumTag(VARIANT_BATCH), count];
+      for (const c of p.calls) {
+        if (c.kind === 'transfer') {
+          const body = new Uint8Array(4 + 32 + 16);
+          writeU32LE(body, 0, 0);
+          body.set(c.to, 4);
+          writeU128LE(body, 4 + 32, c.amount);
+          parts.push(body);
+        } else {
+          parts.push(enumTag(1), c.contract, encodeVecU8(c.calldata));
+        }
+      }
+      return concatBytes(parts);
     }
     default: {
       const _exhaustive: never = p;

@@ -6,6 +6,7 @@ import { formatBalance, parseDecimalAmount, parseU128String } from '../boing/amo
 import { validateContractBytecode, VALID_PURPOSE_CATEGORIES } from '../boing/qa';
 import * as rpc from '../boing/rpc';
 import { addTxHistory, getTxHistory } from '../storage/txHistory';
+import { chainRowToDisplay, fetchChainTxPage, mergeTxHistory, type DisplayTxEntry } from '../boing/chainTxHistory';
 import {
   getOnboardingState,
   markWalletCreated,
@@ -25,7 +26,6 @@ import { TokenSendForm } from '../components/TokenSendForm';
 import { BulkTransferPanel } from '../components/BulkTransferPanel';
 import { ValidatorPanel } from '../components/ValidatorPanel';
 import { useTokenHoldings } from '../components/useTokenHoldings';
-import type { TxHistoryEntry } from '../storage/txHistory';
 import styles from './Dashboard.module.css';
 
 type WalletTabId = 'wallet' | 'transactions' | 'transfer' | 'stake' | 'validator' | 'faucet' | 'settings';
@@ -40,19 +40,6 @@ const WALLET_TABS: { id: Exclude<WalletTabId, 'settings'>; label: string; aria?:
   { id: 'faucet', label: 'Faucet' },
 ];
 
-const TX_TYPE_LABEL: Record<TxHistoryEntry['type'], string> = {
-  send: 'Send BOING',
-  bond: 'Bond',
-  unbond: 'Unbond',
-  claim_unbond: 'Claim unbond',
-  token_send: 'Send token',
-  nft_send: 'Send NFT',
-  contract_call: 'Contract call',
-  batch: 'Batch',
-  validator_register: 'Register validator',
-  validator_deregister: 'Deregister validator',
-  validator_unjail: 'Unjail validator',
-};
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -109,6 +96,12 @@ export function Dashboard() {
   const [qaUseRpc, setQaUseRpc] = useState(true);
   const [onboarding, setOnboarding] = useState(getOnboardingState);
   const [txHistory, setTxHistory] = useState<ReturnType<typeof getTxHistory>>([]);
+  const [chainTx, setChainTx] = useState<DisplayTxEntry[]>([]);
+  const [chainCursor, setChainCursor] = useState<string | null>(null);
+  const [chainLoaded, setChainLoaded] = useState(false);
+  const [chainLoading, setChainLoading] = useState(false);
+  const [chainUnsupported, setChainUnsupported] = useState(false);
+  const [chainError, setChainError] = useState('');
   const [showRpcOverride, setShowRpcOverride] = useState(false);
   const [rpcOverrideInput, setRpcOverrideInput] = useState('');
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
@@ -213,11 +206,58 @@ export function Dashboard() {
     }
   }, [addressHint, accountId, network.config.id, rpcOverrides]);
 
+  const historyDecimals = balance?.decimals ?? 0;
+  const loadChainHistory = useCallback(
+    async (cursor: string | null) => {
+      if (!accountId || !network.config.rpcUrl) return;
+      setChainLoading(true);
+      setChainError('');
+      try {
+        const page = await fetchChainTxPage(network.config.rpcUrl, accountIdToHex(accountId), cursor, 25);
+        if (!page) {
+          setChainUnsupported(true);
+          setChainTx([]);
+          setChainCursor(null);
+          return;
+        }
+        setChainUnsupported(false);
+        const rows = page.transactions.map((r) => chainRowToDisplay(r, historyDecimals));
+        setChainTx((prev) => {
+          if (!cursor) return rows;
+          const seen = new Set(prev.map((e) => e.txHash));
+          return [...prev, ...rows.filter((e) => !seen.has(e.txHash))];
+        });
+        setChainCursor(page.next_cursor);
+        setChainLoaded(true);
+      } catch (e) {
+        setChainError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setChainLoading(false);
+      }
+    },
+    [accountId, network.config.rpcUrl, historyDecimals]
+  );
+
+  useEffect(() => {
+    setChainTx([]);
+    setChainCursor(null);
+    setChainLoaded(false);
+    setChainUnsupported(false);
+  }, [accountId, network.config.id]);
+
+  useEffect(() => {
+    if (activeTab === 'transactions') void loadChainHistory(null);
+  }, [activeTab, loadChainHistory]);
+
   function refreshTxHistory() {
     if (addressHint && accountId) {
       setTxHistory(getTxHistory(addressHint, network.config.id));
+      // Pick up the new tx once it is committed.
+      window.setTimeout(() => void loadChainHistory(null), 4_000);
     }
   }
+
+  const mergedHistory = mergeTxHistory(txHistory, chainTx, { chainLoaded });
 
   async function copyAddress() {
     if (!address) return;
@@ -875,18 +915,55 @@ export function Dashboard() {
                   </a>
                 )}
               </div>
-              <p className={styles.addressHint}>Transactions sent from this browser. Incoming transfers are on the explorer.</p>
-              {txHistory.length === 0 ? (
-                <p className={styles.addressHint} data-testid="tx-history-empty">No transactions yet.</p>
+              <p className={styles.addressHint}>
+                {chainUnsupported
+                  ? 'This node does not serve account history yet; showing transactions sent from this browser.'
+                  : 'All transactions for this account on chain (sent, received, dApp-signed, faucet), plus pending ones from this device.'}
+              </p>
+              <div className={styles.balanceHeader}>
+                <button
+                  type="button"
+                  className={styles.explorerLink}
+                  onClick={() => void loadChainHistory(null)}
+                  disabled={chainLoading}
+                  data-testid="tx-history-refresh"
+                >
+                  {chainLoading ? 'Loading…' : 'Refresh'}
+                </button>
+              </div>
+              {chainError && (
+                <p className={styles.addressHint} role="alert" data-testid="tx-history-error">
+                  Could not load on-chain history: {chainError}
+                </p>
+              )}
+              {mergedHistory.length === 0 ? (
+                <p className={styles.addressHint} data-testid="tx-history-empty">
+                  {chainLoading && !chainLoaded ? 'Loading transactions…' : 'No transactions yet.'}
+                </p>
               ) : (
                 <ul className={styles.txHistoryList} data-testid="tx-history-list">
-                  {txHistory.map((entry) => {
-                    const hash = entry.txHash.startsWith('0x') ? entry.txHash : `0x${entry.txHash}`;
+                  {mergedHistory.map((entry) => {
+                    const hash = entry.txHash;
+                    const when = entry.timestamp ? new Date(entry.timestamp).toLocaleString() : '';
+                    const meta = [
+                      entry.status === 'pending' ? 'Pending' : entry.status === 'failed' ? 'Failed' : null,
+                      entry.blockHeight != null ? `Block ${entry.blockHeight}` : null,
+                      when,
+                    ].filter(Boolean).join(' · ');
                     return (
-                      <li key={`${entry.txHash}-${entry.timestamp}`} className={styles.txHistoryItem} data-testid="tx-history-row">
-                        <span className={styles.txType}>{TX_TYPE_LABEL[entry.type] ?? entry.type}</span>
+                      <li
+                        key={hash}
+                        className={styles.txHistoryItem}
+                        data-testid="tx-history-row"
+                        data-status={entry.status}
+                        data-source={entry.source}
+                        title={entry.error ?? undefined}
+                      >
+                        <span className={styles.txType}>{entry.label}</span>
                         <span className={styles.txSummary}>
-                          {entry.summary ?? new Date(entry.timestamp).toLocaleString()}
+                          {entry.summary}
+                          <br />
+                          <small className={styles.addressHint}>{meta}</small>
                           {entry.steps && entry.steps.length > 0 && (
                             <details className={styles.subDetails} data-testid="tx-history-steps">
                               <summary className={styles.addressHint}>{entry.steps.length} steps</summary>
@@ -909,6 +986,17 @@ export function Dashboard() {
                     );
                   })}
                 </ul>
+              )}
+              {chainCursor && (
+                <button
+                  type="button"
+                  className={styles.explorerLink}
+                  onClick={() => void loadChainHistory(chainCursor)}
+                  disabled={chainLoading}
+                  data-testid="tx-history-more"
+                >
+                  {chainLoading ? 'Loading…' : 'Load older transactions'}
+                </button>
               )}
             </section>
           </div>

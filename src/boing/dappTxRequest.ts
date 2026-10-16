@@ -2,8 +2,8 @@
  * Parse dApp JSON transaction requests (boing_signTransaction / boing_sendTransaction).
  */
 
-import type { AccountId, AccessList, Payload, Transaction } from './types';
-import { accountIdFromHex, accountIdToHex, formatAddress } from './types';
+import type { AccountId, AccessList, BatchCall, Payload, Transaction } from './types';
+import { accountIdFromHex, accountIdToHex, formatAddress, MAX_BATCH_CALLS } from './types';
 import { emptyAccessList, suggestedAccessList } from './accessList';
 import { parseReferenceMintBatchTokenIds } from './referenceNft';
 
@@ -131,6 +131,34 @@ export function isReferenceSelfTransferCalldata(sender: AccountId, calldata: Uin
 export const SELF_TRANSFER_REFUSED =
   'Refusing token transfer to your own address: v1 Boing reference tokens double the balance on self-transfer (known bug). Send to a different address.';
 
+function batchStepLine(c: BatchCall): string {
+  if (c.kind === 'transfer') return `Transfer ${c.amount.toString()} to ${formatAddress(c.to, true)}`;
+  const mint = describeReferenceMintBatchCalldata(c.calldata);
+  if (mint) return `Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)} (contract ${formatAddress(c.contract, true)})`;
+  return `Call contract ${formatAddress(c.contract, true)} | calldata ${c.calldata.length} bytes`;
+}
+
+/** Parse `calls` / `steps` of a dApp `batch` request (each `{ type: 'transfer' | 'contract_call', ... }`). */
+export function batchCallsFromDappJson(raw: unknown, sender: AccountId): BatchCall[] {
+  if (!Array.isArray(raw) || raw.length === 0) throw new Error('batch requires a non-empty calls array');
+  if (raw.length > MAX_BATCH_CALLS) throw new Error(`batch has ${raw.length} steps; max is ${MAX_BATCH_CALLS}`);
+  return raw.map((s, i) => {
+    if (!s || typeof s !== 'object') throw new Error(`batch step ${i + 1} must be an object`);
+    const o = s as BoingDappTxRequestJson;
+    const t = String(o.type ?? o.kind ?? '');
+    if (t === 'transfer') {
+      return { kind: 'transfer', to: accountIdFromHex(String(o.to ?? '')), amount: parseU128String(o.amount, `calls[${i}].amount`) };
+    }
+    if (t === 'contract_call' || t === 'contractCall') {
+      const contract = accountIdFromHex(String(o.contract ?? ''));
+      const calldata = hexToBytesFlexible(String(o.calldata ?? '0x'), `calls[${i}].calldata`);
+      if (isReferenceSelfTransferCalldata(sender, calldata)) throw new Error(SELF_TRANSFER_REFUSED);
+      return { kind: 'contract_call', contract, calldata };
+    }
+    throw new Error(`batch step ${i + 1}: type must be transfer or contract_call`);
+  });
+}
+
 export function transactionSummary(tx: Transaction): string {
   const from = formatAddress(tx.sender, true);
   const n = tx.nonce.toString();
@@ -172,6 +200,10 @@ export function transactionSummary(tx: Transaction): string {
       return `Boing tx | From ${from} | Nonce ${n} | Deregister validator node ${formatAddress(p.node_id, true)}`;
     case 'validator_unjail':
       return `Boing tx | From ${from} | Nonce ${n} | Unjail validator node ${formatAddress(p.node_id, true)}`;
+    case 'batch':
+      return `Boing tx | From ${from} | Nonce ${n} | Batch of ${p.calls.length} steps (one signature, atomic): ${p.calls
+        .map((c) => batchStepLine(c))
+        .join('; ')}`;
     default: {
       const _e: never = p;
       return _e;
@@ -325,6 +357,13 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
       rows.push({ label: 'Bytecode', value: `${p.bytecode.length} bytes — ${hexPreview(p.bytecode)}` });
       rows.push(accessListSummary(tx));
       break;
+    case 'batch':
+      rows.push({ label: 'Operation', value: `Batch: ${p.calls.length} steps in one transaction (all succeed or all revert)` });
+      p.calls.forEach((c, i) => {
+        rows.push({ label: `Step ${i + 1}`, value: batchStepLine(c) });
+      });
+      rows.push(accessListSummary(tx));
+      break;
     case 'validator_register':
     case 'validator_deregister':
     case 'validator_unjail':
@@ -472,6 +511,10 @@ export function transactionFromDappJson(
         asset_symbol,
         create2_salt: parseCreate2Salt(o),
       };
+      break;
+    }
+    case 'batch': {
+      payload = { kind: 'batch', calls: batchCallsFromDappJson(o.calls ?? o.steps, sender) };
       break;
     }
     default:

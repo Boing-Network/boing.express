@@ -17,6 +17,12 @@ export function suggestedAccessList(sender: AccountId, payload: Payload): Access
       return { read: [sender, payload.to], write: [sender, payload.to] };
     case 'contract_call':
       return { read: [sender, payload.contract], write: [sender, payload.contract] };
+    case 'batch': {
+      const ids: AccountId[] = [sender];
+      const seen = new Set([accountIdToHex(sender).toLowerCase()]);
+      for (const c of payload.calls) pushUniqueAccount(ids, seen, c.kind === 'transfer' ? c.to : c.contract);
+      return { read: [...ids], write: [...ids] };
+    }
     case 'bond':
     case 'unbond':
     case 'claim_unbond':
