@@ -49,7 +49,7 @@ test.describe('validator tab (mocked RPC)', () => {
       validators: () => ({ mode: 'static', height: 120, quorum: 1, validator_count: 1, open: null, validators: [anchorEntry] }),
     });
     await importWallet(page);
-    await page.getByTestId('wallet-tab-validator').click();
+    await page.getByTestId('wallet-tab-validate').click();
     await expect(page.getByTestId('validator-coming-soon')).toContainText('coming soon');
     await expect(page.getByTestId('validator-register-form')).toHaveCount(0);
   });
@@ -57,7 +57,7 @@ test.describe('validator tab (mocked RPC)', () => {
   test('older node without boing_getValidators still shows coming soon', async ({ context, page }) => {
     await installBoingNetworkMocks(context);
     await importWallet(page);
-    await page.getByTestId('wallet-tab-validator').click();
+    await page.getByTestId('wallet-tab-validate').click();
     await expect(page.getByTestId('validator-coming-soon')).toBeVisible();
     await expect(page.getByTestId('validator-load-error')).toBeVisible();
   });
@@ -83,7 +83,7 @@ test.describe('validator tab (mocked RPC)', () => {
       },
     });
     await importWallet(page);
-    await page.getByTestId('wallet-tab-validator').click();
+    await page.getByTestId('wallet-tab-validate').click();
     await expect(page.getByTestId('validator-summary')).toContainText('next epoch at block 400');
     await expect(page.getByTestId('validator-key-warning')).toContainText('never stored or sent anywhere');
     await page.getByTestId('validator-node-key').fill(NODE_KEY);
@@ -112,7 +112,7 @@ test.describe('validator tab (mocked RPC)', () => {
       }),
     });
     await importWallet(page);
-    await page.getByTestId('wallet-tab-validator').click();
+    await page.getByTestId('wallet-tab-validate').click();
     const row = page.getByTestId('validator-row-ea4a6c63').first();
     await expect(row).toContainText('jailed until block 500');
     await expect(row).toContainText('Since jailing: Uptime 100.0%');

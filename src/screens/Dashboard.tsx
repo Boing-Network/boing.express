@@ -28,15 +28,14 @@ import { ValidatorPanel } from '../components/ValidatorPanel';
 import { useTokenHoldings } from '../components/useTokenHoldings';
 import styles from './Dashboard.module.css';
 
-type WalletTabId = 'wallet' | 'transactions' | 'transfer' | 'stake' | 'validator' | 'faucet' | 'settings';
+type WalletTabId = 'wallet' | 'transactions' | 'transfer' | 'validate' | 'faucet' | 'settings';
 type TransferMode = 'boing' | 'token' | 'nft' | 'bulk';
 
 const WALLET_TABS: { id: Exclude<WalletTabId, 'settings'>; label: string; aria?: string }[] = [
   { id: 'wallet', label: 'Wallet' },
   { id: 'transactions', label: 'Tx', aria: 'Transaction history' },
   { id: 'transfer', label: 'Transfer' },
-  { id: 'stake', label: 'Stake' },
-  { id: 'validator', label: 'Validator' },
+  { id: 'validate', label: 'Validate', aria: 'Validate and stake' },
   { id: 'faucet', label: 'Faucet' },
 ];
 
@@ -120,6 +119,8 @@ export function Dashboard() {
   const showStakeTab = Boolean(network.buildBond || network.buildUnbond || network.buildClaimUnbond);
   const showFaucetTab = Boolean(network.config.isTestnet);
   const showValidatorTab = Boolean(network.config.isTestnet || network.buildBond);
+  /** One tab for validating (open registration) and the secondary bond/unbond actions. */
+  const showValidateTab = showStakeTab || showValidatorTab;
 
   const address = accountId ? formatAddress(accountId, false) : '';
   const addressHint = address ? `${address.slice(0, 8)}…${address.slice(-8)}` : '';
@@ -194,10 +195,9 @@ export function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'stake' && !showStakeTab) setActiveTab('wallet');
+    if (activeTab === 'validate' && !showValidateTab) setActiveTab('wallet');
     if (activeTab === 'faucet' && !showFaucetTab) setActiveTab('wallet');
-    if (activeTab === 'validator' && !showValidatorTab) setActiveTab('wallet');
-  }, [activeTab, showStakeTab, showFaucetTab, showValidatorTab]);
+  }, [activeTab, showValidateTab, showFaucetTab]);
 
   useEffect(() => {
     if (addressHint && accountId) {
@@ -707,9 +707,8 @@ export function Dashboard() {
       <main className={styles.main}>
         <nav className={styles.tabBar} role="tablist" aria-label="Wallet sections">
           {WALLET_TABS.map(({ id, label, aria }) => {
-            if (id === 'stake' && !showStakeTab) return null;
+            if (id === 'validate' && !showValidateTab) return null;
             if (id === 'faucet' && !showFaucetTab) return null;
-            if (id === 'validator' && !showValidatorTab) return null;
             const selected = activeTab === id;
             return (
               <button
@@ -1129,16 +1128,30 @@ export function Dashboard() {
             )}
           </div>
 
-          {showStakeTab && (
+          {showValidateTab && (
             <div
-              id="panel-stake"
+              id="panel-validate"
               role="tabpanel"
-              aria-labelledby="tab-stake"
-              hidden={activeTab !== 'stake'}
-              className={`${styles.tabPanel} ${activeTab === 'stake' ? styles.tabPanelActive : ''}`}
+              aria-labelledby="tab-validate"
+              hidden={activeTab !== 'validate'}
+              className={`${styles.tabPanel} ${activeTab === 'validate' ? styles.tabPanelActive : ''}`}
             >
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Staking</h2>
+              {showValidatorTab && accountId && activeTab === 'validate' && (
+                <ValidatorPanel
+                  network={network}
+                  accountId={accountId}
+                  getPrivateKey={getPrivateKey}
+                  onSubmitted={(hash, type) => {
+                    addTxHistory(addressHint, network.config.id, hash, type);
+                    refreshTxHistory();
+                    setLastTxHash(hash);
+                    scheduleBalanceCatchUp();
+                  }}
+                />
+              )}
+              {showStakeTab && (
+          <section className={styles.section} data-testid="stake-secondary">
+            <h2 className={styles.sectionTitle}>Bond stake (optional)</h2>
             {displayStake != null && (
               <p className={styles.balance}>
                 {displayStake} <span className={styles.symbol}>BOING</span> <span className={styles.stakeLabel}>staked</span>
@@ -1160,8 +1173,9 @@ export function Dashboard() {
               </p>
             )}
             <p className={styles.faucetHint} data-testid="stake-min-hint">
-              You can bond any amount. Running a validator needs at least 10,000 BOING staked, which the faucet
-              cannot cover (it sends a small amount per request, once a minute).
+              Not needed to validate today: registering a validator above locks its own 100 BOING bond. Bonding is
+              separate stake (any amount). A future stake-based validator mode would require at least 10,000 BOING
+              bonded; it is not active on this network.
             </p>
             {network.buildBond && (
               <form onSubmit={handleBond} className={styles.form}>
@@ -1219,7 +1233,7 @@ export function Dashboard() {
                 </button>
               </form>
             )}
-            {network.buildClaimUnbond && hasPendingUnbond && (
+            {network.buildClaimUnbond && hasPendingUnbond && !showValidatorTab && (
               <form onSubmit={handleClaimUnbond} className={styles.form}>
                 <p className={styles.faucetHint}>
                   Claim matured pending unbond into your spendable balance
@@ -1240,32 +1254,9 @@ export function Dashboard() {
               </form>
             )}
             <p className={styles.stakingHint}>
-              Bond BOING to stake for PoS validation. Unbond queues stake for ~100 blocks; claim after the unlock height to return it to your balance.
+              Unbond queues stake for ~100 blocks; claim it from the validator section above once it unlocks.
             </p>
           </section>
-            </div>
-          )}
-
-          {showValidatorTab && accountId && (
-            <div
-              id="panel-validator"
-              role="tabpanel"
-              aria-labelledby="tab-validator"
-              hidden={activeTab !== 'validator'}
-              className={`${styles.tabPanel} ${activeTab === 'validator' ? styles.tabPanelActive : ''}`}
-            >
-              {activeTab === 'validator' && (
-                <ValidatorPanel
-                  network={network}
-                  accountId={accountId}
-                  getPrivateKey={getPrivateKey}
-                  onSubmitted={(hash, type) => {
-                    addTxHistory(addressHint, network.config.id, hash, type);
-                    refreshTxHistory();
-                    setLastTxHash(hash);
-                    scheduleBalanceCatchUp();
-                  }}
-                />
               )}
             </div>
           )}

@@ -97,8 +97,7 @@
         <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet" data-testid="wallet-tab-wallet">Wallet</button>
         <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transaction history" data-testid="wallet-tab-transactions">Tx</button>
         <button type="button" class="tab-btn" role="tab" id="tab-transfer" aria-selected="false" aria-controls="panel-transfer" data-tab="transfer" data-testid="wallet-tab-transfer">Transfer</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-stake" aria-selected="false" aria-controls="panel-stake" data-tab="stake">Stake</button>
-        <button type="button" class="tab-btn hidden" role="tab" id="tab-validator" aria-selected="false" aria-controls="panel-validator" data-tab="validator" data-testid="wallet-tab-validator">Validator</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-validate" aria-selected="false" aria-controls="panel-validate" data-tab="validate" aria-label="Validate and stake" data-testid="wallet-tab-validate">Validate</button>
             <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>
       <div class="tab-panels">
@@ -224,8 +223,11 @@
             <div id="bulk-root"></div>
           </div>
         </section>
-        <section id="panel-stake" class="tab-panel" role="tabpanel" aria-labelledby="tab-stake" hidden>
-          <div id="staking-section" class="staking-panel">
+        <section id="panel-validate" class="tab-panel" role="tabpanel" aria-labelledby="tab-validate" hidden>
+          <div class="card" id="validator-card"><div id="validator-root"></div></div>
+          <div id="staking-section" class="staking-panel" data-testid="stake-secondary">
+            <h2 class="label">Bond stake (optional)</h2>
+            <p class="hint" data-testid="stake-min-hint">Not needed to validate today: registering a validator above locks its own 100 BOING bond. Bonding is separate stake (any amount). A future stake-based validator mode would require at least 10,000 BOING bonded; it is not active on this network.</p>
             <div class="card balance-card">
               <p class="balance-label">Staked</p>
               <p class="balance"><span id="stake">…</span> <span id="stake-symbol" class="balance-symbol">BOING</span></p>
@@ -242,18 +244,16 @@
               <p id="unbond-error" class="error hidden"></p>
               <button type="submit" id="btn-unbond" class="btn-secondary" aria-label="Unbond BOING">Unbond</button>
             </form>
-            <div id="claim-unbond-card" class="card hidden">
+            <!-- Claim lives in the validator section above (one Claim button); kept for the legacy stake refresh code. -->
+            <div hidden><div id="claim-unbond-card" class="card hidden">
               <h2 class="label">Pending unbond</h2>
               <p class="balance"><span id="pending-unbond">0</span> <span class="balance-symbol">BOING</span></p>
               <p id="claim-unbond-hint" class="hint">Unlocks after the unbonding delay (~100 blocks).</p>
               <p id="claim-unbond-error" class="error hidden"></p>
               <p id="claim-unbond-success" class="success hidden" aria-live="polite"></p>
               <button type="button" id="btn-claim-unbond" class="btn-primary" aria-label="Claim matured unbond">Claim unbond</button>
-            </div>
+            </div></div>
           </div>
-        </section>
-        <section id="panel-validator" class="tab-panel" role="tabpanel" aria-labelledby="tab-validator" hidden>
-          <div class="card"><div id="validator-root"></div></div>
         </section>
         <section id="panel-faucet" class="tab-panel" role="tabpanel" aria-labelledby="tab-faucet" hidden>
           <section id="faucet-section" class="faucet-panel">

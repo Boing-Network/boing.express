@@ -217,7 +217,13 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
 
   return (
     <section className={styles.section} data-testid="validator-panel">
-      <h2 className={styles.sectionTitle}>Validator</h2>
+      <h2 className={styles.sectionTitle}>Become a validator</h2>
+      <ol className={styles.stakingHint} data-testid="validator-steps" style={{ paddingLeft: 18, margin: '0 0 8px' }}>
+        <li>Run a synced node with <code className={styles.inlineCode}>BOING_VALIDATOR=1</code> and its node key (<code className={styles.inlineCode}>BOING_VALIDATOR_KEY</code>).</li>
+        <li>Register it here: locks a {open?.bond ?? '100'} BOING bond; you join the set at the next epoch (every {open?.epoch_len ?? 100} blocks).</li>
+        <li>Stay online: keep uptime above {100 - thresholdPct}% or you are jailed at the next epoch (bond kept). Unjail after the cooldown.</li>
+        <li>To leave, deregister: the bond unbonds over ~100 blocks, then claim it back to your balance.</li>
+      </ol>
       {loading && !report && !loadError && <p className={styles.faucetHint}>Loading validator set…</p>}
 
       {(avail.state === 'unsupported' || avail.state === 'not_open' || avail.state === 'scheduled') && !loading && (

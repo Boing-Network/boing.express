@@ -39,10 +39,35 @@ test.describe('testnet faucet + staking guidance (mocked RPC)', () => {
     await expect(page.getByText(/Faucet cooldown: try again in 42 seconds\. \(one request per address every 60 seconds\)/)).toBeVisible();
   });
 
-  test('stake tab explains the 10,000 BOING validator minimum', async ({ context, page }) => {
-    await installBoingNetworkMocks(context);
+  test('one Validate tab: validator path first, bond stake secondary, no 10k minimum claim', async ({ context, page }) => {
+    await installBoingNetworkMocks(context, {
+      validators: () => ({
+        mode: 'open', height: 352, quorum: 1, validator_count: 1,
+        open: {
+          activation_height: 300, activated_at: 300, bond: '100', deregister_delay: 100, epoch_len: 100,
+          next_epoch_height: 400, max_open_validators: 20, liveness_window: 1000, miss_threshold_bps: 1000,
+          min_liveness_samples: 10, jail_cooldown: 500, anchors: [],
+        },
+        validators: [],
+      }),
+    });
     await importWallet(page);
-    await page.getByTestId('wallet-tab-stake').click();
-    await expect(page.getByTestId('stake-min-hint')).toContainText('10,000 BOING');
+    await expect(page.getByTestId('wallet-tab-stake')).toHaveCount(0);
+    await expect(page.getByTestId('wallet-tab-validator')).toHaveCount(0);
+    await page.getByTestId('wallet-tab-validate').click();
+    const steps = page.getByTestId('validator-steps');
+    await expect(steps).toContainText('100 BOING bond');
+    await expect(steps).toContainText('uptime above 90%');
+    await expect(page.getByTestId('validator-register-form')).toBeVisible();
+    const hint = page.getByTestId('stake-min-hint');
+    await expect(hint).toContainText('Not needed to validate today');
+    await expect(hint).toContainText('future stake-based');
+    // Validator section is above the secondary bond section.
+    const vy = (await page.getByTestId('validator-panel').boundingBox())!.y;
+    const sy = (await page.getByTestId('stake-secondary').boundingBox())!.y;
+    expect(vy).toBeLessThan(sy);
+    await expect(page.locator('#panel-validate')).not.toContainText('needs at least 10,000');
+    const shot = process.env.VALIDATE_SCREENSHOT;
+    if (shot) await page.screenshot({ path: shot, fullPage: true });
   });
 });

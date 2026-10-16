@@ -219,12 +219,12 @@ function updateFaucetVisibility(): void {
 function updateStakingVisibility(): void {
   const net = getCurrentNetwork();
   const section = document.getElementById('staking-section');
-  const tabBtn = document.getElementById('tab-stake');
   const show = Boolean(net.buildBond || net.buildUnbond || net.buildClaimUnbond);
+  const showValidator = Boolean(net.config.isTestnet || net.buildBond);
   if (section) section.classList.toggle('hidden', !show);
-  if (tabBtn) tabBtn.classList.toggle('hidden', !show);
-  // Validator tab: testnet (open validator set) or any network that supports bonding.
-  document.getElementById('tab-validator')?.classList.toggle('hidden', !(net.config.isTestnet || net.buildBond));
+  document.getElementById('validator-card')?.classList.toggle('hidden', !showValidator);
+  // One "Validate" tab: open validator registration first, bond/unbond below.
+  document.getElementById('tab-validate')?.classList.toggle('hidden', !(show || showValidator));
 }
 
 function getConnectedSitesFromStorage(): Promise<string[]> {
@@ -284,7 +284,7 @@ async function refreshConnectedSites(): Promise<void> {
   }
 }
 
-type TabId = 'wallet' | 'transactions' | 'transfer' | 'stake' | 'validator' | 'faucet' | 'settings';
+type TabId = 'wallet' | 'transactions' | 'transfer' | 'validate' | 'faucet' | 'settings';
 
 function switchTab(tabId: TabId): void {
   document.querySelectorAll('.tab-btn').forEach((el) => {
@@ -859,9 +859,9 @@ $('btn-import-back').addEventListener('click', () => {
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     const tabId = (btn as HTMLElement).getAttribute('data-tab');
-    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'transfer' || tabId === 'stake' || tabId === 'validator' || tabId === 'faucet')
+    if (tabId === 'wallet' || tabId === 'transactions' || tabId === 'transfer' || tabId === 'validate' || tabId === 'faucet')
       switchTab(tabId);
-    if (tabId === 'validator') mountValidatorIsland();
+    if (tabId === 'validate') mountValidatorIsland();
     if (tabId === 'wallet') {
       void refreshDashboardBalance();
       void refreshNfts();

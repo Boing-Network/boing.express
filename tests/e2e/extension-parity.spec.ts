@@ -52,8 +52,11 @@ describe('Extension parity with web wallet (E2E, mocked RPC)', () => {
     try {
       const me = await myAddress(popup);
       owner = me.startsWith('0x') ? me.toLowerCase() : `0x${me.toLowerCase()}`;
-      await expect(popup.getByTestId('wallet-tab-validator')).toBeVisible();
-      await popup.getByTestId('wallet-tab-validator').click();
+      await expect(popup.getByTestId('wallet-tab-validate')).toBeVisible();
+      await popup.getByTestId('wallet-tab-validate').click();
+      await expect(popup.getByTestId('validator-steps')).toContainText('100 BOING bond');
+      await expect(popup.getByTestId('stake-min-hint')).toContainText('future stake-based');
+      await expect(popup.getByRole('button', { name: 'Claim unbond' })).toHaveCount(0);
       await expect(popup.getByTestId('validator-summary')).toContainText('next epoch at block 600');
       const row = popup.getByTestId('validator-row-ea4a6c63').first();
       await expect(row).toContainText('jailed until block 500');
