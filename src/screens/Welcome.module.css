@@ -219,3 +219,41 @@
     align-self: flex-start;
   }
 }
+
+/* Opening screens (welcome, unlock, create, import): mascot art backdrop + cyan-bordered card. */
+.heroWrap {
+  background:
+    radial-gradient(ellipse at center, rgba(2, 8, 20, 0.35) 0%, rgba(2, 8, 20, 0.85) 70%),
+    url('/images/boing_robot_hero.png') center 30% / cover no-repeat,
+    #020814;
+}
+.heroCard {
+  text-align: center;
+  border: 1.5px solid rgba(0, 229, 255, 0.7);
+  background: rgba(4, 12, 26, 0.88);
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.18), var(--shadow-card);
+}
+.heroCard .mascot { width: 120px; }
+.heroCard .title { font-size: 1.6rem; font-weight: 700; }
+.heroCard .form, .heroCard .backupKeyWrap, .heroCard .checkboxWrap { text-align: left; }
+.heroPrimary {
+  background: linear-gradient(90deg, #00e5ff, #22d3ee) !important;
+  color: #001018 !important;
+  font-weight: 800;
+  border: 0 !important;
+}
+.heroSecondary {
+  background: transparent !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.8) !important;
+  color: #7df3ff !important;
+  font-weight: 700;
+}
+.keysNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 1.1rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}

@@ -14,14 +14,22 @@
     <div id="screen-loading" class="screen" aria-live="polite" aria-busy="true" aria-label="Loading wallet">
       <p class="loading-message">Loading…</p>
     </div>
-    <div id="screen-choose" class="screen hidden">
-      <p class="tagline">Authentic. Decentralized. Optimal. Quality-Assured.</p>
-      <div class="actions">
-        <button type="button" id="btn-create" class="btn-primary" aria-label="Create new wallet" data-testid="wallet-landing-create">Create wallet</button>
-        <button type="button" id="btn-import" class="btn-secondary" aria-label="Import wallet with private key" data-testid="wallet-landing-import">Import wallet</button>
+    <div id="screen-choose" class="screen hidden hero-screen">
+      <div class="hero-card">
+        <img src="images/mascot.webp" alt="" class="hero-mascot" aria-hidden="true" />
+        <h2 class="hero-title">Welcome to Boing Express</h2>
+        <p class="hero-subtitle">Your non-custodial wallet for Boing Network</p>
+        <div class="actions">
+          <button type="button" id="btn-create" class="btn-primary btn-hero" aria-label="Create new wallet" data-testid="wallet-landing-create">Create New Wallet</button>
+          <button type="button" id="btn-import" class="btn-secondary btn-hero-outline" aria-label="Import wallet with private key" data-testid="wallet-landing-import">Import Existing Wallet</button>
+        </div>
+        <p class="hero-keys" data-testid="wallet-keys-note"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Your keys never leave your device</p>
       </div>
     </div>
-    <div id="screen-unlock" class="screen hidden">
+    <div id="screen-unlock" class="screen hidden hero-screen">
+      <div class="hero-card">
+      <img src="images/mascot-default.webp" alt="" class="hero-mascot" aria-hidden="true" />
+      <h2 class="hero-title">Welcome back</h2>
       <p class="hint" id="unlock-hint"></p>
       <p class="hint unlock-pending-hint hidden" id="unlock-pending-hint" aria-live="polite"></p>
       <form id="form-unlock" class="form">
@@ -30,6 +38,8 @@
         <button type="submit" class="btn-primary" aria-label="Unlock wallet" data-testid="wallet-unlock-submit">Unlock</button>
       </form>
       <button type="button" id="btn-unlock-back" class="btn-text" aria-label="Back to wallet options">Back</button>
+      <p class="hero-keys"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Your keys never leave your device</p>
+      </div>
     </div>
     <div id="screen-create" class="screen hidden">
       <p class="subtitle">Generate a new keypair. Back up your key.</p>
@@ -89,7 +99,7 @@
         <div class="header-row account-row">
           <label class="label-inline" for="account-select">Account</label>
           <select id="account-select" class="select select-account" aria-label="Active account" data-testid="wallet-account-switch"></select>
-          <button type="button" id="btn-add-account" class="btn-small" aria-label="Add account" data-testid="wallet-dashboard-add-account">Add</button>
+          <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address" title="Copy address" data-testid="wallet-header-copy">Copy</button>
           <button type="button" id="btn-remove-account" class="btn-small btn-disconnect hidden" aria-label="Remove active account">Remove</button>
         </div>
       </div>
@@ -103,26 +113,24 @@
       <div class="tab-panels">
         <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
           <div class="assets-composition" data-testid="assets-composition">
-            <div class="balance-hero assets-coins">
-              <div class="balance-hero-row">
-                <div class="balance-hero-left">
-                  <p class="balance-label">Balance</p>
-                  <p class="balance"><span id="balance">…</span> <span id="symbol" class="balance-symbol">BOING</span></p>
-                  <p id="balance-error" class="error hidden"></p>
-                </div>
-                <button type="button" id="btn-balance-retry" class="btn-icon btn-retry hidden" aria-label="Retry loading balance" title="Retry">
-                  <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                </button>
-              </div>
-              <div class="row address-row">
-                <code id="address" class="address" title="Your address (share it to receive)"></code>
-                <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address">Copy</button>
-              </div>
+            <div class="row address-row">
+              <code id="address" class="address" title="Your address (share it to receive)"></code>
+              <button type="button" id="btn-receive" class="btn-small" aria-label="Receive: show address QR code" data-testid="wallet-receive">Receive</button>
             </div>
             <div class="assets-tokens" data-testid="wallet-tokens">
-              <h3 class="assets-section-label">Tokens</h3>
+              <h3 class="assets-section-label">Assets</h3>
+              <ul class="connected-sites-list token-list" aria-label="Native balance">
+                <li class="token-row token-native" data-testid="token-row-native">
+                  <div class="token-row-left"><span id="symbol" class="token-symbol">BOING</span><span class="token-id">native</span></div>
+                  <span class="token-balance" data-testid="native-balance"><span id="balance">…</span></span>
+                  <button type="button" id="btn-balance-retry" class="btn-icon btn-retry hidden" aria-label="Retry loading balance" title="Retry">
+                    <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  </button>
+                </li>
+              </ul>
+              <p id="balance-error" class="error hidden"></p>
               <ul id="token-list" class="connected-sites-list token-list" aria-label="Fungible tokens"></ul>
-              <p id="token-empty" class="hint">No tokens found. Add a token contract to watch it.</p>
+              <p id="token-empty" class="hint">No contract tokens found. Add a token contract to watch it.</p>
               <p id="token-error" class="error hidden"></p>
               <details class="assets-subform">
                 <summary class="hint">Add token</summary>
@@ -181,14 +189,17 @@
           <div class="card transfer-pane" id="transfer-pane-boing" data-testid="transfer-pane-boing">
             <h2 class="label">Send BOING</h2>
             <form id="form-send" class="form">
-              <input type="text" id="send-to" placeholder="Recipient (64 hex, 0x optional)" class="input" aria-label="Recipient address" data-testid="send-to" />
+              <div class="row row-amount">
+                <input type="text" id="send-to" placeholder="Recipient (64 hex, 0x optional)" class="input" aria-label="Recipient address" data-testid="send-to" />
+                <button type="button" class="btn-small btn-scan" data-scan-field="send-to" aria-label="Scan recipient QR code" data-testid="send-to-scan">Scan QR</button>
+              </div>
               <div class="row row-amount">
                 <input type="text" id="send-amount" placeholder="Amount (whole BOING, e.g. 100)" class="input" aria-label="Amount to send" inputmode="numeric" data-testid="send-amount" />
                 <button type="button" id="btn-send-max" class="btn-small" aria-label="Use full balance">Max</button>
               </div>
               <p id="send-error" class="error hidden"></p>
               <p id="send-success" class="success hidden" aria-live="polite"></p>
-              <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Send BOING" data-testid="send-submit">Send</button>
+              <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Review BOING send" data-testid="send-submit">Review send</button>
             </form>
           </div>
           <div class="card transfer-pane hidden" id="transfer-pane-token" data-testid="transfer-pane-token">
@@ -196,14 +207,17 @@
             <p class="hint">Boing reference tokens (v1 and v2). Sending to your own address is refused (v1 self-transfer bug).</p>
             <form id="form-token-send" class="form">
               <select id="token-send-asset" class="select" aria-label="Token" data-testid="token-send-asset"></select>
-              <input type="text" id="token-send-to" placeholder="Recipient (64 hex)" class="input" aria-label="Token recipient" data-testid="token-send-to" />
+              <div class="row row-amount">
+                <input type="text" id="token-send-to" placeholder="Recipient (64 hex)" class="input" aria-label="Token recipient" data-testid="token-send-to" />
+                <button type="button" class="btn-small btn-scan" data-scan-field="token-send-to" aria-label="Scan recipient QR code" data-testid="token-send-to-scan">Scan QR</button>
+              </div>
               <div class="row row-amount">
                 <input type="text" id="token-send-amount" placeholder="Amount" class="input" aria-label="Token amount" inputmode="decimal" data-testid="token-send-amount" />
                 <button type="button" id="btn-token-send-max" class="btn-small" aria-label="Use full token balance">Max</button>
               </div>
               <p id="token-send-error" class="error hidden"></p>
               <p id="token-send-success" class="success hidden" aria-live="polite"></p>
-              <button type="submit" id="btn-token-send" class="btn-primary" data-testid="token-send-submit">Send token</button>
+              <button type="submit" id="btn-token-send" class="btn-primary" data-testid="token-send-submit">Review send</button>
             </form>
           </div>
           <div class="card transfer-pane hidden" id="transfer-pane-nft" data-testid="transfer-pane-nft">
@@ -212,7 +226,10 @@
               <ul id="nft-transfer-pick" class="connected-sites-list nft-pick-list" aria-label="Owned NFTs to transfer"></ul>
               <p class="hint" id="nft-transfer-selected">Select owned items.</p>
               <p class="hint">No batch transfer_nft on-chain: multi-select sends one tx per item.</p>
-              <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
+              <div class="row row-amount">
+                <input type="text" id="nft-transfer-to" placeholder="To address (64 hex)" class="input" aria-label="NFT transfer recipient" data-testid="nft-transfer-to" />
+                <button type="button" class="btn-small btn-scan" data-scan-field="nft-transfer-to" aria-label="Scan recipient QR code" data-testid="nft-transfer-to-scan">Scan QR</button>
+              </div>
               <p id="nft-transfer-error" class="error hidden"></p>
               <p id="nft-transfer-success" class="success hidden" aria-live="polite"></p>
               <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
@@ -271,6 +288,11 @@
             <button type="button" id="btn-settings-back" class="btn-text" aria-label="Back to wallet" data-testid="settings-back">← Back</button>
             <h2 class="assets-title">Settings</h2>
           </div>
+          <div class="card" data-testid="settings-accounts">
+            <h2 class="label">Accounts</h2>
+            <button type="button" id="btn-add-account" class="btn-secondary" aria-label="Add account" data-testid="wallet-dashboard-add-account">Add account</button>
+            <p class="hint">Create or import another key in the same vault. Your password stays the same.</p>
+          </div>
           <div class="card card-connected-sites" data-testid="settings-connected-sites">
             <h2 class="label">Connected sites</h2>
             <p class="hint" id="connected-sites-hint">Sites that can see your address and request signatures.</p>
@@ -312,6 +334,7 @@
       <a href="https://boing.express/terms" target="_blank" rel="noopener noreferrer" id="link-terms">Terms</a>
     </footer>
   </div>
+  <div id="overlay-root" class="overlay hidden" role="dialog" aria-modal="true"><div id="overlay-island"></div></div>
   <script src="popup.js" type="module"></script>
 </body>
 </html>

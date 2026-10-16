@@ -8,6 +8,8 @@ import { buildReferenceFungibleTransfer } from '../boing/referenceFungible';
 import type { TokenHolding } from '../boing/tokenHoldings';
 import type { NetworkAdapter } from '../networks/types';
 import styles from '../screens/Dashboard.module.css';
+import { SendConfirm } from './SendConfirm';
+import { ScanQrButton } from './ScanQrButton';
 
 /** Transfer > Token: reference fungible transfer (v1/v2). Self-transfer is refused before signing. */
 export function TokenSendForm(props: {
@@ -16,7 +18,10 @@ export function TokenSendForm(props: {
   getPrivateKey: () => Uint8Array | null;
   holdings: TokenHolding[];
   onSent: (txHash: string | undefined, summary: string) => void;
+  /** Extension: open the scanner in a tab instead of inline. */
+  onExternalScan?: () => void;
 }) {
+  const [review, setReview] = useState<{ toHex: string; amount: bigint; tokenHex: string } | null>(null);
   const usable = props.holdings.filter((t) => t.balanceRaw != null);
   const [tokenHex, setTokenHex] = useState('');
   const [to, setTo] = useState('');
@@ -47,34 +52,57 @@ export function TokenSendForm(props: {
       setError(v.issues.map((i) => i.message.replace(/^Row 1: /, '')).join(' '));
       return;
     }
-    const pk = props.getPrivateKey();
-    if (!pk) {
-      setError('Wallet locked');
-      return;
-    }
+    setReview({ toHex, amount: v.rows[0]!.amount, tokenHex: token.tokenHex });
+  }
+
+  function sign(r: { toHex: string; amount: bigint; tokenHex: string }) {
+    return async () => {
+      const pk = props.getPrivateKey();
+      if (!pk) throw new Error('Wallet locked');
+      const nonce = await props.network.getNonce(props.accountId);
+      return buildReferenceFungibleTransfer({ network: props.network, sender: props.accountId, tokenHex: r.tokenHex, toHex: r.toHex, amount: r.amount, nonce, privateKey: pk });
+    };
+  }
+
+  async function confirm() {
+    if (!review || !token) return;
+    setError('');
     setBusy(true);
     try {
-      const nonce = await props.network.getNonce(props.accountId);
-      const signed = await buildReferenceFungibleTransfer({
-        network: props.network,
-        sender: props.accountId,
-        tokenHex: token.tokenHex,
-        toHex,
-        amount: v.rows[0]!.amount,
-        nonce,
-        privateKey: pk,
-      });
+      const signed = await sign(review)();
       const res = await props.network.submitTransaction(signed);
       if (!res.success) throw new Error(res.error ?? 'Submit failed');
-      props.onSent(res.txHash, `${formatBalance(v.rows[0]!.amount.toString(), token.decimals, token.decimals)} ${token.symbol} → ${shortHexLabel(toHex, 6, 4)}`);
+      props.onSent(res.txHash, `${formatBalance(review.amount.toString(), token.decimals, token.decimals)} ${token.symbol} → ${shortHexLabel(review.toHex, 6, 4)}`);
       setSuccess(res.txHash ? `Sent! Tx: ${res.txHash.slice(0, 16)}…` : 'Transaction submitted');
       setTo('');
       setAmount('');
+      setReview(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
+  }
+
+  if (review && token) {
+    return (
+      <section className={styles.section} data-testid="transfer-pane-token">
+        <SendConfirm
+          title={`Send ${token.symbol}`}
+          to={review.toHex}
+          amount={`${formatBalance(review.amount.toString(), token.decimals, token.decimals)} ${token.symbol}`}
+          network={props.network}
+          buildSigned={sign(review)}
+          busy={busy}
+          error={error}
+          onBack={() => {
+            setReview(null);
+            setError('');
+          }}
+          onConfirm={() => void confirm()}
+        />
+      </section>
+    );
   }
 
   return (
@@ -92,7 +120,10 @@ export function TokenSendForm(props: {
               </option>
             ))}
           </select>
-          <input className={styles.input} placeholder="Recipient (64 hex)" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Token recipient" data-testid="token-send-to" />
+          <div className={styles.inlineRow}>
+            <input className={styles.input} placeholder="Recipient (64 hex)" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Token recipient" data-testid="token-send-to" />
+            <ScanQrButton className={styles.copyBtn} testId="token-send-to-scan" onResult={(a) => setTo(a)} onExternal={props.onExternalScan} />
+          </div>
           <div className={styles.inlineRow}>
             <input className={styles.input} placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" aria-label="Token amount" data-testid="token-send-amount" />
             <button type="button" className={styles.copyBtn} onClick={() => token?.balanceRaw && setAmount(formatBalance(token.balanceRaw, token.decimals, token.decimals))}>
@@ -102,7 +133,7 @@ export function TokenSendForm(props: {
           {error && <p className={styles.error}>{error}</p>}
           {success && <p className={styles.success}>{success}</p>}
           <button type="submit" className={styles.primary} disabled={busy} data-testid="token-send-submit">
-            {busy ? 'Sending…' : 'Send token'}
+            {busy ? 'Sending…' : 'Review send'}
           </button>
         </form>
       )}

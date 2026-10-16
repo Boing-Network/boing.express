@@ -9,6 +9,7 @@ import * as rpc from './rpc';
 import { formatBalance } from './amount';
 import { fetchReferenceFungibleBalance } from './referenceFungible';
 import { normalizeHex64, shortHexLabel } from './referenceNft';
+import { contractTokenName, contractTokenSymbol } from './defaultTokens';
 import type { TokenWatchEntry } from '../storage/tokenWatchlist';
 
 export interface TokenHolding {
@@ -82,7 +83,8 @@ export async function loadTokenHoldings(options: {
   const results = await Promise.all(
     entries.map(async ([tokenHex, m]): Promise<TokenHolding | null> => {
       const decimals = m.decimals ?? 0;
-      const symbol = m.symbol?.trim() || shortHexLabel(tokenHex);
+      const symbol = contractTokenSymbol(m.symbol?.trim() || shortHexLabel(tokenHex));
+      m.name = m.name ?? contractTokenName(tokenHex);
       try {
         const bal = await fetchReferenceFungibleBalance(options.rpcUrl, tokenHex, owner);
         if (bal === 0n && !m.watched) return null;

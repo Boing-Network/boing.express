@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
           background: resolve(__dirname, 'extension/background.ts'),
           content: resolve(__dirname, 'extension/content.ts'),
           approval: resolve(__dirname, 'extension/approval.ts'),
+          scan: resolve(__dirname, 'extension/scan.ts'),
         },
         output: {
           entryFileNames: '[name].js',

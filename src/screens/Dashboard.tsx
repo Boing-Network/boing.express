@@ -26,6 +26,9 @@ import { TokenSendForm } from '../components/TokenSendForm';
 import { BulkTransferPanel } from '../components/BulkTransferPanel';
 import { ValidatorPanel } from '../components/ValidatorPanel';
 import { useTokenHoldings } from '../components/useTokenHoldings';
+import { SendConfirm } from '../components/SendConfirm';
+import { ReceivePanel } from '../components/ReceivePanel';
+import { ScanQrButton } from '../components/ScanQrButton';
 import styles from './Dashboard.module.css';
 
 type WalletTabId = 'wallet' | 'transactions' | 'transfer' | 'validate' | 'faucet' | 'settings';
@@ -64,6 +67,9 @@ export function Dashboard() {
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [chainHeight, setChainHeight] = useState<number | null>(null);
   const [sendTo, setSendTo] = useState('');
+  /** Validated send waiting for the review/confirm step. */
+  const [sendReview, setSendReview] = useState<{ toHex: string; amount: bigint; amountText: string } | null>(null);
+  const [showReceive, setShowReceive] = useState(false);
   const [sendAmount, setSendAmount] = useState('');
   const [sendError, setSendError] = useState('');
   const [sendSuccess, setSendSuccess] = useState('');
@@ -300,6 +306,11 @@ export function Dashboard() {
       setSendError('Insufficient balance');
       return;
     }
+    setSendReview({ toHex: toHex.toLowerCase(), amount, amountText: `${sendAmount.trim()} ${balance?.symbol ?? 'BOING'}` });
+  }
+
+  async function doSend(toHex: string, amount: bigint) {
+    setSendError('');
     const privateKey = getPrivateKey();
     if (!accountId || !privateKey) {
       setSendError('Wallet locked');
@@ -328,6 +339,7 @@ export function Dashboard() {
         setSendSuccess(result.txHash ? `Sent! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
         setSendAmount('');
         setSendTo('');
+        setSendReview(null);
         scheduleBalanceCatchUp();
       } else {
         setSendError(result.error ?? 'Submit failed');
@@ -653,6 +665,11 @@ export function Dashboard() {
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
           </button>
+          {accountId && (
+            <button type="button" className={styles.lockBtn} onClick={copyAddress} aria-label="Copy address" title={address} data-testid="wallet-header-copy">
+              {copied ? 'Copied' : 'Copy address'}
+            </button>
+          )}
           <button type="button" className={styles.lockBtn} onClick={lock} data-testid="wallet-header-lock">
             Lock
           </button>
@@ -765,37 +782,8 @@ export function Dashboard() {
               </section>
             )}
 
-            <div className={styles.assetsComposition} data-testid="assets-composition">
-              <section className={`${styles.section} ${styles.balanceHero} ${styles.assetsCoins}`}>
-                <div className={styles.balanceHeader}>
-                  <p className={styles.balanceLabel}>Balance</p>
-                  <button
-                    type="button"
-                    className={styles.refreshBtn}
-                    onClick={refreshData}
-                    disabled={refreshing || !accountId}
-                    aria-label="Refresh balance and chain data"
-                  >
-                    {refreshing ? '…' : '↻'}
-                  </button>
-                </div>
-                <p className={styles.balance}>
-                  {displayBalance} <span className={styles.symbol}>{balance?.symbol ?? 'BOING'}</span>
-                </p>
-                {chainHeight != null && (
-                  <p className={styles.chainHeight} aria-label="Chain height">
-                    Block #{chainHeight.toLocaleString()}
-                  </p>
-                )}
-                {balanceError && (
-                  <p className={styles.error}>
-                    {balanceError}
-                    <button type="button" className={styles.retryBtn} onClick={refreshData}>
-                      Retry
-                    </button>
-                  </p>
-                )}
-              </section>
+            {showReceive && address && <ReceivePanel address={address} onBack={() => setShowReceive(false)} />}
+            <div className={styles.assetsComposition} data-testid="assets-composition" hidden={showReceive}>
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Address</h2>
 
@@ -821,23 +809,10 @@ export function Dashboard() {
               <p className={styles.accountSwitchHint}>Switching locks the wallet — unlock again with your password.</p>
             </div>
           )}
-          <div className={styles.addAccountRow}>
-            <button
-              type="button"
-              className={styles.addAccountBtn}
-              onClick={() => navigate('/wallet/add-account')}
-              data-testid="wallet-dashboard-add-account"
-            >
-              Add account
-            </button>
-            <p className={styles.addAccountHint}>
-              Create or import another key in the same vault. Your password stays the same.
-            </p>
-          </div>
           <div className={styles.addressRow}>
             <code className={styles.address}>{address}</code>
-            <button type="button" className={styles.copyBtn} onClick={copyAddress}>
-              {copied ? 'Copied' : 'Copy'}
+            <button type="button" className={styles.copyBtn} onClick={() => setShowReceive(true)} data-testid="wallet-receive">
+              Receive
             </button>
             {explorerBase && (
               <a
@@ -869,6 +844,14 @@ export function Dashboard() {
 
               {accountId && (
                 <TokenHoldingsPanel
+                  native={{
+                    display: displayBalance,
+                    symbol: balance?.symbol ?? 'BOING',
+                    chainHeight,
+                    error: balanceError,
+                    refreshing,
+                    onRefresh: refreshData,
+                  }}
                   accountId={accountId}
                   networkId={network.config.id}
                   holdings={tokens.holdings}
@@ -1024,6 +1007,27 @@ export function Dashboard() {
             </div>
             {transferMode === 'boing' && (
               <section className={styles.section} data-testid="transfer-pane-boing">
+                {sendReview && accountId ? (
+                  <SendConfirm
+                    title={`Send ${balance?.symbol ?? 'BOING'}`}
+                    to={sendReview.toHex}
+                    amount={sendReview.amountText}
+                    network={network}
+                    buildSigned={async () => {
+                      const pk = getPrivateKey();
+                      if (!pk) throw new Error('Wallet locked');
+                      return network.buildTransfer(accountId, accountIdFromHex(sendReview.toHex), sendReview.amount, await network.getNonce(accountId), pk);
+                    }}
+                    busy={sending}
+                    error={sendError}
+                    onBack={() => {
+                      setSendReview(null);
+                      setSendError('');
+                    }}
+                    onConfirm={() => void doSend(sendReview.toHex, sendReview.amount)}
+                  />
+                ) : (
+                <>
                 <h2 className={styles.sectionTitle}>Send BOING</h2>
                 {isMainnet && sendAmount.trim() && (
                   <div className={styles.mainnetWarning} role="alert">
@@ -1031,15 +1035,18 @@ export function Dashboard() {
                   </div>
                 )}
                 <form onSubmit={handleSend} className={styles.form}>
-                  <input
-                    type="text"
-                    placeholder="To address (64 hex or 0x…)"
-                    value={sendTo}
-                    onChange={(e) => setSendTo(e.target.value)}
-                    className={styles.input}
-                    aria-label="Recipient address"
-                    data-testid="send-to"
-                  />
+                  <div className={styles.sendAmountRow}>
+                    <input
+                      type="text"
+                      placeholder="To address (64 hex or 0x…)"
+                      value={sendTo}
+                      onChange={(e) => setSendTo(e.target.value)}
+                      className={styles.input}
+                      aria-label="Recipient address"
+                      data-testid="send-to"
+                    />
+                    <ScanQrButton className={styles.maxBtn} testId="send-to-scan" onResult={(a) => setSendTo(a)} />
+                  </div>
                   <div className={styles.sendAmountRow}>
                     <input
                       type="text"
@@ -1074,9 +1081,11 @@ export function Dashboard() {
                     </p>
                   )}
                   <button type="submit" className={styles.primary} disabled={sending} data-testid="send-submit">
-                    {sending ? 'Sending…' : 'Send'}
+                    {sending ? 'Sending…' : 'Review send'}
                   </button>
                 </form>
+                </>
+                )}
               </section>
 
             )}
@@ -1325,6 +1334,18 @@ export function Dashboard() {
               </button>
               <h2 className={styles.assetsTitle}>Settings</h2>
             </div>
+            <section className={styles.section} data-testid="settings-accounts">
+              <h2 className={styles.sectionTitle}>Accounts</h2>
+              <button
+                type="button"
+                className={styles.addAccountBtn}
+                onClick={() => navigate('/wallet/add-account')}
+                data-testid="wallet-dashboard-add-account"
+              >
+                Add account
+              </button>
+              <p className={styles.addAccountHint}>Create or import another key in the same vault. Your password stays the same.</p>
+            </section>
             {activeTab === 'settings' && <ConnectedSitesPanel />}
             {activeTab === 'settings' && <RevealPrivateKeyPanel />}
             <section className={styles.section}>

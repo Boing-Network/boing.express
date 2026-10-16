@@ -70,6 +70,9 @@ test.describe('web wallet redesign (mocked RPC)', () => {
     await page.getByTestId('send-to').fill(A);
     await page.getByTestId('send-amount').fill('7');
     await page.getByTestId('send-submit').click();
+    await expect(page.getByTestId('send-confirm')).toBeVisible();
+    expect(submitted).toHaveLength(0);
+    await page.getByTestId('send-confirm-submit').click();
     await expect(page.getByTestId('send-success')).toContainText('Sent', { timeout: 30_000 });
     expect(submitted).toHaveLength(1);
     await page.getByTestId('wallet-tab-transactions').click();

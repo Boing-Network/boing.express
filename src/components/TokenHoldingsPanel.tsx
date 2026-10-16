@@ -6,7 +6,18 @@ import type { TokenHolding } from '../boing/tokenHoldings';
 import { addTokenWatchEntry, removeTokenWatchEntry } from '../storage/tokenWatchlist';
 import styles from '../screens/Dashboard.module.css';
 
+export type NativeBalanceRow = {
+  display: string;
+  symbol: string;
+  chainHeight: number | null;
+  error?: string | null;
+  refreshing?: boolean;
+  onRefresh: () => void;
+};
+
 export function TokenHoldingsPanel(props: {
+  /** Native BOING (account balance): always the first asset row. */
+  native?: NativeBalanceRow;
   accountId: AccountId;
   networkId: string;
   holdings: TokenHolding[];
@@ -51,6 +62,39 @@ export function TokenHoldingsPanel(props: {
           {props.loading ? '…' : '↻'}
         </button>
       </div>
+      {props.native && (
+        <ul className={styles.txHistoryList} aria-label="Native balance">
+          <li className={styles.txHistoryItem} data-testid="token-row-native">
+            <span className={styles.tokenSymbol}>{props.native.symbol}</span>
+            <span className={styles.txHash}>native</span>
+            <span className={styles.tokenBalance} data-testid="native-balance">
+              {props.native.display}
+            </span>
+            <button
+              type="button"
+              className={styles.copyBtn}
+              onClick={props.native.onRefresh}
+              disabled={props.native.refreshing}
+              aria-label="Refresh balance and chain data"
+            >
+              {props.native.refreshing ? '…' : '↻'}
+            </button>
+          </li>
+          {props.native.chainHeight != null && (
+            <li className={styles.chainHeight} aria-label="Chain height" style={{ listStyle: 'none' }}>
+              Block #{props.native.chainHeight.toLocaleString()}
+            </li>
+          )}
+          {props.native.error && (
+            <li className={styles.error} style={{ listStyle: 'none' }}>
+              {props.native.error}
+              <button type="button" className={styles.retryBtn} onClick={props.native.onRefresh}>
+                Retry
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
       {props.error && <p className={styles.error}>{props.error}</p>}
       {holdings.length === 0 ? (
         <p className={styles.addressHint}>No tokens found. Watch a token contract below; tokens listed in the DEX directory show up when you hold them.</p>
@@ -58,7 +102,7 @@ export function TokenHoldingsPanel(props: {
         <ul className={styles.txHistoryList} aria-label="Fungible tokens">
           {holdings.map((t) => (
             <li key={t.tokenHex} className={styles.txHistoryItem} data-testid="token-row">
-              <span className={styles.tokenSymbol}>{t.symbol}</span>
+              <span className={styles.tokenSymbol} title={t.name}>{t.symbol}</span>
               <code className={styles.txHash} title={t.tokenHex}>
                 {shortHexLabel(t.tokenHex, 6, 4)}
               </code>

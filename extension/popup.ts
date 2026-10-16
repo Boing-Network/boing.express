@@ -38,16 +38,16 @@ import {
   type NftDiscoveryResult,
 } from '../src/boing/nftDiscovery';
 import { hydrateNftDisplayMetaList, type NftDisplayMeta } from '../src/boing/nftMetadata';
-import { transferOwnedNfts } from '../src/boing/nftTransfer';
+import { parseTransferRecipientHex, transferOwnedNfts } from '../src/boing/nftTransfer';
 import { addNftWatchEntries, listNftWatchlist, removeNftWatchEntry } from '../src/storage/nftWatchlist';
 import { addTokenWatchEntry, listTokenWatchlist, removeTokenWatchEntry } from '../src/storage/tokenWatchlist';
 import { addTxHistory, getTxHistory, type TxHistoryEntry } from '../src/storage/txHistory';
 import { chainRowToDisplay, fetchChainTxPage, mergeTxHistory, type DisplayTxEntry } from '../src/boing/chainTxHistory';
 import { mergeWithDefaultTokens } from '../src/boing/defaultTokens';
-import { renderBulkIsland, renderValidatorIsland } from './popupIslands';
+import { confirmSendIsland, renderBulkIsland, renderValidatorIsland, showReceiveIsland } from './popupIslands';
 import { loadTokenHoldings, type TokenHolding } from '../src/boing/tokenHoldings';
 import { buildReferenceFungibleTransfer } from '../src/boing/referenceFungible';
-import { normalizeHex64 } from '../src/boing/referenceNft';
+import { encodeReferenceTransferNftCalldata, normalizeHex64 } from '../src/boing/referenceNft';
 import {
   formatBulkReport,
   parseBulkCsv,
@@ -125,7 +125,39 @@ function showScreen(screen: Screen): void {
   document.querySelectorAll('.screen').forEach((el) => el.classList.add('hidden'));
   const el = document.getElementById(`screen-${screen}`);
   if (el) el.classList.remove('hidden');
+  if (screen === 'dashboard') void consumeScanResult();
 }
+
+// --- QR scan hand-off (scan.html runs in a tab; result comes back through chrome.storage.local)
+const SCAN_RESULT_KEY = 'boing_scan_result';
+const SCAN_FIELD_MODE: Record<string, 'boing' | 'token' | 'nft'> = { 'send-to': 'boing', 'token-send-to': 'token', 'nft-transfer-to': 'nft' };
+
+async function consumeScanResult(): Promise<void> {
+  const got = await new Promise<Record<string, unknown>>((r) => chrome.storage.local.get([SCAN_RESULT_KEY], (x) => r(x ?? {})));
+  const res = got[SCAN_RESULT_KEY] as { field?: string; value?: string; ts?: number } | undefined;
+  if (!res) return;
+  chrome.storage.local.remove([SCAN_RESULT_KEY]);
+  const mode = res.field ? SCAN_FIELD_MODE[res.field] : undefined;
+  if (!mode || !res.value || !/^0x[0-9a-f]{64}$/i.test(res.value) || Date.now() - (res.ts ?? 0) > 10 * 60_000) return;
+  switchTab('transfer');
+  setTransferMode(mode);
+  const input = document.getElementById(res.field!) as HTMLInputElement | null;
+  if (input) {
+    input.value = res.value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+
+document.querySelectorAll<HTMLButtonElement>('[data-scan-field]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const field = btn.getAttribute('data-scan-field') ?? 'send-to';
+    void chrome.tabs.create({ url: chrome.runtime.getURL(`scan.html?field=${encodeURIComponent(field)}`) });
+  });
+});
+
+document.getElementById('btn-receive')?.addEventListener('click', () => {
+  if (accountId) showReceiveIsland(formatAddress(accountId, false));
+});
 
 function showLoading(): void {
   document.querySelectorAll('.screen').forEach((el) => el.classList.add('hidden'));
@@ -1110,22 +1142,34 @@ document.getElementById('form-nft-transfer')?.addEventListener('submit', async (
     errEl.classList.remove('hidden');
     return;
   }
-  if (!nftConfirmBatch) {
-    nftConfirmBatch = true;
-    const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement | null;
-    if (btn) {
-      btn.textContent =
-        targets.length > 1
-          ? `Confirm ${targets.length} transfers`
-          : 'Confirm transfer';
-      btn.disabled = false;
-    }
-    const sel = document.getElementById('nft-transfer-selected');
-    if (sel) {
-      sel.textContent = `Confirm: ${targets.length} separate transfer_nft tx(s) (protocol has no batch).`;
-    }
+  let nftToHex: string;
+  try {
+    nftToHex = parseTransferRecipientHex(toEl.value, accountIdToHex(accountId));
+  } catch (err) {
+    errEl.textContent = err instanceof Error ? err.message : String(err);
+    errEl.classList.remove('hidden');
     return;
   }
+  const acct = accountId;
+  const pk = privateKey;
+  const first = targets[0]!;
+  const okToSend = await confirmSendIsland({
+    title: targets.length > 1 ? `Send ${targets.length} NFTs` : 'Send NFT',
+    to: nftToHex,
+    amount: targets.map((t) => `#${shortHexLabel(t.tokenIdHex, 4, 4)}`).join(', '),
+    network: net,
+    txCount: targets.length,
+    mascotSrc: 'images/mascot-default.webp',
+    buildSigned: async () =>
+      net.buildContractCall!(
+        acct,
+        accountIdFromHex(normalizeHex64(first.collectionHex)),
+        encodeReferenceTransferNftCalldata(accountIdFromHex(nftToHex), normalizeHex64(first.tokenIdHex)),
+        await net.getNonce(acct),
+        pk
+      ),
+  });
+  if (!okToSend) return;
   const btn = document.getElementById('btn-nft-transfer') as HTMLButtonElement;
   btn.disabled = true;
   btn.textContent = 'Transferring…';
@@ -1211,6 +1255,20 @@ $('form-send').addEventListener('submit', async (e) => {
   if (BigInt(lastBalanceRaw) < amount) {
     showError('send-error', 'Insufficient balance');
     return;
+  }
+  {
+    const cnet = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
+    const acct = accountId;
+    const pk = privateKey;
+    const ok = await confirmSendIsland({
+      title: 'Send BOING',
+      to: toHex,
+      amount: `${amountStr.trim()} BOING`,
+      network: cnet,
+      mascotSrc: 'images/mascot-default.webp',
+      buildSigned: async () => cnet.buildTransfer(acct, accountIdFromHex(toHex), amount, await cnet.getNonce(acct), pk),
+    });
+    if (!ok) return;
   }
   const sendBtn = document.getElementById('btn-send-submit') as HTMLButtonElement;
   const originalSendText = sendBtn?.textContent ?? 'Send';
@@ -1784,6 +1842,21 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
     return;
   }
   const amount = v.rows[0]!.amount;
+  {
+    const cnet = getCurrentNetwork();
+    const acct = accountId;
+    const pk = privateKey;
+    const ok = await confirmSendIsland({
+      title: `Send ${t.symbol}`,
+      to: toHex,
+      amount: `${formatBalance(amount.toString(), t.decimals, t.decimals)} ${t.symbol}`,
+      network: cnet,
+      mascotSrc: 'images/mascot-default.webp',
+      buildSigned: async () =>
+        buildReferenceFungibleTransfer({ network: cnet, sender: acct, tokenHex: t.tokenHex, toHex, amount, nonce: await cnet.getNonce(acct), privateKey: pk }),
+    });
+    if (!ok) return;
+  }
   const btn = $('btn-token-send') as HTMLButtonElement;
   btn.disabled = true;
   const prev = btn.textContent;

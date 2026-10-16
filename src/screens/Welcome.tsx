@@ -149,19 +149,26 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
 
   if (step === 'choose') {
     return (
-      <div className={`${styles.wrap} page-app`}>
-        <div className={styles.card}>
+      <div className={`${styles.wrap} ${styles.heroWrap} page-app`}>
+        <div className={`${styles.card} ${styles.heroCard}`}>
           <img src={`${ASSETS}/${MASCOT_BY_STEP.choose}`} alt="" className={styles.mascot} aria-hidden />
-          <h1 className={styles.title}>Boing Express</h1>
-          <p className={styles.subtitle}>The DeFi that always bounces back. Non-custodial wallet for Boing Network.</p>
+          <h1 className={styles.title}>Welcome to Boing Express</h1>
+          <p className={styles.subtitle}>Your non-custodial wallet for Boing Network</p>
           <div className={styles.actions}>
-            <button type="button" className={styles.primary} data-testid="wallet-landing-create" onClick={() => setStep('create')}>
-              Create wallet
+            <button type="button" className={`${styles.primary} ${styles.heroPrimary}`} data-testid="wallet-landing-create" onClick={() => setStep('create')}>
+              Create New Wallet
             </button>
-            <button type="button" className={styles.secondary} data-testid="wallet-landing-import" onClick={() => setStep('import')}>
-              Import wallet
+            <button type="button" className={`${styles.secondary} ${styles.heroSecondary}`} data-testid="wallet-landing-import" onClick={() => setStep('import')}>
+              Import Existing Wallet
             </button>
           </div>
+          <p className={styles.keysNote} data-testid="wallet-keys-note">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Your keys never leave your device
+          </p>
         </div>
       </div>
     );
@@ -169,8 +176,8 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
 
   if (step === 'unlock') {
     return (
-      <div className={`${styles.wrap} page-app`}>
-        <div className={styles.card}>
+      <div className={`${styles.wrap} ${styles.heroWrap} page-app`}>
+        <div className={`${styles.card} ${styles.heroCard}`}>
           <img src={`${ASSETS}/${MASCOT_BY_STEP.unlock}`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>Unlock wallet</h1>
           {storedAddressHint && (
@@ -217,8 +224,8 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
 
   if (step === 'add-pick') {
     return (
-      <div className={`${styles.wrap} page-app`}>
-        <div className={styles.card}>
+      <div className={`${styles.wrap} ${styles.heroWrap} page-app`}>
+        <div className={`${styles.card} ${styles.heroCard}`}>
           <img src={`${ASSETS}/mascot-default.png`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>Add another account</h1>
           <p className={styles.subtitle}>
@@ -255,8 +262,8 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
 
   if (step === 'backup') {
     return (
-      <div className={`${styles.wrap} page-app`}>
-        <div className={styles.card}>
+      <div className={`${styles.wrap} ${styles.heroWrap} page-app`}>
+        <div className={`${styles.card} ${styles.heroCard}`}>
           <img src={`${ASSETS}/${MASCOT_BY_STEP.backup}`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>Back up your private key</h1>
           <p className={styles.subtitle}>
@@ -295,8 +302,8 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
 
   if (step === 'create') {
     return (
-      <div className={`${styles.wrap} page-app`}>
-        <div className={styles.card}>
+      <div className={`${styles.wrap} ${styles.heroWrap} page-app`}>
+        <div className={`${styles.card} ${styles.heroCard}`}>
           <img src={`${ASSETS}/${MASCOT_BY_STEP.create}`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>{accountFlow === 'add-secondary' ? 'Create another account' : 'Create wallet'}</h1>
           <p className={styles.subtitle}>
@@ -340,8 +347,8 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
 
   // import
   return (
-    <div className={`${styles.wrap} page-app`}>
-      <div className={styles.card}>
+    <div className={`${styles.wrap} ${styles.heroWrap} page-app`}>
+      <div className={`${styles.card} ${styles.heroCard}`}>
         <img src={`${ASSETS}/${MASCOT_BY_STEP.import}`} alt="" className={styles.mascot} aria-hidden />
         <h1 className={styles.title}>{accountFlow === 'add-secondary' ? 'Import another account' : 'Import wallet'}</h1>
         <p className={styles.subtitle}>

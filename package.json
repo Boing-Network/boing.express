@@ -33,6 +33,8 @@
     "@noble/ed25519": "^2.1.0",
     "@noble/hashes": "^2.0.1",
     "boing-sdk": "github:Boing-Network/boing.network#960096f42187bff002915ed52cb09184d1dcd8fa&path:/boing-sdk",
+    "jsqr": "^1.4.0",
+    "qrcode-generator": "^1.4.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.4"

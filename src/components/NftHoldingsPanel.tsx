@@ -29,7 +29,11 @@ import {
   hydrateNftDisplayMetaList,
   type NftDisplayMeta,
 } from '../boing/nftMetadata';
-import { transferOwnedNfts } from '../boing/nftTransfer';
+import { parseTransferRecipientHex, transferOwnedNfts } from '../boing/nftTransfer';
+import { accountIdFromHex } from '../boing/types';
+import { encodeReferenceTransferNftCalldata } from '../boing/referenceNft';
+import { SendConfirm } from './SendConfirm';
+import { ScanQrButton } from './ScanQrButton';
 import { fetchOwnerIndexHoldings, formatOwnerIndexNote, type OwnerIndexResult } from '../boing/nftOwnerIndex';
 import {
   findFreshmintCollectionLink,
@@ -334,6 +338,12 @@ export function NftHoldingsPanel({
       return;
     }
     if (!confirmBatch) {
+      try {
+        parseTransferRecipientHex(transferTo, accountIdToHex(accountId));
+      } catch (err) {
+        setTransferError(err instanceof Error ? err.message : String(err));
+        return;
+      }
       setConfirmBatch(true);
       return;
     }
@@ -709,25 +719,46 @@ export function NftHoldingsPanel({
             Select owned items above (checkboxes).
           </p>
         )}
-        <form onSubmit={(ev) => void handleTransfer(ev)} className={styles.form}>
-          <input
-            type="text"
-            placeholder="To address (64 hex or 0x…)"
-            value={transferTo}
-            onChange={(e) => {
-              setTransferTo(e.target.value);
-              setConfirmBatch(false);
-            }}
-            className={styles.input}
-            aria-label="NFT transfer recipient"
-            data-testid="nft-transfer-to"
-          />
-          {confirmBatch && selectedCount > 0 && (
-            <p className={styles.nftConfirmNote} role="status">
-              Confirm: send {selectedCount} separate <code className={styles.inlineCode}>transfer_nft</code>{' '}
-              transaction{selectedCount === 1 ? '' : 's'} to the recipient above.
-            </p>
-          )}
+        {confirmBatch && selectedCount > 0 && (() => {
+          const targets = statuses.filter((s) => s.owned && selectedKeys.has(holdingKey(s)));
+          const first = targets[0];
+          return (
+            <SendConfirm
+              title={selectedCount > 1 ? `Send ${selectedCount} NFTs` : 'Send NFT'}
+              to={transferTo.replace(/\s/g, '')}
+              amount={targets.map((t) => `#${shortHexLabel(t.tokenIdHex, 4, 4)}`).join(', ')}
+              network={network}
+              txCount={selectedCount}
+              buildSigned={async () => {
+                const pk = getPrivateKey();
+                if (!pk || !first || !network.buildContractCall) throw new Error('Wallet locked');
+                const toHex = parseTransferRecipientHex(transferTo, accountIdToHex(accountId));
+                const calldata = encodeReferenceTransferNftCalldata(accountIdFromHex(toHex), normalizeHex64(first.tokenIdHex));
+                return network.buildContractCall(accountId, accountIdFromHex(normalizeHex64(first.collectionHex)), calldata, await network.getNonce(accountId), pk);
+              }}
+              busy={transferring}
+              error={transferError}
+              onBack={() => setConfirmBatch(false)}
+              onConfirm={() => void handleTransfer({ preventDefault() {} } as React.FormEvent)}
+            />
+          );
+        })()}
+        <form onSubmit={(ev) => void handleTransfer(ev)} className={styles.form} hidden={confirmBatch && selectedCount > 0}>
+          <div className={styles.inlineRow}>
+            <input
+              type="text"
+              placeholder="To address (64 hex or 0x…)"
+              value={transferTo}
+              onChange={(e) => {
+                setTransferTo(e.target.value);
+                setConfirmBatch(false);
+              }}
+              className={styles.input}
+              aria-label="NFT transfer recipient"
+              data-testid="nft-transfer-to"
+            />
+            <ScanQrButton className={styles.copyBtn} testId="nft-transfer-to-scan" onResult={(a) => setTransferTo(a)} />
+          </div>
           {transferProgress && <p className={styles.addressHint}>{transferProgress}</p>}
           {transferError && <p className={styles.error}>{transferError}</p>}
           {transferSuccess && <p className={styles.success}>{transferSuccess}</p>}

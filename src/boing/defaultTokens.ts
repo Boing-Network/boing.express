@@ -7,10 +7,29 @@ import { BOING_TESTNET_CHAIN_ID_DECIMAL, chainIdHexToDecimal } from '../networks
 import { normalizeHex64 } from './referenceNft';
 import type { TokenWatchEntry } from '../storage/tokenWatchlist';
 
+/** Label for the canonical testnet reference token that mirrors BOING (contract token, not the native coin). */
+export const TEST_BOING_TOKEN_SYMBOL = 'tBOING';
+export const TEST_BOING_TOKEN_NAME = 'Boing Token (test)';
+
+/** Contract tokens may never show as the native symbol: `BOING` (any case) becomes `tBOING`. */
+export function contractTokenSymbol(symbol: string): string {
+  return /^boing$/i.test(symbol.trim()) ? TEST_BOING_TOKEN_SYMBOL : symbol;
+}
+
+/** Display name for well-known contract tokens (undefined when unknown). */
+export function contractTokenName(tokenHex: string): string | undefined {
+  try {
+    return normalizeHex64(tokenHex) === normalizeHex64(CANONICAL_BOING_TESTNET_BOING_TOKEN_HEX) ? TEST_BOING_TOKEN_NAME : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const BY_CHAIN: Record<number, Array<Omit<TokenWatchEntry, 'addedAt'>>> = {
   [BOING_TESTNET_CHAIN_ID_DECIMAL]: [
     { tokenHex: normalizeHex64(CANONICAL_BOING_TESTNET_USDC_TOKEN_HEX), symbol: 'USDC', decimals: 0 },
-    { tokenHex: normalizeHex64(CANONICAL_BOING_TESTNET_BOING_TOKEN_HEX), symbol: 'BOING', decimals: 0 },
+    // A reference *contract* token, not native BOING: never label it plain "BOING".
+    { tokenHex: normalizeHex64(CANONICAL_BOING_TESTNET_BOING_TOKEN_HEX), symbol: TEST_BOING_TOKEN_SYMBOL, decimals: 0 },
   ],
 };
 

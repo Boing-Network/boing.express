@@ -83,6 +83,11 @@ describe('Extension popup redesign (E2E, mocked RPC)', () => {
       await expect(popup.locator('#send-error')).toHaveText(/yourself/);
       await popup.getByTestId('send-to').fill(A);
       await popup.getByTestId('send-submit').click();
+      await expect(popup.getByTestId('send-confirm')).toBeVisible();
+      await expect(popup.getByTestId('send-confirm-amount')).toHaveText('5 BOING');
+      await expect(popup.getByTestId('send-confirm-fee')).toContainText('BOING');
+      expect(submitted).toHaveLength(0);
+      await popup.getByTestId('send-confirm-submit').click();
       await expect(popup.locator('#send-success')).toContainText('Sent!', { timeout: 30_000 });
       expect(submitted).toHaveLength(1);
       await popup.getByTestId('wallet-tab-transactions').click();

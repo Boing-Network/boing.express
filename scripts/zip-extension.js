@@ -23,7 +23,7 @@ execSync('pnpm build:extension', {
 const bundledEntries = readdirSync(extDir).filter((name) => {
   if (name.endsWith('.map') || name.endsWith('.ts')) return false;
   const fullPath = path.join(extDir, name);
-  if (statSync(fullPath).isDirectory()) return ['icons', 'fonts'].includes(name);
+  if (statSync(fullPath).isDirectory()) return ['icons', 'fonts', 'images'].includes(name);
   return ['.html', '.js', '.css', '.json'].includes(path.extname(name));
 });
 const archiveEntries = bundledEntries.join(', ');

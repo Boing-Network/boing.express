@@ -93,7 +93,8 @@ describePopup('Extension popup (E2E)', () => {
         timeout: 45_000,
       });
 
-      await popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-dashboard-add-account"]').click();
+      await popup.getByTestId('wallet-header-settings').click();
+    await popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-dashboard-add-account"]').click();
       await expect(popup.locator('#screen-add-pick:not(.hidden)')).toBeVisible({ timeout: 15_000 });
       await popup.locator('#screen-add-pick:not(.hidden) [data-testid="wallet-add-pick-create"]').click();
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password"]').fill(E2E_PASSWORD);
