@@ -21,6 +21,9 @@ export function suggestedAccessList(sender: AccountId, payload: Payload): Access
     case 'unbond':
     case 'claim_unbond':
     case 'qa_pool_vote':
+    case 'validator_register':
+    case 'validator_deregister':
+    case 'validator_unjail':
       return { read: [sender], write: [sender] };
     case 'contract_deploy':
     case 'contract_deploy_purpose':

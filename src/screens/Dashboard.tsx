@@ -23,11 +23,12 @@ import { ConnectedSitesPanel } from '../components/ConnectedSitesPanel';
 import { TokenHoldingsPanel } from '../components/TokenHoldingsPanel';
 import { TokenSendForm } from '../components/TokenSendForm';
 import { BulkTransferPanel } from '../components/BulkTransferPanel';
+import { ValidatorPanel } from '../components/ValidatorPanel';
 import { useTokenHoldings } from '../components/useTokenHoldings';
 import type { TxHistoryEntry } from '../storage/txHistory';
 import styles from './Dashboard.module.css';
 
-type WalletTabId = 'wallet' | 'transactions' | 'transfer' | 'stake' | 'faucet' | 'settings';
+type WalletTabId = 'wallet' | 'transactions' | 'transfer' | 'stake' | 'validator' | 'faucet' | 'settings';
 type TransferMode = 'boing' | 'token' | 'nft' | 'bulk';
 
 const WALLET_TABS: { id: Exclude<WalletTabId, 'settings'>; label: string; aria?: string }[] = [
@@ -35,6 +36,7 @@ const WALLET_TABS: { id: Exclude<WalletTabId, 'settings'>; label: string; aria?:
   { id: 'transactions', label: 'Tx', aria: 'Transaction history' },
   { id: 'transfer', label: 'Transfer' },
   { id: 'stake', label: 'Stake' },
+  { id: 'validator', label: 'Validator' },
   { id: 'faucet', label: 'Faucet' },
 ];
 
@@ -47,6 +49,9 @@ const TX_TYPE_LABEL: Record<TxHistoryEntry['type'], string> = {
   nft_send: 'Send NFT',
   contract_call: 'Contract call',
   batch: 'Batch',
+  validator_register: 'Register validator',
+  validator_deregister: 'Deregister validator',
+  validator_unjail: 'Unjail validator',
 };
 
 export function Dashboard() {
@@ -121,6 +126,7 @@ export function Dashboard() {
 
   const showStakeTab = Boolean(network.buildBond || network.buildUnbond || network.buildClaimUnbond);
   const showFaucetTab = Boolean(network.config.isTestnet);
+  const showValidatorTab = Boolean(network.config.isTestnet || network.buildBond);
 
   const address = accountId ? formatAddress(accountId, false) : '';
   const addressHint = address ? `${address.slice(0, 8)}…${address.slice(-8)}` : '';
@@ -197,7 +203,8 @@ export function Dashboard() {
   useEffect(() => {
     if (activeTab === 'stake' && !showStakeTab) setActiveTab('wallet');
     if (activeTab === 'faucet' && !showFaucetTab) setActiveTab('wallet');
-  }, [activeTab, showStakeTab, showFaucetTab]);
+    if (activeTab === 'validator' && !showValidatorTab) setActiveTab('wallet');
+  }, [activeTab, showStakeTab, showFaucetTab, showValidatorTab]);
 
   useEffect(() => {
     if (addressHint && accountId) {
@@ -662,6 +669,7 @@ export function Dashboard() {
           {WALLET_TABS.map(({ id, label, aria }) => {
             if (id === 'stake' && !showStakeTab) return null;
             if (id === 'faucet' && !showFaucetTab) return null;
+            if (id === 'validator' && !showValidatorTab) return null;
             const selected = activeTab === id;
             return (
               <button
@@ -1147,6 +1155,30 @@ export function Dashboard() {
               Bond BOING to stake for PoS validation. Unbond queues stake for ~100 blocks; claim after the unlock height to return it to your balance.
             </p>
           </section>
+            </div>
+          )}
+
+          {showValidatorTab && accountId && (
+            <div
+              id="panel-validator"
+              role="tabpanel"
+              aria-labelledby="tab-validator"
+              hidden={activeTab !== 'validator'}
+              className={`${styles.tabPanel} ${activeTab === 'validator' ? styles.tabPanelActive : ''}`}
+            >
+              {activeTab === 'validator' && (
+                <ValidatorPanel
+                  network={network}
+                  accountId={accountId}
+                  getPrivateKey={getPrivateKey}
+                  onSubmitted={(hash, type) => {
+                    addTxHistory(addressHint, network.config.id, hash, type);
+                    refreshTxHistory();
+                    setLastTxHash(hash);
+                    scheduleBalanceCatchUp();
+                  }}
+                />
+              )}
             </div>
           )}
 

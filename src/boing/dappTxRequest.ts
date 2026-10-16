@@ -166,6 +166,12 @@ export function transactionSummary(tx: Transaction): string {
       return `Boing tx | From ${from} | Nonce ${n} | Deploy + metadata (${p.purpose_category}) | bytecode ${p.bytecode.length} bytes${
         p.create2_salt ? ' | CREATE2' : ''
       }`;
+    case 'validator_register':
+      return `Boing tx | From ${from} | Nonce ${n} | Register validator node ${formatAddress(p.node_id, true)}`;
+    case 'validator_deregister':
+      return `Boing tx | From ${from} | Nonce ${n} | Deregister validator node ${formatAddress(p.node_id, true)}`;
+    case 'validator_unjail':
+      return `Boing tx | From ${from} | Nonce ${n} | Unjail validator node ${formatAddress(p.node_id, true)}`;
     default: {
       const _e: never = p;
       return _e;
@@ -317,6 +323,21 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
         rows.push({ label: 'CREATE2 salt', value: hexPreview(p.create2_salt, 32) });
       }
       rows.push({ label: 'Bytecode', value: `${p.bytecode.length} bytes — ${hexPreview(p.bytecode)}` });
+      rows.push(accessListSummary(tx));
+      break;
+    case 'validator_register':
+    case 'validator_deregister':
+    case 'validator_unjail':
+      rows.push({
+        label: 'Operation',
+        value:
+          p.kind === 'validator_register'
+            ? 'Register validator (locks bond)'
+            : p.kind === 'validator_deregister'
+              ? 'Deregister validator'
+              : 'Unjail validator',
+      });
+      rows.push({ label: 'Node', value: formatAddress(p.node_id, true) });
       rows.push(accessListSummary(tx));
       break;
     default: {

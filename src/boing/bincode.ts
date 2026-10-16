@@ -17,6 +17,10 @@ const VARIANT_UNBOND = 6;
 const VARIANT_CLAIM_UNBOND = 7;
 /** Rust `TransactionPayload::QaPoolVote`. */
 const VARIANT_QA_POOL_VOTE = 8;
+/** Rust `TransactionPayload::ValidatorRegister / ValidatorDeregister / ValidatorUnjail` (9 = Batch). */
+const VARIANT_VALIDATOR_REGISTER = 10;
+const VARIANT_VALIDATOR_DEREGISTER = 11;
+const VARIANT_VALIDATOR_UNJAIL = 12;
 
 function writeU32LE(buf: Uint8Array, offset: number, value: number): void {
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -155,6 +159,19 @@ export function encodePayload(p: Payload): Uint8Array {
       }
       const voteDisc = p.vote === 'allow' ? 0 : p.vote === 'reject' ? 1 : 2;
       return concatBytes([enumTag(VARIANT_QA_POOL_VOTE), p.subject, enumTag(voteDisc)]);
+    }
+    case 'validator_register': {
+      if (p.node_id.length !== 32) throw new Error('node_id must be 32 bytes');
+      if (p.node_signature.length !== 64) throw new Error('node_signature must be 64 bytes');
+      return concatBytes([enumTag(VARIANT_VALIDATOR_REGISTER), p.node_id, encodeVecU8(p.node_signature)]);
+    }
+    case 'validator_deregister': {
+      if (p.node_id.length !== 32) throw new Error('node_id must be 32 bytes');
+      return concatBytes([enumTag(VARIANT_VALIDATOR_DEREGISTER), p.node_id]);
+    }
+    case 'validator_unjail': {
+      if (p.node_id.length !== 32) throw new Error('node_id must be 32 bytes');
+      return concatBytes([enumTag(VARIANT_VALIDATOR_UNJAIL), p.node_id]);
     }
     default: {
       const _exhaustive: never = p;

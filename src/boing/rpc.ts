@@ -154,6 +154,11 @@ export function health(rpcUrl: string): Promise<unknown> {
   return rpcCall<unknown>(rpcUrl, 'boing_health', []);
 }
 
+/** `boing_getValidators` (open validator set report). Older nodes: Method not found. */
+export function getValidators(rpcUrl: string): Promise<unknown> {
+  return rpcCall<unknown>(rpcUrl, 'boing_getValidators', []);
+}
+
 export function chainHeight(rpcUrl: string): Promise<number> {
   return rpcCall<number>(rpcUrl, 'boing_chainHeight', []);
 }

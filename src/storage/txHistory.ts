@@ -8,7 +8,8 @@ const MAX_ENTRIES = 50;
 
 export interface TxHistoryEntry {
   txHash: string;
-  type: 'send' | 'bond' | 'unbond' | 'claim_unbond' | 'token_send' | 'nft_send' | 'contract_call' | 'batch';
+  type: 'send' | 'bond' | 'unbond' | 'claim_unbond' | 'token_send' | 'nft_send' | 'contract_call' | 'batch'
+    | 'validator_register' | 'validator_deregister' | 'validator_unjail';
   /** Short human summary, e.g. "10 BOING → 7f3a…9c21" (optional; older entries have none). */
   summary?: string;
   /** Batch entries: one line per step, in order (max 16). */

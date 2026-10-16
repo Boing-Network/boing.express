@@ -32,7 +32,13 @@ export type Payload =
   /** Claim matured `pending_unbond` after unlock height (Rust `ClaimUnbond`, variant 7). */
   | { kind: 'claim_unbond' }
   /** On-chain QA pool vote (Rust `QaPoolVote`, variant 8). */
-  | { kind: 'qa_pool_vote'; subject: AccountId; vote: 'allow' | 'reject' | 'abstain' };
+  | { kind: 'qa_pool_vote'; subject: AccountId; vote: 'allow' | 'reject' | 'abstain' }
+  /** Rust `ValidatorRegister` (index 10): owner = sender, node key proof of possession. */
+  | { kind: 'validator_register'; node_id: AccountId; node_signature: Uint8Array }
+  /** Rust `ValidatorDeregister` (index 11). */
+  | { kind: 'validator_deregister'; node_id: AccountId }
+  /** Rust `ValidatorUnjail` (index 12). */
+  | { kind: 'validator_unjail'; node_id: AccountId };
 
 export interface AccessList {
   read: AccountId[];

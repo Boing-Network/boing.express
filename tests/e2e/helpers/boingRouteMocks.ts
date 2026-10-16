@@ -96,6 +96,10 @@ export interface BoingMockOptions {
   storage?: (contractHex: string, keyHex: string) => string | null;
   /** boing_faucetRequest behaviour (default: ok, 10 BOING). */
   faucet?: 'ok' | 'cooldown' | 'empty';
+  /** `boing_getValidators` result (called each time, so it can depend on submitted txs). Omit: Method not found. */
+  validators?: () => unknown;
+  /** Override `boing_getAccount` result. */
+  account?: () => unknown;
 }
 
 /** Signed tx hex → payload discriminant (u32 LE after nonce u64 + sender 32 bytes). */
@@ -140,7 +144,11 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
 
     switch (method) {
       case 'boing_getAccount':
-        await fulfillJsonRpc(route, jsonRpcResult(id, { balance: '1000000', nonce: '0', stake: '0' }));
+        await fulfillJsonRpc(route, jsonRpcResult(id, opts.account?.() ?? { balance: '1000000', nonce: '0', stake: '0' }));
+        return;
+      case 'boing_getValidators':
+        if (!opts.validators) break;
+        await fulfillJsonRpc(route, jsonRpcResult(id, opts.validators()));
         return;
       case 'boing_getBalance':
         await fulfillJsonRpc(route, jsonRpcResult(id, '1000000'));
