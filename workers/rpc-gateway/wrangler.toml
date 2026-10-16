@@ -11,6 +11,7 @@ compatibility_date = "2024-12-01"
 
 # Public hostname (Cloudflare creates the DNS record + cert on deploy).
 # Also reachable at https://boing-express-rpc-gateway.nico-chikuji.workers.dev
+workers_dev = true
 routes = [
   { pattern = "rpc-gateway.boing.express", custom_domain = true }
 ]
