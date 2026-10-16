@@ -70,6 +70,8 @@ export interface ValidatorEntry {
   registered_at: number | null;
   jailed_until: number | null;
   jail_count: number;
+  /** Liveness at the most recent jailing (newer nodes; null/absent if not recorded). */
+  last_jail?: { jailed_at: number; scheduled_proposals: number; missed_proposals: number; uptime_pct: number } | null;
   scheduled_proposals: number;
   missed_proposals: number;
   uptime_pct: number;

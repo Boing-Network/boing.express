@@ -106,7 +106,8 @@ test.describe('validator tab (mocked RPC)', () => {
         mode: 'open', height: 512, quorum: 1, validator_count: 1, open: { ...OPEN, next_epoch_height: 600 },
         validators: [anchorEntry, {
           id: NODE_ID, kind: 'open', status: 'jailed', in_set: false, owner: ownerHex, bond: '100', registered_at: 352,
-          jailed_until: 500, jail_count: 1, scheduled_proposals: 25, missed_proposals: 25, uptime_pct: 0,
+          jailed_until: 500, jail_count: 1, scheduled_proposals: 0, missed_proposals: 0, uptime_pct: 100,
+          last_jail: { jailed_at: 400, scheduled_proposals: 25, missed_proposals: 25, uptime_pct: 0 },
         }],
       }),
     });
@@ -114,8 +115,8 @@ test.describe('validator tab (mocked RPC)', () => {
     await page.getByTestId('wallet-tab-validator').click();
     const row = page.getByTestId('validator-row-ea4a6c63').first();
     await expect(row).toContainText('jailed until block 500');
-    await expect(row).toContainText('Uptime 0.0%');
-    await expect(row).toContainText('missed 25/25 blocks');
+    await expect(row).toContainText('Since jailing: Uptime 100.0%');
+    await expect(row.getByTestId('validator-last-jail')).toContainText('At jailing (block 400): uptime 0.0% · missed 25/25 blocks');
     await expect(row).toContainText('bond 100 BOING');
     await expect(page.getByTestId('validator-claim')).toContainText('100 BOING unbonding');
     const shot = process.env.VALIDATOR_SCREENSHOT;

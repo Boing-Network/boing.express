@@ -132,7 +132,8 @@ export interface SubmitTransactionResult {
 
 /**
  * Normalize submit result to a tx hash string.
- * Nodes return `{ tx_hash: "ok" }` (mempool ack) or a hex id; legacy callers may return a bare string.
+ * Current nodes return `{ tx_hash: "0x<64 hex>", tx_id }` (the real tx id); older nodes returned
+ * `{ tx_hash: "ok" }`. Callers derive the id locally from the signed bytes either way (see boingAdapter).
  */
 export function parseSubmitTransactionResult(result: unknown): string {
   if (typeof result === 'string' && result.length > 0) return result;

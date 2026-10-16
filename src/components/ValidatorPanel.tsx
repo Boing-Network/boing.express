@@ -175,8 +175,16 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
           </span>
         </div>
         <div className={styles.faucetHint} data-testid="validator-stats">
-          Uptime {v.uptime_pct.toFixed(1)}% · missed {v.missed_proposals}/{v.scheduled_proposals} blocks · bond {v.bond} BOING
+          {v.status === 'jailed' ? 'Since jailing: ' : ''}Uptime {v.uptime_pct.toFixed(1)}% · missed {v.missed_proposals}/
+          {v.scheduled_proposals} blocks · bond {v.bond} BOING
         </div>
+        {v.status === 'jailed' && (
+          <div className={styles.faucetHint} data-testid="validator-last-jail">
+            {v.last_jail
+              ? `At jailing (block ${v.last_jail.jailed_at}): uptime ${v.last_jail.uptime_pct.toFixed(1)}% · missed ${v.last_jail.missed_proposals}/${v.last_jail.scheduled_proposals} blocks`
+              : 'At jailing: stats not recorded by this node'}
+          </div>
+        )}
         {actions && (
           <div className={styles.qaButtonRow}>
             {(v.status === 'pending' || v.status === 'active' || v.status === 'jailed') && (
