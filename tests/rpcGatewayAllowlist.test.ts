@@ -22,6 +22,10 @@ describe('rpc gateway allowlist', () => {
     expect(s.has('boing_submitTransaction')).toBe(false);
   });
 
+  it('allows read-only boing_getContractCode by default', () => {
+    expect(parseAllowlist(undefined).has('boing_getContractCode')).toBe(true);
+  });
+
   it('collects methods from single and batch JSON-RPC', () => {
     expect(collectMethodsFromPayload({ jsonrpc: '2.0', id: 1, method: 'boing_health', params: [] })).toEqual([
       'boing_health',

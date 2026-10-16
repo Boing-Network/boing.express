@@ -14,6 +14,8 @@ export const DEFAULT_GATEWAY_METHOD_ALLOWLIST = [
   'boing_rpcSupportedMethods',
   'boing_getRpcMethodCatalog',
   'boing_getRpcOpenApi',
+  // read-only contract bytecode + code hash (null for non-contracts)
+  'boing_getContractCode',
   // .boing name registry (read-only lookups)
   'boing_resolveName',
   'boing_reverseName',
