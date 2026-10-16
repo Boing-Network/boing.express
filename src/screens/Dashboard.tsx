@@ -27,7 +27,7 @@ import { BulkTransferPanel } from '../components/BulkTransferPanel';
 import { ValidatorPanel } from '../components/ValidatorPanel';
 import { useTokenHoldings } from '../components/useTokenHoldings';
 import { SendConfirm } from '../components/SendConfirm';
-import { ReceivePanel } from '../components/ReceivePanel';
+import { AddressQrModal } from '../components/AddressQrModal';
 import { ScanQrButton } from '../components/ScanQrButton';
 import styles from './Dashboard.module.css';
 
@@ -69,7 +69,7 @@ export function Dashboard() {
   const [sendTo, setSendTo] = useState('');
   /** Validated send waiting for the review/confirm step. */
   const [sendReview, setSendReview] = useState<{ toHex: string; amount: bigint; amountText: string } | null>(null);
-  const [showReceive, setShowReceive] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const [sendAmount, setSendAmount] = useState('');
   const [sendError, setSendError] = useState('');
   const [sendSuccess, setSendSuccess] = useState('');
@@ -650,6 +650,23 @@ export function Dashboard() {
           >
             {networkDiscovery.status === 'loading' ? 'Syncing…' : 'Sync network'}
           </button>
+          {accountId && (
+            <button
+              type="button"
+              className={`${styles.lockBtn} ${styles.gearBtn}`}
+              onClick={() => setShowQr(true)}
+              aria-label="Show address QR code"
+              title="Show address QR code"
+              data-testid="wallet-header-qr"
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3" />
+              </svg>
+            </button>
+          )}
           <button
             type="button"
             className={`${styles.lockBtn} ${styles.gearBtn} ${activeTab === 'settings' ? styles.gearBtnActive : ''}`}
@@ -782,8 +799,8 @@ export function Dashboard() {
               </section>
             )}
 
-            {showReceive && address && <ReceivePanel address={address} onBack={() => setShowReceive(false)} />}
-            <div className={styles.assetsComposition} data-testid="assets-composition" hidden={showReceive}>
+            {showQr && address && <AddressQrModal address={address} onClose={() => setShowQr(false)} />}
+            <div className={styles.assetsComposition} data-testid="assets-composition">
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Address</h2>
 
@@ -811,9 +828,6 @@ export function Dashboard() {
           )}
           <div className={styles.addressRow}>
             <code className={styles.address}>{address}</code>
-            <button type="button" className={styles.copyBtn} onClick={() => setShowReceive(true)} data-testid="wallet-receive">
-              Receive
-            </button>
             {explorerBase && (
               <a
                 href={accountExplorerUrl}

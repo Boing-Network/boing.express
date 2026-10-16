@@ -8,7 +8,7 @@ import { ValidatorPanel } from '../src/components/ValidatorPanel';
 import { BulkTransferPanel } from '../src/components/BulkTransferPanel';
 
 import { SendConfirm, type SendConfirmProps } from '../src/components/SendConfirm';
-import { ReceivePanel } from '../src/components/ReceivePanel';
+import { AddressQrModal } from '../src/components/AddressQrModal';
 
 type ValidatorProps = Parameters<typeof ValidatorPanel>[0];
 type BulkProps = Parameters<typeof BulkTransferPanel>[0];
@@ -72,11 +72,11 @@ export function confirmSendIsland(props: Omit<SendConfirmProps, 'onConfirm' | 'o
   });
 }
 
-export function showReceiveIsland(address: string): void {
+export function showAddressQrIsland(address: string): void {
   const o = overlay();
   if (!o) return;
   o.wrap.classList.remove('hidden');
-  rootFor(o.el).render(createElement(ReceivePanel, { address, onBack: closeOverlay }));
+  rootFor(o.el).render(createElement(AddressQrModal, { address, onClose: closeOverlay, logoSrc: 'images/qr-mascot.webp', inline: true }));
 }
 
 export function unmountIsland(el: HTMLElement): void {

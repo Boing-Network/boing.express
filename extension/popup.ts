@@ -44,7 +44,7 @@ import { addTokenWatchEntry, listTokenWatchlist, removeTokenWatchEntry } from '.
 import { addTxHistory, getTxHistory, type TxHistoryEntry } from '../src/storage/txHistory';
 import { chainRowToDisplay, fetchChainTxPage, mergeTxHistory, type DisplayTxEntry } from '../src/boing/chainTxHistory';
 import { mergeWithDefaultTokens } from '../src/boing/defaultTokens';
-import { confirmSendIsland, renderBulkIsland, renderValidatorIsland, showReceiveIsland } from './popupIslands';
+import { confirmSendIsland, renderBulkIsland, renderValidatorIsland, showAddressQrIsland } from './popupIslands';
 import { loadTokenHoldings, type TokenHolding } from '../src/boing/tokenHoldings';
 import { buildReferenceFungibleTransfer } from '../src/boing/referenceFungible';
 import { encodeReferenceTransferNftCalldata, normalizeHex64 } from '../src/boing/referenceNft';
@@ -155,8 +155,8 @@ document.querySelectorAll<HTMLButtonElement>('[data-scan-field]').forEach((btn) 
   });
 });
 
-document.getElementById('btn-receive')?.addEventListener('click', () => {
-  if (accountId) showReceiveIsland(formatAddress(accountId, false));
+document.getElementById('btn-qr')?.addEventListener('click', () => {
+  if (accountId) showAddressQrIsland(formatAddress(accountId, false));
 });
 
 function showLoading(): void {

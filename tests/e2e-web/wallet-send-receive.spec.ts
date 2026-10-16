@@ -1,4 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import sharp from 'sharp';
+import jsQR from 'jsqr';
 import qrcode from 'qrcode-generator';
 import { installBoingNetworkMocks } from '../e2e/helpers/boingRouteMocks';
 
@@ -7,10 +9,10 @@ const TEST_KEY = '11'.repeat(32); // throwaway, never funded
 const PASSWORD = 'e2e-password-123';
 const A = '22'.repeat(32);
 const TBOING = '6fce9d3e3f13df9fc17e3fd947148a4e6ce6966538b7dd9bf2a891d3b9699c6b';
-const SHOTS = process.env.SEND_RECEIVE_SHOTS; // directory for after-12-*.png
+const SHOTS = process.env.SEND_RECEIVE_SHOTS; // directory for after-13-*.png
 
 async function shot(page: Page, name: string) {
-  if (SHOTS) await page.screenshot({ path: `${SHOTS}/after-12-${name}.png`, fullPage: true });
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/after-13-${name}.png`, fullPage: true });
 }
 
 /** GIF of a QR code for `text` (qrcode-generator's own data URL), for the upload fallback. */
@@ -19,6 +21,13 @@ export function qrGif(text: string): Buffer {
   qr.addData(text);
   qr.make();
   return Buffer.from(qr.createDataURL(8, 4).split(',')[1]!, 'base64');
+}
+
+/** Screenshot an element and decode it with jsQR (sharp → RGBA). */
+export async function decodeElement(el: Locator): Promise<string | null> {
+  const png = await el.screenshot({ animations: 'disabled' });
+  const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  return jsQR(new Uint8ClampedArray(data), info.width, info.height)?.data ?? null;
 }
 
 async function importWallet(page: Page) {
@@ -91,17 +100,25 @@ test.describe('welcome, send review, receive, scan (mocked RPC)', () => {
     await installBoingNetworkMocks(context);
     await page.goto(`${WALLET}/wallet`);
     await importWallet(page);
-    await page.getByTestId('wallet-receive').click();
+    await expect(page.getByTestId('wallet-receive')).toHaveCount(0);
+    await page.getByTestId('wallet-header-qr').click();
+    await expect(page.getByTestId('address-qr-modal')).toBeVisible();
+    await expect(page.getByTestId('qr-logo')).toBeVisible();
     const qr = page.getByTestId('receive-qr');
     await expect(qr).toBeVisible();
     const addr = (await qr.getAttribute('data-value')) ?? '';
     expect(addr).toMatch(/^0x[0-9a-f]{64}$/);
     await expect(page.getByTestId('receive-address')).toHaveText(`${addr.slice(0, 10)}…${addr.slice(-6)}`);
-    await expect(page.getByText('Share this address to receive BOING tokens')).toBeVisible();
+    await expect(page.getByText('Share this address to receive BOING')).toBeVisible();
+    // The rendered QR (mascot included) must still decode.
+    await page.waitForFunction(() => Array.from(document.querySelectorAll('[data-testid=qr-logo] image')).every((i) => (i as SVGImageElement).getBBox().width > 0));
+    await page.waitForTimeout(300);
+    await expect.poll(() => decodeElement(qr), { timeout: 10_000 }).toBe(addr);
     await page.getByTestId('receive-copy').click();
     await expect(page.getByTestId('receive-copy')).toHaveText('Copied');
-    await shot(page, 'receive');
-    await page.getByTestId('receive-back').click();
+    await shot(page, 'address-qr');
+    await page.getByTestId('address-qr-close').click();
+    await expect(page.getByTestId('address-qr-modal')).toHaveCount(0);
 
     await page.getByTestId('wallet-tab-transfer').click();
     await page.getByTestId('send-to-scan').click();

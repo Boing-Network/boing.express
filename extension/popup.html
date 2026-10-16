@@ -5,6 +5,7 @@
   <title>Boing Express</title>
   <link rel="stylesheet" href="popup.css" />
   <link rel="stylesheet" href="popup-islands.css" />
+  <link rel="stylesheet" href="popup-islands2.css" />
 </head>
 <body>
   <div id="app">
@@ -87,6 +88,7 @@
       <div class="dashboard-header">
         <div class="header-row">
           <select id="network-select" class="select select-network" aria-label="Select network"></select>
+          <button type="button" id="btn-qr" class="btn-icon" aria-label="Show address QR code" title="Show address QR code" data-testid="wallet-header-qr"><svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg></button>
           <button type="button" id="btn-settings" class="btn-icon" aria-label="Settings" title="Settings" aria-expanded="false" aria-controls="panel-settings" data-testid="wallet-header-settings">
             <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
@@ -115,8 +117,7 @@
           <div class="assets-composition" data-testid="assets-composition">
             <div class="row address-row">
               <code id="address" class="address" title="Your address (share it to receive)"></code>
-              <button type="button" id="btn-receive" class="btn-small" aria-label="Receive: show address QR code" data-testid="wallet-receive">Receive</button>
-            </div>
+                </div>
             <div class="assets-tokens" data-testid="wallet-tokens">
               <h3 class="assets-section-label">Assets</h3>
               <ul class="connected-sites-list token-list" aria-label="Native balance">

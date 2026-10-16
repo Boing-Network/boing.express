@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import qrcode from 'qrcode-generator';
+import sharp from 'sharp';
+import jsQR from 'jsqr';
 import { openPopupWithNewWallet } from './helpers/popup';
 
 const RUN = process.env.EXTENSION_E2E_FULL === '1';
@@ -13,13 +15,20 @@ describe('Extension popup receive + scan (E2E, mocked RPC)', () => {
     const { context, popup, close } = await openPopupWithNewWallet({});
     try {
       await expect(popup.getByTestId('token-row-native')).toBeVisible();
-      if (SHOTS) await popup.screenshot({ path: path.join(SHOTS, 'after-12-popup-wallet.png'), fullPage: true });
+      if (SHOTS) await popup.screenshot({ path: path.join(SHOTS, 'after-13-popup-wallet.png'), fullPage: true });
       const me = ((await popup.locator('#address').textContent()) ?? '').trim();
-      await popup.getByTestId('wallet-receive').click();
-      await expect(popup.getByTestId('receive-panel')).toBeVisible();
+      await expect(popup.getByTestId('wallet-receive')).toHaveCount(0);
+      await popup.getByTestId('wallet-header-qr').click();
+      await expect(popup.getByTestId('address-qr-modal')).toBeVisible();
+      await expect(popup.getByTestId('qr-logo')).toBeVisible();
       await expect(popup.getByTestId('receive-qr')).toHaveAttribute('data-value', '0x' + me.toLowerCase().replace(/^0x/, ''));
-      if (SHOTS) await popup.screenshot({ path: path.join(SHOTS, 'after-12-popup-receive.png'), fullPage: true });
-      await popup.getByTestId('receive-back').click();
+      if (SHOTS) await popup.screenshot({ path: path.join(SHOTS, 'after-13-popup-address-qr.png'), fullPage: true });
+      await popup.waitForTimeout(400);
+      const png = await popup.getByTestId('receive-qr').screenshot();
+      const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      expect(jsQR(new Uint8ClampedArray(data), info.width, info.height)?.data).toBe('0x' + me.toLowerCase().replace(/^0x/, ''));
+      await popup.getByTestId('address-qr-close').click();
+      await expect(popup.getByTestId('address-qr-modal')).toHaveCount(0);
 
       const scan = await context.newPage();
       await scan.goto(popup.url().replace(/[^/]*$/, 'scan.html?field=send-to'));
