@@ -133,7 +133,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
       setError(err instanceof Error ? err.message : String(err));
       return;
     }
-    const payload = await buildRegisterPayload(accountId, seed);
+    const payload = await buildRegisterPayload(accountId, seed, await signingChainIdForRpc(rpcUrl));
     seed.fill(0);
     const ok = await send(payload, 'validator_register', 'Registration');
     if (ok) {

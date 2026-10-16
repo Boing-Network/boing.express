@@ -22,6 +22,26 @@ export function validatorRegistrationMessage(owner: AccountId, nodeId: AccountId
   return blake3(pre);
 }
 
+export const VALIDATOR_REGISTRATION_DOMAIN_V2 = 'BOING_OPEN_VALIDATOR_REGISTER_V2';
+
+/**
+ * Chain-bound proof message BLAKE3(domain_v2 || chain_id_le8 || owner || nodeId) (security review #14),
+ * required by nodes that advertise a chain id from `registration_proof_v2_from_height`.
+ */
+export function validatorRegistrationMessageV2(owner: AccountId, nodeId: AccountId, chainId: bigint | number): Uint8Array {
+  const dom = new TextEncoder().encode(VALIDATOR_REGISTRATION_DOMAIN_V2);
+  const pre = new Uint8Array(dom.length + 8 + 64);
+  pre.set(dom, 0);
+  new DataView(pre.buffer).setBigUint64(dom.length, BigInt(chainId), true);
+  pre.set(owner, dom.length + 8);
+  pre.set(nodeId, dom.length + 40);
+  return blake3(pre);
+}
+
+function registrationMessage(owner: AccountId, nodeId: AccountId, chainId?: bigint | number | null): Uint8Array {
+  return chainId == null ? validatorRegistrationMessage(owner, nodeId) : validatorRegistrationMessageV2(owner, nodeId, chainId);
+}
+
 /** Parse a 32-byte ed25519 seed from hex (optional 0x). Throws on bad input without echoing it. */
 export function parseNodeSecretHex(input: string): Uint8Array {
   const h = input.trim().replace(/^0x/i, '');
@@ -46,15 +66,25 @@ export async function nodeIdFromSecret(secret: Uint8Array): Promise<AccountId> {
   return ed.getPublicKeyAsync(secret) as Promise<AccountId>;
 }
 
-export async function buildRegisterPayload(owner: AccountId, nodeSecret: Uint8Array): Promise<Payload> {
+/** `chainId` (from the node's `boing_health.tx_signing`) selects the chain-bound v2 proof; `null` = v1. */
+export async function buildRegisterPayload(
+  owner: AccountId,
+  nodeSecret: Uint8Array,
+  chainId: bigint | number | null = null
+): Promise<Payload> {
   const nodeId = await nodeIdFromSecret(nodeSecret);
-  const sig = await ed.signAsync(validatorRegistrationMessage(owner, nodeId), nodeSecret);
+  const sig = await ed.signAsync(registrationMessage(owner, nodeId, chainId), nodeSecret);
   return { kind: 'validator_register', node_id: nodeId, node_signature: sig };
 }
 
-export async function verifyRegistration(owner: AccountId, nodeId: AccountId, sig: Uint8Array): Promise<boolean> {
+export async function verifyRegistration(
+  owner: AccountId,
+  nodeId: AccountId,
+  sig: Uint8Array,
+  chainId: bigint | number | null = null
+): Promise<boolean> {
   try {
-    return await ed.verifyAsync(sig, validatorRegistrationMessage(owner, nodeId), nodeId);
+    return await ed.verifyAsync(sig, registrationMessage(owner, nodeId, chainId), nodeId);
   } catch {
     return false;
   }

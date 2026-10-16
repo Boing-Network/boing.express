@@ -7,6 +7,7 @@ import {
   parseNodeSecretHex,
   registrationAvailability,
   validatorRegistrationMessage,
+  validatorRegistrationMessageV2,
   validatorsOwnedBy,
   verifyRegistration,
   type ValidatorsReport,
@@ -24,6 +25,18 @@ describe('open validator registration', () => {
     expect(bytesToHex(validatorRegistrationMessage(owner, nodeId))).toBe(
       'f8bbe9cbc961743405a6154a8dd07192efa73a3e9368271ec4b11dd0b66562b5'
     );
+  });
+
+  it('v2 proof matches the Rust golden vector and is chain-bound (security #14)', async () => {
+    const nodeId = await ed.getPublicKeyAsync(nodeSeed);
+    expect(bytesToHex(validatorRegistrationMessageV2(owner, nodeId, 6913))).toBe(
+      '2d9b960878d673d6e84ded770590a0242fdc66ac4f34ca9d158078c7bf4b59d9'
+    );
+    const p = await buildRegisterPayload(owner, nodeSeed, 6913n);
+    if (p.kind !== 'validator_register') throw new Error('kind');
+    expect(await verifyRegistration(owner, p.node_id, p.node_signature, 6913n)).toBe(true);
+    expect(await verifyRegistration(owner, p.node_id, p.node_signature, 6914n)).toBe(false);
+    expect(await verifyRegistration(owner, p.node_id, p.node_signature)).toBe(false);
   });
 
   it('builds a register payload whose proof verifies and binds the owner', async () => {
