@@ -15,7 +15,7 @@ import {
   transactionSummary,
   type TransactionApprovalDetail,
 } from '../boing/dappTxRequest';
-import { buildSignedTransactionHex } from '../boing/signing';
+import { buildSignedTransactionHex, signingChainIdForRpc } from '../boing/signing';
 import { signMessage } from '../crypto/keys';
 import { looksLikeTransactionPreimage, messageToBytes, TX_PREIMAGE_MESSAGE_REFUSED } from '../boing/messageSigning';
 import type { Transaction } from '../boing/types';
@@ -236,7 +236,7 @@ export function WebSign() {
         return;
       }
       if (!tx) throw new Error(prepError ?? 'Transaction not ready.');
-      const signed = await buildSignedTransactionHex(tx, wallet.privateKey);
+      const signed = await buildSignedTransactionHex(tx, wallet.privateKey, await signingChainIdForRpc(network.config.rpcUrl));
       const hex = signed.startsWith('0x') ? signed : `0x${signed}`;
       if (req.method === 'boing_signTransaction') {
         respond(req, { result: hex }, 'Transaction signed. You can return to the app.');

@@ -5,7 +5,7 @@
 import { blake3 } from '@noble/hashes/blake3.js';
 import type { AccountId, Payload, Transaction } from './types';
 import { accountIdFromHex, accountIdToHex } from './types';
-import { buildSignedTransactionHex } from './signing';
+import { buildSignedTransactionHex, signingChainIdForRpc } from './signing';
 import { rpcCall, isMethodNotFoundError } from './rpc';
 
 export const NAME_SUFFIX = '.boing';
@@ -212,9 +212,9 @@ export async function resolveRecipient(rpcUrl: string, input: string): Promise<R
 
 // ---- transactions ----
 
-export function signNamePayload(sender: AccountId, nonce: bigint, payload: Payload, privateKey: Uint8Array): Promise<string> {
+export function signNamePayload(sender: AccountId, nonce: bigint, payload: Payload, privateKey: Uint8Array, chainId?: bigint | null): Promise<string> {
   const tx: Transaction = { nonce, sender, payload, access_list: { read: [sender], write: [sender] } };
-  return buildSignedTransactionHex(tx, privateKey);
+  return buildSignedTransactionHex(tx, privateKey, chainId);
 }
 
 export interface NameTxContext {
@@ -227,7 +227,7 @@ export interface NameTxContext {
 
 export async function sendNamePayload(ctx: NameTxContext, payload: Payload): Promise<string> {
   const nonce = await ctx.getNonce();
-  const hex = await signNamePayload(ctx.sender, nonce, payload, ctx.privateKey);
+  const hex = await signNamePayload(ctx.sender, nonce, payload, ctx.privateKey, await signingChainIdForRpc(ctx.rpcUrl));
   const r = await ctx.submit(hex);
   if (!r.success) throw new Error(r.error ?? 'Submit failed');
   return r.txHash ?? '';

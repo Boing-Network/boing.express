@@ -6,7 +6,7 @@
 
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
-import { buildSignedTransactionHex } from '../boing/signing';
+import { buildSignedTransactionHex, signingChainIdForRpc } from '../boing/signing';
 import { transactionIdFromSignedTransactionHex } from '../boing/bincode';
 import { suggestedAccessList } from '../boing/accessList';
 import * as rpc from '../boing/rpc';
@@ -23,7 +23,8 @@ import { buildBatchTransaction, nodeBatchMaxCalls, nodeSupportsNativeBatch, sign
 const BOING_DECIMALS = 0;
 const BOING_SYMBOL = 'BOING';
 
-function signedNativeTx(
+async function signedNativeTx(
+  rpcUrl: string,
   sender: AccountId,
   nonce: bigint,
   payload: Payload,
@@ -35,7 +36,7 @@ function signedNativeTx(
     payload,
     access_list: suggestedAccessList(sender, payload),
   };
-  return buildSignedTransactionHex(tx, privateKey);
+  return buildSignedTransactionHex(tx, privateKey, await signingChainIdForRpc(rpcUrl));
 }
 
 export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
@@ -75,7 +76,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      return signedNativeTx(sender, nonce, { kind: 'transfer', to, amount }, privateKey);
+      return signedNativeTx(rpcUrl, sender, nonce, { kind: 'transfer', to, amount }, privateKey);
     },
 
     async buildBond(
@@ -84,7 +85,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      return signedNativeTx(sender, nonce, { kind: 'bond', amount }, privateKey);
+      return signedNativeTx(rpcUrl, sender, nonce, { kind: 'bond', amount }, privateKey);
     },
 
     async buildUnbond(
@@ -93,7 +94,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      return signedNativeTx(sender, nonce, { kind: 'unbond', amount }, privateKey);
+      return signedNativeTx(rpcUrl, sender, nonce, { kind: 'unbond', amount }, privateKey);
     },
 
     async buildClaimUnbond(
@@ -101,7 +102,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       nonce: bigint,
       privateKey: Uint8Array
     ): Promise<string> {
-      return signedNativeTx(sender, nonce, { kind: 'claim_unbond' }, privateKey);
+      return signedNativeTx(rpcUrl, sender, nonce, { kind: 'claim_unbond' }, privateKey);
     },
 
     async getStake(accountId: AccountId): Promise<string> {
@@ -183,6 +184,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       privateKey: Uint8Array
     ): Promise<string> {
       return signedNativeTx(
+        rpcUrl,
         sender,
         nonce,
         { kind: 'contract_call', contract, calldata },
@@ -216,7 +218,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
             : { kind: 'contractCall' as const, contractHex: norm(s.contractHex), calldata: s.calldata }
         ),
       });
-      return signTransactionInput(tx, privateKey);
+      return signTransactionInput(tx, privateKey, { chainId: await signingChainIdForRpc(rpcUrl) });
     },
 
     async simulateGas(signedTxHex: string): Promise<{ success: boolean; gasUsed?: bigint; error?: string }> {

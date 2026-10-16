@@ -26,8 +26,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       boing-sdk:
-        specifier: github:Boing-Network/boing.network#960096f42187bff002915ed52cb09184d1dcd8fa&path:/boing-sdk
-        version: https://codeload.github.com/Boing-Network/boing.network/tar.gz/960096f42187bff002915ed52cb09184d1dcd8fa#path:/boing-sdk
+        specifier: github:Boing-Network/boing.network#61350faa1ceaf613296c6999c9ca5afc4b01b103&path:/boing-sdk
+        version: https://codeload.github.com/Boing-Network/boing.network/tar.gz/61350faa1ceaf613296c6999c9ca5afc4b01b103#path:/boing-sdk
       jsqr:
         specifier: ^1.4.0
         version: 1.4.0
@@ -950,8 +950,8 @@ packages:
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
 
-  boing-sdk@https://codeload.github.com/Boing-Network/boing.network/tar.gz/960096f42187bff002915ed52cb09184d1dcd8fa#path:/boing-sdk:
-    resolution: {path: /boing-sdk, tarball: https://codeload.github.com/Boing-Network/boing.network/tar.gz/960096f42187bff002915ed52cb09184d1dcd8fa}
+  boing-sdk@https://codeload.github.com/Boing-Network/boing.network/tar.gz/61350faa1ceaf613296c6999c9ca5afc4b01b103#path:/boing-sdk:
+    resolution: {path: /boing-sdk, tarball: https://codeload.github.com/Boing-Network/boing.network/tar.gz/61350faa1ceaf613296c6999c9ca5afc4b01b103}
     version: 0.5.3
 
   brace-expansion@1.1.21:
@@ -2043,7 +2043,7 @@ snapshots:
 
   blake3-wasm@2.1.5: {}
 
-  boing-sdk@https://codeload.github.com/Boing-Network/boing.network/tar.gz/960096f42187bff002915ed52cb09184d1dcd8fa#path:/boing-sdk:
+  boing-sdk@https://codeload.github.com/Boing-Network/boing.network/tar.gz/61350faa1ceaf613296c6999c9ca5afc4b01b103#path:/boing-sdk:
     dependencies:
       '@noble/ed25519': 2.3.0
       '@noble/hashes': 1.8.0

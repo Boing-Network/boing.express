@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AccountId } from '../boing/types';
 import { accountIdFromHex, accountIdToHex } from '../boing/types';
-import { buildSignedTransactionHex } from '../boing/signing';
+import { buildSignedTransactionHex, signingChainIdForRpc } from '../boing/signing';
 import { suggestedAccessList } from '../boing/accessList';
 import type { Payload, Transaction } from '../boing/types';
 import * as rpc from '../boing/rpc';
@@ -106,7 +106,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
     try {
       const nonce = await network.getNonce(accountId);
       const tx: Transaction = { nonce, sender: accountId, payload, access_list: suggestedAccessList(accountId, payload) };
-      const signed = await buildSignedTransactionHex(tx, pk);
+      const signed = await buildSignedTransactionHex(tx, pk, await signingChainIdForRpc(network.config.rpcUrl));
       const res = await network.submitTransaction(signed);
       if (!res.success) {
         setError(res.error ?? 'Submit failed');

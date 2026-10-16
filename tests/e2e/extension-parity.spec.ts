@@ -57,7 +57,7 @@ describe('Extension parity with web wallet (E2E, mocked RPC)', () => {
       await expect(popup.getByTestId('validator-steps')).toContainText('100 BOING bond');
       await expect(popup.getByTestId('stake-min-hint')).toContainText('future stake-based');
       await expect(popup.getByRole('button', { name: 'Claim unbond' })).toHaveCount(0);
-      await expect(popup.getByTestId('validator-summary')).toContainText('next epoch at block 600');
+      await expect(popup.getByTestId('validator-stat-next-epoch')).toHaveText('600');
       const row = popup.getByTestId('validator-row-ea4a6c63').first();
       await expect(row).toContainText('jailed until block 500');
       await expect(row.getByTestId('validator-last-jail')).toContainText('At jailing (block 400)');
