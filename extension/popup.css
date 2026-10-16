@@ -131,9 +131,19 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .logo {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Comfortaa', system-ui, sans-serif;
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.logo-mark {
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(0, 232, 200, 0.3));
 }
 
 .dashboard-header {

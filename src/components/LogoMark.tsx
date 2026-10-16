@@ -8,14 +8,17 @@ type Props = {
 };
 
 /**
- * Boing Express mark — stone slab chip, engraved hex ring, neon gradient core.
- * Gradients use CSS variables so wallet/docs `data-page` accents apply.
+ * Boing Express mark ("Arc Slab"): the shared Boing recovery arc + orb on a rounded slab
+ * (boing.finance shell, boing.network motif) in Express teal, with speed streaks.
+ * Source of truth for rasters: public/assets/boing-express-mark.svg (keep geometry in sync).
+ * Frame gradient uses CSS variables so wallet/docs `data-page` accents apply.
  */
 export function LogoMark({ className, size = 44 }: Props) {
   const uid = useId().replace(/:/g, '');
-  const gradStroke = `logo-stroke-${uid}`;
-  const gradFill = `logo-fill-${uid}`;
-  const softBlur = `logo-soft-${uid}`;
+  const frame = `bx-frame-${uid}`;
+  const orb = `bx-orb-${uid}`;
+  const slab = `bx-slab-${uid}`;
+  const glow = `bx-glow-${uid}`;
 
   return (
     <svg
@@ -28,56 +31,39 @@ export function LogoMark({ className, size = 44 }: Props) {
       aria-hidden
     >
       <defs>
-        <linearGradient id={gradStroke} x1="10" y1="54" x2="54" y2="10" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="var(--express-primary)" />
-          <stop offset="48%" stopColor="var(--logo-neon-mid, #5ab0ff)" />
-          <stop offset="100%" stopColor="var(--express-secondary)" />
+        <linearGradient id={frame} x1="8" y1="54" x2="56" y2="10" gradientUnits="userSpaceOnUse">
+          <stop stopColor="var(--express-primary, #00e8c8)" />
+          <stop offset="0.5" stopColor="var(--logo-neon-mid, #5ab0ff)" />
+          <stop offset="1" stopColor="var(--express-secondary, #00b4d8)" />
         </linearGradient>
-        <linearGradient id={gradFill} x1="22" y1="42" x2="42" y2="22" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="var(--express-primary)" />
-          <stop offset="100%" stopColor="var(--express-secondary)" />
+        <linearGradient id={orb} x1="40" y1="14" x2="56" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#c4b5fd" />
+          <stop offset="0.5" stopColor="var(--express-primary, #00e8c8)" />
+          <stop offset="1" stopColor="#90e0ef" />
         </linearGradient>
-        <filter id={softBlur} x="-25%" y="-25%" width="150%" height="150%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="0.35" result="b" />
+        <radialGradient id={slab} cx="34%" cy="28%" r="78%">
+          <stop offset="0" stopColor="#1a2434" />
+          <stop offset="1" stopColor="#0c1018" />
+        </radialGradient>
+        <filter id={glow} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.6" result="b" />
           <feMerge>
             <feMergeNode in="b" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
       </defs>
-      {/* Stone chip */}
-      <rect
-        x="4"
-        y="4"
-        width="56"
-        height="56"
-        rx="14"
-        className={styles.slab}
-      />
-      <rect
-        x="4.5"
-        y="4.5"
-        width="55"
-        height="55"
-        rx="13.5"
-        className={styles.slabHighlight}
-      />
-      {/* Groove (engraved hex) */}
+      <rect x="6" y="6" width="52" height="52" rx="14" fill={`url(#${slab})`} stroke={`url(#${frame})`} strokeWidth="2.25" />
+      <path d="M15 21h9M12 27h8" stroke={`url(#${frame})`} strokeWidth="2" strokeLinecap="round" opacity="0.55" />
       <path
-        className={styles.hexGroove}
-        d="M32 9 L51.5 20.25 V43.75 L32 55 L12.5 43.75 V20.25 Z"
+        d="M13 45 C 19 45 21 40 25 33 C 29 26 33 21 38 19 C 43 17 47 20 49 24"
+        stroke={`url(#${frame})`}
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        opacity="0.9"
       />
-      {/* Neon hex */}
-      <path
-        d="M32 9 L51.5 20.25 V43.75 L32 55 L12.5 43.75 V20.25 Z"
-        stroke={`url(#${gradStroke})`}
-        strokeWidth="1.35"
-        strokeLinejoin="round"
-        filter={`url(#${softBlur})`}
-      />
-      {/* Core */}
-      <circle cx="32" cy="32" r="6.25" fill={`url(#${gradFill})`} className={styles.core} />
-      <circle cx="32" cy="32" r="2.4" fill="var(--text-primary)" opacity="0.14" />
+      <circle cx="49" cy="24" r="7.25" fill={`url(#${orb})`} filter={`url(#${glow})`} className={styles.core} />
+      <circle cx="46.8" cy="21.6" r="2" fill="#f0f9ff" opacity="0.45" />
     </svg>
   );
 }
