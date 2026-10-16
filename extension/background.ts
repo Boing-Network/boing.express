@@ -8,7 +8,7 @@
 
 import { signMessage } from '../src/crypto/keys';
 import { looksLikeTransactionPreimage, TX_PREIMAGE_MESSAGE_REFUSED } from '../src/boing/messageSigning';
-import { buildSignedTransactionHex } from '../src/boing/signing';
+import { buildSignedTransactionHex, signingChainIdForRpc } from '../src/boing/signing';
 import { transactionIdFromTransaction } from '../src/boing/bincode';
 import { accountIdFromHex, accountIdToHex } from '../src/boing/types';
 import { mergeSuggestedAccessListHex } from '../src/boing/accessList';
@@ -464,7 +464,9 @@ async function signOrSendBoingTransaction(
     txPipeline: method === BOING_METHODS.SEND_TRANSACTION ? 'send' : 'sign',
   });
 
-  const signedHexNoPrefix = await buildSignedTransactionHex(tx, unlockedState.privateKey);
+  // Security fix #2: chain-bound (v2) signature for the selected network's chain id.
+  const signingChainId = await signingChainIdForRpc(rpcUrl);
+  const signedHexNoPrefix = await buildSignedTransactionHex(tx, unlockedState.privateKey, signingChainId);
   const rpcHex = signedHexNoPrefix.startsWith('0x') ? signedHexNoPrefix : `0x${signedHexNoPrefix}`;
 
   const isSend = method === BOING_METHODS.SEND_TRANSACTION;
@@ -498,7 +500,7 @@ async function signOrSendBoingTransaction(
               ...workingTx,
               access_list: mergeSuggestedAccessListHex(workingTx.access_list, suggested),
             };
-            const retriedNoPrefix = await buildSignedTransactionHex(workingTx, unlockedState.privateKey);
+            const retriedNoPrefix = await buildSignedTransactionHex(workingTx, unlockedState.privateKey, signingChainId);
             submitHex = retriedNoPrefix.startsWith('0x') ? retriedNoPrefix : `0x${retriedNoPrefix}`;
             sim = await runSim(submitHex);
           }

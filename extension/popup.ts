@@ -59,7 +59,7 @@ import {
   type BulkRowResult,
   type BulkRowValid,
 } from '../src/boing/bulkTransfer';
-import { buildSignedTransactionHex } from '../src/boing/signing';
+import { buildSignedTransactionHex, signingChainIdForRpc } from '../src/boing/signing';
 import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
 import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
@@ -1149,7 +1149,7 @@ document.getElementById('btn-native-tx-submit')?.addEventListener('click', async
     const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
     const nonce = await net.getNonce(accountId);
     const tx = transactionFromDappJson(obj, accountId, nonce);
-    const signedHexNo0x = await buildSignedTransactionHex(tx, privateKey);
+    const signedHexNo0x = await buildSignedTransactionHex(tx, privateKey, await signingChainIdForRpc(net.config.rpcUrl));
     const hex = signedHexNo0x.startsWith('0x') ? signedHexNo0x : `0x${signedHexNo0x}`;
     const result = await net.submitTransaction(hex);
     if (result.success) {
