@@ -876,7 +876,6 @@ export function Dashboard() {
             </p>
           )}
           <div className={styles.addressRow}>
-            <code className={styles.address}>{address}</code>
             {explorerBase && (
               <a
                 href={accountExplorerUrl}
@@ -1251,10 +1250,10 @@ export function Dashboard() {
               bonded; it is not active on this network.
             </p>
             {network.buildBond && (
-              <form onSubmit={handleBond} className={styles.form}>
+              <form onSubmit={handleBond} className={`${styles.form} ${styles.stakeForm}`}>
                 <input
                   type="text"
-                  placeholder="Amount to bond (whole BOING, e.g. 100)"
+                  placeholder="Amount (BOING)"
                   value={bondAmount}
                   onChange={(e) => setBondAmount(e.target.value)}
                   className={styles.input}
@@ -1279,10 +1278,10 @@ export function Dashboard() {
               </form>
             )}
             {network.buildUnbond && (
-              <form onSubmit={handleUnbond} className={styles.form}>
+              <form onSubmit={handleUnbond} className={`${styles.form} ${styles.stakeForm}`}>
                 <input
                   type="text"
-                  placeholder="Amount to unbond (whole BOING, e.g. 100)"
+                  placeholder="Amount (BOING)"
                   value={unbondAmount}
                   onChange={(e) => setUnbondAmount(e.target.value)}
                   className={styles.input}

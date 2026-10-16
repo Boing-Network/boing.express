@@ -395,13 +395,22 @@ export function BulkTransferPanel(props: {
       <h2 className={styles.sectionTitle}>Bulk transfer</h2>
       {stage === 'edit' && (
         <div className={styles.form}>
-          <p className={styles.faucetHint}>
-            Up to {BULK_MAX_ROWS} recipients; BOING, tokens and NFTs you hold can be mixed{nftsLoading ? ' (loading NFTs…)' : ''}. Up to {BATCH_MAX_STEPS} rows go out as one atomic batch
-            transaction (one signature, all-or-nothing) on nodes that support it; otherwise each row is its own transaction.
+          <p className={styles.panelLead} data-testid="bulk-lead">
+            Send to up to {BULK_MAX_ROWS} recipients at once{nftsLoading ? ' (loading NFTs…)' : ''}.
+            <span
+              className={styles.infoTip}
+              tabIndex={0}
+              role="note"
+              aria-label="About bulk transfers"
+              data-tip={`Mix BOING, tokens and NFTs you hold. Up to ${BATCH_MAX_STEPS} rows go out as one atomic batch transaction (one signature, all-or-nothing) on nodes that support it; otherwise each row is its own transaction.`}
+              data-testid="bulk-info"
+            >
+              i
+            </span>
           </p>
-          <label className={styles.addressHint}>
-            Asset for new rows{' '}
-            <select className={styles.input} value={defaultAsset} onChange={(e) => setDefaultAsset(e.target.value)} aria-label="Asset for new rows" data-testid="bulk-asset">
+          <label className={styles.fieldLabel}>
+            <span>Asset for new rows</span>
+            <select className={styles.select} value={defaultAsset} onChange={(e) => setDefaultAsset(e.target.value)} aria-label="Asset for new rows" data-testid="bulk-asset">
               <option value={BOING_KEY}>
                 {props.balance?.symbol ?? 'BOING'} · {props.balance ? formatBalance(props.balance.value, props.balance.decimals) : '…'}
               </option>
@@ -413,18 +422,24 @@ export function BulkTransferPanel(props: {
             </select>
           </label>
           <div className={styles.bulkRows} data-testid="bulk-rows">
+            <div className={styles.bulkHead} aria-hidden="true">
+              <span>Recipient</span>
+              <span>Asset</span>
+              <span>Amount</span>
+              <span />
+            </div>
             {rows.map((r, i) => (
               <div key={r.id} className={styles.bulkRow} data-testid="bulk-row">
                 <input
-                  className={styles.input}
-                  placeholder="Recipient (64 hex)"
+                  className={`${styles.rowInput} ${styles.bulkTo}`}
+                  placeholder="Recipient address (0x… 64 hex)"
                   value={r.to}
                   onChange={(e) => setRows(rows.map((x) => (x.id === r.id ? { ...x, to: e.target.value } : x)))}
                   aria-label={`Recipient row ${i + 1}`}
                   data-testid="bulk-row-to"
                 />
                 <select
-                  className={styles.input}
+                  className={`${styles.select} ${styles.rowSelect} ${styles.bulkAsset}`}
                   value={r.asset}
                   onChange={(e) => setRows(rows.map((x) => (x.id === r.id ? { ...x, asset: e.target.value } : x)))}
                   aria-label={`Asset row ${i + 1}`}
@@ -453,12 +468,12 @@ export function BulkTransferPanel(props: {
                   )}
                 </select>
                 {isNftAssetKey(r.asset) ? (
-                  <span className={styles.addressHint} data-testid="bulk-row-nft-id" title="NFT rows send exactly one token">
+                  <span className={`${styles.nftIdCell} ${styles.bulkAmount}`} data-testid="bulk-row-nft-id" title="NFT rows send exactly one token">
                     {nftTokenIdLabel(parseNftAssetKey(r.asset)?.tokenIdHex ?? '0'.repeat(64))}
                   </span>
                 ) : (
                   <input
-                    className={styles.input}
+                    className={`${styles.rowInput} ${styles.bulkAmount}`}
                     placeholder="Amount"
                     value={r.amount}
                     inputMode="decimal"
@@ -469,7 +484,8 @@ export function BulkTransferPanel(props: {
                 )}
                 <button
                   type="button"
-                  className={styles.copyBtn}
+                  className={`${styles.iconBtn} ${styles.bulkRemove}`}
+                  title="Remove row"
                   aria-label={`Remove row ${i + 1}`}
                   onClick={() => setRows(rows.length > 1 ? rows.filter((x) => x.id !== r.id) : [newRow()])}
                 >
@@ -478,16 +494,17 @@ export function BulkTransferPanel(props: {
               </div>
             ))}
           </div>
-          <div className={styles.inlineRow}>
-            <button type="button" className={styles.copyBtn} onClick={() => setRows([...rows, newRow()])} data-testid="bulk-add-row">
-              + Row
+          <div className={styles.toolbarRow}>
+            <button type="button" className={styles.ghostBtn} onClick={() => setRows([...rows, newRow()])} data-testid="bulk-add-row">
+              + Add row
             </button>
-            <button type="button" className={styles.copyBtn} onClick={reset}>
+            <button type="button" className={`${styles.ghostBtn} ${styles.ghostBtnMuted}`} onClick={reset}>
               Clear
             </button>
           </div>
-          <details className={styles.subDetails}>
-            <summary className={styles.addressHint}>Paste CSV (address,amount[,asset] or address,nft:collection:tokenId)</summary>
+          <details className={styles.collapsible}>
+            <summary>Paste CSV</summary>
+            <p className={styles.collapsibleHint}>One row per line: <code className={styles.inlineCode}>address,amount[,asset]</code> or <code className={styles.inlineCode}>address,nft:collection:tokenId</code></p>
             <textarea
               className={styles.input}
               rows={4}
@@ -497,7 +514,7 @@ export function BulkTransferPanel(props: {
               aria-label="CSV rows"
               data-testid="bulk-csv"
             />
-            <button type="button" className={styles.secondary} onClick={importCsv} data-testid="bulk-csv-import">
+            <button type="button" className={styles.ghostBtn} onClick={importCsv} data-testid="bulk-csv-import">
               Add CSV rows
             </button>
           </details>
@@ -508,7 +525,7 @@ export function BulkTransferPanel(props: {
               ))}
             </ul>
           )}
-          <button type="button" className={styles.primary} onClick={() => void review()} disabled={reviewBusy} data-testid="bulk-review">
+          <button type="button" className={`${styles.primary} ${styles.fullWidth}`} onClick={() => void review()} disabled={reviewBusy} data-testid="bulk-review">
             {reviewBusy ? 'Checking…' : 'Review'}
           </button>
         </div>

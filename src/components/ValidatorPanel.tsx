@@ -28,13 +28,6 @@ interface Props {
   onSubmitted: (txHash: string, type: TxHistoryEntry['type']) => void;
 }
 
-const LIST_STYLE: React.CSSProperties = { listStyle: 'none', padding: 0, margin: '0 0 8px' };
-const ROW_STYLE: React.CSSProperties = {
-  display: 'block',
-  padding: '8px 0',
-  borderBottom: '1px solid rgba(255,255,255,0.08)',
-  overflowWrap: 'anywhere',
-};
 
 function short(hex: string): string {
   const h = hex.replace(/^0x/, '');
@@ -165,10 +158,10 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
   function row(v: ValidatorEntry, actions: boolean) {
     const nodeId = accountIdFromHex(v.id);
     return (
-      <li key={v.id} style={ROW_STYLE} data-testid={`validator-row-${v.id.replace(/^0x/, '').slice(0, 8)}`}>
+      <li key={v.id} className={styles.vRow} data-testid={`validator-row-${v.id.replace(/^0x/, '').slice(0, 8)}`}>
         <div>
-          <strong>{short(v.id)}</strong> <span className={styles.txType}>{v.kind}</span>{' '}
-          <span data-testid="validator-status">
+          <strong className={styles.vId}>{short(v.id)}</strong> <span className={styles.txType}>{v.kind}</span>{' '}
+          <span className={`${styles.vStatus} ${styles['vStatus_' + v.status] ?? ''}`} data-testid="validator-status">
             {v.status}
             {v.status === 'jailed' && v.jailed_until != null ? ` until block ${v.jailed_until}` : ''}
             {v.in_set ? ' · in set' : ''}
@@ -218,7 +211,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
   return (
     <section className={styles.section} data-testid="validator-panel">
       <h2 className={styles.sectionTitle}>Become a validator</h2>
-      <ol className={styles.stakingHint} data-testid="validator-steps" style={{ paddingLeft: 18, margin: '0 0 8px' }}>
+      <ol className={styles.stepList} data-testid="validator-steps">
         <li>Run a synced node with <code className={styles.inlineCode}>BOING_VALIDATOR=1</code> and its node key (<code className={styles.inlineCode}>BOING_VALIDATOR_KEY</code>).</li>
         <li>Register it here: locks a {open?.bond ?? '100'} BOING bond; you join the set at the next epoch (every {open?.epoch_len ?? 100} blocks).</li>
         <li>Stay online: keep uptime above {100 - thresholdPct}% or you are jailed at the next epoch (bond kept). Unjail after the cooldown.</li>
@@ -242,12 +235,34 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
       )}
 
       {report && (
-        <p className={styles.faucetHint} data-testid="validator-summary">
-          Mode <strong>{report.mode}</strong> · block {report.height} · {report.validator_count} validator
-          {report.validator_count === 1 ? '' : 's'} in set
-          {open?.next_epoch_height != null ? ` · next epoch at block ${open.next_epoch_height}` : ''}
-          {open ? ` · bond ${open.bond} BOING` : ''}
-        </p>
+        <div className={styles.statGridWrap}>
+        <dl className={styles.statGrid} data-testid="validator-summary">
+          <div className={styles.stat}>
+            <dt>Mode</dt>
+            <dd>{report.mode}</dd>
+          </div>
+          <div className={styles.stat}>
+            <dt>Block</dt>
+            <dd data-testid="validator-stat-height">{report.height}</dd>
+          </div>
+          <div className={styles.stat}>
+            <dt>Validators</dt>
+            <dd>{report.validator_count}</dd>
+          </div>
+          {open?.next_epoch_height != null && (
+            <div className={styles.stat}>
+              <dt>Next epoch</dt>
+              <dd data-testid="validator-stat-next-epoch">{open.next_epoch_height}</dd>
+            </div>
+          )}
+          {open && (
+            <div className={styles.stat}>
+              <dt>Bond</dt>
+              <dd title={`${open.bond} BOING`}>{open.bond}</dd>
+            </div>
+          )}
+        </dl>
+        </div>
       )}
       {loadError && (
         <p className={styles.faucetHint} data-testid="validator-load-error">
@@ -260,21 +275,26 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
           {mine.length > 0 && (
             <>
               <h3 className={styles.sectionTitle}>Your validators</h3>
-              <ul style={LIST_STYLE}>{mine.map((v) => row(v, true))}</ul>
+              <ul className={styles.vList}>{mine.map((v) => row(v, true))}</ul>
             </>
           )}
           {mine.length === 0 && (
             <form onSubmit={handleRegister} className={styles.form} data-testid="validator-register-form">
-              <p className={styles.mainnetWarning} role="note" data-testid="validator-key-warning">
+              <p className={styles.calloutWarn} role="note" data-testid="validator-key-warning">
                 Your node key is the secret your validator node signs blocks with. It is used only in this browser tab to
                 sign a proof that the node belongs to this wallet; it is never stored or sent anywhere. Keep a copy in
                 your node config (BOING_VALIDATOR_KEY) and never share it.
               </p>
+              <label className={styles.fieldLabel} htmlFor="validator-node-key-input">
+                <span>Node key</span>
+              </label>
+              <div className={styles.inputGroup}>
               <input
+                id="validator-node-key-input"
                 type="password"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="Node key (64 hex chars)"
+                placeholder="64 hex characters"
                 value={nodeKeyInput}
                 onChange={(e) => {
                   setNodeKeyInput(e.target.value);
@@ -284,9 +304,10 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
                 aria-label="Node key"
                 data-testid="validator-node-key"
               />
-              <button type="button" className={styles.secondary} onClick={handleGenerate} data-testid="validator-generate">
-                Generate a new node key
+              <button type="button" className={styles.ghostBtn} onClick={handleGenerate} title="Generate a new node key locally" data-testid="validator-generate">
+                Generate
               </button>
+              </div>
               {generatedShown && (
                 <p className={styles.faucetHint} data-testid="validator-generated-hint">
                   A new key was generated locally. Copy it from the field above (it is hidden; select and copy) into your
@@ -304,7 +325,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
                 produced blocks jails you at the following epoch (bond kept; unjail after {open?.jail_cooldown ?? 500}{' '}
                 blocks).
               </p>
-              <button type="submit" className={styles.primary} disabled={busy || !nodeIdPreview} data-testid="validator-register">
+              <button type="submit" className={`${styles.primary} ${styles.fullWidth}`} disabled={busy || !nodeIdPreview} data-testid="validator-register">
                 {busy ? 'Submitting…' : `Register validator (${open?.bond ?? '100'} BOING bond)`}
               </button>
             </form>
@@ -337,16 +358,20 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
       )}
 
       {report && report.validators.length > 0 && (
-        <details className={styles.subDetails} open={avail.state === 'open'}>
-          <summary>All validators ({report.validators.length})</summary>
-          <ul style={LIST_STYLE} data-testid="validator-list">
+        <details className={styles.collapsible} open={avail.state === 'open'} data-testid="validator-all">
+          <summary>
+            All validators <span className={styles.countBadge}>{report.validators.length}</span>
+          </summary>
+          <ul className={styles.vList} data-testid="validator-list">
             {report.validators.map((v) => row(v, false))}
           </ul>
         </details>
       )}
-      <button type="button" className={styles.refreshBtn} onClick={() => void refresh()} disabled={loading}>
-        Refresh
-      </button>
+      <div className={styles.toolbarRow}>
+        <button type="button" className={styles.ghostBtn} onClick={() => void refresh()} disabled={loading} data-testid="validator-refresh">
+          {loading ? 'Refreshing…' : '↻ Refresh'}
+        </button>
+      </div>
     </section>
   );
 }

@@ -122,7 +122,7 @@ async function seedNftWatchlist(page: Page, me: string, ids: number[]) {
 }
 
 async function myAddress(page: Page): Promise<string> {
-  return ((await page.getByTestId('assets-composition').locator('code').first().textContent()) ?? '').trim().replace(/^0x/i, '').toLowerCase();
+  return ((await page.getByTestId('wallet-header-copy').getAttribute('title')) ?? '').trim().replace(/^0x/i, '').toLowerCase();
 }
 
 test.describe('bulk transfer: mixed BOING + token + NFT (mocked holdings)', () => {

@@ -81,7 +81,7 @@ test.describe('web wallet redesign (mocked RPC)', () => {
     await page.getByTestId('wallet-tab-transfer').click();
     await page.getByTestId('transfer-mode-bulk').click();
     await page.locator('summary', { hasText: 'Paste CSV' }).click();
-    const me = ((await page.getByTestId('assets-composition').locator('code').first().textContent()) ?? '').trim();
+    const me = ((await page.getByTestId('wallet-header-copy').getAttribute('title')) ?? '').trim();
     expect(me).toMatch(/^(0x)?[0-9a-f]{64}$/i);
     await page.getByTestId('bulk-csv').fill(`zz,1\n${me},1\n${A},1\n${A},1\n${B},1.5`);
     await page.getByTestId('bulk-csv-import').click();

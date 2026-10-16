@@ -84,7 +84,7 @@ test.describe('validator tab (mocked RPC)', () => {
     });
     await importWallet(page);
     await page.getByTestId('wallet-tab-validate').click();
-    await expect(page.getByTestId('validator-summary')).toContainText('next epoch at block 400');
+    await expect(page.getByTestId('validator-stat-next-epoch')).toHaveText('400');
     await expect(page.getByTestId('validator-key-warning')).toContainText('never stored or sent anywhere');
     await page.getByTestId('validator-node-key').fill(NODE_KEY);
     await expect(page.getByTestId('validator-node-id')).toContainText('0xea4a6c63');
