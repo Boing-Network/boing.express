@@ -990,7 +990,7 @@ export function Dashboard() {
                     const hash = entry.txHash;
                     const when = entry.timestamp ? new Date(entry.timestamp).toLocaleString() : '';
                     const meta = [
-                      entry.status === 'pending' ? 'Pending' : entry.status === 'failed' ? 'Failed' : null,
+                      entry.status === 'pending' ? 'Pending' : null,
                       entry.blockHeight != null ? `Block ${entry.blockHeight}` : null,
                       when,
                     ].filter(Boolean).join(' · ');
@@ -1003,7 +1003,14 @@ export function Dashboard() {
                         data-source={entry.source}
                         title={entry.error ?? undefined}
                       >
-                        <span className={styles.txType}>{entry.label}</span>
+                        <span className={styles.txType}>
+                          {entry.label}
+                          {entry.status === 'failed' && (
+                            <span className={styles.txFailedBadge} data-testid="tx-failed-badge">
+                              Failed
+                            </span>
+                          )}
+                        </span>
                         <span className={styles.txSummary}>
                           {entry.summary}
                           <br />

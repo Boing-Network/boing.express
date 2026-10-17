@@ -84,6 +84,11 @@ function stepLine(s: ChainTxStep, decimals: number): string {
   return `Call ${short(s.contract)}`;
 }
 
+/** A reverted tx moved nothing except the sender's fee; say so instead of implying the value moved. */
+export function failedSummary(attempted: string): string {
+  return `Not transferred (failed): ${attempted}. Reverted, only the fee was charged.`;
+}
+
 export function chainRowToDisplay(row: ChainTxRow, decimals = 0): DisplayTxEntry {
   const p = row.payload;
   const out = row.direction === 'out';
@@ -137,6 +142,8 @@ export function chainRowToDisplay(row: ChainTxRow, decimals = 0): DisplayTxEntry
       label = p.kind.replace(/_/g, ' ');
   }
   const ts = row.timestamp > 0 && row.timestamp < 1e12 ? row.timestamp * 1000 : row.timestamp;
+  const failed = row.success === false;
+  if (failed) summary = failedSummary(summary || label);
   return {
     txHash: normHash(row.tx_id),
     label,
@@ -168,7 +175,8 @@ export function mergeTxHistory(
       byHash.set(h, {
         ...c,
         label: c.direction === 'out' ? LOCAL_LABEL[l.type] ?? c.label : c.label,
-        summary: l.summary ?? c.summary,
+        // A failed tx keeps the chain summary ("Not transferred (failed)"), not the optimistic local one.
+        summary: c.status === 'failed' ? (l.summary ? failedSummary(l.summary) : c.summary) : l.summary ?? c.summary,
         steps: l.steps && l.steps.length ? l.steps : c.steps,
         source: 'both',
       });

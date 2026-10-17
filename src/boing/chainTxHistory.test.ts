@@ -19,7 +19,20 @@ describe('chainTxHistory', () => {
       { kind: 'contract_call', contract: '0x' + 'eb'.repeat(32) }, { kind: 'transfer', to: '0x' + '22'.repeat(32), amount: '3' }] } }));
     expect(b.label).toBe('Batch');
     expect(b.steps).toHaveLength(2);
-    expect(chainRowToDisplay(row({ success: false, error: 'boom' })).status).toBe('failed');
+    const f = chainRowToDisplay(row({ success: false, error: 'boom' }));
+    expect(f.status).toBe('failed');
+    expect(f.summary).toMatch(/^Not transferred \(failed\): 5 BOING → /);
+    expect(f.summary).toContain('only the fee was charged');
+  });
+
+  it('keeps the failed wording when a local optimistic summary exists', () => {
+    const c = chainRowToDisplay(row({ success: false, payload: { kind: 'transfer', to: '0x' + '42'.repeat(32), amount: '1' + '0'.repeat(30) } }));
+    const local: TxHistoryEntry[] = [
+      { txHash: 'aa'.repeat(32), type: 'send', summary: 'Sent 1e30 BOING', networkId: 't', addressHint: 'x', timestamp: 1 },
+    ];
+    const [m] = mergeTxHistory(local, [c], { chainLoaded: true });
+    expect(m.status).toBe('failed');
+    expect(m.summary).toBe('Not transferred (failed): Sent 1e30 BOING. Reverted, only the fee was charged.');
   });
 
   it('merges local and chain entries, deduping and keeping pending first', () => {

@@ -1747,12 +1747,19 @@ function refreshTxHistory(): void {
     const when = document.createElement('span');
     when.className = 'tx-history-time';
     when.textContent = [
-      e.status === 'pending' ? 'Pending' : e.status === 'failed' ? 'Failed' : null,
+      e.status === 'pending' ? 'Pending' : null,
       e.blockHeight != null ? `Block ${e.blockHeight}` : null,
       e.timestamp ? new Date(e.timestamp).toLocaleString() : null,
     ]
       .filter(Boolean)
       .join(' · ');
+    if (e.status === 'failed') {
+      const badge = document.createElement('span');
+      badge.className = 'tx-badge-failed';
+      badge.setAttribute('data-testid', 'tx-failed-badge');
+      badge.textContent = 'Failed';
+      title.append(' ', badge);
+    }
     main.append(title, when);
     li.appendChild(main);
     if (e.summary) {
