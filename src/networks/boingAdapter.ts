@@ -15,7 +15,7 @@ import type { NetworkConfig } from './types';
 import type { Transaction, Payload } from '../boing/types';
 import type { BatchStep } from './types';
 import { buildBatchTransaction, nodeBatchMaxCalls, nodeSupportsNativeBatch, signTransactionInput } from 'boing-sdk';
-import { currentLedgerDecimals, fetchNativeCurrency, rememberLedgerDecimals } from '../boing/nativeUnit';
+import { boingNumber, currentLedgerDecimals, fetchNativeCurrency, knownLedgerDecimals, rememberLedgerDecimals } from '../boing/nativeUnit';
 
 /**
  * Native BOING has 18 decimals (1 BOING = 10^18 base units). The node returns ledger units: base units
@@ -271,12 +271,13 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
         const res = (await rpc.faucetRequest(rpcUrl, hex)) as {
           amount?: number | string;
           amount_boing?: string;
+          decimals?: number;
           warning?: string;
         } | null;
         return {
           success: true,
           // `amount` is in ledger units (base units from the 18-decimals switch); show BOING.
-          amount: res?.amount_boing ?? (res && res.amount != null ? String(res.amount) : undefined),
+          amount: boingNumber(res?.amount_boing, res?.amount, typeof res?.decimals === 'number' ? res.decimals : knownLedgerDecimals(rpcUrl)),
           warning: res && typeof res.warning === 'string' ? res.warning : undefined,
         };
       } catch (e) {

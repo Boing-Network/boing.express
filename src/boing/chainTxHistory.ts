@@ -3,6 +3,7 @@
  * device-local entries (which carry richer summaries and cover still-pending submissions).
  */
 import { rpcCall, isMethodNotFoundError } from './rpc';
+import { formatNative } from './nativeUnit';
 import type { TxHistoryEntry } from '../storage/txHistory';
 
 export interface ChainTxStep { kind: string; to?: string; amount?: string; contract?: string; calldata_len?: number }
@@ -65,18 +66,18 @@ const short = (h?: string) => {
   return `${x.slice(0, 6)}…${x.slice(-4)}`;
 };
 
+/** Native amount (ledger units, `decimals` of the row's block) as a BOING number, exact, with thousands separators. */
 export function formatBoingAmount(raw: string | undefined, decimals = 0): string {
   if (raw == null) return '?';
   try {
-    const v = BigInt(raw);
-    if (decimals <= 0) return v.toLocaleString('en-US');
-    const base = 10n ** BigInt(decimals);
-    const whole = v / base;
-    const frac = (v % base).toString().padStart(decimals, '0').replace(/0+$/, '');
-    return frac ? `${whole.toLocaleString('en-US')}.${frac}` : whole.toLocaleString('en-US');
+    BigInt(raw);
   } catch {
     return raw;
   }
+  const s = formatNative(raw, decimals, Math.max(decimals, 0));
+  const [w, f] = s.split('.');
+  const grouped = BigInt(w!).toLocaleString('en-US');
+  return f ? `${grouped}.${f}` : grouped;
 }
 
 function stepLine(s: ChainTxStep, decimals: number): string {

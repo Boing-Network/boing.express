@@ -25,7 +25,7 @@ export async function skipClaimNameIfShown(popup: Page): Promise<void> {
 /** Launch the unpacked extension with mocked RPC, create a wallet, and land on the dashboard. */
 export async function openPopupWithNewWallet(
   mock: BoingMockOptions = {},
-  opts: { beforeClaimName?: (popup: Page) => Promise<void> } = {}
+  opts: { beforeClaimName?: (popup: Page) => Promise<void>; expectBalance?: string } = {}
 ): Promise<{ context: BrowserContext; popup: Page; close: () => Promise<void> }> {
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boing-e2e-redesign-'));
   const context = await chromium.launchPersistentContext(userDataDir, {
@@ -50,7 +50,7 @@ export async function openPopupWithNewWallet(
   if (opts.beforeClaimName) await opts.beforeClaimName(popup);
   else await skipClaimNameIfShown(popup);
   await expect(popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-header-lock"]')).toBeVisible({ timeout: 45_000 });
-  await expect(popup.locator('#balance')).toHaveText('1000000', { timeout: 30_000 });
+  await expect(popup.locator('#balance')).toHaveText(opts.expectBalance ?? '1000000', { timeout: 30_000 });
   const close = async () => {
     await Promise.race([context.close(), new Promise<void>((r) => setTimeout(r, 12_000))]);
     try {

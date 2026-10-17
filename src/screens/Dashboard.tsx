@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { formatAddress, accountIdFromHex, accountIdToHex } from '../boing/types';
-import { formatBalance, parseDecimalAmount, parseU128String } from '../boing/amount';
+import { parseDecimalAmount, parseU128String } from '../boing/amount';
 import { validateContractBytecode, VALID_PURPOSE_CATEGORIES } from '../boing/qa';
 import * as rpc from '../boing/rpc';
 import { addTxHistory, getTxHistory } from '../storage/txHistory';
-import { fetchNativeCurrency, ledgerDecimalsAt } from '../boing/nativeUnit';
+import { fetchNativeCurrency, formatNative, knownLedgerDecimals, ledgerDecimalsAt, maxSendableInput, plainTransferFeeLabel } from '../boing/nativeUnit';
 import { chainRowToDisplay, fetchChainTxPage, mergeTxHistory, type DisplayTxEntry } from '../boing/chainTxHistory';
 import {
   getOnboardingState,
@@ -611,7 +611,7 @@ export function Dashboard() {
 
   const displayStake =
     stake != null
-      ? formatBalance(stake, balance?.decimals ?? 0)
+      ? formatNative(stake, balance?.decimals ?? knownLedgerDecimals(network.config.rpcUrl))
       : stakeError
         ? '—'
         : network.getStake
@@ -621,7 +621,7 @@ export function Dashboard() {
   const pendingRaw = pendingUnbond ? parseU128String(pendingUnbond) : 0n;
   const hasPendingUnbond = pendingRaw != null && pendingRaw > 0n;
   const displayPendingUnbond = hasPendingUnbond
-    ? formatBalance(pendingUnbond!, balance?.decimals ?? 0)
+    ? formatNative(pendingUnbond!, balance?.decimals ?? knownLedgerDecimals(network.config.rpcUrl))
     : null;
   const claimReady =
     hasPendingUnbond &&
@@ -632,7 +632,7 @@ export function Dashboard() {
 
   const displayBalance =
     balance != null
-      ? formatBalance(balance.value, balance.decimals)
+      ? formatNative(balance.value, balance.decimals)
       : balanceError
         ? '—'
         : '…';
@@ -1134,7 +1134,7 @@ export function Dashboard() {
                     <button
                       type="button"
                       className={styles.maxBtn}
-                      onClick={() => setSendAmount(displayBalance !== '…' && displayBalance !== '—' ? displayBalance : '')}
+                      onClick={() => setSendAmount(balance ? maxSendableInput(balance.value, balance.decimals) : '')}
                     >
                       Max
                     </button>
@@ -1377,7 +1377,7 @@ export function Dashboard() {
                 </div>
                 {faucetStatus === 'ok' && faucetResult && (
                   <p className={styles.success} data-testid="faucet-success">
-                    {faucetResult.amount ? `${faucetResult.amount} testnet BOING requested.` : 'Testnet BOING requested.'} It arrives with the
+                    {faucetResult.amount ? `${faucetResult.amount} BOING requested from the testnet faucet.` : 'Testnet BOING requested.'} It arrives with the
                     next block (a few seconds); your balance updates automatically.
                     {accountExplorerUrl && (
                       <>
@@ -1385,7 +1385,7 @@ export function Dashboard() {
                         <a href={accountExplorerUrl} target="_blank" rel="noopener noreferrer">View on Boing Observer</a>.
                       </>
                     )}{' '}
-                    Next: send your first transfer from the Transfer tab (network fee about 0.021 BOING).
+                    Next: send your first transfer from the Transfer tab (network fee about {plainTransferFeeLabel(balance?.decimals ?? knownLedgerDecimals(network.config.rpcUrl))}).
                     {faucetResult.warning && <><br />Note: {faucetResult.warning}</>}
                   </p>
                 )}

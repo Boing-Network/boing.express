@@ -102,3 +102,50 @@ export async function nextBlockLedgerDecimals(rpcUrl: string): Promise<number> {
   const { info, head } = await fetchNativeCurrency(rpcUrl);
   return info ? ledgerDecimalsAt(info, head + 1) : knownLedgerDecimals(rpcUrl);
 }
+
+/**
+ * The one formatter for native BOING amounts in the UI: ledger amount (`decimals` 18 = base units, 0 = whole BOING)
+ * → `"168 BOING"`. `maxFractionDigits` defaults to 6 (balances); pass `decimals` for exact amounts (tx details).
+ */
+export function formatBoing(raw: bigint | string | number, decimals: number, maxFractionDigits = 6): string {
+  return `${formatNative(typeof raw === 'number' ? BigInt(Math.trunc(raw)) : raw, decimals, maxFractionDigits)} BOING`;
+}
+
+/**
+ * Display a node amount that may come with a `*_boing` companion (e.g. `bond` + `bond_boing`, faucet `amount` +
+ * `amount_boing`): prefer the node's BOING string, else convert the ledger amount. Number only (no symbol).
+ */
+export function boingNumber(
+  boing: string | null | undefined,
+  raw: bigint | string | number | null | undefined,
+  decimals: number
+): string | undefined {
+  if (boing != null && String(boing).trim() !== '') return String(boing);
+  if (raw == null || String(raw).trim() === '') return undefined;
+  return formatNative(typeof raw === 'number' ? BigInt(Math.trunc(raw)) : raw, decimals, Math.max(6, decimals));
+}
+
+/** Fee of a plain transfer (21 000 gas) under the ledger rule: 0.021 BOING with base units, 1 BOING before. */
+export function plainTransferFee(decimals: number): bigint {
+  return feeFromGasForDecimals(21_000n, decimals);
+}
+
+/** Copy for "network fee about …": `"0.021 BOING"` at 18 decimals. */
+export function plainTransferFeeLabel(decimals: number): string {
+  return formatBoing(plainTransferFee(decimals), decimals);
+}
+
+/**
+ * "Max" for a native send: balance minus one plain-transfer fee, exact (all decimals, trailing zeros trimmed),
+ * never negative. `balanceRaw` is in ledger units.
+ */
+export function maxSendableInput(balanceRaw: bigint | string, decimals: number): string {
+  let b: bigint;
+  try {
+    b = typeof balanceRaw === 'bigint' ? balanceRaw : BigInt(String(balanceRaw).trim());
+  } catch {
+    return '';
+  }
+  const v = b - plainTransferFee(decimals);
+  return formatNative(v > 0n ? v : 0n, decimals, Math.max(decimals, 0));
+}

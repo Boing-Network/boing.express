@@ -24,7 +24,7 @@ test.describe('testnet faucet + staking guidance (mocked RPC)', () => {
     await page.getByTestId('wallet-tab-faucet').click();
     await page.getByRole('button', { name: 'Request testnet BOING' }).click();
     const ok = page.getByTestId('faucet-success');
-    await expect(ok).toContainText('10 testnet BOING requested');
+    await expect(ok).toContainText('10 BOING requested from the testnet faucet');
     await expect(ok.getByRole('link', { name: 'View on Boing Observer' })).toHaveAttribute('href', /boing\.observer\/account\//);
     await expect(ok).toContainText('Transfer tab');
     const shot = process.env.FAUCET_SCREENSHOT;

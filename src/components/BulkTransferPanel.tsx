@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { AccountId } from '../boing/types';
 import { accountIdFromHex, accountIdToHex } from '../boing/types';
 import { formatBalance } from '../boing/amount';
+import { formatNative } from '../boing/nativeUnit';
 import { encodeReferenceTransferNftCalldata, shortHexLabel } from '../boing/referenceNft';
 import { filterOwnedHoldings, probeNftWatchlist } from '../boing/nftHoldings';
 import { listNftWatchlist } from '../storage/nftWatchlist';
@@ -416,7 +417,7 @@ export function BulkTransferPanel(props: {
             <span>Asset for new rows</span>
             <select className={styles.select} value={defaultAsset} onChange={(e) => setDefaultAsset(e.target.value)} aria-label="Asset for new rows" data-testid="bulk-asset">
               <option value={BOING_KEY}>
-                {props.balance?.symbol ?? 'BOING'} · {props.balance ? formatBalance(props.balance.value, props.balance.decimals) : '…'}
+                {props.balance?.symbol ?? 'BOING'} · {props.balance ? formatNative(props.balance.value, props.balance.decimals) : '…'}
               </option>
               {tokens.map((t) => (
                 <option key={t.tokenHex} value={t.tokenHex}>

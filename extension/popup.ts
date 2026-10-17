@@ -63,7 +63,7 @@ import { buildSignedTransactionHex, signingChainIdForRpc } from '../src/boing/si
 import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
 import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
-import { fetchNativeCurrency, ledgerDecimalsAt } from '../src/boing/nativeUnit';
+import { fetchNativeCurrency, formatNative, knownLedgerDecimals, ledgerDecimalsAt, maxSendableInput, plainTransferFeeLabel } from '../src/boing/nativeUnit';
 import { normalizeBoingNetworkId } from './config';
 import { RevealError, createRevealSession, revealActivePrivateKeyHex, type RevealState } from '../src/security/revealPrivateKey';
 import {
@@ -221,7 +221,7 @@ function getCurrentNetwork() {
 
 function applyBalance(balance: { value: string; decimals: number; symbol: string }): void {
   nativeDecimals = balance.decimals;
-  const displayStr = formatBalance(balance.value, balance.decimals);
+  const displayStr = formatNative(balance.value, balance.decimals);
   lastDisplayBalance = displayStr;
   lastBalanceRaw = balance.value;
   ($('balance') as HTMLElement).textContent = displayStr;
@@ -417,7 +417,7 @@ async function refreshStake(): Promise<void> {
     if (net.getStake) {
       const s = await net.getStake(accountId);
       lastStakeRaw = s;
-      const displayStr = formatBalance(s, nativeDecimals);
+      const displayStr = formatNative(s, knownLedgerDecimals(net.config.rpcUrl) || nativeDecimals);
       ($('stake') as HTMLElement).textContent = displayStr;
     }
   } catch {
@@ -441,7 +441,7 @@ async function refreshStake(): Promise<void> {
       return;
     }
     claimCard.classList.remove('hidden');
-    ($('pending-unbond') as HTMLElement).textContent = formatBalance(status.pendingUnbond, nativeDecimals);
+    ($('pending-unbond') as HTMLElement).textContent = formatNative(status.pendingUnbond, knownLedgerDecimals(net.config.rpcUrl) || nativeDecimals);
     const hint = document.getElementById('claim-unbond-hint');
     const ready =
       status.unlockHeight <= 0 || height == null || height >= status.unlockHeight;
@@ -1326,7 +1326,8 @@ $('btn-copy').addEventListener('click', async () => {
 });
 
 $('btn-send-max').addEventListener('click', () => {
-  ($('send-amount') as HTMLInputElement).value = lastDisplayBalance;
+  // Whole balance minus one transfer fee (0.021 BOING with base units), exact to the base unit.
+  ($('send-amount') as HTMLInputElement).value = maxSendableInput(lastBalanceRaw, nativeDecimals);
   ($('send-amount') as HTMLInputElement).focus();
 });
 
@@ -1434,7 +1435,7 @@ $('btn-faucet').addEventListener('click', async () => {
         const explorer = (net.config.explorerUrl ?? '').replace(/\/$/, '');
         okEl.replaceChildren(
           document.createTextNode(
-            `${result.amount ? `${result.amount} testnet BOING requested.` : 'Testnet BOING requested.'} It arrives with the next block (a few seconds); your balance updates automatically. `
+            `${result.amount ? `${result.amount} BOING requested from the testnet faucet.` : 'Testnet BOING requested.'} It arrives with the next block (a few seconds); your balance updates automatically. `
           )
         );
         if (explorer) {
@@ -1445,7 +1446,7 @@ $('btn-faucet').addEventListener('click', async () => {
           a.textContent = 'View on Boing Observer';
           okEl.append(a, document.createTextNode('. '));
         }
-        okEl.append(document.createTextNode('Next: send your first transfer from the Transfer tab (network fee about 0.021 BOING).'));
+        okEl.append(document.createTextNode(`Next: send your first transfer from the Transfer tab (network fee about ${plainTransferFeeLabel(knownLedgerDecimals(net.config.rpcUrl))}).`));
         if (result.warning) okEl.append(document.createElement('br'), document.createTextNode(`Note: ${result.warning}`));
         okEl.classList.remove('hidden');
       }

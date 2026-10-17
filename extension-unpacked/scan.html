@@ -10,6 +10,9 @@
     body { margin: 0; min-height: 100vh; background: #020814; color: #e6f7ff; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
     #scan-root { width: 100%; max-width: 440px; }
     .done { text-align: center; }
+    /* Extension only: hidden scrollbars, scrolling kept. */
+    html, body, * { scrollbar-width: none !important; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
   </style>
 </head>
 <body>

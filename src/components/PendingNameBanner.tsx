@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { knownLedgerDecimals, oneBoing } from '../boing/nativeUnit';
+import { formatNative, knownLedgerDecimals, oneBoing } from '../boing/nativeUnit';
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
 import type { NetworkAdapter } from '../networks/types';
@@ -84,7 +84,7 @@ export function PendingNameBanner(p: {
         <span>is being claimed…</span>
       ) : (
         <span>
-          will be claimed as soon as this wallet has {need.toString()} BOING ({rentFor(mine.name, 1).toString()} rent for one year + fees).
+          will be claimed as soon as this wallet has {formatNative(need, knownLedgerDecimals(p.network.config.rpcUrl))} BOING ({rentFor(mine.name, 1).toString()} rent for one year + fees).
           {p.network.config.isTestnet ? ' Use the Faucet tab to get testnet BOING.' : ''}
         </span>
       )}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { formatNative, knownLedgerDecimals } from '../boing/nativeUnit';
+import { boingNumber, formatNative, knownLedgerDecimals } from '../boing/nativeUnit';
 import type { AccountId } from '../boing/types';
 import { accountIdFromHex, accountIdToHex } from '../boing/types';
 import { buildSignedTransactionHex, signingChainIdForRpc } from '../boing/signing';
@@ -36,6 +36,9 @@ function short(hex: string): string {
 }
 
 export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted }: Props) {
+  // Bond amounts: the node's `bond_boing` when present, else the ledger `bond` converted (never raw base units).
+  const bondBoing = (boing?: string | null, raw?: string | null, dflt = '100') =>
+    boingNumber(boing, raw, knownLedgerDecimals(network.config.rpcUrl)) ?? dflt;
   const rpcUrl = network.config.rpcUrl;
   const ownerHex = accountIdToHex(accountId);
   const [report, setReport] = useState<ValidatorsReport | null>(null);
@@ -170,7 +173,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
         </div>
         <div className={styles.faucetHint} data-testid="validator-stats">
           {v.status === 'jailed' ? 'Since jailing: ' : ''}Uptime {v.uptime_pct.toFixed(1)}% · missed {v.missed_proposals}/
-          {v.scheduled_proposals} blocks · bond {v.bond_boing ?? v.bond} BOING
+          {v.scheduled_proposals} blocks · bond {bondBoing(v.bond_boing, v.bond, '?')} BOING
         </div>
         {v.status === 'jailed' && (
           <div className={styles.faucetHint} data-testid="validator-last-jail">
@@ -214,7 +217,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
       <h2 className={styles.sectionTitle}>Become a validator</h2>
       <ol className={styles.stepList} data-testid="validator-steps">
         <li>Run a synced node with <code className={styles.inlineCode}>BOING_VALIDATOR=1</code> and its node key (<code className={styles.inlineCode}>BOING_VALIDATOR_KEY</code>).</li>
-        <li>Register it here: locks a {open?.bond_boing ?? open?.bond ?? '100'} BOING bond; you join the set at the next epoch (every {open?.epoch_len ?? 100} blocks).</li>
+        <li>Register it here: locks a {bondBoing(open?.bond_boing, open?.bond)} BOING bond; you join the set at the next epoch (every {open?.epoch_len ?? 100} blocks).</li>
         <li>Stay online: keep uptime above {100 - thresholdPct}% or you are jailed at the next epoch (bond kept). Unjail after the cooldown.</li>
         <li>To leave, deregister: the bond unbonds over ~100 blocks, then claim it back to your balance.</li>
       </ol>
@@ -259,7 +262,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
           {open && (
             <div className={styles.stat}>
               <dt>Bond</dt>
-              <dd title={`${open.bond} (ledger units)`}>{open.bond_boing ?? open.bond} BOING</dd>
+              <dd title={`${open.bond} (ledger units)`}>{bondBoing(open.bond_boing, open.bond)} BOING</dd>
             </div>
           )}
         </dl>
@@ -321,13 +324,13 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
                 </p>
               )}
               <p className={styles.stakingHint}>
-                Registering locks {open?.bond_boing ?? open?.bond ?? '100'} BOING. You join at block {open?.next_epoch_height ?? '?'} (next
+                Registering locks {bondBoing(open?.bond_boing, open?.bond)} BOING. You join at block {open?.next_epoch_height ?? '?'} (next
                 epoch). Missing more than {thresholdPct}% of your proposals over the last {open?.liveness_window ?? 1000}{' '}
                 produced blocks jails you at the following epoch (bond kept; unjail after {open?.jail_cooldown ?? 500}{' '}
                 blocks).
               </p>
               <button type="submit" className={`${styles.primary} ${styles.fullWidth}`} disabled={busy || !nodeIdPreview} data-testid="validator-register">
-                {busy ? 'Submitting…' : `Register validator (${open?.bond_boing ?? open?.bond ?? '100'} BOING bond)`}
+                {busy ? 'Submitting…' : `Register validator (${bondBoing(open?.bond_boing, open?.bond)} BOING bond)`}
               </button>
             </form>
           )}
