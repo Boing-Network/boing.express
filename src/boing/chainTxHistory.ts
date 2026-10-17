@@ -147,7 +147,7 @@ export function chainRowToDisplay(row: ChainTxRow, decimals = 0): DisplayTxEntry
   return {
     txHash: normHash(row.tx_id),
     label,
-    summary: summary || `Block ${row.block_height}`,
+    summary, // no "Block N" fallback: block info lives in the explorer
     ...(steps && steps.length ? { steps } : {}),
     timestamp: ts,
     blockHeight: row.block_height,

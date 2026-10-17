@@ -8,7 +8,10 @@ import { installBoingNetworkMocks, type BoingMockOptions } from './boingRouteMoc
 import { extensionE2EHeadless, getExtensionChromeArgs } from './e2eEnv';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const extensionPathArg = path.resolve(path.join(root, 'extension')).replace(/\\/g, '/');
+/** E2E_EXTENSION_DIR=extension-unpacked runs against the folder users actually load / the store zip contents. */
+const extensionPathArg = path
+  .resolve(root, process.env.E2E_EXTENSION_DIR || 'extension')
+  .replace(/\\/g, '/');
 export const E2E_PASSWORD = 'TestWallet99!';
 
 /** After backup: skip the optional pick-a-name step if it is shown (it is not when adding an account). */

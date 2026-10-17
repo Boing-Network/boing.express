@@ -1748,7 +1748,6 @@ function refreshTxHistory(): void {
     when.className = 'tx-history-time';
     when.textContent = [
       e.status === 'pending' ? 'Pending' : null,
-      e.blockHeight != null ? `Block ${e.blockHeight}` : null,
       e.timestamp ? new Date(e.timestamp).toLocaleString() : null,
     ]
       .filter(Boolean)

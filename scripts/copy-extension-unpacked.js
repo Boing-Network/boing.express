@@ -41,8 +41,9 @@ function shouldCopyRootEntry(name) {
   if (name.endsWith('.map') || name.endsWith('.ts')) return false;
   const fullPath = path.join(extDir, name);
   if (!existsSync(fullPath)) return false;
-  if (statSync(fullPath).isDirectory()) return name === 'icons' || name === 'fonts';
-  return ['.html', '.js', '.css', '.json'].includes(path.extname(name));
+  if (statSync(fullPath).isDirectory()) return ['icons', 'fonts', 'images'].includes(name);
+  // .svg: popup header logo-mark.svg (was dropped, so the header showed a broken image).
+  return ['.html', '.js', '.css', '.json', '.svg', '.png', '.webp'].includes(path.extname(name));
 }
 
 if (!existsSync(path.join(extDir, 'manifest.json'))) {

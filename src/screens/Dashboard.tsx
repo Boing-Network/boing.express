@@ -991,7 +991,6 @@ export function Dashboard() {
                     const when = entry.timestamp ? new Date(entry.timestamp).toLocaleString() : '';
                     const meta = [
                       entry.status === 'pending' ? 'Pending' : null,
-                      entry.blockHeight != null ? `Block ${entry.blockHeight}` : null,
                       when,
                     ].filter(Boolean).join(' · ');
                     return (

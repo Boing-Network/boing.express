@@ -24,7 +24,8 @@ const bundledEntries = readdirSync(extDir).filter((name) => {
   if (name.endsWith('.map') || name.endsWith('.ts')) return false;
   const fullPath = path.join(extDir, name);
   if (statSync(fullPath).isDirectory()) return ['icons', 'fonts', 'images'].includes(name);
-  return ['.html', '.js', '.css', '.json'].includes(path.extname(name));
+  // .svg: popup header logo-mark.svg (was dropped, so the header showed a broken image).
+  return ['.html', '.js', '.css', '.json', '.svg', '.png', '.webp'].includes(path.extname(name));
 });
 const archiveEntries = bundledEntries.join(', ');
 
