@@ -106,6 +106,8 @@
           <select id="account-select" class="select select-account" aria-label="Active account" data-testid="wallet-account-switch"></select>
           <button type="button" id="btn-copy" class="btn-small btn-copy" aria-label="Copy address" title="Copy address" data-testid="wallet-header-copy">Copy</button>
           <button type="button" id="btn-remove-account" class="btn-small btn-disconnect hidden" aria-label="Remove active account">Remove</button>
+          <!-- Active address for Copy/QR; not displayed (the account switcher shows it). -->
+          <code id="address" hidden data-testid="wallet-active-address"></code>
         </div>
       </div>
       <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
@@ -120,9 +122,6 @@
           <div id="pending-name-root"></div>
           <div class="assets-composition" data-testid="assets-composition">
             <p id="primary-name" class="primary-name hidden" data-testid="wallet-primary-name"></p>
-            <div class="row address-row">
-              <code id="address" class="address" title="Your address (share it to receive)"></code>
-                </div>
             <div class="assets-tokens" data-testid="wallet-tokens">
               <h3 class="assets-section-label">Assets</h3>
               <ul class="connected-sites-list token-list" aria-label="Native balance">
