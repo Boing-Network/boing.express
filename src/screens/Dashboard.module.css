@@ -1766,7 +1766,8 @@
   text-transform: uppercase;
 }
 
-.txSummary {
-  min-width: 0;
+/* Failed rows wrap so "Not transferred (failed)" is never ellipsized away; long amounts break. */
+.txHistoryItem[data-status='failed'] .txSummary {
+  white-space: normal;
   overflow-wrap: anywhere;
 }

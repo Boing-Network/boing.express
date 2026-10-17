@@ -1011,7 +1011,7 @@ export function Dashboard() {
                             </span>
                           )}
                         </span>
-                        <span className={styles.txSummary}>
+                        <span className={styles.txSummary} title={entry.summary}>
                           {entry.summary}
                           <br />
                           <small className={styles.addressHint}>{meta}</small>
