@@ -89,7 +89,12 @@ export function failedSummary(attempted: string): string {
   return `Not transferred (failed): ${attempted}. Reverted, only the fee was charged.`;
 }
 
-export function chainRowToDisplay(row: ChainTxRow, decimals = 0): DisplayTxEntry {
+/**
+ * `decimals`: ledger decimals of native amounts, or a function of the row's block height (native BOING
+ * switched from whole units to 18-decimal base units at a height; see `nativeUnit.ts`).
+ */
+export function chainRowToDisplay(row: ChainTxRow, decimalsOrAt: number | ((height: number) => number) = 0): DisplayTxEntry {
+  const decimals = typeof decimalsOrAt === 'function' ? decimalsOrAt(row.block_height) : decimalsOrAt;
   const p = row.payload;
   const out = row.direction === 'out';
   let label = 'Transaction';

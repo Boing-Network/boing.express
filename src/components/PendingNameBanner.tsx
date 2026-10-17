@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { knownLedgerDecimals, oneBoing } from '../boing/nativeUnit';
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
 import type { NetworkAdapter } from '../networks/types';
@@ -37,7 +38,8 @@ export function PendingNameBanner(p: {
   }, [me, p.network.config.id]);
 
   const mine = pending && pending.address === me && (!pending.networkId || pending.networkId === p.network.config.id) ? pending : null;
-  const need = mine ? rentFor(mine.name, 1) + 3n : 0n;
+  // Rent + 3 name txs of headroom, in whole BOING, scaled to the balance's ledger units.
+  const need = mine ? (rentFor(mine.name, 1) + 3n) * oneBoing(knownLedgerDecimals(p.network.config.rpcUrl)) : 0n;
   const funded = p.balance != null && p.balance >= need;
 
   useEffect(() => {

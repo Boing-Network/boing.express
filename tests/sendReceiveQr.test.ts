@@ -49,8 +49,21 @@ describe('send fee estimate', () => {
   it('uses simulated gas (21 000 gas = 1 BOING), times tx count', async () => {
     const net = { ...base, simulateGas: async () => ({ success: true, gasUsed: 45_000n }) } as NetworkAdapter;
     const e = await estimateSendFee(net, async () => '00', 2);
-    expect(e).toEqual({ state: 'ok', fee: 6n, exact: true });
+    expect(e).toEqual({ state: 'ok', fee: 6n, exact: true, decimals: 0 });
     expect(feeLabel(e)).toBe('6 BOING');
+  });
+  it('18 decimals: gas x 10^12 base units, or the node-reported network_fee', async () => {
+    const net = { ...base, simulateGas: async () => ({ success: true, gasUsed: 21_000n }) } as NetworkAdapter;
+    const e = await estimateSendFee(net, async () => '00', 1, 18);
+    expect(e).toEqual({ state: 'ok', fee: 21_000_000_000_000_000n, exact: true, decimals: 18 });
+    expect(feeLabel(e)).toBe('0.021 BOING');
+    const exact = {
+      ...base,
+      simulateGas: async () => ({ success: true, gasUsed: 21_000n, networkFee: 42_000_000_000_000_000n, feeDecimals: 18 }),
+    } as NetworkAdapter;
+    expect(feeLabel(await estimateSendFee(exact, async () => '00', 1, 0))).toBe('0.042 BOING');
+    const noGas = { ...base, simulateGas: async () => ({ success: true }) } as NetworkAdapter;
+    expect(feeLabel(await estimateSendFee(noGas, async () => '00', 1, 18))).toBe('≈ 0.021 BOING');
   });
   it('falls back to ~1 BOING when the node reports no gas; reports a failing simulation', async () => {
     const noGas = { ...base, simulateGas: async () => ({ success: true }) } as NetworkAdapter;

@@ -97,6 +97,8 @@ export interface ValidatorEntry {
   in_set: boolean;
   owner: string | null;
   bond: string;
+  /** BOING-formatted bond (testnet-v0.1.17+; `bond` is in ledger units). */
+  bond_boing?: string;
   registered_at: number | null;
   jailed_until: number | null;
   jail_count: number;
@@ -111,6 +113,8 @@ export interface OpenParams {
   activation_height: number;
   activated_at: number | null;
   bond: string;
+  /** BOING-formatted bond (testnet-v0.1.17+; `bond` is in ledger units). */
+  bond_boing?: string;
   deregister_delay: number;
   epoch_len: number;
   next_epoch_height: number | null;

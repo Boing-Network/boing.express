@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { knownLedgerDecimals, oneBoing } from '../boing/nativeUnit';
 import type { AccountId } from '../boing/types';
 import { accountIdFromHex, accountIdToHex } from '../boing/types';
 import type { NetworkAdapter } from '../networks/types';
@@ -25,7 +26,7 @@ export type NamesPanelProps = {
   accountId: AccountId;
   network: NetworkAdapter;
   getPrivateKey: () => Uint8Array | null;
-  /** Spendable whole BOING (for the claim affordability hint). */
+  /** Spendable BOING in ledger units (base units after the 18-decimals switch), for the affordability hint. */
   balance?: bigint | null;
   onTx?: (hash: string, summary: string) => void;
 };
@@ -152,7 +153,8 @@ export function NamesPanel(p: NamesPanelProps) {
   const v = normalizeName(query);
   const label = v.ok ? v.label : '';
   const rent = label ? rentFor(label, years) : 0n;
-  const canAfford = p.balance == null || p.balance >= rent + 3n * NAME_TX_FEE_HEADROOM;
+  const canAfford =
+    p.balance == null || p.balance >= (rent + 3n * NAME_TX_FEE_HEADROOM) * oneBoing(knownLedgerDecimals(p.network.config.rpcUrl));
   const expiresIn = (r: NameRecord) => {
     if (head == null || !blocksPerYear) return '';
     const left = r.expires_at - head;

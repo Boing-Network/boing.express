@@ -6,6 +6,7 @@ import { formatBalance, parseDecimalAmount, parseU128String } from '../boing/amo
 import { validateContractBytecode, VALID_PURPOSE_CATEGORIES } from '../boing/qa';
 import * as rpc from '../boing/rpc';
 import { addTxHistory, getTxHistory } from '../storage/txHistory';
+import { fetchNativeCurrency, ledgerDecimalsAt } from '../boing/nativeUnit';
 import { chainRowToDisplay, fetchChainTxPage, mergeTxHistory, type DisplayTxEntry } from '../boing/chainTxHistory';
 import {
   getOnboardingState,
@@ -244,7 +245,10 @@ export function Dashboard() {
           return;
         }
         setChainUnsupported(false);
-        const rows = page.transactions.map((r) => chainRowToDisplay(r, historyDecimals));
+        // Native amounts are whole BOING before the 18-decimals switch height, base units from it.
+        const nc = await fetchNativeCurrency(network.config.rpcUrl);
+        const decimalsAt = nc.info ? (h: number) => ledgerDecimalsAt(nc.info, h) : () => historyDecimals;
+        const rows = page.transactions.map((r) => chainRowToDisplay(r, decimalsAt));
         setChainTx((prev) => {
           if (!cursor) return rows;
           const seen = new Set(prev.map((e) => e.txHash));
@@ -323,7 +327,7 @@ export function Dashboard() {
     const decimals = balance?.decimals ?? 0;
     const amount = sendAmount.trim() ? parseDecimalAmount(sendAmount, decimals) : null;
     if (amount == null || amount <= 0n) {
-      setSendError('Enter a valid whole BOING amount (e.g. 100)');
+      setSendError(decimals === 0 ? 'Enter a valid whole BOING amount (e.g. 100)' : 'Enter a valid BOING amount (e.g. 100 or 0.5)');
       return;
     }
     if (balance && BigInt(balance.value) < amount) {
@@ -362,7 +366,7 @@ export function Dashboard() {
       const result = await network.submitTransaction(signedHex);
       if (result.success) {
         if (result.txHash) {
-          addTxHistory(addressHint, network.config.id, result.txHash, 'send', `${amount} BOING → ${toName ? `${toName}.boing` : `${toHex.slice(0, 6)}…${toHex.slice(-4)}`}`);
+          addTxHistory(addressHint, network.config.id, result.txHash, 'send', `${sendAmount.trim()} BOING → ${toName ? `${toName}.boing` : `${toHex.slice(0, 6)}…${toHex.slice(-4)}`}`);
           refreshTxHistory();
           markSentTx();
           setOnboarding(getOnboardingState());
@@ -414,7 +418,7 @@ export function Dashboard() {
     const decimals = balance?.decimals ?? 0;
     const amount = bondAmount.trim() ? parseDecimalAmount(bondAmount, decimals) : null;
     if (amount == null || amount <= 0n) {
-      setBondError('Enter a valid whole BOING amount (e.g. 100)');
+      setBondError(decimals === 0 ? 'Enter a valid whole BOING amount (e.g. 100)' : 'Enter a valid BOING amount (e.g. 100 or 0.5)');
       return;
     }
     if (balance && BigInt(balance.value) < amount) {
@@ -458,7 +462,7 @@ export function Dashboard() {
     const decimals = balance?.decimals ?? 0;
     const amount = unbondAmount.trim() ? parseDecimalAmount(unbondAmount, decimals) : null;
     if (amount == null || amount <= 0n) {
-      setUnbondError('Enter a valid whole BOING amount (e.g. 100)');
+      setUnbondError(decimals === 0 ? 'Enter a valid whole BOING amount (e.g. 100)' : 'Enter a valid BOING amount (e.g. 100 or 0.5)');
       return;
     }
     const staked = stake ? parseU128String(stake) : 0n;
@@ -1119,7 +1123,7 @@ export function Dashboard() {
                   <div className={styles.sendAmountRow}>
                     <input
                       type="text"
-                      placeholder="Amount in BOING (whole units, e.g. 100)"
+                      placeholder={(balance?.decimals ?? 0) === 0 ? "Amount in BOING (whole units, e.g. 100)" : "Amount in BOING (e.g. 100 or 0.5)"}
                       value={sendAmount}
                       onChange={(e) => setSendAmount(e.target.value)}
                       className={styles.input}
@@ -1381,7 +1385,7 @@ export function Dashboard() {
                         <a href={accountExplorerUrl} target="_blank" rel="noopener noreferrer">View on Boing Observer</a>.
                       </>
                     )}{' '}
-                    Next: send your first transfer from the Transfer tab (about 1 BOING fee).
+                    Next: send your first transfer from the Transfer tab (network fee about 0.021 BOING).
                     {faucetResult.warning && <><br />Note: {faucetResult.warning}</>}
                   </p>
                 )}

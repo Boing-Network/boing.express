@@ -10,6 +10,13 @@ const row = (o: Partial<ChainTxRow>): ChainTxRow => ({
 });
 
 describe('chainTxHistory', () => {
+  it('formats native amounts by the row height (whole BOING before the switch, base units from it)', () => {
+    const at = (h: number) => (h >= 1050 ? 18 : 0);
+    expect(chainRowToDisplay(row({ block_height: 1049, payload: { kind: 'transfer', to: ME, amount: '20' } }), at).summary).toMatch(/^20 BOING/);
+    expect(
+      chainRowToDisplay(row({ block_height: 1050, payload: { kind: 'transfer', to: ME, amount: '20500000000000000000' } }), at).summary
+    ).toMatch(/^20\.5 BOING/);
+  });
   it('maps faucet receipts, batches and failures', () => {
     const inc = chainRowToDisplay(row({ direction: 'in', sender: '0x' + 'fa'.repeat(32) }));
     expect(inc.label).toBe('Receive BOING');

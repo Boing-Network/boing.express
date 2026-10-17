@@ -205,7 +205,8 @@ export function BulkTransferPanel(props: {
     // One fee estimate for the whole batch: simulate the signed batch when possible.
     let est: { fee: bigint; exact: boolean } | null = null;
     if (m === 'batch') {
-      const fixed = estimateBatchFee(v.rows.length);
+      const boingDecimals = assets[BOING_KEY]!.decimals;
+      const fixed = estimateBatchFee(v.rows.length, 0n, boingDecimals);
       est = { fee: fixed.fee, exact: false };
       const pk = props.getPrivateKey();
       if (pk && net.simulateGas) {
@@ -213,7 +214,10 @@ export function BulkTransferPanel(props: {
           const nonce = await net.getNonce(props.accountId);
           const hex = await net.buildBatch!(props.accountId, stepsFor(v.rows), nonce, pk);
           const sim = await net.simulateGas(hex);
-          if (sim.success && sim.gasUsed != null && sim.gasUsed > 0n) est = { fee: feeFromGas(sim.gasUsed), exact: true };
+          if (sim.success && sim.networkFee != null && (sim.feeDecimals ?? boingDecimals) === boingDecimals)
+            est = { fee: sim.networkFee, exact: true };
+          else if (sim.success && sim.gasUsed != null && sim.gasUsed > 0n)
+            est = { fee: feeFromGas(sim.gasUsed, boingDecimals), exact: true };
           else if (!sim.success && sim.error) {
             if (isBatchUnsupportedError(sim.error)) {
               batchUnsupportedRef.current = true;

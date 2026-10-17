@@ -63,6 +63,7 @@ import { buildSignedTransactionHex, signingChainIdForRpc } from '../src/boing/si
 import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
 import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
+import { fetchNativeCurrency, ledgerDecimalsAt } from '../src/boing/nativeUnit';
 import { normalizeBoingNetworkId } from './config';
 import { RevealError, createRevealSession, revealActivePrivateKeyHex, type RevealState } from '../src/security/revealPrivateKey';
 import {
@@ -100,7 +101,11 @@ function repopulateNetworkSelect(): void {
 }
 const STORAGE_KEY_NETWORK = 'boing_selected_network_id';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
-const BOING_DECIMALS = 0;
+/**
+ * Ledger decimals of native BOING amounts from the node (18 = base units after the 18-decimals switch,
+ * 0 = whole BOING before it). Updated from every balance response.
+ */
+let nativeDecimals = 0;
 
 type Screen = 'choose' | 'unlock' | 'create' | 'import' | 'backup' | 'claim-name' | 'dashboard' | 'add-pick';
 
@@ -215,6 +220,7 @@ function getCurrentNetwork() {
 }
 
 function applyBalance(balance: { value: string; decimals: number; symbol: string }): void {
+  nativeDecimals = balance.decimals;
   const displayStr = formatBalance(balance.value, balance.decimals);
   lastDisplayBalance = displayStr;
   lastBalanceRaw = balance.value;
@@ -411,7 +417,7 @@ async function refreshStake(): Promise<void> {
     if (net.getStake) {
       const s = await net.getStake(accountId);
       lastStakeRaw = s;
-      const displayStr = formatBalance(s, BOING_DECIMALS);
+      const displayStr = formatBalance(s, nativeDecimals);
       ($('stake') as HTMLElement).textContent = displayStr;
     }
   } catch {
@@ -435,7 +441,7 @@ async function refreshStake(): Promise<void> {
       return;
     }
     claimCard.classList.remove('hidden');
-    ($('pending-unbond') as HTMLElement).textContent = formatBalance(status.pendingUnbond, BOING_DECIMALS);
+    ($('pending-unbond') as HTMLElement).textContent = formatBalance(status.pendingUnbond, nativeDecimals);
     const hint = document.getElementById('claim-unbond-hint');
     const ready =
       status.unlockHeight <= 0 || height == null || height >= status.unlockHeight;
@@ -1349,9 +1355,9 @@ $('form-send').addEventListener('submit', async (e) => {
     showError('send-error', 'Cannot send to yourself');
     return;
   }
-  const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
+  const amount = amountStr.trim() ? parseDecimalAmount(amountStr, nativeDecimals) : null;
   if (amount == null || amount <= 0n) {
-    showError('send-error', 'Enter a valid whole BOING amount (e.g. 100)');
+    showError('send-error', (nativeDecimals === 0 ? 'Enter a valid whole BOING amount (e.g. 100)' : 'Enter a valid BOING amount (e.g. 100 or 0.5)'));
     return;
   }
   if (BigInt(lastBalanceRaw) < amount) {
@@ -1390,7 +1396,7 @@ $('form-send').addEventListener('submit', async (e) => {
     const signedHex = await net.buildTransfer(accountId, toId, amount, nonce, privateKey);
     const result = await net.submitTransaction(signedHex);
     if (result.success) {
-      if (result.txHash) recordTx(result.txHash, 'send', `${amount} BOING → ${shortHexLabel(toHex, 6, 4)}`);
+      if (result.txHash) recordTx(result.txHash, 'send', `${amountStr.trim()} BOING → ${shortHexLabel(toHex, 6, 4)}`);
       showSuccess('send-success', result.txHash ? `Sent! ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
       ($('send-amount') as HTMLInputElement).value = '';
       ($('send-to') as HTMLInputElement).value = '';
@@ -1439,7 +1445,7 @@ $('btn-faucet').addEventListener('click', async () => {
           a.textContent = 'View on Boing Observer';
           okEl.append(a, document.createTextNode('. '));
         }
-        okEl.append(document.createTextNode('Next: send your first transfer from the Transfer tab (about 1 BOING fee).'));
+        okEl.append(document.createTextNode('Next: send your first transfer from the Transfer tab (network fee about 0.021 BOING).'));
         if (result.warning) okEl.append(document.createElement('br'), document.createTextNode(`Note: ${result.warning}`));
         okEl.classList.remove('hidden');
       }
@@ -1474,10 +1480,10 @@ $('form-bond').addEventListener('submit', async (e) => {
   const amountStr = ($('bond-amount') as HTMLInputElement).value;
   const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
   if (!net.buildBond) return;
-  const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
+  const amount = amountStr.trim() ? parseDecimalAmount(amountStr, nativeDecimals) : null;
   ($('bond-error') as HTMLElement).classList.add('hidden');
   if (amount == null || amount <= 0n) {
-    ($('bond-error') as HTMLElement).textContent = 'Enter a valid whole BOING amount (e.g. 100)';
+    ($('bond-error') as HTMLElement).textContent = (nativeDecimals === 0 ? 'Enter a valid whole BOING amount (e.g. 100)' : 'Enter a valid BOING amount (e.g. 100 or 0.5)');
     ($('bond-error') as HTMLElement).classList.remove('hidden');
     return;
   }
@@ -1516,10 +1522,10 @@ $('form-unbond').addEventListener('submit', async (e) => {
   const amountStr = ($('unbond-amount') as HTMLInputElement).value;
   const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
   if (!net.buildUnbond) return;
-  const amount = amountStr.trim() ? parseDecimalAmount(amountStr, BOING_DECIMALS) : null;
+  const amount = amountStr.trim() ? parseDecimalAmount(amountStr, nativeDecimals) : null;
   ($('unbond-error') as HTMLElement).classList.add('hidden');
   if (amount == null || amount <= 0n) {
-    ($('unbond-error') as HTMLElement).textContent = 'Enter a valid whole BOING amount (e.g. 100)';
+    ($('unbond-error') as HTMLElement).textContent = (nativeDecimals === 0 ? 'Enter a valid whole BOING amount (e.g. 100)' : 'Enter a valid BOING amount (e.g. 100 or 0.5)');
     ($('unbond-error') as HTMLElement).classList.remove('hidden');
     return;
   }
@@ -1680,7 +1686,10 @@ async function loadChainHistory(cursor: string | null): Promise<void> {
       chainCursor = null;
     } else {
       chainUnsupported = false;
-      const rows = page.transactions.map((r) => chainRowToDisplay(r, BOING_DECIMALS));
+      // Native amounts are whole BOING before the 18-decimals switch height, base units from it.
+      const nc = await fetchNativeCurrency(net.config.rpcUrl);
+      const decimalsAt = nc.info ? (h: number) => ledgerDecimalsAt(nc.info, h) : () => nativeDecimals;
+      const rows = page.transactions.map((r) => chainRowToDisplay(r, decimalsAt));
       if (!cursor) chainTx = rows;
       else {
         const seen = new Set(chainTx.map((e) => e.txHash));
@@ -2018,7 +2027,7 @@ function mountBulkIsland(): void {
   const net = getCurrentNetwork();
   let balance: { value: string; decimals: number; symbol: string } | null = null;
   try {
-    balance = { value: BigInt(lastBalanceRaw).toString(), decimals: BOING_DECIMALS, symbol: 'BOING' };
+    balance = { value: BigInt(lastBalanceRaw).toString(), decimals: nativeDecimals, symbol: 'BOING' };
   } catch {
     balance = null;
   }

@@ -31,6 +31,10 @@ describe('native batch helpers', () => {
     expect(feeFromGas(21_001n)).toBe(2n);
     expect(feeFromGas(0n)).toBe(0n);
   });
+  it('18 decimals: batch fee is gas x 10^12 base units', () => {
+    expect(estimateBatchFee(1, 0n, 18)).toEqual({ gas: 28_000n, fee: 28_000_000_000_000_000n });
+    expect(feeFromGas(133_000n, 18)).toBe(133_000_000_000_000_000n);
+  });
 
   it('recognises a pre-batch node decode error', () => {
     expect(isBatchUnsupportedError('Invalid transaction: invalid value: integer `9`, expected variant index 0 <= i < 9')).toBe(true);

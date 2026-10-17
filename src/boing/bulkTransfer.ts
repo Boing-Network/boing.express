@@ -9,6 +9,7 @@
 
 export const BULK_MAX_ROWS = 100;
 
+import { feeFromGasForDecimals } from './nativeUnit';
 import { normalizeHex64, parseTokenIdInput } from './referenceNft';
 
 export interface BulkRowInput {
@@ -258,7 +259,7 @@ export const BATCH_MAX_STEPS = 16;
 /** Gas schedule mirrored from boing-execution (`GAS_BATCH_BASE`, `GAS_PER_BATCH_*`). */
 export const BATCH_GAS_BASE = 21_000n;
 export const BATCH_GAS_PER_STEP = 7_000n;
-/** 21 000 gas = 1 BOING (`GAS_UNITS_PER_BOING`, `GAS_PRICE` = 1). */
+/** Whole-BOING era rule: 21 000 gas = 1 BOING. From the 18-decimals switch: gas x 10^12 base units. */
 export const GAS_UNITS_PER_BOING = 21_000n;
 
 export type BulkMode = 'batch' | 'sequential';
@@ -268,15 +269,18 @@ export function planBulkMode(rowCount: number, batchSupported: boolean, maxSteps
   return batchSupported && rowCount >= 1 && rowCount <= Math.min(maxSteps, BATCH_MAX_STEPS) ? 'batch' : 'sequential';
 }
 
-/** Fee in BOING for a batch: envelope + per-step gas + interpreter gas of token steps (from simulation, if known). */
-export function estimateBatchFee(stepCount: number, interpreterGas = 0n): { gas: bigint; fee: bigint } {
+/**
+ * Fee for a batch in ledger units (`decimals` 0 = whole BOING, 18 = base units): envelope + per-step gas +
+ * interpreter gas of token steps (from simulation, if known).
+ */
+export function estimateBatchFee(stepCount: number, interpreterGas = 0n, decimals = 0): { gas: bigint; fee: bigint } {
   const gas = BATCH_GAS_BASE + BATCH_GAS_PER_STEP * BigInt(stepCount) + interpreterGas;
-  return { gas, fee: (gas + GAS_UNITS_PER_BOING - 1n) / GAS_UNITS_PER_BOING };
+  return { gas, fee: feeFromGasForDecimals(gas, decimals) };
 }
 
-/** Fee from a simulated batch's total `gas_used` (already includes envelope + steps). */
-export function feeFromGas(gasUsed: bigint): bigint {
-  return gasUsed <= 0n ? 0n : (gasUsed + GAS_UNITS_PER_BOING - 1n) / GAS_UNITS_PER_BOING;
+/** Fee from a simulated batch's total `gas_used` (already includes envelope + steps), in ledger units. */
+export function feeFromGas(gasUsed: bigint, decimals = 0): bigint {
+  return feeFromGasForDecimals(gasUsed, decimals);
 }
 
 /**

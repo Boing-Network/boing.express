@@ -15,12 +15,14 @@ import type { NetworkConfig } from './types';
 import type { Transaction, Payload } from '../boing/types';
 import type { BatchStep } from './types';
 import { buildBatchTransaction, nodeBatchMaxCalls, nodeSupportsNativeBatch, signTransactionInput } from 'boing-sdk';
+import { currentLedgerDecimals, fetchNativeCurrency, rememberLedgerDecimals } from '../boing/nativeUnit';
 
 /**
- * Native BOING ledger amounts are whole on-chain units (RPC u128 decimal strings).
- * DEX / reference tokens often use 18 display decimals; do not confuse the two.
+ * Native BOING has 18 decimals (1 BOING = 10^18 base units). The node returns ledger units: base units
+ * from the 18-decimals switch (testnet 6913: height 1050), whole BOING before it. `boing_getAccount`
+ * says which (`decimals`); older nodes omit it, then `native_currency` from network info decides.
+ * Token decimals are separate (their own metadata).
  */
-const BOING_DECIMALS = 0;
 const BOING_SYMBOL = 'BOING';
 
 async function signedNativeTx(
@@ -48,18 +50,23 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       const hex = accountIdToHex(accountId);
       try {
         const account = await rpc.getAccount(rpcUrl, hex);
+        const decimals = account.decimals ?? (await currentLedgerDecimals(rpcUrl));
+        rememberLedgerDecimals(rpcUrl, decimals);
         return {
           value: account.balance,
           symbol: BOING_SYMBOL,
-          decimals: BOING_DECIMALS,
+          decimals,
         };
       } catch (error) {
         if (!rpc.isMethodNotFoundError(error)) throw error;
-        const raw = await rpc.getBalance(rpcUrl, hex);
+        const raw = (await rpc.getBalance(rpcUrl, hex)) as unknown;
+        const obj = raw && typeof raw === 'object' ? (raw as { balance?: string; decimals?: number }) : null;
+        const decimals = obj?.decimals ?? (await currentLedgerDecimals(rpcUrl));
+        rememberLedgerDecimals(rpcUrl, decimals);
         return {
-          value: raw,
+          value: obj ? String(obj.balance ?? '0') : String(raw),
           symbol: BOING_SYMBOL,
-          decimals: BOING_DECIMALS,
+          decimals,
         };
       }
     },
@@ -176,6 +183,10 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       return rpc.chainHeight(rpcUrl);
     },
 
+    async getNativeCurrency() {
+      return fetchNativeCurrency(rpcUrl);
+    },
+
     async buildContractCall(
       sender: AccountId,
       contract: AccountId,
@@ -221,16 +232,32 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       return signTransactionInput(tx, privateKey, { chainId: await signingChainIdForRpc(rpcUrl) });
     },
 
-    async simulateGas(signedTxHex: string): Promise<{ success: boolean; gasUsed?: bigint; error?: string }> {
+    async simulateGas(signedTxHex: string): Promise<{
+      success: boolean;
+      gasUsed?: bigint;
+      error?: string;
+      networkFee?: bigint;
+      feeDecimals?: number;
+    }> {
       try {
         const r = (await rpc.simulateTransaction(rpcUrl, signedTxHex)) as {
           success?: boolean;
           gas_used?: number | string;
           error?: string;
+          network_fee?: string;
+          network_fee_decimals?: number;
         } | null;
         if (!r || typeof r !== 'object') return { success: true };
         const gas = r.gas_used != null ? BigInt(r.gas_used) : undefined;
-        return { success: r.success !== false, gasUsed: gas, error: r.error };
+        // testnet-v0.1.17+: exact fee for the next block in ledger units.
+        const networkFee = typeof r.network_fee === 'string' && /^\d+$/.test(r.network_fee) ? BigInt(r.network_fee) : undefined;
+        return {
+          success: r.success !== false,
+          gasUsed: gas,
+          error: r.error,
+          networkFee,
+          feeDecimals: typeof r.network_fee_decimals === 'number' ? r.network_fee_decimals : undefined,
+        };
       } catch (e) {
         return { success: false, error: e instanceof Error ? e.message : String(e) };
       }
@@ -241,10 +268,15 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
     adapter.faucetRequest = async (accountId: AccountId): Promise<{ success: boolean; error?: string; amount?: string; warning?: string }> => {
       try {
         const hex = accountIdToHex(accountId);
-        const res = (await rpc.faucetRequest(rpcUrl, hex)) as { amount?: number | string; warning?: string } | null;
+        const res = (await rpc.faucetRequest(rpcUrl, hex)) as {
+          amount?: number | string;
+          amount_boing?: string;
+          warning?: string;
+        } | null;
         return {
           success: true,
-          amount: res && res.amount != null ? String(res.amount) : undefined,
+          // `amount` is in ledger units (base units from the 18-decimals switch); show BOING.
+          amount: res?.amount_boing ?? (res && res.amount != null ? String(res.amount) : undefined),
           warning: res && typeof res.warning === 'string' ? res.warning : undefined,
         };
       } catch (e) {

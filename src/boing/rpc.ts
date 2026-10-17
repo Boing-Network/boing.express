@@ -263,6 +263,8 @@ export interface BoingAccountState {
   pendingUnbond?: string;
   /** Block height when `pending_unbond` may be claimed (RPC `unbond_unlock_height`). */
   unbondUnlockHeight?: number;
+  /** Ledger decimals of the amounts (18 = base units, 0 = whole BOING); absent on nodes before testnet-v0.1.17. */
+  decimals?: number;
 }
 
 /** boing_getAccount([hex_account_id]) — balance, nonce, stake, pending unbond. Throws if method not available. */
@@ -273,6 +275,7 @@ export function getAccount(rpcUrl: string, hexAccountId: string): Promise<BoingA
     stake?: string;
     pending_unbond?: string;
     unbond_unlock_height?: number | string;
+    decimals?: number;
   }>(rpcUrl, 'boing_getAccount', [hexAccountId]).then((r) => {
     const unlockRaw = r.unbond_unlock_height;
     let unbondUnlockHeight: number | undefined;
@@ -286,6 +289,7 @@ export function getAccount(rpcUrl: string, hexAccountId: string): Promise<BoingA
       stake: r.stake != null ? String(r.stake) : undefined,
       pendingUnbond: r.pending_unbond != null ? String(r.pending_unbond) : undefined,
       unbondUnlockHeight,
+      decimals: typeof r.decimals === 'number' ? r.decimals : undefined,
     };
   });
 }

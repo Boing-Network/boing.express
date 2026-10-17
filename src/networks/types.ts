@@ -116,6 +116,18 @@ export interface NetworkAdapter {
   /** Optional: build + sign ONE atomic batch tx (≤ 16 steps). */
   buildBatch?(sender: AccountId, steps: BatchStep[], nonce: bigint, privateKey: Uint8Array): Promise<string>;
 
-  /** Optional: dry-run a signed tx and report gas (`boing_simulateTransaction`). */
-  simulateGas?(signedTxHex: string): Promise<{ success: boolean; gasUsed?: bigint; error?: string }>;
+  /**
+   * Optional: dry-run a signed tx and report gas (`boing_simulateTransaction`). `networkFee` (ledger units,
+   * `feeDecimals` 18 = base units) is the node's exact fee for the next block (testnet-v0.1.17+).
+   */
+  simulateGas?(signedTxHex: string): Promise<{
+    success: boolean;
+    gasUsed?: bigint;
+    error?: string;
+    networkFee?: bigint;
+    feeDecimals?: number;
+  }>;
+
+  /** Optional: native denomination (`boing_getNetworkInfo.native_currency`) and head height. */
+  getNativeCurrency?(): Promise<{ info: import('../boing/nativeUnit').NativeCurrencyInfo | null; head: number }>;
 }
