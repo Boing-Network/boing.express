@@ -5,6 +5,7 @@
 <h1>Web signing test dApp</h1>
 <button id="connect">Connect</button>
 <button id="sign-tx">Sign transfer</button>
+<button id="sign-20">Sign 20 BOING transfer</button>
 <button id="sign-self">Sign self-transfer</button>
 <button id="sign-msg">Sign message</button>
 <pre id="out"></pre>
@@ -35,6 +36,7 @@ function request(method, params) {
 const run = (p) => p.then((r) => out({ ok: r }), (e) => out({ error: e }));
 document.getElementById('connect').onclick = () => run(request('boing_requestAccounts', []).then((a) => (account = a[0], a)));
 document.getElementById('sign-tx').onclick = () => run(request('boing_signTransaction', [{ type: 'transfer', to: '0x' + '22'.repeat(32), amount: '5', nonce: '0' }]));
+document.getElementById('sign-20').onclick = () => run(request('boing_signTransaction', [{ type: 'transfer', to: '0x' + '22'.repeat(32), amount: '20000000000000000000', nonce: '0' }]));
 document.getElementById('sign-self').onclick = () => run(request('boing_signTransaction', [{ type: 'contract_call', contract: '0x' + '33'.repeat(32),
   calldata: '0x' + '00'.repeat(31) + '01' + account.replace(/^0x/, '') + '00'.repeat(31) + '05', nonce: '0' }]));
 document.getElementById('sign-msg').onclick = () => run(request('boing_signMessage', ['hello boing']));

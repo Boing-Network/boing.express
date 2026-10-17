@@ -93,3 +93,12 @@ export function formatNative(raw: bigint | string, decimals: number, maxFraction
   }
   return frac ? `${whole}.${frac}` : whole.toString();
 }
+
+/**
+ * Ledger decimals of the next block (where a tx signed now lands). Use this for amounts a user is about to sign:
+ * at the redenomination height H the head is still H-1 (whole BOING) while the tx executes in base units.
+ */
+export async function nextBlockLedgerDecimals(rpcUrl: string): Promise<number> {
+  const { info, head } = await fetchNativeCurrency(rpcUrl);
+  return info ? ledgerDecimalsAt(info, head + 1) : knownLedgerDecimals(rpcUrl);
+}

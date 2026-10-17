@@ -2,7 +2,8 @@
  * Parse dApp JSON transaction requests (boing_signTransaction / boing_sendTransaction).
  */
 
-import { namePayloadSummary } from './names';
+import { namePayloadSummary, rentFor } from './names';
+import { BOING_BASE_DECIMALS, formatNative } from './nativeUnit';
 import type { AccountId, AccessList, BatchCall, Payload, Transaction } from './types';
 import { accountIdFromHex, accountIdToHex, formatAddress, MAX_BATCH_CALLS } from './types';
 import { emptyAccessList, suggestedAccessList } from './accessList';
@@ -132,8 +133,34 @@ export function isReferenceSelfTransferCalldata(sender: AccountId, calldata: Uin
 export const SELF_TRANSFER_REFUSED =
   'Refusing token transfer to your own address: v1 Boing reference tokens double the balance on self-transfer (known bug). Send to a different address.';
 
-function batchStepLine(c: BatchCall): string {
-  if (c.kind === 'transfer') return `Transfer ${c.amount.toString()} to ${formatAddress(c.to, true)}`;
+/**
+ * How native BOING amounts in a request are read. `decimals`: ledger decimals of the block the tx will land in
+ * (18 = base units, from the redenomination height on; 0 = whole BOING before it). New txs are base units, so the
+ * default is 18. `fee`: the estimated network fee, if the caller simulated the tx.
+ */
+export type NativeAmountContext = {
+  decimals?: number;
+  fee?: { amount: bigint; decimals: number; exact: boolean } | null;
+};
+
+function ctxDecimals(ctx?: NativeAmountContext): number {
+  const d = ctx?.decimals;
+  return d != null && Number.isFinite(d) && d >= 0 ? d : BOING_BASE_DECIMALS;
+}
+
+/** Exact native amount as BOING (all fraction digits kept, trailing zeros trimmed), e.g. `20 BOING`. */
+export function formatNativeBoing(raw: bigint, decimals: number): string {
+  return `${formatNative(raw, decimals, Math.max(decimals, 0))} BOING`;
+}
+
+function nativeAmountRows(label: string, raw: bigint, decimals: number): { label: string; value: string }[] {
+  const rows = [{ label, value: formatNativeBoing(raw, decimals) }];
+  if (decimals > 0) rows.push({ label: `${label} (base units)`, value: raw.toString() });
+  return rows;
+}
+
+function batchStepLine(c: BatchCall, decimals: number = BOING_BASE_DECIMALS): string {
+  if (c.kind === 'transfer') return `Transfer ${formatNativeBoing(c.amount, decimals)} to ${formatAddress(c.to, true)}`;
   const mint = describeReferenceMintBatchCalldata(c.calldata);
   if (mint) return `Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)} (contract ${formatAddress(c.contract, true)})`;
   return `Call contract ${formatAddress(c.contract, true)} | calldata ${c.calldata.length} bytes`;
@@ -160,17 +187,18 @@ export function batchCallsFromDappJson(raw: unknown, sender: AccountId): BatchCa
   });
 }
 
-export function transactionSummary(tx: Transaction): string {
+export function transactionSummary(tx: Transaction, ctx?: NativeAmountContext): string {
+  const d = ctxDecimals(ctx);
   const from = formatAddress(tx.sender, true);
   const n = tx.nonce.toString();
   const p = tx.payload;
   switch (p.kind) {
     case 'transfer':
-      return `Boing tx | From ${from} | Nonce ${n} | Transfer ${p.amount.toString()} to ${formatAddress(p.to, true)}`;
+      return `Boing tx | From ${from} | Nonce ${n} | Transfer ${formatNativeBoing(p.amount, d)} to ${formatAddress(p.to, true)}`;
     case 'bond':
-      return `Boing tx | From ${from} | Nonce ${n} | Bond ${p.amount.toString()} stake`;
+      return `Boing tx | From ${from} | Nonce ${n} | Bond ${formatNativeBoing(p.amount, d)} stake`;
     case 'unbond':
-      return `Boing tx | From ${from} | Nonce ${n} | Unbond ${p.amount.toString()} stake`;
+      return `Boing tx | From ${from} | Nonce ${n} | Unbond ${formatNativeBoing(p.amount, d)} stake`;
     case 'claim_unbond':
       return `Boing tx | From ${from} | Nonce ${n} | Claim unbonded stake`;
     case 'qa_pool_vote':
@@ -203,7 +231,7 @@ export function transactionSummary(tx: Transaction): string {
       return `Boing tx | From ${from} | Nonce ${n} | Unjail validator node ${formatAddress(p.node_id, true)}`;
     case 'batch':
       return `Boing tx | From ${from} | Nonce ${n} | Batch of ${p.calls.length} steps (one signature, atomic): ${p.calls
-        .map((c) => batchStepLine(c))
+        .map((c) => batchStepLine(c, d))
         .join('; ')}`;
     case 'name_commit':
     case 'name_register':
@@ -212,7 +240,9 @@ export function transactionSummary(tx: Transaction): string {
     case 'name_set_target':
     case 'name_set_primary':
     case 'name_release':
-      return `Boing tx | From ${from} | Nonce ${n} | ${namePayloadSummary(p)}`;
+      return `Boing tx | From ${from} | Nonce ${n} | ${namePayloadSummary(p)}${
+        p.kind === 'name_register' || p.kind === 'name_renew' ? ` | rent ${rentFor(p.name, p.years).toString()} BOING (burned)` : ''
+      }`;
     default: {
       const _e: never = p;
       return _e;
@@ -258,7 +288,8 @@ function accessListSummary(tx: Transaction): { label: string; value: string } {
 /**
  * Human-readable breakdown for the approval popup (transaction signing / send).
  */
-export function buildTransactionApprovalDetail(tx: Transaction): TransactionApprovalDetail {
+export function buildTransactionApprovalDetail(tx: Transaction, ctx?: NativeAmountContext): TransactionApprovalDetail {
+  const d = ctxDecimals(ctx);
   const from = formatAddress(tx.sender, true);
   const rows: { label: string; value: string }[] = [
     { label: 'From', value: from },
@@ -269,21 +300,21 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
     case 'transfer':
       rows.push({ label: 'Operation', value: 'Transfer' });
       rows.push({ label: 'To', value: formatAddress(p.to, true) });
-      rows.push({ label: 'Amount', value: p.amount.toString() + ' (smallest units)' });
+      rows.push(...nativeAmountRows('Amount', p.amount, d));
       if (tx.access_list.read.length + tx.access_list.write.length > 0) {
         rows.push(accessListSummary(tx));
       }
       break;
     case 'bond':
       rows.push({ label: 'Operation', value: 'Bond (stake)' });
-      rows.push({ label: 'Amount', value: p.amount.toString() });
+      rows.push(...nativeAmountRows('Amount', p.amount, d));
       if (tx.access_list.read.length + tx.access_list.write.length > 0) {
         rows.push(accessListSummary(tx));
       }
       break;
     case 'unbond':
       rows.push({ label: 'Operation', value: 'Unbond' });
-      rows.push({ label: 'Amount', value: p.amount.toString() });
+      rows.push(...nativeAmountRows('Amount', p.amount, d));
       if (tx.access_list.read.length + tx.access_list.write.length > 0) {
         rows.push(accessListSummary(tx));
       }
@@ -369,8 +400,12 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
     case 'batch':
       rows.push({ label: 'Operation', value: `Batch: ${p.calls.length} steps in one transaction (all succeed or all revert)` });
       p.calls.forEach((c, i) => {
-        rows.push({ label: `Step ${i + 1}`, value: batchStepLine(c) });
+        rows.push({ label: `Step ${i + 1}`, value: batchStepLine(c, d) });
       });
+      {
+        const total = p.calls.reduce((acc, c) => (c.kind === 'transfer' ? acc + c.amount : acc), 0n);
+        if (p.calls.some((c) => c.kind === 'transfer')) rows.push(...nativeAmountRows('Total transferred', total, d));
+      }
       rows.push(accessListSummary(tx));
       break;
     case 'validator_register':
@@ -396,6 +431,9 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
     case 'name_set_primary':
     case 'name_release':
       rows.push({ label: 'Operation', value: namePayloadSummary(p) ?? p.kind });
+      if (p.kind === 'name_register' || p.kind === 'name_renew') {
+        rows.push({ label: 'Rent (burned)', value: `${rentFor(p.name, p.years).toString()} BOING` });
+      }
       rows.push(accessListSummary(tx));
       break;
     default: {
@@ -404,9 +442,16 @@ export function buildTransactionApprovalDetail(tx: Transaction): TransactionAppr
     }
   }
 
+  if (ctx?.fee) {
+    rows.push({
+      label: 'Network fee',
+      value: `${ctx.fee.exact ? '' : '≈ '}${formatNative(ctx.fee.amount, ctx.fee.decimals)} BOING`,
+    });
+  }
+
   return {
     txType: p.kind,
-    summaryLine: transactionSummary(tx),
+    summaryLine: transactionSummary(tx, ctx),
     rows,
   };
 }

@@ -69,6 +69,14 @@ test('connect + sign from a dApp via boing.express popup', async ({ context }) =
   const signed = await result(dapp);
   expect(signed.ok).toMatch(/^0x[0-9a-f]+$/);
 
+  // Native amounts are shown as BOING (testnet ledger is in 18-decimal base units): 20 BOING, not 20e18.
+  popup = await openPopup(dapp, '#sign-20');
+  await expect(popup.getByTestId('web-sign-tx')).toContainText('Transfer 20 BOING');
+  await expect(popup.getByTestId('web-sign-tx')).toContainText('20000000000000000000');
+  if (process.env.E2E_SHOT_DIR) await popup.screenshot({ path: `${process.env.E2E_SHOT_DIR}/web-sign-20-boing.png`, fullPage: true });
+  await popup.getByTestId('web-sign-reject').click();
+  expect((await result(dapp)).error?.code).toBe(4001);
+
   // Reference-token self-transfer is refused by the existing guard.
   popup = await openPopup(dapp, '#sign-self');
   await expect(popup.getByTestId('web-sign-prep-error')).toContainText(/own address/i);

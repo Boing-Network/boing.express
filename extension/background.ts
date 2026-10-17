@@ -12,6 +12,7 @@ import { buildSignedTransactionHex, signingChainIdForRpc } from '../src/boing/si
 import { transactionIdFromTransaction } from '../src/boing/bincode';
 import { accountIdFromHex, accountIdToHex } from '../src/boing/types';
 import { mergeSuggestedAccessListHex } from '../src/boing/accessList';
+import { approvalAmountContext } from '../src/boing/approvalAmounts';
 import {
   assertFromMatchesSender,
   buildTransactionApprovalDetail,
@@ -455,12 +456,15 @@ async function signOrSendBoingTransaction(
   const networkId = await getSelectedNetworkId();
   const chainId = chainIdForNetwork(networkId);
 
+  // Native amounts as BOING: decimals of the block this tx lands in (18 = base units) + simulated fee.
+  const amountCtx = await approvalAmountContext(rpcUrl, tx, unlockedState.privateKey);
+
   await requestSignatureApproval({
     origin,
     chainId,
     address: normalizedAddr,
-    message: transactionSummary(tx),
-    transactionDetail: buildTransactionApprovalDetail(tx),
+    message: transactionSummary(tx, amountCtx),
+    transactionDetail: buildTransactionApprovalDetail(tx, amountCtx),
     txPipeline: method === BOING_METHODS.SEND_TRANSACTION ? 'send' : 'sign',
   });
 

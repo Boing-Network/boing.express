@@ -16,6 +16,7 @@ import {
   type TransactionApprovalDetail,
 } from '../boing/dappTxRequest';
 import { buildSignedTransactionHex, signingChainIdForRpc } from '../boing/signing';
+import { approvalAmountContext } from '../boing/approvalAmounts';
 import { signMessage } from '../crypto/keys';
 import { looksLikeTransactionPreimage, messageToBytes, TX_PREIMAGE_MESSAGE_REFUSED } from '../boing/messageSigning';
 import type { Transaction } from '../boing/types';
@@ -180,9 +181,11 @@ export function WebSign() {
         const nonce = explicit ? 0n : await network.getNonce(accountId);
         const t = transactionFromDappJson(txReq, accountId, nonce);
         if (cancelled) return;
+        const amountCtx = await approvalAmountContext(network.config.rpcUrl, t, wallet.privateKey);
+        if (cancelled) return;
         setTx(t);
-        setSummary(transactionSummary(t));
-        setDetail(buildTransactionApprovalDetail(t));
+        setSummary(transactionSummary(t, amountCtx));
+        setDetail(buildTransactionApprovalDetail(t, amountCtx));
       } catch (e) {
         if (!cancelled) setPrepError(e instanceof Error ? e.message : String(e));
       }
@@ -190,7 +193,7 @@ export function WebSign() {
     return () => {
       cancelled = true;
     };
-  }, [req, isUnlocked, accountId, senderHex, network, needsConnection]);
+  }, [req, isUnlocked, accountId, senderHex, network, needsConnection, wallet.privateKey]);
 
   const messageInfo = useMemo(() => {
     if (!req || req.method !== 'boing_signMessage') return null;
