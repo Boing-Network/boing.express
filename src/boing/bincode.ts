@@ -29,6 +29,17 @@ const VARIANT_NAME_TRANSFER = 16;
 const VARIANT_NAME_SET_TARGET = 17;
 const VARIANT_NAME_SET_PRIMARY = 18;
 const VARIANT_NAME_RELEASE = 19;
+/** Rust `TransactionPayload::ContractCallWithValue` (native value rules; testnet from height 1150). */
+const VARIANT_CONTRACT_CALL_WITH_VALUE = 20;
+/** Rust `BatchCall::ContractCallWithValue`. */
+const BATCH_CONTRACT_CALL_WITH_VALUE = 2;
+
+function u128Bytes(v: bigint, what: string): Uint8Array {
+  if (v < 0n || v >= 1n << 128n) throw new Error(`${what} out of u128 range`);
+  const b = new Uint8Array(16);
+  writeU128LE(b, 0, v);
+  return b;
+}
 
 function need32(b: Uint8Array, what: string): Uint8Array {
   if (b.length !== 32) throw new Error(`${what} must be 32 bytes`);
@@ -127,6 +138,9 @@ export function encodePayload(p: Payload): Uint8Array {
     }
     case 'contract_call': {
       const calldataEnc = encodeVecU8(p.calldata);
+      if (p.value != null && p.value > 0n) {
+        return concatBytes([enumTag(VARIANT_CONTRACT_CALL_WITH_VALUE), p.contract, calldataEnc, u128Bytes(p.value, 'value')]);
+      }
       return concatBytes([enumTag(VARIANT_CONTRACT_CALL), p.contract, calldataEnc]);
     }
     case 'contract_deploy': {
@@ -202,6 +216,8 @@ export function encodePayload(p: Payload): Uint8Array {
           body.set(c.to, 4);
           writeU128LE(body, 4 + 32, c.amount);
           parts.push(body);
+        } else if (c.value != null && c.value > 0n) {
+          parts.push(enumTag(BATCH_CONTRACT_CALL_WITH_VALUE), c.contract, encodeVecU8(c.calldata), u128Bytes(c.value, 'value'));
         } else {
           parts.push(enumTag(1), c.contract, encodeVecU8(c.calldata));
         }

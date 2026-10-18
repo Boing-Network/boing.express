@@ -6,7 +6,7 @@ import { rpcCall, isMethodNotFoundError } from './rpc';
 import { formatNative } from './nativeUnit';
 import type { TxHistoryEntry } from '../storage/txHistory';
 
-export interface ChainTxStep { kind: string; to?: string; amount?: string; contract?: string; calldata_len?: number }
+export interface ChainTxStep { kind: string; to?: string; amount?: string; contract?: string; calldata_len?: number; value?: string }
 
 export interface ChainTxRow {
   tx_id: string;
@@ -16,7 +16,8 @@ export interface ChainTxRow {
   sender: string;
   nonce: number;
   direction: 'in' | 'out';
-  payload: { kind: string; to?: string; amount?: string; contract?: string; node_id?: string; steps?: ChainTxStep[] };
+  /** `value`: native BOING sent with a contract call (ledger units; nodes from testnet-v0.1.18). */
+  payload: { kind: string; to?: string; amount?: string; contract?: string; node_id?: string; value?: string; steps?: ChainTxStep[] };
   success: boolean | null;
   error: string | null;
 }
@@ -82,7 +83,8 @@ export function formatBoingAmount(raw: string | undefined, decimals = 0): string
 
 function stepLine(s: ChainTxStep, decimals: number): string {
   if (s.kind === 'transfer') return `${formatBoingAmount(s.amount, decimals)} BOING → ${short(s.to)}`;
-  return `Call ${short(s.contract)}`;
+  const v = s.value && s.value !== '0' ? ` with ${formatBoingAmount(s.value, decimals)} BOING` : '';
+  return `Call ${short(s.contract)}${v}`;
 }
 
 /** A reverted tx moved nothing except the sender's fee; say so instead of implying the value moved. */
@@ -111,6 +113,7 @@ export function chainRowToDisplay(row: ChainTxRow, decimalsOrAt: number | ((heig
     case 'contract_call':
       label = out ? 'Contract call' : 'Incoming call';
       summary = out ? `Call ${short(p.contract)}` : `From ${short(row.sender)} via ${short(p.contract)}`;
+      if (p.value && p.value !== '0') summary += ` with ${formatBoingAmount(p.value, decimals)} BOING`;
       break;
     case 'batch':
       label = out ? 'Batch' : 'Batch (incoming)';

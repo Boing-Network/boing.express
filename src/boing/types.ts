@@ -8,7 +8,11 @@ export type AccountId = Uint8Array; // 32 bytes
 /** Payload variants — `kind` maps to Rust TransactionPayload enum order (u32 discriminant). */
 export type Payload =
   | { kind: 'transfer'; to: AccountId; amount: bigint }
-  | { kind: 'contract_call'; contract: AccountId; calldata: Uint8Array }
+  /**
+   * `value` (base units, optional): native BOING sent with the call. A non-zero value encodes as Rust
+   * `ContractCallWithValue` (index 20; testnet from height 1150), otherwise as `ContractCall` (index 1).
+   */
+  | { kind: 'contract_call'; contract: AccountId; calldata: Uint8Array; value?: bigint }
   /** `create2_salt` None → nonce-derived deploy address; Some(32 bytes) → CREATE2 (see TECHNICAL-SPECIFICATION §4.4). */
   | { kind: 'contract_deploy'; bytecode: Uint8Array; create2_salt: Uint8Array | null }
   | {
@@ -50,10 +54,13 @@ export type Payload =
   | { kind: 'name_set_primary'; name: string | null }
   | { kind: 'name_release'; name: string };
 
-/** One step of a `batch` payload (Rust `BatchCall`: 0 = Transfer, 1 = ContractCall). */
+/**
+ * One step of a `batch` payload (Rust `BatchCall`: 0 = Transfer, 1 = ContractCall, 2 = ContractCallWithValue
+ * when `value` is non-zero).
+ */
 export type BatchCall =
   | { kind: 'transfer'; to: AccountId; amount: bigint }
-  | { kind: 'contract_call'; contract: AccountId; calldata: Uint8Array };
+  | { kind: 'contract_call'; contract: AccountId; calldata: Uint8Array; value?: bigint };
 
 /** Max steps in one batch (Rust `MAX_BATCH_CALLS`). */
 export const MAX_BATCH_CALLS = 16;

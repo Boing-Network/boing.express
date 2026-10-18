@@ -32,6 +32,15 @@ describe('chainTxHistory', () => {
     expect(f.summary).toContain('only the fee was charged');
   });
 
+  it('shows native BOING sent with contract calls', () => {
+    const one = '1000000000000000000';
+    const c = chainRowToDisplay(row({ block_height: 1160, payload: { kind: 'contract_call', contract: '0x' + 'ee'.repeat(32), value: one } }), 18);
+    expect(c.summary).toMatch(/with 1 BOING$/);
+    const b = chainRowToDisplay(row({ block_height: 1160, payload: { kind: 'batch', steps: [
+      { kind: 'contract_call', contract: '0x' + 'ee'.repeat(32), value: one }, { kind: 'contract_call', contract: '0x' + 'aa'.repeat(32) }] } }), 18);
+    expect(b.steps?.[0]).toMatch(/with 1 BOING$/);
+    expect(b.steps?.[1]).not.toMatch(/BOING/);
+  });
   it('keeps the failed wording when a local optimistic summary exists', () => {
     const c = chainRowToDisplay(row({ success: false, payload: { kind: 'transfer', to: '0x' + '42'.repeat(32), amount: '1' + '0'.repeat(30) } }));
     const local: TxHistoryEntry[] = [

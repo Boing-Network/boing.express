@@ -84,6 +84,23 @@ function parseU128String(s: unknown, field: string): bigint {
   return v;
 }
 
+/**
+ * Optional native value of a contract call (`value`, decimal base units; 1 BOING = 10^18). `0` or absent = none.
+ * Nodes accept non-zero values from the native-value activation height (testnet 1150).
+ */
+function parseOptionalValue(s: unknown, field: string): bigint | undefined {
+  if (s === undefined || s === null || s === '') return undefined;
+  const v = parseU128String(s, field);
+  return v > 0n ? v : undefined;
+}
+
+/** Native BOING a payload sends to contracts (sum of `value` fields). */
+export function payloadCallValue(p: Payload): bigint {
+  if (p.kind === 'contract_call') return p.value ?? 0n;
+  if (p.kind === 'batch') return p.calls.reduce((a, c) => (c.kind === 'contract_call' ? a + (c.value ?? 0n) : a), 0n);
+  return 0n;
+}
+
 function parseNonce(s: unknown): bigint | null {
   if (s === undefined || s === null || s === '') return null;
   const str = String(s).trim();
@@ -163,7 +180,8 @@ function batchStepLine(c: BatchCall, decimals: number = BOING_BASE_DECIMALS): st
   if (c.kind === 'transfer') return `Transfer ${formatNativeBoing(c.amount, decimals)} to ${formatAddress(c.to, true)}`;
   const mint = describeReferenceMintBatchCalldata(c.calldata);
   if (mint) return `Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)} (contract ${formatAddress(c.contract, true)})`;
-  return `Call contract ${formatAddress(c.contract, true)} | calldata ${c.calldata.length} bytes`;
+  const v = c.value != null && c.value > 0n ? ` sending ${formatNativeBoing(c.value, decimals)}` : '';
+  return `Call contract ${formatAddress(c.contract, true)}${v} | calldata ${c.calldata.length} bytes`;
 }
 
 /** Parse `calls` / `steps` of a dApp `batch` request (each `{ type: 'transfer' | 'contract_call', ... }`). */
@@ -181,7 +199,8 @@ export function batchCallsFromDappJson(raw: unknown, sender: AccountId): BatchCa
       const contract = accountIdFromHex(String(o.contract ?? ''));
       const calldata = hexToBytesFlexible(String(o.calldata ?? '0x'), `calls[${i}].calldata`);
       if (isReferenceSelfTransferCalldata(sender, calldata)) throw new Error(SELF_TRANSFER_REFUSED);
-      return { kind: 'contract_call', contract, calldata };
+      const value = parseOptionalValue(o.value, `calls[${i}].value`);
+      return value != null ? { kind: 'contract_call', contract, calldata, value } : { kind: 'contract_call', contract, calldata };
     }
     throw new Error(`batch step ${i + 1}: type must be transfer or contract_call`);
   });
@@ -211,7 +230,8 @@ export function transactionSummary(tx: Transaction, ctx?: NativeAmountContext): 
       if (mint) {
         return `Boing tx | From ${from} | Nonce ${n} | Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)}${al}`;
       }
-      return `Boing tx | From ${from} | Nonce ${n} | Call contract ${formatAddress(p.contract, true)} | calldata ${p.calldata.length} bytes${al}`;
+      const v = p.value != null && p.value > 0n ? ` | sending ${formatNativeBoing(p.value, d)}` : '';
+      return `Boing tx | From ${from} | Nonce ${n} | Call contract ${formatAddress(p.contract, true)}${v} | calldata ${p.calldata.length} bytes${al}`;
     }
     case 'contract_deploy':
       return `Boing tx | From ${from} | Nonce ${n} | Deploy contract | bytecode ${p.bytecode.length} bytes`;
@@ -354,6 +374,7 @@ export function buildTransactionApprovalDetail(tx: Transaction, ctx?: NativeAmou
         value: mint ? `Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)}` : 'Contract call',
       });
       rows.push({ label: 'Contract', value: formatAddress(p.contract, true) });
+      if (p.value != null && p.value > 0n) rows.push(...nativeAmountRows('BOING sent to contract', p.value, d));
       if (mint) {
         rows.push({ label: 'Recipient', value: formatAddress(mint.to, true) });
         rows.push({ label: 'Count', value: String(mint.n) });
@@ -405,6 +426,8 @@ export function buildTransactionApprovalDetail(tx: Transaction, ctx?: NativeAmou
       {
         const total = p.calls.reduce((acc, c) => (c.kind === 'transfer' ? acc + c.amount : acc), 0n);
         if (p.calls.some((c) => c.kind === 'transfer')) rows.push(...nativeAmountRows('Total transferred', total, d));
+        const sent = payloadCallValue(p);
+        if (sent > 0n) rows.push(...nativeAmountRows('BOING sent to contracts', sent, d));
       }
       rows.push(accessListSummary(tx));
       break;
@@ -509,7 +532,8 @@ export function transactionFromDappJson(
       const contract = accountIdFromHex(String(o.contract ?? ''));
       const calldata = hexToBytesFlexible(String(o.calldata ?? '0x'), 'calldata');
       if (isReferenceSelfTransferCalldata(sender, calldata)) throw new Error(SELF_TRANSFER_REFUSED);
-      payload = { kind: 'contract_call', contract, calldata };
+      const value = parseOptionalValue(o.value, 'value');
+      payload = value != null ? { kind: 'contract_call', contract, calldata, value } : { kind: 'contract_call', contract, calldata };
       break;
     }
     case 'contract_deploy': {
