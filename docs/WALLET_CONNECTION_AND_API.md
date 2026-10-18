@@ -69,6 +69,7 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
 ### Provider surface for SDK alignment
 
 - **`supportsBoingNativeRpc`:** `true` on `window.boing` (Boing Express). Use with **boing-sdk** `providerSupportsBoingNativeRpc` / **`connectInjectedBoingWallet`** patterns.
+- **`version` / `features` / `boing_getCapabilities` (0.1.19+):** `window.boing.version` is the extension version and `window.boing.features` lists capabilities; `boing_getCapabilities` returns `{ version, features }` without a wallet round trip. **`nativeValue`** means `value` on `contract_call` / batch steps is signed (BOING sent to the contract). 0.1.18 and older (including the store 0.1.17) have none of these and **silently drop `value`** (the call is signed without it; a wBOING `deposit` then reverts with the VM's generic `Invalid jump destination`). dApps must check `features.includes('nativeValue')` before requesting BOING-carrying calls and ask the user to update otherwise (boing.finance does).
 - **Errors:** Node failures from submit/simulate are exposed as `data.boingCode === 'BOING_NODE_JSONRPC'` with `data.rpc: { code, message, data }` so clients match [BOING-RPC-ERROR-CODES-FOR-DAPPS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-RPC-ERROR-CODES-FOR-DAPPS.md). Simulation failure (`BOING_SIMULATION_FAILED`) may include `suggested_access_list` and `access_list_covers_suggestion` for retry flows.
 
 ### dApp helpers in this repo (SDK parity)

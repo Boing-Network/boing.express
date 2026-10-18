@@ -28,12 +28,20 @@
         isBoing: b?.isBoing === true,
         isBoingExpress: b?.isBoingExpress === true,
         supportsBoingNativeRpc: b?.supportsBoingNativeRpc === true,
+        version: typeof b?.version === 'string' ? b.version : null,
+        features: Array.isArray(b?.features) ? [...b.features] : null,
+        capabilities: null,
         hasRequest: typeof b?.request === 'function',
         hasOn: typeof b?.on === 'function',
         hasRemoveListener: typeof b?.removeListener === 'function',
         chainId: null,
         chainErr: null,
       };
+      try {
+        if (b?.request) result.capabilities = await b.request({ method: 'boing_getCapabilities', params: [] });
+      } catch (e) {
+        result.capabilities = { error: String(e?.message || e) };
+      }
       try {
         if (b?.request) {
           const chainPromise = b.request({ method: 'boing_chainId', params: [] });

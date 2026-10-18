@@ -10,12 +10,18 @@
  *   boing_simulateTransaction — params: [hexSignedTx]; forwards to node RPC (no extra signing). Connected origin required.
  *   boing_simulateContractCall — params: [contractHex, calldataHex, senderHex?, atBlock?]; unsigned contract_call dry-run per RPC-API-SPEC. Connected origin required. If senderHex is omitted, the active vault account is sent as the third RPC param when available.
  *   boing_listDexPools / boing_listDexTokens / boing_getDexToken — L1 DEX discovery; params mirror boing-sdk (single object in params array). Connected origin required. See docs/BOING-EXPRESS-WALLET.md.
+ *   boing_getCapabilities - { version, features }, answered in the page; features has 'nativeValue' when contract calls may carry `value` (0.1.19+). Also exposed as provider.version / provider.features.
  *   boing_chainId           — current chain (0x1b01 testnet, 0x1b02 mainnet)
  *   boing_switchChain       — switch network
  *
  * Aliases eth_requestAccounts, eth_accounts, personal_sign, eth_chainId, wallet_switchEthereumChain
  * are supported for compatibility but are not required for Boing development.
  */
+
+declare const __BOING_EXPRESS_VERSION__: string;
+/** Injected at build time from extension/manifest.base.json (vite.extension.inpage.config.ts). */
+const BOING_EXPRESS_VERSION: string = typeof __BOING_EXPRESS_VERSION__ === 'string' ? __BOING_EXPRESS_VERSION__ : '0.0.0';
+const BOING_EXPRESS_FEATURES: readonly string[] = Object.freeze(['nativeValue']);
 
 const BOING_PROVIDER_SOURCE = 'boing-inpage';
 const BOING_CONTENT_SOURCE = 'boing-content';
@@ -81,10 +87,22 @@ function createProvider(): unknown {
     isBoingExpress: true,
     /** True for Boing Express — aligns with boing-sdk `providerSupportsBoingNativeRpc` / connectInjectedBoingWallet. */
     supportsBoingNativeRpc: true,
+    /** Extension version (from the manifest), e.g. `0.1.19`. Absent on 0.1.18 and older. */
+    version: BOING_EXPRESS_VERSION,
+    /**
+     * Capability flags. `nativeValue`: `value` on `contract_call` and on batch `contract_call` steps is signed as
+     * ContractCallWithValue (BOING sent to the contract). Wallets without it (0.1.18 and older, incl. the store 0.1.17)
+     * drop `value` silently, so dApps must check this before requesting BOING-carrying calls.
+     */
+    features: BOING_EXPRESS_FEATURES,
 
     request(args: { method: string; params?: unknown[] }): Promise<unknown> {
       const method = args?.method;
       const params = Array.isArray(args?.params) ? args.params : [];
+      // Answered in the page (no wallet round trip): what this wallet build can sign.
+      if (method === 'boing_getCapabilities') {
+        return Promise.resolve({ version: BOING_EXPRESS_VERSION, features: [...BOING_EXPRESS_FEATURES] });
+      }
       return sendToExtension(method, params);
     },
 

@@ -35,6 +35,10 @@ test.describe('Boing extension (window.boing)', () => {
       expect(result.hasBoing).toBe(true);
       expect(result.isBoing).toBe(true);
       expect(result.supportsBoingNativeRpc).toBe(true);
+      // dApps gate BOING-carrying calls on this (0.1.18 and older silently dropped `value`).
+      expect(result.version).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(result.features).toContain('nativeValue');
+      expect(result.capabilities).toEqual({ version: result.version, features: result.features });
       expect(result.hasRequest).toBe(true);
       expect(result.hasOn).toBe(true);
       expect(result.hasRemoveListener).toBe(true);
