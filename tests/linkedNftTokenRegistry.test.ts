@@ -40,6 +40,12 @@ describe('linkedNftTokenRegistry', () => {
     );
   });
 
+  it('canonical testnet registry is v2', () => {
+    expect(DEFAULT_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX).toBe(
+      '0xf704485ad29f56bb6516ac822fcf9ca8fcb6c4266e22c9ed7f9c6908668655dd'
+    );
+  });
+
   it('prefers env override', () => {
     vi.stubEnv('VITE_BOING_LINKED_NFT_TOKEN_REGISTRY', COLLECTION);
     const r = resolveLinkedNftTokenRegistryId({ networkIsTestnet: true });

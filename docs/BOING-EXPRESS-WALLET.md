@@ -61,10 +61,10 @@ Official collection↔fungible links are **enforced on-chain** (not display-only
 
 | Field | Public testnet |
 |-------|----------------|
-| **Registry AccountId** | `0xebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8` |
-| **CREATE2 salt** | `BOING_NFT_TOKEN_LINK_REG_V1` |
-| **Selectors** | `0xE0`–`0xE6` (claim / register / unlink / links_count / get_link_at / get_asset_claimer / transfer_asset_claimer) |
-| **Model** | Dual **asset claimer**; many-to-many; mutable |
+| **Registry AccountId** | `0xf704485ad29f56bb6516ac822fcf9ca8fcb6c4266e22c9ed7f9c6908668655dd` (v2; v1 `0xebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8` superseded) |
+| **CREATE2 salt** | `BOING_NFT_TOKEN_LINK_REG_V2` (block 1174) |
+| **Selectors** | `0xE0`–`0xE8` (claim / register / unlink / links_count / get_link_at / get_asset_claimer / transfer_asset_claimer / claim_self / get_asset_deployer) |
+| **Model** | Dual **asset claimer**; many-to-many; mutable. An asset's claimer is its creator: new assets call `claim_self` from their deploy init code, and `claim_asset` works only for an asset's recorded deployer |
 
 **Boing Express** surfaces reference NFT holdings and, on Assets refresh, **reads** active companion peers from the registry (`links_count` / `get_link_at` via **`boing_simulateContractCall`**, skipping tombstones) and lists them under matching collections with an optional observer account link. It can also sign/submit `contract_call` txs that claim/register/unlink via the provider for dApps. Treat `boing.linked_nft_token.v1` metadata as an optional cache only — the on-chain registry is authority.
 

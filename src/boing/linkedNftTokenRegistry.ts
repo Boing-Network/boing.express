@@ -7,7 +7,6 @@
  */
 
 import {
-  CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX,
   decodeLinkedNftTokenGetLinkAtReturnData,
   decodeLinkedNftTokenLinksCountReturnData,
   encodeLinkedNftTokenGetLinkAtCalldataHex,
@@ -19,8 +18,18 @@ import { normalizeHex64 } from './referenceNft';
 
 const ZERO32 = `0x${'0'.repeat(64)}`;
 
+/**
+ * Public testnet registry **v2** (CREATE2 salt `BOING_NFT_TOKEN_LINK_REG_V2`, block 1174; boing.network 4421bca).
+ * Literal because the pinned boing-sdk still exports the v1 address. v2 carries over every v1 claim and link;
+ * an asset's claimer is its creator (new assets claim themselves at deploy). The read selectors used here
+ * (0xE3 / 0xE4) are unchanged.
+ */
 export const DEFAULT_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX =
-  CANONICAL_BOING_TESTNET_LINKED_NFT_TOKEN_REGISTRY_HEX;
+  '0xf704485ad29f56bb6516ac822fcf9ca8fcb6c4266e22c9ed7f9c6908668655dd';
+
+/** Superseded v1 registry (first `claim_asset` caller won). */
+export const TESTNET_LINKED_NFT_TOKEN_REGISTRY_V1_HEX =
+  '0xebf9f0190f415852f90d0e60343126201248ab96273fdbf8acc5fe5fa03c3dd8';
 
 export interface LinkedNftTokenLink {
   index: number;
