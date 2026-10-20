@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
-import { normalizeHex64, shortHexLabel } from '../boing/referenceNft';
-import type { TokenHolding, TokenHoldingsLoadMeta } from '../boing/tokenHoldings';
+import { normalizeHex64, observerAccountUrl, observerAssetUrl } from '../boing/referenceNft';
+import type { TokenHolding } from '../boing/tokenHoldings';
 import { addTokenWatchEntry, removeTokenWatchEntry } from '../storage/tokenWatchlist';
 import styles from '../screens/Dashboard.module.css';
 
@@ -20,14 +20,14 @@ export function TokenHoldingsPanel(props: {
   native?: NativeBalanceRow;
   accountId: AccountId;
   networkId: string;
+  explorerBase: string;
+  networkIsTestnet: boolean;
   holdings: TokenHolding[];
-  /** Optional discovery stats for honest empty / truncated hints. */
-  meta?: TokenHoldingsLoadMeta | null;
   loading: boolean;
   error: string;
   onChanged: () => void;
 }) {
-  const { holdings } = props;
+  const { holdings, explorerBase, networkIsTestnet } = props;
   const held = holdings.filter((t) => t.balanceRaw != null && t.balanceRaw !== '0');
   const watchedZero = holdings.filter((t) => t.watched && (t.balanceRaw === '0' || t.balanceRaw == null));
   const [contract, setContract] = useState('');
@@ -35,25 +35,43 @@ export function TokenHoldingsPanel(props: {
   const [decimals, setDecimals] = useState('');
   const [addError, setAddError] = useState('');
   const owner = accountIdToHex(props.accountId);
+  const hasExplorer = Boolean(explorerBase);
 
   function renderRow(t: TokenHolding) {
+    const href = hasExplorer ? observerAssetUrl(explorerBase, t.tokenHex, networkIsTestnet) : undefined;
     return (
       <li key={t.tokenHex} className={styles.txHistoryItem} data-testid="token-row">
-        <span className={styles.tokenSymbol} title={t.name}>
-          {t.symbol}
-        </span>
-        <code className={styles.txHash} title={t.tokenHex}>
-          {shortHexLabel(t.tokenHex, 6, 4)}
-        </code>
-        <span className={styles.tokenBalance} title={t.error}>
-          {t.error ? 'unavailable' : t.balanceDisplay}
-        </span>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.assetRowLink}
+            title={t.name || t.symbol}
+          >
+            <span className={styles.tokenSymbol}>{t.symbol}</span>
+            <span className={styles.tokenBalance} title={t.error}>
+              {t.error ? 'unavailable' : t.balanceDisplay}
+            </span>
+          </a>
+        ) : (
+          <>
+            <span className={styles.tokenSymbol} title={t.name}>
+              {t.symbol}
+            </span>
+            <span className={styles.tokenBalance} title={t.error}>
+              {t.error ? 'unavailable' : t.balanceDisplay}
+            </span>
+          </>
+        )}
         {t.watched && (
           <button
             type="button"
             className={styles.copyBtn}
             aria-label={`Stop watching ${t.symbol}`}
-            onClick={async () => {
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
               await removeTokenWatchEntry(owner, props.networkId, t.tokenHex);
               props.onChanged();
             }}
@@ -87,6 +105,9 @@ export function TokenHoldingsPanel(props: {
     props.onChanged();
   }
 
+  const nativeHref =
+    props.native && hasExplorer ? observerAccountUrl(explorerBase, owner, networkIsTestnet) : undefined;
+
   return (
     <section className={styles.section} data-testid="wallet-tokens">
       <div className={styles.balanceHeader}>
@@ -95,18 +116,30 @@ export function TokenHoldingsPanel(props: {
           {props.loading ? '…' : '↻'}
         </button>
       </div>
-      <p className={styles.addressHint}>
-        Native BOING, then fungibles you hold from the DEX directory, pool legs, recent local history, and optional
-        deploy scan. Zero-balance directory noise is hidden; watchlist rows stay visible at zero.
-      </p>
       {props.native && (
         <ul className={styles.txHistoryList} aria-label="Native balance">
           <li className={styles.txHistoryItem} data-testid="token-row-native">
-            <span className={styles.tokenSymbol}>{props.native.symbol}</span>
-            <span className={styles.txHash}>native</span>
-            <span className={styles.tokenBalance} data-testid="native-balance">
-              {props.native.display}
-            </span>
+            {nativeHref ? (
+              <a
+                href={nativeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.assetRowLink}
+                title={`${props.native.symbol} on explorer`}
+              >
+                <span className={styles.tokenSymbol}>{props.native.symbol}</span>
+                <span className={styles.tokenBalance} data-testid="native-balance">
+                  {props.native.display}
+                </span>
+              </a>
+            ) : (
+              <>
+                <span className={styles.tokenSymbol}>{props.native.symbol}</span>
+                <span className={styles.tokenBalance} data-testid="native-balance">
+                  {props.native.display}
+                </span>
+              </>
+            )}
             <button
               type="button"
               className={styles.copyBtn}
@@ -117,11 +150,6 @@ export function TokenHoldingsPanel(props: {
               {props.native.refreshing ? '…' : '↻'}
             </button>
           </li>
-          {props.native.chainHeight != null && (
-            <li className={styles.chainHeight} aria-label="Chain height" style={{ listStyle: 'none' }}>
-              Block #{props.native.chainHeight.toLocaleString()}
-            </li>
-          )}
           {props.native.error && (
             <li className={styles.error} style={{ listStyle: 'none' }}>
               {props.native.error}
@@ -134,39 +162,22 @@ export function TokenHoldingsPanel(props: {
       )}
       {props.error && <p className={styles.error}>{props.error}</p>}
       {held.length > 0 && (
-        <>
-          <h3 className={styles.addressHint} style={{ marginTop: '0.75rem', fontWeight: 600 }}>
-            Fungibles you hold
-          </h3>
-          <ul className={styles.txHistoryList} aria-label="Fungible tokens held">
-            {held.map(renderRow)}
-          </ul>
-        </>
+        <ul className={styles.txHistoryList} aria-label="Fungible tokens held">
+          {held.map(renderRow)}
+        </ul>
       )}
       {held.length === 0 && !props.loading && (
         <p className={styles.addressHint} data-testid="token-empty-held">
-          No tokens found in the directory yet — add a contract to your watchlist below. Tokens only appear here when
-          this wallet holds a non-zero balance (or they are watched).
+          No tokens yet
         </p>
       )}
       {watchedZero.length > 0 && (
-        <>
-          <h3 className={styles.addressHint} style={{ marginTop: '0.75rem', fontWeight: 600 }}>
-            Watchlist
-          </h3>
-          <ul className={styles.txHistoryList} aria-label="Watched tokens">
-            {watchedZero.map(renderRow)}
-          </ul>
-        </>
-      )}
-      {props.meta?.truncatedDirectory && (
-        <p className={styles.addressHint}>
-          DEX directory pagination hit this wallet’s page cap — some listed tokens may still need a watchlist add
-          until a full ownership index exists.
-        </p>
+        <ul className={styles.txHistoryList} aria-label="Watched tokens">
+          {watchedZero.map(renderRow)}
+        </ul>
       )}
       <details className={styles.subDetails}>
-        <summary className={styles.addressHint}>Add token to watchlist</summary>
+        <summary className={styles.addressHint}>Add token</summary>
         <form onSubmit={(e) => void add(e)} className={styles.form}>
           <input className={styles.input} placeholder="Token contract (64 hex)" value={contract} onChange={(e) => setContract(e.target.value)} aria-label="Token contract" data-testid="token-add-contract" />
           <div className={styles.inlineRow}>

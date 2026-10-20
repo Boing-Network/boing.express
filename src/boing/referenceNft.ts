@@ -216,6 +216,30 @@ export function observerNftCollectionUrl(
   return `${base}/asset/${collection}?network=${network}`;
 }
 
+/** Observer asset / fungible token profile (`/asset/:id`). */
+export function observerAssetUrl(
+  explorerBase: string,
+  assetHex64: string,
+  networkIsTestnet: boolean
+): string {
+  const base = explorerBase.replace(/\/$/, '');
+  const id = normalizeHex64(assetHex64);
+  const network = networkIsTestnet ? 'testnet' : 'mainnet';
+  return `${base}/asset/${id}?network=${network}`;
+}
+
+/** Observer account page (`/account/:id`) — native balance / wallet address. */
+export function observerAccountUrl(
+  explorerBase: string,
+  accountHex64: string,
+  networkIsTestnet: boolean
+): string {
+  const base = explorerBase.replace(/\/$/, '');
+  const id = normalizeHex64(accountHex64);
+  const network = networkIsTestnet ? 'testnet' : 'mainnet';
+  return `${base}/account/${id}?network=${network}`;
+}
+
 export function shortHexLabel(hex64: string, head = 6, tail = 4): string {
   const h = hex64.replace(/^0x/i, '').toLowerCase();
   if (h.length <= head + tail) return h;

@@ -920,8 +920,9 @@ export function Dashboard() {
                   }}
                   accountId={accountId}
                   networkId={network.config.id}
+                  explorerBase={explorerBase || 'https://boing.observer'}
+                  networkIsTestnet={Boolean(network.config.isTestnet)}
                   holdings={tokens.holdings}
-                  meta={tokens.meta}
                   loading={tokens.loading}
                   error={tokens.error}
                   onChanged={() => void tokens.refresh()}

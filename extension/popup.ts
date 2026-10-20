@@ -605,13 +605,15 @@ async function refreshNfts(): Promise<void> {
       ownerHex,
       selectedNetworkId
     );
-    if (statusEl) statusEl.textContent = formatNftDiscoveryNote(discovery);
+    if (statusEl) {
+      statusEl.textContent = '';
+      statusEl.classList.add('hidden');
+    }
 
     const entries = await listNftWatchlist(ownerHex, selectedNetworkId);
     if (entries.length === 0) {
       emptyEl.classList.remove('hidden');
-      emptyEl.textContent =
-        'No NFTs found in the recent scan window. Add a collection + token id below for older holdings.';
+      emptyEl.textContent = 'No NFTs yet';
       nftStatusesCache = [];
       nftSelectedKeys = new Set();
       updateNftTransferChrome();
@@ -641,7 +643,7 @@ async function refreshNfts(): Promise<void> {
       colLink.href = observerNftCollectionUrl(explorer, group.collectionHex, isTestnet);
       colLink.target = '_blank';
       colLink.rel = 'noopener noreferrer';
-      colLink.textContent = `Collection ${shortHexLabel(group.collectionHex, 6, 4)} · ${group.items.length}`;
+      colLink.textContent = `Collection · ${group.items.length}`;
       header.appendChild(colLink);
       listEl.appendChild(header);
 
@@ -657,8 +659,7 @@ async function refreshNfts(): Promise<void> {
             : item.exists
               ? 'Not yours'
               : 'Not found';
-        const title =
-          meta?.name?.trim() || item.label || shortHexLabel(item.tokenIdHex, 8, 6);
+        const title = meta?.name?.trim() || item.label || 'NFT';
         nftTitles.set(key, title);
 
         const thumbWrap = document.createElement('a');
@@ -1859,23 +1860,24 @@ async function refreshTokens(): Promise<void> {
   list.replaceChildren();
   empty.classList.toggle('hidden', tokenHoldings.length > 0);
   if (empty && tokenHoldings.length === 0) {
-    empty.textContent =
-      'No tokens found in the directory yet — add a contract to your watchlist. Non-zero balances from the DEX directory, pools, and recent history show automatically.';
+    empty.textContent = 'No tokens yet';
   }
+  const explorerBase = (getCurrentNetwork().config.explorerUrl ?? 'https://boing.observer').replace(/\/$/, '');
+  const isTestnet = Boolean(getCurrentNetwork().config.isTestnet);
   for (const t of tokenHoldings) {
     const li = document.createElement('li');
     li.className = 'token-row';
     li.setAttribute('data-testid', 'token-row');
-    const left = document.createElement('div');
+    const left = document.createElement('a');
     left.className = 'token-row-left';
+    left.href = `${explorerBase}/asset/${t.tokenHex}?network=${isTestnet ? 'testnet' : 'mainnet'}`;
+    left.target = '_blank';
+    left.rel = 'noopener noreferrer';
+    left.title = t.name || t.symbol;
     const sym = document.createElement('span');
     sym.className = 'token-symbol';
     sym.textContent = t.symbol;
-    const id = document.createElement('span');
-    id.className = 'token-id';
-    id.textContent = shortHexLabel(t.tokenHex, 6, 4);
-    id.title = t.tokenHex;
-    left.append(sym, id);
+    left.append(sym);
     const bal = document.createElement('span');
     bal.className = 'token-balance';
     bal.textContent = t.error ? 'unavailable' : t.balanceDisplay;
