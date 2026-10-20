@@ -849,7 +849,7 @@ export function Dashboard() {
             )}
             {showQr && address && <AddressQrModal address={address} onClose={() => setShowQr(false)} />}
             <div className={styles.assetsComposition} data-testid="assets-composition">
-            <section className={styles.section}>
+            <section className={styles.section} data-testid="wallet-address-card">
               <h2 className={styles.sectionTitle}>Address</h2>
 
           {accountList.length > 1 && (
@@ -879,33 +879,33 @@ export function Dashboard() {
               {primaryName}.boing
             </p>
           )}
-          <div className={styles.addressRow}>
-            {explorerBase && (
-              <a
-                href={accountExplorerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.explorerLink}
-                aria-label="View address on explorer"
-              >
-                View on explorer
-              </a>
-            )}
-          </div>
-          <p className={styles.addressHint}>
-            Use this address to receive BOING, tokens and NFTs. On testnet, use the Faucet tab to request funds. Send from the Transfer tab.
-          </p>
+          {address && (
+            <div className={styles.addressRow} data-testid="wallet-address-value">
+              <code className={styles.addressMono} title={address}>
+                {addressHint || address}
+              </code>
+              <button type="button" className={styles.copyBtn} onClick={copyAddress} aria-label="Copy address">
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+              {explorerBase && (
+                <a
+                  href={accountExplorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.explorerLink}
+                  aria-label="View address on explorer"
+                >
+                  View on explorer
+                </a>
+              )}
+            </div>
+          )}
           {network.config.chainId && (
             <p className={styles.chainHeight} aria-label="Chain ID for dApps">
-              Chain ID {network.config.chainId}{' '}
-              <span className={styles.chainIdDecimal}>(decimal {chainIdHexToDecimal(network.config.chainId)})</span>
+              Chain {network.config.chainId}
+              <span className={styles.chainIdDecimal}> · {chainIdHexToDecimal(network.config.chainId)}</span>
             </p>
           )}
-          <p className={styles.chainIdNote}>
-            This is the ID Boing Express reports to sites like boing.finance. Block headers on Boing L1 do not carry
-            chain ID — private devnets often still use <code className={styles.inlineCode}>6913</code> for compatibility;
-            confirm with your operator if unsure.
-          </p>
         </section>
 
               {accountId && (
@@ -920,6 +920,8 @@ export function Dashboard() {
                   }}
                   accountId={accountId}
                   networkId={network.config.id}
+                  explorerBase={explorerBase || 'https://boing.observer'}
+                  networkIsTestnet={Boolean(network.config.isTestnet)}
                   holdings={tokens.holdings}
                   loading={tokens.loading}
                   error={tokens.error}
@@ -1233,7 +1235,7 @@ export function Dashboard() {
               )}
               {showStakeTab && (
           <section className={styles.section} data-testid="stake-secondary">
-            <h2 className={styles.sectionTitle}>Bond stake (optional)</h2>
+            <h2 className={styles.sectionTitle}>Bond stake</h2>
             {displayStake != null && (
               <p className={styles.balance}>
                 {displayStake} <span className={styles.symbol}>BOING</span> <span className={styles.stakeLabel}>staked</span>
@@ -1254,11 +1256,14 @@ export function Dashboard() {
                 </span>
               </p>
             )}
-            <p className={styles.faucetHint} data-testid="stake-min-hint">
-              Not needed to validate today: registering a validator above locks its own 100 BOING bond. Bonding is
-              separate stake (any amount). A future stake-based validator mode would require at least 10,000 BOING
-              bonded; it is not active on this network.
-            </p>
+            <details className={styles.subDetails}>
+              <summary className={styles.addressHint}>About bonding</summary>
+              <p className={styles.addressHint} data-testid="stake-min-hint">
+                Not needed to validate today: registering a validator above locks its own 100 BOING bond. Bonding is
+                separate stake (any amount). A future stake-based validator mode would require at least 10,000 BOING
+                bonded; it is not active on this network.
+              </p>
+            </details>
             {network.buildBond && (
               <form onSubmit={handleBond} className={`${styles.form} ${styles.stakeForm}`}>
                 <input
@@ -1317,13 +1322,6 @@ export function Dashboard() {
             )}
             {network.buildClaimUnbond && hasPendingUnbond && !showValidatorTab && (
               <form onSubmit={handleClaimUnbond} className={styles.form}>
-                <p className={styles.faucetHint}>
-                  Claim matured pending unbond into your spendable balance
-                  {unbondUnlockHeight != null && unbondUnlockHeight > 0 && !claimReady
-                    ? ` after block ${unbondUnlockHeight}`
-                    : ''}
-                  .
-                </p>
                 {claimError && <p className={styles.error}>{claimError}</p>}
                 {claimSuccess && (
                   <p className={styles.success} role="status">
@@ -1335,9 +1333,6 @@ export function Dashboard() {
                 </button>
               </form>
             )}
-            <p className={styles.stakingHint}>
-              Unbond queues stake for ~100 blocks; claim it from the validator section above once it unlocks.
-            </p>
           </section>
               )}
             </div>
@@ -1436,13 +1431,10 @@ export function Dashboard() {
             {activeTab === 'settings' && <ConnectedSitesPanel />}
             {activeTab === 'settings' && <RevealPrivateKeyPanel />}
             <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Deploy contract (QA Pillar)</h2>
-              <p className={styles.faucetHint}>
-                Validate contract bytecode before deployment. REJECT → blocked. ALLOW → deploy. UNSURE → community QA pool.
-              </p>
+              <h2 className={styles.sectionTitle}>Deploy check</h2>
               <form onSubmit={handleQaValidate} className={styles.form}>
                 <textarea
-                  placeholder="Contract bytecode (hex, e.g. 0x6080604052...)"
+                  placeholder="Contract bytecode (hex)"
                   value={qaBytecode}
                   onChange={(e) => {
                     setQaBytecode(e.target.value);
@@ -1453,41 +1445,44 @@ export function Dashboard() {
                   spellCheck={false}
                   aria-label="Contract bytecode"
                 />
-                <div className={styles.qaPurposeRow}>
-                  <label htmlFor="qa-purpose" className={styles.qaLabel}>Purpose (optional, for boing_qaCheck)</label>
-                  <select
-                    id="qa-purpose"
-                    value={qaPurpose}
-                    onChange={(e) => setQaPurpose(e.target.value)}
-                    className={styles.qaPurposeSelect}
-                    aria-label="Purpose category"
-                  >
-                    <option value="">— None —</option>
-                    {VALID_PURPOSE_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.qaPurposeRow}>
-                  <label htmlFor="qa-description-hash" className={styles.qaLabel}>Description hash (optional)</label>
-                  <input
-                    id="qa-description-hash"
-                    type="text"
-                    placeholder="0x..."
-                    value={qaDescriptionHash}
-                    onChange={(e) => setQaDescriptionHash(e.target.value)}
-                    className={styles.input}
-                    aria-label="Description hash"
-                  />
-                </div>
-                <label className={styles.qaCheckbox}>
-                  <input
-                    type="checkbox"
-                    checked={qaUseRpc}
-                    onChange={(e) => setQaUseRpc(e.target.checked)}
-                  />
-                  Also call boing_qaCheck (when available)
-                </label>
+                <details className={styles.subDetails}>
+                  <summary className={styles.addressHint}>Optional fields</summary>
+                  <div className={styles.qaPurposeRow}>
+                    <label htmlFor="qa-purpose" className={styles.qaLabel}>Purpose</label>
+                    <select
+                      id="qa-purpose"
+                      value={qaPurpose}
+                      onChange={(e) => setQaPurpose(e.target.value)}
+                      className={styles.qaPurposeSelect}
+                      aria-label="Purpose category"
+                    >
+                      <option value="">— None —</option>
+                      {VALID_PURPOSE_CATEGORIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={styles.qaPurposeRow}>
+                    <label htmlFor="qa-description-hash" className={styles.qaLabel}>Description hash</label>
+                    <input
+                      id="qa-description-hash"
+                      type="text"
+                      placeholder="0x..."
+                      value={qaDescriptionHash}
+                      onChange={(e) => setQaDescriptionHash(e.target.value)}
+                      className={styles.input}
+                      aria-label="Description hash"
+                    />
+                  </div>
+                  <label className={styles.qaCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={qaUseRpc}
+                      onChange={(e) => setQaUseRpc(e.target.checked)}
+                    />
+                    Also call boing_qaCheck
+                  </label>
+                </details>
                 <div className={styles.qaButtonRow}>
                   <button type="submit" className={styles.primary} disabled={qaValidating}>
                     {qaValidating ? 'Validating…' : 'Validate'}
@@ -1530,11 +1525,8 @@ export function Dashboard() {
               </button>
               {showRpcOverride && (
                 <div className={styles.rpcOverrideForm}>
-                  <p className={styles.faucetHint}>
-                    Override RPC URL for the current network (e.g. http://localhost:8545 for local node). Leave empty to use default.
-                    Chain ID above does not change — it stays the testnet/mainnet value Boing Express uses for{' '}
-                    <code className={styles.inlineCode}>boing_chainId</code>. Custom RPC must still match that network (same
-                    genesis / operator expectations).
+                  <p className={styles.addressHint}>
+                    Leave empty for the default RPC. Chain ID stays the network value Express reports to dApps.
                   </p>
                   <div className={styles.rpcOverrideRow}>
                     <label htmlFor="rpc-override" className={styles.qaLabel}>

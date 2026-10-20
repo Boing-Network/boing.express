@@ -135,7 +135,7 @@
               </ul>
               <p id="balance-error" class="error hidden"></p>
               <ul id="token-list" class="connected-sites-list token-list" aria-label="Fungible tokens"></ul>
-              <p id="token-empty" class="hint">No contract tokens found. Add a token contract to watch it.</p>
+              <p id="token-empty" class="hint">No tokens yet</p>
               <p id="token-error" class="error hidden"></p>
               <details class="assets-subform">
                 <summary class="hint">Add token</summary>
@@ -248,8 +248,11 @@
         <section id="panel-validate" class="tab-panel" role="tabpanel" aria-labelledby="tab-validate" hidden>
           <div class="card" id="validator-card"><div id="validator-root"></div></div>
           <div id="staking-section" class="staking-panel" data-testid="stake-secondary">
-            <h2 class="label">Bond stake (optional)</h2>
-            <p class="hint" data-testid="stake-min-hint">Not needed to validate today: registering a validator above locks its own 100 BOING bond. Bonding is separate stake (any amount). A future stake-based validator mode would require at least 10,000 BOING bonded; it is not active on this network.</p>
+            <h2 class="label">Bond stake</h2>
+            <details>
+              <summary class="hint">About bonding</summary>
+              <p class="hint" data-testid="stake-min-hint">Not needed to validate today: registering a validator above locks its own 100 BOING bond. Bonding is separate stake (any amount). A future stake-based validator mode would require at least 10,000 BOING bonded; it is not active on this network.</p>
+            </details>
             <div class="card balance-card">
               <p class="balance-label">Staked</p>
               <p class="balance"><span id="stake">…</span> <span id="stake-symbol" class="balance-symbol">BOING</span></p>

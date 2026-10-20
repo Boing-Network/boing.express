@@ -20,11 +20,7 @@ import {
   probeNftWatchlist,
   type NftHoldingStatus,
 } from '../boing/nftHoldings';
-import {
-  discoverAndPersistOwnedNfts,
-  NFT_DISCOVERY_SCAN_WINDOW,
-  type NftDiscoveryResult,
-} from '../boing/nftDiscovery';
+import { discoverAndPersistOwnedNfts } from '../boing/nftDiscovery';
 import {
   hydrateNftDisplayMetaList,
   type NftDisplayMeta,
@@ -35,7 +31,7 @@ import { encodeReferenceTransferNftCalldata } from '../boing/referenceNft';
 import { SendConfirm } from './SendConfirm';
 import { resolveRecipient } from '../boing/names';
 import { ScanQrButton } from './ScanQrButton';
-import { fetchOwnerIndexHoldings, formatOwnerIndexNote, type OwnerIndexResult } from '../boing/nftOwnerIndex';
+import { fetchOwnerIndexHoldings, type OwnerIndexResult } from '../boing/nftOwnerIndex';
 import {
   findFreshmintCollectionLink,
   freshmintCollectionsIndexUrl,
@@ -80,52 +76,6 @@ function holdingKey(item: { collectionHex: string; tokenIdHex: string }): string
   return `${item.collectionHex}:${item.tokenIdHex}`;
 }
 
-function formatDiscoveryNote(discovery: NftDiscoveryResult): string {
-  if (discovery.error && discovery.blocksScanned === 0 && discovery.discovered.length === 0) {
-    return `Scan issue: ${discovery.error}`;
-  }
-  const range =
-    discovery.toHeight >= discovery.fromHeight
-      ? `blocks ${discovery.fromHeight}–${discovery.toHeight}`
-      : 'no new blocks';
-  const expected = Math.max(0, discovery.toHeight - discovery.fromHeight + 1);
-  const parts = [
-    `Scanned ${discovery.blocksScanned}/${expected} (${range}; window ≤${NFT_DISCOVERY_SCAN_WINDOW})`,
-  ];
-  if (discovery.blocksFailed > 0) {
-    const sample = discovery.failedHeights.slice(0, 3).join(', ');
-    parts.push(
-      `${discovery.blocksFailed} unavailable after retry${sample ? ` (e.g. ${sample})` : ''} — tracked as a gap, not dropped`
-    );
-  }
-  if (discovery.gapRetriesAttempted > 0) {
-    parts.push(
-      `retried ${discovery.gapRetriesAttempted} previously-missing block(s)` +
-        (discovery.recoveredGapCount > 0 ? `, recovered ${discovery.recoveredGapCount}` : '')
-    );
-  }
-  if (discovery.openGapCount > 0) {
-    const sample = discovery.openGapHeights.slice(0, 3).join(', ');
-    parts.push(
-      `${discovery.openGapCount} block(s) still missing${sample ? ` (e.g. ${sample})` : ''} — retried each refresh`
-    );
-  }
-  if (discovery.lastSuccessfulHeight != null) {
-    parts.push(`confirmed clean through height ${discovery.lastSuccessfulHeight}`);
-  }
-  if (discovery.skippedOlderRange) {
-    parts.push(
-      `catch-up capped: skipped below ${discovery.fromHeight} (cursor was ${discovery.previousCursor ?? '—'})`
-    );
-  }
-  if (discovery.persistedCount > 0) {
-    parts.push(`found ${discovery.persistedCount} new item(s)`);
-  }
-  if (discovery.truncated) parts.push('hit scan cap');
-  if (discovery.error) parts.push(`partial error: ${discovery.error}`);
-  return parts.join(' · ');
-}
-
 export function NftHoldingsPanel({
   accountId,
   network,
@@ -142,8 +92,6 @@ export function NftHoldingsPanel({
   const [metaByKey, setMetaByKey] = useState<Map<string, NftDisplayMeta>>(new Map());
   const [loading, setLoading] = useState(false);
   const [discovering, setDiscovering] = useState(false);
-  const [discoveryNote, setDiscoveryNote] = useState<string | null>(null);
-  const [ownerIndexNote, setOwnerIndexNote] = useState<string | null>(null);
   const [freshmintLinkByCollection, setFreshmintLinkByCollection] = useState<
     Map<string, FreshmintCollectionLink>
   >(new Map());
@@ -174,12 +122,8 @@ export function NftHoldingsPanel({
     setLoading(true);
     setDiscovering(true);
     setError(null);
-    setDiscoveryNote(null);
-    setOwnerIndexNote(null);
     try {
-      // Durable NFT-by-owner index first (observer proxy to the owner-indexer Worker) —
-      // covers holdings older than the bounded scan window below. Graceful no-op when
-      // the indexer is unconfigured, unreachable, or still empty for this account.
+      // Durable NFT-by-owner index first, then bounded recent-block scan (quiet UI — no status prose).
       let ownerIndex: OwnerIndexResult | null = null;
       try {
         ownerIndex = await fetchOwnerIndexHoldings(explorerBase, ownerHex, isTestnet);
@@ -200,14 +144,8 @@ export function NftHoldingsPanel({
           ownerIndex.items.map((it) => ({ collectionHex: it.collectionHex, tokenIdHex: it.tokenIdHex }))
         );
       }
-      setOwnerIndexNote(formatOwnerIndexNote(ownerIndex));
 
-      const discovery = await discoverAndPersistOwnedNfts(
-        rpcUrl,
-        ownerHex,
-        network.config.id
-      );
-      setDiscoveryNote(formatDiscoveryNote(discovery));
+      await discoverAndPersistOwnedNfts(rpcUrl, ownerHex, network.config.id);
 
       // Linked NFT↔token peers (read-only; omit UI chrome when none / on failure).
       try {
@@ -314,8 +252,6 @@ export function NftHoldingsPanel({
 
   const owned = filterOwnedHoldings(statuses);
   const groups = groupHoldingsByCollection(transferMode ? owned : statuses);
-  const watchedNotOwned = statuses.filter((s) => s.exists && !s.owned && !s.error);
-  const missing = statuses.filter((s) => !s.exists && !s.error);
   const selectedCount = selectedKeys.size;
 
   function selectAllOwned() {
@@ -427,7 +363,7 @@ export function NftHoldingsPanel({
     <>
       <section className={styles.section}>
         <div className={styles.balanceHeader}>
-          <h2 className={styles.sectionTitle}>{transferMode ? 'Owned NFTs' : 'Collectibles'}</h2>
+          <h2 className={styles.sectionTitle}>{transferMode ? 'Owned NFTs' : 'NFTs'}</h2>
           <button
             type="button"
             className={styles.refreshBtn}
@@ -438,23 +374,10 @@ export function NftHoldingsPanel({
             {loading || discovering ? '…' : '↻'}
           </button>
         </div>
-        <p className={styles.faucetHint}>
-          Checks the durable NFT-by-owner index (when the operator has one deployed) for holdings
-          beyond the recent-block window, then scans recent blocks for{' '}
-          <code className={styles.inlineCode}>mint_batch</code> /{' '}
-          <code className={styles.inlineCode}>transfer_nft</code> to this account (window ≤
-          {NFT_DISCOVERY_SCAN_WINDOW} blocks). Blocks that fail to fetch (pruned RPC) are retried
-          every refresh and tracked as an open gap instead of being silently skipped. Grouped by
-          collection; media from on-chain metadata (explorer profiles for full detail). When a
-          collection has a related coin, it appears under that collection.
-        </p>
-        {ownerIndexNote && <p className={styles.addressHint}>{ownerIndexNote}</p>}
-        {discoveryNote && <p className={styles.addressHint}>{discoveryNote}</p>}
         {error && <p className={styles.error}>{error}</p>}
         {statuses.length === 0 && !loading && (
-          <p className={styles.addressHint}>
-            No NFTs found in the recent scan window. Add a collection and token id below for older
-            holdings.
+          <p className={styles.addressHint} data-testid="nft-empty-owned">
+            No NFTs yet
           </p>
         )}
         {transferMode && owned.length > 0 && (
@@ -471,20 +394,19 @@ export function NftHoldingsPanel({
         )}
         {groups.map(({ collectionHex, items }) => {
           const companions = companionsByColl.get(collectionHex) ?? [];
+          const collectionUrl = observerNftCollectionUrl(explorerBase, collectionHex, isTestnet);
           return (
           <div key={collectionHex} className={styles.nftCollectionBlock}>
             <div className={styles.nftCollectionHeader}>
-              <span className={styles.nftCollectionLabel}>Collection</span>
-              <code className={styles.nftMono}>{shortHexLabel(collectionHex, 8, 6)}</code>
-              <span className={styles.nftCollectionCount}>{items.length}</span>
               <a
-                href={observerNftCollectionUrl(explorerBase, collectionHex, isTestnet)}
+                href={collectionUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={styles.explorerLink}
+                className={styles.nftTitleLink}
               >
-                Open collection
+                Collection
               </a>
+              <span className={styles.nftCollectionCount}>{items.length}</span>
               {freshmintBaseUrl && (
                 <a
                   href={
@@ -497,7 +419,7 @@ export function NftHoldingsPanel({
                   title={
                     freshmintLinkByCollection.get(collectionHex)?.matched
                       ? 'Open this collection on FreshMint'
-                      : 'Browse FreshMint collections (no confirmed match yet)'
+                      : 'Browse FreshMint collections'
                   }
                 >
                   FreshMint ↗
@@ -513,17 +435,13 @@ export function NftHoldingsPanel({
                 <ul className={styles.nftCompanionsList}>
                   {companions.map((tokenHex) => (
                     <li key={tokenHex} className={styles.nftCompanionItem}>
-                      <span className={styles.nftCompanionsLabel}>Linked coin</span>
-                      <code className={styles.nftMono} title={tokenHex}>
-                        {shortHexLabel(tokenHex, 8, 6)}
-                      </code>
                       <a
                         href={observerCompanionAccountUrl(explorerBase, tokenHex, isTestnet)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={styles.explorerLink}
+                        className={styles.nftTitleLink}
                       >
-                        View in explorer
+                        Linked coin
                       </a>
                     </li>
                   ))}
@@ -550,90 +468,104 @@ export function NftHoldingsPanel({
                 const title =
                   meta?.name?.trim() ||
                   item.label ||
-                  shortHexLabel(item.tokenIdHex, 10, 8);
+                  'NFT';
+                const thumb = (
+                  <>
+                    {meta?.imageUrl ? (
+                      <img
+                        src={meta.imageUrl}
+                        alt=""
+                        className={styles.nftThumb}
+                        loading="lazy"
+                        onError={(ev) => {
+                          (ev.currentTarget as HTMLImageElement).style.display = 'none';
+                          const ph = ev.currentTarget.nextElementSibling;
+                          if (ph instanceof HTMLElement) ph.hidden = false;
+                        }}
+                      />
+                    ) : null}
+                    <span
+                      className={styles.nftThumbPlaceholder}
+                      hidden={Boolean(meta?.imageUrl)}
+                      aria-hidden
+                    >
+                      NFT
+                    </span>
+                  </>
+                );
+                const main = (
+                  <div className={styles.nftItemMain}>
+                    {transferMode && (
+                      <span
+                        className={
+                          item.owned
+                            ? styles.nftBadgeOwned
+                            : item.exists
+                              ? styles.nftBadgeOther
+                              : styles.nftBadgeMissing
+                        }
+                      >
+                        {statusLabel}
+                      </span>
+                    )}
+                    <span className={styles.nftTitleLink}>{title}</span>
+                    {meta?.description ? (
+                      <p className={styles.nftDescription}>{meta.description}</p>
+                    ) : null}
+                  </div>
+                );
                 return (
                   <li key={key} className={styles.nftItem}>
                     <div className={styles.nftGalleryRow}>
-                      {!transferMode ? null : item.owned ? (
-                        <label className={styles.nftCheck}>
-                          <input
-                            type="checkbox"
-                            checked={selectedKeys.has(key)}
-                            onChange={() => toggleSelected(item)}
-                            aria-label={`Select ${title}`}
-                            data-testid="nft-select"
-                          />
-                        </label>
+                      {transferMode ? (
+                        item.owned ? (
+                          <label className={styles.nftCheck}>
+                            <input
+                              type="checkbox"
+                              checked={selectedKeys.has(key)}
+                              onChange={() => toggleSelected(item)}
+                              aria-label={`Select ${title}`}
+                              data-testid="nft-select"
+                            />
+                          </label>
+                        ) : (
+                          <span className={styles.nftCheckSpacer} aria-hidden />
+                        )
+                      ) : null}
+                      {transferMode ? (
+                        <>
+                          <a
+                            href={itemUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.nftThumbLink}
+                            title="Open on explorer"
+                          >
+                            {thumb}
+                          </a>
+                          <a
+                            href={itemUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.nftRowLink}
+                          >
+                            {main}
+                          </a>
+                        </>
                       ) : (
-                        <span className={styles.nftCheckSpacer} aria-hidden />
-                      )}
-                      <a
-                        href={itemUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.nftThumbLink}
-                        title="Open on observer"
-                      >
-                        {meta?.imageUrl ? (
-                          <img
-                            src={meta.imageUrl}
-                            alt=""
-                            className={styles.nftThumb}
-                            loading="lazy"
-                            onError={(ev) => {
-                              (ev.currentTarget as HTMLImageElement).style.display = 'none';
-                              const ph = ev.currentTarget.nextElementSibling;
-                              if (ph instanceof HTMLElement) ph.hidden = false;
-                            }}
-                          />
-                        ) : null}
-                        <span
-                          className={styles.nftThumbPlaceholder}
-                          hidden={Boolean(meta?.imageUrl)}
-                          aria-hidden
-                        >
-                          NFT
-                        </span>
-                      </a>
-                      <div className={styles.nftItemMain}>
-                        <span
-                          className={
-                            item.owned
-                              ? styles.nftBadgeOwned
-                              : item.exists
-                                ? styles.nftBadgeOther
-                                : styles.nftBadgeMissing
-                          }
-                        >
-                          {statusLabel}
-                        </span>
                         <a
                           href={itemUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={styles.nftTitleLink}
+                          className={styles.nftRowLink}
+                          title="Open on explorer"
                         >
-                          {title}
+                          <span className={styles.nftThumbLink}>{thumb}</span>
+                          {main}
                         </a>
-                        {meta?.description ? (
-                          <p className={styles.nftDescription}>{meta.description}</p>
-                        ) : meta?.unresolved && !meta?.imageUrl ? (
-                          <p className={styles.nftDescriptionMuted}>No metadata URI</p>
-                        ) : null}
-                        <code className={styles.nftMono} title={item.tokenIdHex}>
-                          {shortHexLabel(item.tokenIdHex, 10, 8)}
-                        </code>
-                      </div>
+                      )}
                     </div>
                     <div className={styles.nftItemActions}>
-                      <a
-                        href={itemUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.explorerLink}
-                      >
-                        Item profile
-                      </a>
                       {item.owned && (
                         <button
                           type="button"
@@ -671,25 +603,15 @@ export function NftHoldingsPanel({
           </div>
           );
         })}
-        {statuses.length > 0 && (
-          <p className={styles.addressHint}>
-            {owned.length} owned · {watchedNotOwned.length} watched (other owner) · {missing.length}{' '}
-            not on-chain
-          </p>
-        )}
       </section>
 
       {!transferMode && (
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Add NFT</h2>
-        <p className={styles.faucetHint}>
-          Paste the collection AccountId and token id word from the mint receipt or observer item URL
-          (<code className={styles.inlineCode}>/asset/…/item/…</code>).
-        </p>
         <form onSubmit={(ev) => void handleAdd(ev)} className={styles.form}>
           <input
             type="text"
-            placeholder="Collection (64 hex or 0x…)"
+            placeholder="Collection (64 hex)"
             value={addCollection}
             onChange={(e) => setAddCollection(e.target.value)}
             className={styles.input}
@@ -698,7 +620,7 @@ export function NftHoldingsPanel({
           />
           <input
             type="text"
-            placeholder="Token id (64 hex word or sequential 1, 2, …)"
+            placeholder="Token id"
             value={addTokenId}
             onChange={(e) => setAddTokenId(e.target.value)}
             className={styles.input}
@@ -708,7 +630,7 @@ export function NftHoldingsPanel({
           {addError && <p className={styles.error}>{addError}</p>}
           {addSuccess && <p className={styles.success}>{addSuccess}</p>}
           <button type="submit" className={styles.primary}>
-            Add to watchlist
+            Add
           </button>
         </form>
       </section>
