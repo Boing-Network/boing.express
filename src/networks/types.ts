@@ -51,7 +51,9 @@ export interface NetworkAdapter {
     to: AccountId,
     amount: bigint,
     nonce: bigint,
-    privateKey: Uint8Array
+    privateKey: Uint8Array,
+    /** Optional priority tip (ledger base units). Default 0 = normal inclusion. */
+    priorityTip?: bigint
   ): Promise<string>;
 
   /** Submit signed transaction. */

@@ -1,5 +1,11 @@
 import type { NetworkAdapter } from '../networks/types';
 import { feeFromGasForDecimals, formatNative, knownLedgerDecimals } from './nativeUnit';
+import {
+  estimateMicroTransferFee,
+  formatTipLadderForUi,
+  suggestPriorityTipLadder,
+  type PriorityTipTier,
+} from 'boing-sdk';
 
 /** `fee` is in ledger units with `decimals` (18 = base units, 0 = whole BOING). */
 export type FeeEstimate =
@@ -16,6 +22,23 @@ export function defaultTxFee(decimals: number): bigint {
 
 /** @deprecated whole-BOING era constant (1 BOING); use {@link defaultTxFee}. */
 export const DEFAULT_TX_FEE = 1n;
+
+export type { PriorityTipTier };
+
+/** Suggested priority-tip ladder (SDK). Tips are optional; micro base fee is the spam deterrent. */
+export function priorityTipLadder(): PriorityTipTier[] {
+  return suggestPriorityTipLadder();
+}
+
+/** Wallet-ready tip rows with BOING display strings. */
+export function priorityTipLadderForUi() {
+  return formatTipLadderForUi();
+}
+
+/** Micro-fee base for a plain transfer (~0.00021 BOING). */
+export function microTransferBaseFee(): bigint {
+  return estimateMicroTransferFee();
+}
 
 /**
  * Simulate the exact signed tx(s) the user is about to send (`boing_simulateTransaction`) and turn it into a

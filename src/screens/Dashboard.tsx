@@ -337,7 +337,7 @@ export function Dashboard() {
     setSendReview({ toHex: toHex.toLowerCase(), toName: resolved.name, amount, amountText: `${sendAmount.trim()} ${balance?.symbol ?? 'BOING'}` });
   }
 
-  async function doSend(toHex: string, amount: bigint, toName?: string) {
+  async function doSend(toHex: string, amount: bigint, toName?: string, priorityTip: bigint = 0n) {
     setSendError('');
     const privateKey = getPrivateKey();
     if (!accountId || !privateKey) {
@@ -361,7 +361,8 @@ export function Dashboard() {
         toId,
         amount,
         nonce,
-        privateKey
+        privateKey,
+        priorityTip
       );
       const result = await network.submitTransaction(signedHex);
       if (result.success) {
@@ -1088,10 +1089,17 @@ export function Dashboard() {
                     toName={sendReview.toName}
                     amount={sendReview.amountText}
                     network={network}
-                    buildSigned={async () => {
+                    buildSigned={async (priorityTip) => {
                       const pk = getPrivateKey();
                       if (!pk) throw new Error('Wallet locked');
-                      return network.buildTransfer(accountId, accountIdFromHex(sendReview.toHex), sendReview.amount, await network.getNonce(accountId), pk);
+                      return network.buildTransfer(
+                        accountId,
+                        accountIdFromHex(sendReview.toHex),
+                        sendReview.amount,
+                        await network.getNonce(accountId),
+                        pk,
+                        priorityTip
+                      );
                     }}
                     busy={sending}
                     error={sendError}
@@ -1099,7 +1107,9 @@ export function Dashboard() {
                       setSendReview(null);
                       setSendError('');
                     }}
-                    onConfirm={() => void doSend(sendReview.toHex, sendReview.amount, sendReview.toName)}
+                    onConfirm={(priorityTip) =>
+                      void doSend(sendReview.toHex, sendReview.amount, sendReview.toName, priorityTip)
+                    }
                   />
                 ) : (
                 <>

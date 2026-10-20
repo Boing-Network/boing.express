@@ -1,6 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { NetworkAdapter } from '../networks/types';
-import { estimateSendFee, feeLabel, type FeeEstimate } from '../boing/feeEstimate';
+import {
+  estimateSendFee,
+  feeLabel,
+  priorityTipLadderForUi,
+  type FeeEstimate,
+} from '../boing/feeEstimate';
+import { formatNative } from '../boing/nativeUnit';
 import { shortAddress } from '../boing/qr';
 import styles from './SendConfirm.module.css';
 
@@ -14,33 +20,52 @@ export type SendConfirmProps = {
   /** Human amount line, e.g. "40 BOING" or "2 NFTs (#7, #8)". */
   amount: string;
   network: NetworkAdapter;
-  /** Signs (does not submit) the tx to simulate it for the fee. */
-  buildSigned: () => Promise<string>;
+  /** Signs (does not submit) the tx to simulate it for the fee. Receives the selected tip. */
+  buildSigned: (priorityTip: bigint) => Promise<string>;
   /** Number of txs this confirm covers (fee multiplier). */
   txCount?: number;
   busy?: boolean;
   error?: string;
   mascotSrc?: string;
-  onConfirm: () => void;
+  /** Confirm send with the selected priority tip (ledger base units). */
+  onConfirm: (priorityTip: bigint) => void;
   onBack: () => void;
+  /** Show optional tip ladder (BOING sends). Default true. */
+  showPriorityTip?: boolean;
+};
+
+const TIP_LABELS: Record<string, string> = {
+  normal: 'Normal',
+  faster: 'Faster',
+  priority: 'Priority',
+  urgent: 'Urgent',
 };
 
 /** Review step before any send (BOING, token, NFT): recipient, amount, simulated fee, one big confirm. */
 export function SendConfirm(p: SendConfirmProps) {
+  const showTip = p.showPriorityTip !== false;
+  const ladder = useMemo(() => (showTip ? priorityTipLadderForUi() : []), [showTip]);
+  const [tipIndex, setTipIndex] = useState(0);
+  const priorityTip = ladder[tipIndex]?.tip ?? 0n;
   const [est, setEst] = useState<FeeEstimate | null>(null);
+
   useEffect(() => {
     let live = true;
     setEst(null);
-    void estimateSendFee(p.network, p.buildSigned, p.txCount ?? 1).then((e) => {
+    void estimateSendFee(p.network, () => p.buildSigned(priorityTip), p.txCount ?? 1).then((e) => {
       if (live) setEst(e);
     });
     return () => {
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.to, p.amount, p.txCount]);
+  }, [p.to, p.amount, p.txCount, priorityTip]);
+
   const to = p.to.startsWith('0x') ? p.to : `0x${p.to}`;
   const failed = est?.state === 'fail';
+  const tipRow = ladder[tipIndex];
+  const decimals = est?.state === 'ok' ? est.decimals : 18;
+
   return (
     <section className={styles.card} data-testid="send-confirm" aria-label={`${p.title}: review`}>
       <div className={styles.top}>
@@ -77,13 +102,38 @@ export function SendConfirm(p: SendConfirmProps) {
           <dd className={styles.amount} data-testid="send-confirm-amount">{p.amount}</dd>
         </div>
         <div className={styles.row}>
-          <dt>Estimated fee</dt>
+          <dt>Network fee</dt>
           <dd data-testid="send-confirm-fee" data-exact={est?.state === 'ok' && est.exact ? 'true' : 'false'}>
             {feeLabel(est)}
             {est?.state === 'ok' && (p.txCount ?? 1) > 1 ? ` (${p.txCount} txs)` : ''}
           </dd>
         </div>
+        {showTip && tipRow && tipRow.tip > 0n && (
+          <div className={styles.row}>
+            <dt>Priority tip</dt>
+            <dd data-testid="send-confirm-tip">{formatNative(tipRow.tip, decimals)} BOING</dd>
+          </div>
+        )}
       </dl>
+      {showTip && ladder.length > 0 && (
+        <div className={styles.tipGroup} role="group" aria-label="Priority tip" data-testid="send-confirm-tip-ladder">
+          <p className={styles.tipHint}>Optional tip for faster inclusion (base fee still applies).</p>
+          <div className={styles.tipOptions}>
+            {ladder.map((tier, i) => (
+              <button
+                key={tier.label}
+                type="button"
+                className={`${styles.tipBtn} ${i === tipIndex ? styles.tipBtnActive : ''}`}
+                onClick={() => setTipIndex(i)}
+                disabled={p.busy}
+                data-testid={`send-confirm-tip-${tier.label}`}
+              >
+                {TIP_LABELS[tier.label] ?? tier.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {failed && (
         <p className={styles.error} role="alert" data-testid="send-confirm-sim-error">
           This transaction would fail: {est.error}
@@ -94,7 +144,13 @@ export function SendConfirm(p: SendConfirmProps) {
           {p.error}
         </p>
       )}
-      <button type="button" className={styles.confirm} onClick={p.onConfirm} disabled={p.busy || failed} data-testid="send-confirm-submit">
+      <button
+        type="button"
+        className={styles.confirm}
+        onClick={() => p.onConfirm(priorityTip)}
+        disabled={p.busy || failed}
+        data-testid="send-confirm-submit"
+      >
         {p.busy ? 'Sending…' : 'Confirm send'}
       </button>
     </section>

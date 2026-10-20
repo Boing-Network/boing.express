@@ -14,7 +14,14 @@ import type { NetworkAdapter, BalanceResult, SubmitResult } from './types';
 import type { NetworkConfig } from './types';
 import type { Transaction, Payload } from '../boing/types';
 import type { BatchStep } from './types';
-import { buildBatchTransaction, nodeBatchMaxCalls, nodeSupportsNativeBatch, signTransactionInput } from 'boing-sdk';
+import {
+  buildBatchTransaction,
+  buildTransferTransaction,
+  nodeBatchMaxCalls,
+  nodeSupportsNativeBatch,
+  signTransactionInput,
+  withPriorityTip,
+} from 'boing-sdk';
 import { boingNumber, currentLedgerDecimals, fetchNativeCurrency, knownLedgerDecimals, rememberLedgerDecimals } from '../boing/nativeUnit';
 
 /**
@@ -81,9 +88,19 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       to: AccountId,
       amount: bigint,
       nonce: bigint,
-      privateKey: Uint8Array
+      privateKey: Uint8Array,
+      priorityTip: bigint = 0n
     ): Promise<string> {
-      return signedNativeTx(rpcUrl, sender, nonce, { kind: 'transfer', to, amount }, privateKey);
+      const senderHex = `0x${accountIdToHex(sender).replace(/^0x/i, '')}`;
+      const toHex = `0x${accountIdToHex(to).replace(/^0x/i, '')}`;
+      const al = suggestedAccessList(sender, { kind: 'transfer', to, amount });
+      const read = al.read.map((id) => accountIdToHex(id));
+      const write = al.write.map((id) => accountIdToHex(id));
+      const tx = withPriorityTip(
+        buildTransferTransaction({ nonce, senderHex, toHex, amount, accessList: { read, write } }),
+        priorityTip < 0n ? 0n : priorityTip
+      );
+      return signTransactionInput(tx, privateKey, { chainId: await signingChainIdForRpc(rpcUrl) });
     },
 
     async buildBond(
