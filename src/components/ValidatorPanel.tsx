@@ -215,25 +215,31 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
   return (
     <section className={styles.section} data-testid="validator-panel">
       <h2 className={styles.sectionTitle}>Become a validator</h2>
-      <ol className={styles.stepList} data-testid="validator-steps">
-        <li>Run a synced node with <code className={styles.inlineCode}>BOING_VALIDATOR=1</code> and its node key (<code className={styles.inlineCode}>BOING_VALIDATOR_KEY</code>).</li>
-        <li>Register it here: locks a {bondBoing(open?.bond_boing, open?.bond)} BOING bond; you join the set at the next epoch (every {open?.epoch_len ?? 100} blocks).</li>
-        <li>Stay online: keep uptime above {100 - thresholdPct}% or you are jailed at the next epoch (bond kept). Unjail after the cooldown.</li>
-        <li>To leave, deregister: the bond unbonds over ~100 blocks, then claim it back to your balance.</li>
-      </ol>
-      {loading && !report && !loadError && <p className={styles.faucetHint}>Loading validator set…</p>}
+      <details className={styles.subDetails}>
+        <summary className={styles.addressHint}>How it works</summary>
+        <ol className={styles.stepList} data-testid="validator-steps">
+          <li>
+            Run a synced node with <code className={styles.inlineCode}>BOING_VALIDATOR=1</code> and{' '}
+            <code className={styles.inlineCode}>BOING_VALIDATOR_KEY</code>.
+          </li>
+          <li>
+            Register here: locks a {bondBoing(open?.bond_boing, open?.bond)} BOING bond; join at the next epoch (every{' '}
+            {open?.epoch_len ?? 100} blocks).
+          </li>
+          <li>
+            Stay online: keep uptime above {100 - thresholdPct}% or you are jailed (bond kept). Unjail after the cooldown.
+          </li>
+          <li>Deregister to leave; bond unbonds ~100 blocks, then claim it back.</li>
+        </ol>
+      </details>
+      {loading && !report && !loadError && <p className={styles.addressHint}>Loading…</p>}
 
       {(avail.state === 'unsupported' || avail.state === 'not_open' || avail.state === 'scheduled') && !loading && (
         <div data-testid="validator-coming-soon">
-          <p className={styles.faucetHint}>
-            <strong>Open validator registration: coming soon.</strong>{' '}
+          <p className={styles.addressHint}>
             {avail.state === 'scheduled'
-              ? `Registration opens at block ${avail.activationHeight} (current block ${avail.height}).`
-              : 'This network does not accept permissionless validator registration yet. Watch the Boing announcements for the activation height.'}
-          </p>
-          <p className={styles.stakingHint}>
-            Once open: lock a 100 BOING bond, join at the next epoch (every 100 blocks), stay online to keep your uptime
-            above 90%. Jailed validators keep their bond and can unjail after a cooldown.
+              ? `Registration opens at block ${avail.activationHeight} (now ${avail.height}).`
+              : 'Open validator registration: coming soon.'}
           </p>
         </div>
       )}
@@ -284,10 +290,8 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
           )}
           {mine.length === 0 && (
             <form onSubmit={handleRegister} className={styles.form} data-testid="validator-register-form">
-              <p className={styles.calloutWarn} role="note" data-testid="validator-key-warning">
-                Your node key is the secret your validator node signs blocks with. It is used only in this browser tab to
-                sign a proof that the node belongs to this wallet; it is never stored or sent anywhere. Keep a copy in
-                your node config (BOING_VALIDATOR_KEY) and never share it.
+              <p className={styles.addressHint} role="note" data-testid="validator-key-warning">
+                Node key stays in this tab — never stored or sent anywhere. Save it to your node config before registering.
               </p>
               <label className={styles.fieldLabel} htmlFor="validator-node-key-input">
                 <span>Node key</span>
@@ -313,24 +317,17 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
               </button>
               </div>
               {generatedShown && (
-                <p className={styles.faucetHint} data-testid="validator-generated-hint">
-                  A new key was generated locally. Copy it from the field above (it is hidden; select and copy) into your
-                  node's config before registering; it cannot be recovered later.
+                <p className={styles.addressHint} data-testid="validator-generated-hint">
+                  Copy the key into your node config now — it cannot be recovered later.
                 </p>
               )}
               {nodeIdPreview && (
-                <p className={styles.faucetHint} data-testid="validator-node-id">
+                <p className={styles.addressHint} data-testid="validator-node-id">
                   Node id: <code className={styles.inlineCode}>{short(nodeIdPreview)}</code>
                 </p>
               )}
-              <p className={styles.stakingHint}>
-                Registering locks {bondBoing(open?.bond_boing, open?.bond)} BOING. You join at block {open?.next_epoch_height ?? '?'} (next
-                epoch). Missing more than {thresholdPct}% of your proposals over the last {open?.liveness_window ?? 1000}{' '}
-                produced blocks jails you at the following epoch (bond kept; unjail after {open?.jail_cooldown ?? 500}{' '}
-                blocks).
-              </p>
               <button type="submit" className={`${styles.primary} ${styles.fullWidth}`} disabled={busy || !nodeIdPreview} data-testid="validator-register">
-                {busy ? 'Submitting…' : `Register validator (${bondBoing(open?.bond_boing, open?.bond)} BOING bond)`}
+                {busy ? 'Submitting…' : `Register (${bondBoing(open?.bond_boing, open?.bond)} BOING)`}
               </button>
             </form>
           )}

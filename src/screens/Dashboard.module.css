@@ -292,6 +292,15 @@
   flex-wrap: wrap;
 }
 
+.addressMono {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  word-break: break-all;
+  color: var(--text);
+}
+
 .address {
   flex: 1;
   min-width: 0;
