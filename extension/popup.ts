@@ -1839,8 +1839,16 @@ async function refreshTokens(): Promise<void> {
   err?.classList.add('hidden');
   const ownerHex = accountIdToHex(accountId);
   try {
-    const watch = mergeWithDefaultTokens(await listTokenWatchlist(ownerHex, selectedNetworkId), getCurrentNetwork().config.chainId);
-    tokenHoldings = await loadTokenHoldings({ rpcUrl: getCurrentNetwork().config.rpcUrl, ownerHex, watchlist: watch });
+    const net = getCurrentNetwork();
+    const watch = mergeWithDefaultTokens(await listTokenWatchlist(ownerHex, selectedNetworkId), net.config.chainId);
+    const result = await loadTokenHoldings({
+      rpcUrl: net.config.rpcUrl,
+      ownerHex,
+      watchlist: watch,
+      networkId: net.config.id,
+      bypassCache: true,
+    });
+    tokenHoldings = result.holdings;
   } catch (e) {
     tokenHoldings = [];
     if (err) {
@@ -1850,6 +1858,10 @@ async function refreshTokens(): Promise<void> {
   }
   list.replaceChildren();
   empty.classList.toggle('hidden', tokenHoldings.length > 0);
+  if (empty && tokenHoldings.length === 0) {
+    empty.textContent =
+      'No tokens found in the directory yet — add a contract to your watchlist. Non-zero balances from the DEX directory, pools, and recent history show automatically.';
+  }
   for (const t of tokenHoldings) {
     const li = document.createElement('li');
     li.className = 'token-row';

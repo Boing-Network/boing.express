@@ -921,6 +921,7 @@ export function Dashboard() {
                   accountId={accountId}
                   networkId={network.config.id}
                   holdings={tokens.holdings}
+                  meta={tokens.meta}
                   loading={tokens.loading}
                   error={tokens.error}
                   onChanged={() => void tokens.refresh()}

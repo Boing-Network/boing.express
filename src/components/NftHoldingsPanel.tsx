@@ -427,7 +427,7 @@ export function NftHoldingsPanel({
     <>
       <section className={styles.section}>
         <div className={styles.balanceHeader}>
-          <h2 className={styles.sectionTitle}>{transferMode ? 'Owned NFTs' : 'Collectibles'}</h2>
+          <h2 className={styles.sectionTitle}>{transferMode ? 'Owned NFTs' : 'NFTs you hold'}</h2>
           <button
             type="button"
             className={styles.refreshBtn}
@@ -452,9 +452,10 @@ export function NftHoldingsPanel({
         {discoveryNote && <p className={styles.addressHint}>{discoveryNote}</p>}
         {error && <p className={styles.error}>{error}</p>}
         {statuses.length === 0 && !loading && (
-          <p className={styles.addressHint}>
-            No NFTs found in the recent scan window. Add a collection and token id below for older
-            holdings.
+          <p className={styles.addressHint} data-testid="nft-empty-owned">
+            No NFTs found yet — the durable owner index (when live) plus a recent-block scan cover most
+            holdings. Add a collection and token id below for items outside that window, or until the
+            indexer has backfilled this account.
           </p>
         )}
         {transferMode && owned.length > 0 && (

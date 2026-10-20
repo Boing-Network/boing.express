@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
 import { normalizeHex64, shortHexLabel } from '../boing/referenceNft';
-import type { TokenHolding } from '../boing/tokenHoldings';
+import type { TokenHolding, TokenHoldingsLoadMeta } from '../boing/tokenHoldings';
 import { addTokenWatchEntry, removeTokenWatchEntry } from '../storage/tokenWatchlist';
 import styles from '../screens/Dashboard.module.css';
 
@@ -21,16 +21,49 @@ export function TokenHoldingsPanel(props: {
   accountId: AccountId;
   networkId: string;
   holdings: TokenHolding[];
+  /** Optional discovery stats for honest empty / truncated hints. */
+  meta?: TokenHoldingsLoadMeta | null;
   loading: boolean;
   error: string;
   onChanged: () => void;
 }) {
   const { holdings } = props;
+  const held = holdings.filter((t) => t.balanceRaw != null && t.balanceRaw !== '0');
+  const watchedZero = holdings.filter((t) => t.watched && (t.balanceRaw === '0' || t.balanceRaw == null));
   const [contract, setContract] = useState('');
   const [symbol, setSymbol] = useState('');
   const [decimals, setDecimals] = useState('');
   const [addError, setAddError] = useState('');
   const owner = accountIdToHex(props.accountId);
+
+  function renderRow(t: TokenHolding) {
+    return (
+      <li key={t.tokenHex} className={styles.txHistoryItem} data-testid="token-row">
+        <span className={styles.tokenSymbol} title={t.name}>
+          {t.symbol}
+        </span>
+        <code className={styles.txHash} title={t.tokenHex}>
+          {shortHexLabel(t.tokenHex, 6, 4)}
+        </code>
+        <span className={styles.tokenBalance} title={t.error}>
+          {t.error ? 'unavailable' : t.balanceDisplay}
+        </span>
+        {t.watched && (
+          <button
+            type="button"
+            className={styles.copyBtn}
+            aria-label={`Stop watching ${t.symbol}`}
+            onClick={async () => {
+              await removeTokenWatchEntry(owner, props.networkId, t.tokenHex);
+              props.onChanged();
+            }}
+          >
+            ×
+          </button>
+        )}
+      </li>
+    );
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -62,6 +95,10 @@ export function TokenHoldingsPanel(props: {
           {props.loading ? '…' : '↻'}
         </button>
       </div>
+      <p className={styles.addressHint}>
+        Native BOING, then fungibles you hold from the DEX directory, pool legs, recent local history, and optional
+        deploy scan. Zero-balance directory noise is hidden; watchlist rows stay visible at zero.
+      </p>
       {props.native && (
         <ul className={styles.txHistoryList} aria-label="Native balance">
           <li className={styles.txHistoryItem} data-testid="token-row-native">
@@ -96,38 +133,40 @@ export function TokenHoldingsPanel(props: {
         </ul>
       )}
       {props.error && <p className={styles.error}>{props.error}</p>}
-      {holdings.length === 0 ? (
-        <p className={styles.addressHint}>No tokens found. Watch a token contract below; tokens listed in the DEX directory show up when you hold them.</p>
-      ) : (
-        <ul className={styles.txHistoryList} aria-label="Fungible tokens">
-          {holdings.map((t) => (
-            <li key={t.tokenHex} className={styles.txHistoryItem} data-testid="token-row">
-              <span className={styles.tokenSymbol} title={t.name}>{t.symbol}</span>
-              <code className={styles.txHash} title={t.tokenHex}>
-                {shortHexLabel(t.tokenHex, 6, 4)}
-              </code>
-              <span className={styles.tokenBalance} title={t.error}>
-                {t.error ? 'unavailable' : t.balanceDisplay}
-              </span>
-              {t.watched && (
-                <button
-                  type="button"
-                  className={styles.copyBtn}
-                  aria-label={`Stop watching ${t.symbol}`}
-                  onClick={async () => {
-                    await removeTokenWatchEntry(owner, props.networkId, t.tokenHex);
-                    props.onChanged();
-                  }}
-                >
-                  ×
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+      {held.length > 0 && (
+        <>
+          <h3 className={styles.addressHint} style={{ marginTop: '0.75rem', fontWeight: 600 }}>
+            Fungibles you hold
+          </h3>
+          <ul className={styles.txHistoryList} aria-label="Fungible tokens held">
+            {held.map(renderRow)}
+          </ul>
+        </>
+      )}
+      {held.length === 0 && !props.loading && (
+        <p className={styles.addressHint} data-testid="token-empty-held">
+          No tokens found in the directory yet — add a contract to your watchlist below. Tokens only appear here when
+          this wallet holds a non-zero balance (or they are watched).
+        </p>
+      )}
+      {watchedZero.length > 0 && (
+        <>
+          <h3 className={styles.addressHint} style={{ marginTop: '0.75rem', fontWeight: 600 }}>
+            Watchlist
+          </h3>
+          <ul className={styles.txHistoryList} aria-label="Watched tokens">
+            {watchedZero.map(renderRow)}
+          </ul>
+        </>
+      )}
+      {props.meta?.truncatedDirectory && (
+        <p className={styles.addressHint}>
+          DEX directory pagination hit this wallet’s page cap — some listed tokens may still need a watchlist add
+          until a full ownership index exists.
+        </p>
       )}
       <details className={styles.subDetails}>
-        <summary className={styles.addressHint}>Add token</summary>
+        <summary className={styles.addressHint}>Add token to watchlist</summary>
         <form onSubmit={(e) => void add(e)} className={styles.form}>
           <input className={styles.input} placeholder="Token contract (64 hex)" value={contract} onChange={(e) => setContract(e.target.value)} aria-label="Token contract" data-testid="token-add-contract" />
           <div className={styles.inlineRow}>
