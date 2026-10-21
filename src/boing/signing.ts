@@ -25,6 +25,7 @@ export function signableHash(tx: Transaction): Uint8Array {
 }
 
 const DOMAIN_V2 = new TextEncoder().encode('BOING_TX_V2');
+const DOMAIN_PRIORITY = new TextEncoder().encode('BOING_TX_PRIORITY');
 
 /**
  * v2 (chain-bound) signable hash, security fix #2 (cross-chain replay):
@@ -37,6 +38,24 @@ export function signableHashV2(tx: Transaction, chainId: bigint): Uint8Array {
   input.set(DOMAIN_V2, 0);
   new DataView(input.buffer).setBigUint64(DOMAIN_V2.length, chainId, true);
   input.set(legacyBody, DOMAIN_V2.length + 8);
+  return blake3(input);
+}
+
+/**
+ * Signable digest including an optional priority tip. Tip `0` == [`signableHashV2`].
+ * Non-zero: BLAKE3(`BOING_TX_PRIORITY` || chain_id || nonce || sender || payload || access_list || tip_le16).
+ */
+export function signableHashWithTip(tx: Transaction, chainId: bigint, priorityTip: bigint = tx.priorityTip ?? 0n): Uint8Array {
+  if (priorityTip === 0n) return signableHashV2(tx, chainId);
+  const legacyBody = legacyPreimage(tx);
+  const tipBuf = new Uint8Array(16);
+  new DataView(tipBuf.buffer).setBigUint64(0, priorityTip & ((1n << 64n) - 1n), true);
+  new DataView(tipBuf.buffer).setBigUint64(8, priorityTip >> 64n, true);
+  const input = new Uint8Array(DOMAIN_PRIORITY.length + 8 + legacyBody.length + 16);
+  input.set(DOMAIN_PRIORITY, 0);
+  new DataView(input.buffer).setBigUint64(DOMAIN_PRIORITY.length, chainId, true);
+  input.set(legacyBody, DOMAIN_PRIORITY.length + 8);
+  input.set(tipBuf, DOMAIN_PRIORITY.length + 8 + legacyBody.length);
   return blake3(input);
 }
 
@@ -59,7 +78,14 @@ export async function signTransaction(
   privateKey: Uint8Array,
   chainId?: bigint | null
 ): Promise<Uint8Array> {
-  const message = chainId == null ? signableHash(tx) : signableHashV2(tx, chainId);
+  const tip = tx.priorityTip ?? 0n;
+  let message: Uint8Array;
+  if (chainId == null) {
+    if (tip !== 0n) throw new Error('priorityTip requires chain-bound (v2) signing');
+    message = signableHash(tx);
+  } else {
+    message = tip === 0n ? signableHashV2(tx, chainId) : signableHashWithTip(tx, chainId, tip);
+  }
   const sig = await ed.signAsync(message, privateKey);
   return sig;
 }

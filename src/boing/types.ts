@@ -75,6 +75,11 @@ export interface Transaction {
   sender: AccountId;
   payload: Payload;
   access_list: AccessList;
+  /**
+   * Optional priority tip (ledger base units). Omitted / `0` keeps historical wire encoding and
+   * v2 signing. Non-zero uses `BOING_TX_PRIORITY` and appends tip to signed-tx bincode.
+   */
+  priorityTip?: bigint;
 }
 
 export interface SignedTransaction {

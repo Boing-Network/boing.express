@@ -294,9 +294,13 @@ export function encodeSignature(sig: Uint8Array): Uint8Array {
   return encodeVecU8(sig);
 }
 
-/** SignedTransaction: bincode(tx) || bincode(signature) */
+/** SignedTransaction: bincode(tx) || bincode(signature) [|| tip_u128 when tip > 0] */
 export function encodeSignedTransaction(st: SignedTransaction): Uint8Array {
-  return concatBytes([encodeTransaction(st.tx), encodeSignature(st.signature)]);
+  const tip = st.tx.priorityTip ?? 0n;
+  const base = concatBytes([encodeTransaction(st.tx), encodeSignature(st.signature)]);
+  // Match Rust `skip_serializing_if = is_zero_u128`: tip omitted when zero.
+  if (tip === 0n) return base;
+  return concatBytes([base, u128Bytes(tip, 'priorityTip')]);
 }
 
 function bytesToHex0x(bytes: Uint8Array): string {
@@ -314,10 +318,11 @@ export function transactionIdFromTransaction(tx: Transaction): string {
 }
 
 const SIGNED_TX_SIGNATURE_TRAIL_BYTES = 8 + 64;
+const SIGNED_TX_TIP_BYTES = 16;
 
 /**
  * Derive `tx_id` from `0x` + bincode(`SignedTransaction`) hex.
- * Trailing serde signature is `u64(64) || 64 bytes`.
+ * Trailing serde signature is `u64(64) || 64 bytes`, optionally followed by tip u128.
  */
 export function transactionIdFromSignedTransactionHex(signedTxHex: string): string {
   const h = signedTxHex.replace(/^0x/i, '');
@@ -329,11 +334,19 @@ export function transactionIdFromSignedTransactionHex(signedTxHex: string): stri
   if (bytes.length < SIGNED_TX_SIGNATURE_TRAIL_BYTES + 1) {
     throw new Error('Signed transaction bytes too short to derive tx_id');
   }
-  const sigLenOffset = bytes.length - SIGNED_TX_SIGNATURE_TRAIL_BYTES;
-  const dv = new DataView(bytes.buffer, bytes.byteOffset + sigLenOffset, 8);
-  const sigLen = dv.getBigUint64(0, true);
-  if (sigLen !== 64n) {
-    throw new Error(`Unexpected serde signature length field: ${sigLen} (expected 64)`);
-  }
-  return bytesToHex0x(blake3(bytes.subarray(0, sigLenOffset)));
+  const tryOffset = (sigLenOffset: number): string | null => {
+    if (sigLenOffset < 1) return null;
+    const dv = new DataView(bytes.buffer, bytes.byteOffset + sigLenOffset, 8);
+    const sigLen = dv.getBigUint64(0, true);
+    if (sigLen !== 64n) return null;
+    return bytesToHex0x(blake3(bytes.subarray(0, sigLenOffset)));
+  };
+  // Prefer tipped layout (sig then tip), then untipped.
+  return (
+    tryOffset(bytes.length - SIGNED_TX_SIGNATURE_TRAIL_BYTES - SIGNED_TX_TIP_BYTES) ??
+    tryOffset(bytes.length - SIGNED_TX_SIGNATURE_TRAIL_BYTES) ??
+    (() => {
+      throw new Error('Unexpected serde signature length field (expected 64)');
+    })()
+  );
 }
