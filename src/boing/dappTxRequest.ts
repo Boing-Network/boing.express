@@ -210,49 +210,68 @@ export function transactionSummary(tx: Transaction, ctx?: NativeAmountContext): 
   const d = ctxDecimals(ctx);
   const from = formatAddress(tx.sender, true);
   const n = tx.nonce.toString();
+  const tip =
+    tx.priorityTip != null && tx.priorityTip > 0n
+      ? ` | tip ${formatNativeBoing(tx.priorityTip, d)}`
+      : '';
   const p = tx.payload;
+  let body: string;
   switch (p.kind) {
     case 'transfer':
-      return `Boing tx | From ${from} | Nonce ${n} | Transfer ${formatNativeBoing(p.amount, d)} to ${formatAddress(p.to, true)}`;
+      body = `Boing tx | From ${from} | Nonce ${n} | Transfer ${formatNativeBoing(p.amount, d)} to ${formatAddress(p.to, true)}`;
+      break;
     case 'bond':
-      return `Boing tx | From ${from} | Nonce ${n} | Bond ${formatNativeBoing(p.amount, d)} stake`;
+      body = `Boing tx | From ${from} | Nonce ${n} | Bond ${formatNativeBoing(p.amount, d)} stake`;
+      break;
     case 'unbond':
-      return `Boing tx | From ${from} | Nonce ${n} | Unbond ${formatNativeBoing(p.amount, d)} stake`;
+      body = `Boing tx | From ${from} | Nonce ${n} | Unbond ${formatNativeBoing(p.amount, d)} stake`;
+      break;
     case 'claim_unbond':
-      return `Boing tx | From ${from} | Nonce ${n} | Claim unbonded stake`;
+      body = `Boing tx | From ${from} | Nonce ${n} | Claim unbonded stake`;
+      break;
     case 'qa_pool_vote':
-      return `Boing tx | From ${from} | Nonce ${n} | QA pool vote ${p.vote} on ${formatAddress(p.subject, true)}`;
+      body = `Boing tx | From ${from} | Nonce ${n} | QA pool vote ${p.vote} on ${formatAddress(p.subject, true)}`;
+      break;
     case 'contract_call': {
       const mint = describeReferenceMintBatchCalldata(p.calldata);
       const ar = tx.access_list.read.length;
       const aw = tx.access_list.write.length;
       const al = ar + aw > 0 ? ` | access_list read:${ar} write:${aw}` : '';
       if (mint) {
-        return `Boing tx | From ${from} | Nonce ${n} | Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)}${al}`;
+        body = `Boing tx | From ${from} | Nonce ${n} | Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)}${al}`;
+      } else {
+        const v = p.value != null && p.value > 0n ? ` | sending ${formatNativeBoing(p.value, d)}` : '';
+        body = `Boing tx | From ${from} | Nonce ${n} | Call contract ${formatAddress(p.contract, true)}${v} | calldata ${p.calldata.length} bytes${al}`;
       }
-      const v = p.value != null && p.value > 0n ? ` | sending ${formatNativeBoing(p.value, d)}` : '';
-      return `Boing tx | From ${from} | Nonce ${n} | Call contract ${formatAddress(p.contract, true)}${v} | calldata ${p.calldata.length} bytes${al}`;
+      break;
     }
     case 'contract_deploy':
-      return `Boing tx | From ${from} | Nonce ${n} | Deploy contract | bytecode ${p.bytecode.length} bytes`;
+      body = `Boing tx | From ${from} | Nonce ${n} | Deploy contract | bytecode ${p.bytecode.length} bytes`;
+      break;
     case 'contract_deploy_purpose':
-      return `Boing tx | From ${from} | Nonce ${n} | Deploy (purpose: ${p.purpose_category}) | bytecode ${p.bytecode.length} bytes${
+      body = `Boing tx | From ${from} | Nonce ${n} | Deploy (purpose: ${p.purpose_category}) | bytecode ${p.bytecode.length} bytes${
         p.create2_salt ? ' | CREATE2' : ''
       }`;
+      break;
     case 'contract_deploy_meta':
-      return `Boing tx | From ${from} | Nonce ${n} | Deploy + metadata (${p.purpose_category}) | bytecode ${p.bytecode.length} bytes${
+      body = `Boing tx | From ${from} | Nonce ${n} | Deploy + metadata (${p.purpose_category}) | bytecode ${p.bytecode.length} bytes${
         p.create2_salt ? ' | CREATE2' : ''
       }`;
+      break;
     case 'validator_register':
-      return `Boing tx | From ${from} | Nonce ${n} | Register validator node ${formatAddress(p.node_id, true)}`;
+      body = `Boing tx | From ${from} | Nonce ${n} | Register validator node ${formatAddress(p.node_id, true)}`;
+      break;
     case 'validator_deregister':
-      return `Boing tx | From ${from} | Nonce ${n} | Deregister validator node ${formatAddress(p.node_id, true)}`;
+      body = `Boing tx | From ${from} | Nonce ${n} | Deregister validator node ${formatAddress(p.node_id, true)}`;
+      break;
     case 'validator_unjail':
-      return `Boing tx | From ${from} | Nonce ${n} | Unjail validator node ${formatAddress(p.node_id, true)}`;
+      body = `Boing tx | From ${from} | Nonce ${n} | Unjail validator node ${formatAddress(p.node_id, true)}`;
+      break;
     case 'batch':
-      return `Boing tx | From ${from} | Nonce ${n} | Batch of ${p.calls.length} steps (one signature, atomic): ${p.calls
+      body = `Boing tx | From ${from} | Nonce ${n} | Batch of ${p.calls.length} steps (one signature, atomic): ${p.calls
         .map((c) => batchStepLine(c, d))
         .join('; ')}`;
+      break;
     case 'name_commit':
     case 'name_register':
     case 'name_renew':
@@ -260,14 +279,16 @@ export function transactionSummary(tx: Transaction, ctx?: NativeAmountContext): 
     case 'name_set_target':
     case 'name_set_primary':
     case 'name_release':
-      return `Boing tx | From ${from} | Nonce ${n} | ${namePayloadSummary(p)}${
+      body = `Boing tx | From ${from} | Nonce ${n} | ${namePayloadSummary(p)}${
         p.kind === 'name_register' || p.kind === 'name_renew' ? ` | rent ${rentFor(p.name, p.years).toString()} BOING (burned)` : ''
       }`;
+      break;
     default: {
       const _e: never = p;
       return _e;
     }
   }
+  return `${body}${tip}`;
 }
 
 /** Structured rows for the extension signature approval window (richer than plain `transactionSummary`). */
@@ -618,11 +639,19 @@ export function transactionFromDappJson(
       ? accessListFromDappJson(accessListRaw)
       : suggestedAccessList(sender, payload);
 
+  const tipRaw = o.priority_tip ?? o.priorityTip;
+  let priorityTip: bigint | undefined;
+  if (tipRaw !== undefined && tipRaw !== null && tipRaw !== '') {
+    const tip = parseU128String(tipRaw, 'priority_tip');
+    if (tip > 0n) priorityTip = tip;
+  }
+
   return {
     nonce: finalNonce,
     sender,
     payload,
     access_list,
+    ...(priorityTip != null ? { priorityTip } : {}),
   };
 }
 
