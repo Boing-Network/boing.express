@@ -109,7 +109,8 @@ export function TokenSendForm(props: {
           toName={review.toName}
           amount={`${formatBalance(review.amount.toString(), token.decimals, token.decimals)} ${token.symbol}`}
           network={props.network}
-          buildSigned={sign(review)}
+          buildSigned={async () => sign(review)()}
+          showPriorityTip={false}
           busy={busy}
           error={error}
           onBack={() => {

@@ -41,3 +41,34 @@
   font-size: 0.85em;
 }
 
+.tipGroup {
+  margin: 0 0 14px;
+  text-align: left;
+}
+.tipHint {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: rgba(230, 247, 255, 0.6);
+}
+.tipOptions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.tipBtn {
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  background: transparent;
+  color: rgba(230, 247, 255, 0.85);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tipBtn:disabled { opacity: 0.5; cursor: default; }
+.tipBtnActive {
+  border-color: rgba(0, 229, 255, 0.85);
+  background: rgba(0, 229, 255, 0.12);
+  color: #7df3ff;
+}
+

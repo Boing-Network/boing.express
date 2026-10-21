@@ -672,6 +672,7 @@ export function NftHoldingsPanel({
                 const calldata = encodeReferenceTransferNftCalldata(accountIdFromHex(toHex), normalizeHex64(first.tokenIdHex));
                 return network.buildContractCall(accountId, accountIdFromHex(normalizeHex64(first.collectionHex)), calldata, await network.getNonce(accountId), pk);
               }}
+              showPriorityTip={false}
               busy={transferring}
               error={transferError}
               onBack={() => setConfirmBatch(false)}
