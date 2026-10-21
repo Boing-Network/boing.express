@@ -173,6 +173,14 @@ Set these as **user environment variables** (never commit them, never put them i
 
 Bump `"version"` in `extension/manifest.base.json` first; the store rejects a version that is not higher than the live one. pnpm is pinned via `packageManager` (`pnpm@9.15.9`); newer global pnpm or `corepack enable` switches to it automatically. Uses `chrome-webstore-upload-cli` v3 (Chrome Web Store API v1.1, no publisher ID needed).
 
+### What's new for 0.1.21 (draft upload)
+
+- **In-wallet tip ladder** on BOING send (Normal / Faster / Priority / Urgent) — micro base fee remains the default cost; tips are optional for congestion.
+- **dApp `priority_tip`** — signed when present; advertised as `features.priorityTip` via `boing_getCapabilities`.
+- Aligns with network product direction: Solana-like micro fees (~0.00021 BOING/transfer), not gasless.
+
+Publish path: bump is already in `manifest.base.json` → `pnpm run publish:extension` (draft by default).
+
 ---
 
 ## Part 3: References
