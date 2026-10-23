@@ -146,6 +146,6 @@ The legacy **`wrangler.toml`** at the repository root ( **`boing-wallet-api`** /
 
 - Node contract: **Boing Network** [`docs/RPC-API-SPEC.md`](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md).
 - DEX discovery handoff: [`docs/HANDOFF_Boing_Network_Global_Token_Discovery.md`](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF_Boing_Network_Global_Token_Discovery.md).
-- Typed client: **boing-sdk** `BoingClient.listDexPoolsPage`, `listDexTokensPage`, `getDexToken` — point the SDK’s RPC URL at **`https://<your-gateway>/v1/rpc`** when using the gateway from server or trusted clients.
+- Typed client: **`@boing-network/boing-sdk`** `BoingClient.listDexPoolsPage`, `listDexTokensPage`, `getDexToken` — point the SDK’s RPC URL at **`https://<your-gateway>/v1/rpc`** when using the gateway from server or trusted clients.
 
 Wallet-specific forwarding remains documented in **[BOING-EXPRESS-WALLET.md](BOING-EXPRESS-WALLET.md)**.
