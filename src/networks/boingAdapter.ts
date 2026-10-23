@@ -21,7 +21,7 @@ import {
   nodeSupportsNativeBatch,
   signTransactionInput,
   withPriorityTip,
-} from 'boing-sdk';
+} from '@boing-network/boing-sdk';
 import { boingNumber, currentLedgerDecimals, fetchNativeCurrency, knownLedgerDecimals, rememberLedgerDecimals } from '../boing/nativeUnit';
 
 /**

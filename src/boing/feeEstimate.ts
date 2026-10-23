@@ -5,7 +5,7 @@ import {
   formatTipLadderForUi,
   suggestPriorityTipLadder,
   type PriorityTipTier,
-} from 'boing-sdk';
+} from '@boing-network/boing-sdk';
 
 /** `fee` is in ledger units with `decimals` (18 = base units, 0 = whole BOING). */
 export type FeeEstimate =

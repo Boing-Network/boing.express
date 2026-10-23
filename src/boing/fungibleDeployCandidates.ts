@@ -3,7 +3,7 @@
  * boing.finance `nativeFungibleDeployDiscovery`). Wallet refresh only — not a full history index.
  */
 
-import { extractUniversalContractDeploymentsFromBlock } from 'boing-sdk';
+import { extractUniversalContractDeploymentsFromBlock } from '@boing-network/boing-sdk';
 import * as rpc from './rpc';
 import { normalizeHex64 } from './referenceNft';
 

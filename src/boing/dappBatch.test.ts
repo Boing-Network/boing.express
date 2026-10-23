@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { encodeTransactionPayload } from 'boing-sdk';
+import { encodeTransactionPayload } from '@boing-network/boing-sdk';
 import { encodePayload } from './bincode';
 import {
   buildTransactionApprovalDetail,

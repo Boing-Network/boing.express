@@ -10,7 +10,7 @@ import {
 import {
   encodeLinkedNftTokenGetLinkAtCalldataHex,
   encodeLinkedNftTokenLinksCountCalldataHex,
-} from 'boing-sdk';
+} from '@boing-network/boing-sdk';
 
 const COLLECTION = `0x${'aa'.repeat(32)}`;
 const TOKEN = `0x${'bb'.repeat(32)}`;

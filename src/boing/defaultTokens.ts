@@ -2,7 +2,7 @@
  * Fungible tokens shown by default (always listed, like watched tokens) per EIP-155-style chain id.
  * Ids come from boing-sdk's canonical public-testnet constants (reference token v2, whole units).
  */
-import { CANONICAL_BOING_TESTNET_BOING_TOKEN_HEX, CANONICAL_BOING_TESTNET_USDC_TOKEN_HEX } from 'boing-sdk';
+import { CANONICAL_BOING_TESTNET_BOING_TOKEN_HEX, CANONICAL_BOING_TESTNET_USDC_TOKEN_HEX } from '@boing-network/boing-sdk';
 import { BOING_TESTNET_CHAIN_ID_DECIMAL, chainIdHexToDecimal } from '../networks/chainIds';
 import { normalizeHex64 } from './referenceNft';
 import type { TokenWatchEntry } from '../storage/tokenWatchlist';

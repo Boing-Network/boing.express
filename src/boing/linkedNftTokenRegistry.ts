@@ -12,7 +12,7 @@ import {
   encodeLinkedNftTokenGetLinkAtCalldataHex,
   encodeLinkedNftTokenLinksCountCalldataHex,
   LINKED_NFT_TOKEN_REGISTRY_MAX_LINKS,
-} from 'boing-sdk';
+} from '@boing-network/boing-sdk';
 import { simulateContractCall } from './rpc';
 import { normalizeHex64 } from './referenceNft';
 
