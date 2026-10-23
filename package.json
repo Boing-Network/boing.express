@@ -32,7 +32,7 @@
   "dependencies": {
     "@noble/ed25519": "^2.1.0",
     "@noble/hashes": "^2.0.1",
-    "@boing-network/boing-sdk": "github:Boing-Network/boing.network#bb359e7e0c3ad71a7f9163ac9c87f268d21c526f&path:/boing-sdk",
+    "@boing-network/boing-sdk": "^0.5.24",
     "jsqr": "^1.4.0",
     "qrcode-generator": "^1.4.4",
     "react": "^18.3.1",
