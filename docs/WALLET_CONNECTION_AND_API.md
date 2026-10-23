@@ -75,7 +75,7 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
 
 ### dApp helpers in this repo (SDK parity)
 
-`src/boing/injectedWallet.ts` mirrors **boing-sdk** `walletProvider.ts` (`connectInjectedBoingWallet`, `providerSupportsBoingNativeRpc`, `requestAccounts`, `readChainIdHex`, `boingSendTransaction`, …) and extends **`mapInjectedProviderErrorToUiMessage`** with Boing Express `data.boingCode` and nested node RPC. Prefer depending on **boing-sdk** when possible; copy or import from this file when you want the same strings without the full SDK.
+`src/boing/injectedWallet.ts` mirrors **boing-sdk** `walletProvider.ts` (`connectInjectedBoingWallet`, `providerSupportsBoingNativeRpc`, `requestAccounts`, `readChainIdHex`, `boingSendTransaction`, …) and extends **`mapInjectedProviderErrorToUiMessage`** with Boing Express `data.boingCode` and nested node RPC. Prefer depending on **`@boing-network/boing-sdk`** (`^0.5.24` from npm) when possible; copy or import from this file when you want the same strings without the full SDK.
 
 ### Account format
 
