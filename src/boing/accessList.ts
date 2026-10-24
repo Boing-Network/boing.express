@@ -37,6 +37,7 @@ export function suggestedAccessList(sender: AccountId, payload: Payload): Access
     case 'name_set_target':
     case 'name_set_primary':
     case 'name_release':
+    case 'put_blob':
       return { read: [sender], write: [sender] };
     case 'contract_deploy':
     case 'contract_deploy_purpose':

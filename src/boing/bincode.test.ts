@@ -45,6 +45,19 @@ describe('bincode vs Rust boing-primitives (see crates/boing-primitives/examples
     );
   });
 
+  it('encodes PutBlob payload (variant 21, forever)', () => {
+    const data = new Uint8Array([0xaa, 0xbb]);
+    const p = encodePayload({
+      kind: 'put_blob',
+      retention: { kind: 'forever' },
+      contentType: 'image/png',
+      data,
+    });
+    // tag 21 LE + retention Forever(1) + string "image/png" + vec [aa bb]
+    expect(toHex(p).startsWith('15000000')).toBe(true);
+    expect(toHex(p)).toContain('aabb');
+  });
+
   it('encodes empty AccessList', () => {
     const a = encodeAccessList({ read: [], write: [] });
     expect(toHex(a)).toBe('00000000000000000000000000000000');

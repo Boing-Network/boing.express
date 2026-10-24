@@ -31,6 +31,11 @@ const VARIANT_NAME_SET_PRIMARY = 18;
 const VARIANT_NAME_RELEASE = 19;
 /** Rust `TransactionPayload::ContractCallWithValue` (native value rules; testnet from height 1150). */
 const VARIANT_CONTRACT_CALL_WITH_VALUE = 20;
+/** Rust `TransactionPayload::PutBlob` (L1 media blobs). */
+const VARIANT_PUT_BLOB = 21;
+/** Rust `BlobRetention` discriminants. */
+const BLOB_RETENTION_PRUNABLE = 0;
+const BLOB_RETENTION_FOREVER = 1;
 /** Rust `BatchCall::ContractCallWithValue`. */
 const BATCH_CONTRACT_CALL_WITH_VALUE = 2;
 
@@ -247,6 +252,25 @@ export function encodePayload(p: Payload): Uint8Array {
       ]);
     case 'name_release':
       return concatBytes([enumTag(VARIANT_NAME_RELEASE), encodeString(p.name)]);
+    case 'put_blob': {
+      const retention =
+        p.retention.kind === 'forever'
+          ? enumTag(BLOB_RETENTION_FOREVER)
+          : concatBytes([
+              enumTag(BLOB_RETENTION_PRUNABLE),
+              (() => {
+                const ttl = new Uint8Array(8);
+                writeU64LE(ttl, 0, p.retention.ttlBlocks);
+                return ttl;
+              })(),
+            ]);
+      return concatBytes([
+        enumTag(VARIANT_PUT_BLOB),
+        retention,
+        encodeString(p.contentType ?? ''),
+        encodeVecU8(p.data),
+      ]);
+    }
     default: {
       const _exhaustive: never = p;
       return _exhaustive;
