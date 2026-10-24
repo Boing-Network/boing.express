@@ -283,6 +283,15 @@ export function transactionSummary(tx: Transaction, ctx?: NativeAmountContext): 
         p.kind === 'name_register' || p.kind === 'name_renew' ? ` | rent ${rentFor(p.name, p.years).toString()} BOING (burned)` : ''
       }`;
       break;
+    case 'put_blob': {
+      const ret =
+        p.retention.kind === 'forever'
+          ? 'forever'
+          : `prunable ttl=${p.retention.ttlBlocks.toString()}`;
+      const ct = p.contentType ? ` | ${p.contentType}` : '';
+      body = `Boing tx | From ${from} | Nonce ${n} | PutBlob ${p.data.length} bytes (${ret})${ct}`;
+      break;
+    }
     default: {
       const _e: never = p;
       return _e;
@@ -480,6 +489,19 @@ export function buildTransactionApprovalDetail(tx: Transaction, ctx?: NativeAmou
       }
       rows.push(accessListSummary(tx));
       break;
+    case 'put_blob':
+      rows.push({ label: 'Operation', value: 'Put media blob (L1)' });
+      rows.push({
+        label: 'Retention',
+        value:
+          p.retention.kind === 'forever'
+            ? 'Forever'
+            : `Prunable · ttl ${p.retention.ttlBlocks.toString()} blocks`,
+      });
+      if (p.contentType) rows.push({ label: 'Content type', value: p.contentType });
+      rows.push({ label: 'Data', value: `${p.data.length} bytes — ${hexPreview(p.data)}` });
+      rows.push(accessListSummary(tx));
+      break;
     default: {
       const _ex: never = p;
       return _ex;
@@ -624,6 +646,40 @@ export function transactionFromDappJson(
     }
     case 'batch': {
       payload = { kind: 'batch', calls: batchCallsFromDappJson(o.calls ?? o.steps, sender) };
+      break;
+    }
+    case 'put_blob':
+    case 'putBlob': {
+      const dataRaw = o.data ?? o.bytes ?? o.content;
+      if (dataRaw == null || dataRaw === '') {
+        throw new Error('put_blob requires data (hex bytes)');
+      }
+      const data = hexToBytesFlexible(String(dataRaw), 'data');
+      if (data.length === 0) throw new Error('put_blob data must be non-empty');
+      const contentType = String(o.content_type ?? o.contentType ?? '').trim();
+      const retentionRaw = o.retention;
+      let retention: { kind: 'forever' } | { kind: 'prunable'; ttlBlocks: bigint };
+      if (retentionRaw == null || retentionRaw === '' || retentionRaw === 'forever') {
+        retention = { kind: 'forever' };
+      } else if (typeof retentionRaw === 'string') {
+        const k = retentionRaw.trim().toLowerCase();
+        if (k === 'forever') retention = { kind: 'forever' };
+        else throw new Error('put_blob retention string must be "forever" (or pass { kind, ttl_blocks })');
+      } else if (typeof retentionRaw === 'object' && !Array.isArray(retentionRaw)) {
+        const r = retentionRaw as Record<string, unknown>;
+        const kind = String(r.kind ?? r.type ?? '').trim().toLowerCase();
+        if (kind === 'forever') {
+          retention = { kind: 'forever' };
+        } else if (kind === 'prunable') {
+          const ttl = parseU128String(r.ttl_blocks ?? r.ttlBlocks ?? r.ttl, 'retention.ttl_blocks');
+          retention = { kind: 'prunable', ttlBlocks: ttl };
+        } else {
+          throw new Error('put_blob retention.kind must be forever or prunable');
+        }
+      } else {
+        throw new Error('put_blob retention must be "forever" or { kind, ttl_blocks? }');
+      }
+      payload = { kind: 'put_blob', retention, contentType, data };
       break;
     }
     default:

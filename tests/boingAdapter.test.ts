@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { NetworkConfig } from '../src/networks/types';
 import { createBoingAdapter } from '../src/networks/boingAdapter';
 import * as rpc from '../src/boing/rpc';
+import * as nativeUnit from '../src/boing/nativeUnit';
 
 const accountId = new Uint8Array(32);
 const baseConfig: NetworkConfig = {
@@ -21,11 +22,14 @@ describe('createBoingAdapter', () => {
   it('falls back to boing_getBalance only when boing_getAccount is unavailable', async () => {
     vi.spyOn(rpc, 'getAccount').mockRejectedValue(new rpc.RpcClientError('Method not found', -32601));
     vi.spyOn(rpc, 'getBalance').mockResolvedValue('42');
+    // Avoid a real boing_getNetworkInfo round-trip (can hang CI when RPC is slow).
+    vi.spyOn(nativeUnit, 'currentLedgerDecimals').mockResolvedValue(18);
 
     const adapter = createBoingAdapter(baseConfig);
     const balance = await adapter.getBalance(accountId);
 
     expect(balance.value).toBe('42');
+    expect(balance.decimals).toBe(18);
     expect(rpc.getBalance).toHaveBeenCalledOnce();
   });
 

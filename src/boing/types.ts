@@ -52,7 +52,14 @@ export type Payload =
   | { kind: 'name_transfer'; name: string; new_owner: AccountId }
   | { kind: 'name_set_target'; name: string; target: AccountId }
   | { kind: 'name_set_primary'; name: string | null }
-  | { kind: 'name_release'; name: string };
+  | { kind: 'name_release'; name: string }
+  /** Rust `PutBlob` (index 21) — L1 media blob publish. */
+  | {
+      kind: 'put_blob';
+      retention: { kind: 'forever' } | { kind: 'prunable'; ttlBlocks: bigint };
+      contentType: string;
+      data: Uint8Array;
+    };
 
 /**
  * One step of a `batch` payload (Rust `BatchCall`: 0 = Transfer, 1 = ContractCall, 2 = ContractCallWithValue
