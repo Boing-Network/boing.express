@@ -1,6 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearNodeCompatCache } from '../src/boing/nodeCompat';
 import type { NetworkConfig } from '../src/networks/types';
 import { createBoingAdapter } from '../src/networks/boingAdapter';
+import * as ed from '@noble/ed25519';
 import * as rpc from '../src/boing/rpc';
 import * as nativeUnit from '../src/boing/nativeUnit';
 
@@ -14,8 +16,35 @@ const baseConfig: NetworkConfig = {
   faucetUrl: 'https://boing.network/faucet',
 };
 
+function stubHealth(chainId: number) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          result: {
+            ok: true,
+            chain_id: chainId,
+            client_version: 'boing-node/0.1.0',
+            tx_signing: { chain_id: chainId, v2_required: true, v2_supported: true },
+          },
+        }),
+        { status: 200 }
+      )
+    )
+  );
+}
+
+beforeEach(() => {
+  clearNodeCompatCache();
+  stubHealth(6913);
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('createBoingAdapter', () => {
@@ -66,7 +95,44 @@ describe('createBoingAdapter', () => {
     const result = await adapter.submitTransaction('0x00');
 
     expect(result.success).toBe(false);
-    expect(result.error).toMatch(/insufficient balance/i);
+    expect(result.error).toMatch(/balance is too low/i);
     expect(submitSpy).not.toHaveBeenCalled();
+  });
+
+  it('refuses to broadcast when the node reports a different chain id than the selected network', async () => {
+    stubHealth(6914);
+    const simSpy = vi.spyOn(rpc, 'simulateTransaction');
+    const submitSpy = vi.spyOn(rpc, 'submitTransaction');
+    const adapter = createBoingAdapter({ ...baseConfig, chainId: '0x1b01' });
+    const result = await adapter.submitTransaction('0x00');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/6914/);
+    expect(simSpy).not.toHaveBeenCalled();
+    expect(submitSpy).not.toHaveBeenCalled();
+  });
+
+  it('encodes native value on batched contract calls (ContractCallWithValue) instead of dropping it', async () => {
+    const sk = new Uint8Array(32).fill(7);
+    const sender = await ed.getPublicKeyAsync(sk);
+    const adapter = createBoingAdapter({ ...baseConfig, chainId: '0x1b01' });
+    const contractHex = '0x' + '11'.repeat(32);
+    const calldata = new Uint8Array([1, 2, 3]);
+    const plain = await adapter.buildBatch!(sender, [{ kind: 'contractCall', contractHex, calldata }], 0n, sk);
+    const zero = await adapter.buildBatch!(sender, [{ kind: 'contractCall', contractHex, calldata, value: 0n }], 0n, sk);
+    const valued = await adapter.buildBatch!(sender, [{ kind: 'contractCall', contractHex, calldata, value: 5n }], 0n, sk);
+    expect(zero).toBe(plain);
+    expect(valued).not.toBe(plain);
+    // ContractCallWithValue adds a u128 (16 bytes = 32 hex chars) to the step.
+    expect(valued.length - plain.length).toBe(32);
+  });
+
+  it('maps node QA rejections to a readable message', async () => {
+    vi.spyOn(rpc, 'simulateTransaction').mockResolvedValue({ success: true });
+    vi.spyOn(rpc, 'submitTransaction').mockRejectedValue(
+      new rpc.RpcClientError('Server error', -32050, { rule_id: 'QA-007', message: 'bytecode too large' })
+    );
+    const result = await createBoingAdapter(baseConfig).submitTransaction('0x00');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('QA-007');
   });
 });

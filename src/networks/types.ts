@@ -34,7 +34,13 @@ export interface SubmitResult {
 /** One step of a native atomic batch (mirrors boing-sdk `BuildBatchCall`). */
 export type BatchStep =
   | { kind: 'transfer'; toHex: string; amount: bigint }
-  | { kind: 'contractCall'; contractHex: string; calldata: Uint8Array };
+  | {
+      kind: 'contractCall';
+      contractHex: string;
+      calldata: Uint8Array;
+      /** Native BOING (base units) sent with the call; > 0 selects ContractCallWithValue (testnet height 1150+). */
+      value?: bigint;
+    };
 
 export interface NetworkAdapter {
   config: NetworkConfig;

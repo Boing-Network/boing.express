@@ -1,7 +1,7 @@
 /** Security fix #2: v2 chain-bound signing. Golden vector shared with the Rust node and boing-sdk. */
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import * as ed from '@noble/ed25519';
-import { signableHash, signableHashV2, signTransaction, signingChainIdForRpc, clearSigningChainIdCache } from '../src/boing/signing';
+import { signableHash, signableHashV2, signTransaction, signingChainIdForRpc, clearSigningChainIdCache, registerConfiguredSigningChainId } from '../src/boing/signing';
 import type { Transaction } from '../src/boing/types';
 
 const hex = (b: Uint8Array) => Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join('');
@@ -39,5 +39,23 @@ describe('v2 signing', () => {
     expect(await signingChainIdForRpc('http://a')).toBe(6913n);
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ result: { ok: true } }))));
     expect(await signingChainIdForRpc('http://b')).toBeNull();
+  });
+});
+
+describe('signingChainIdForRpc resilience', () => {
+  it('falls back to the configured chain id when the probe fails (never legacy on a chain-bound network)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Failed to fetch'); }));
+    registerConfiguredSigningChainId('http://down', 6913n);
+    expect(await signingChainIdForRpc('http://down')).toBe(6913n);
+    expect(await signingChainIdForRpc('http://down-unconfigured')).toBeNull();
+  });
+
+  it('does not pin a failed probe for a full minute', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('boom'); }));
+    expect(await signingChainIdForRpc('http://flaky')).toBeNull();
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ result: { tx_signing: { v2_supported: true, chain_id: 6913 } } }))));
+    const spy = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 6_000);
+    expect(await signingChainIdForRpc('http://flaky')).toBe(6913n);
+    spy.mockRestore();
   });
 });

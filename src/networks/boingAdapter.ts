@@ -6,7 +6,9 @@
 
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
-import { buildSignedTransactionHex, signingChainIdForRpc } from '../boing/signing';
+import { buildSignedTransactionHex, registerConfiguredSigningChainId, signingChainIdForRpc } from '../boing/signing';
+import { checkNodeCompat, configuredChainIdDecimal } from '../boing/nodeCompat';
+import { describeWalletError } from '../boing/errorMessages';
 import { transactionIdFromSignedTransactionHex } from '../boing/bincode';
 import { suggestedAccessList } from '../boing/accessList';
 import * as rpc from '../boing/rpc';
@@ -50,6 +52,8 @@ async function signedNativeTx(
 
 export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
   const rpcUrl = config.rpcUrl;
+  const configuredChain = configuredChainIdDecimal(config.chainId);
+  if (configuredChain != null) registerConfiguredSigningChainId(rpcUrl, BigInt(configuredChain));
   const adapter: NetworkAdapter = {
     config,
 
@@ -159,6 +163,13 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
 
     async submitTransaction(signedTxHex: string): Promise<SubmitResult> {
       try {
+        // Refuse to broadcast when the node is on a different chain than the selected network.
+        const compat = await checkNodeCompat(rpcUrl, {
+          chainId: configuredChainIdDecimal(config.chainId),
+          networkName: config.name,
+        });
+        const blocking = compat.issues.find((i) => i.level === 'error');
+        if (blocking) return { success: false, error: blocking.message };
         try {
           const simRaw = await rpc.simulateTransaction(rpcUrl, signedTxHex);
           if (
@@ -168,14 +179,14 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
             (simRaw as { success?: boolean }).success === false
           ) {
             const err = (simRaw as { error?: string }).error?.trim();
-            return { success: false, error: err || 'Simulation reported failure.' };
+            return { success: false, error: err ? describeWalletError(new Error(err)) : 'Simulation reported failure.' };
           }
         } catch (simErr) {
           const msg = simErr instanceof Error ? simErr.message : String(simErr);
           if (msg.includes('Method not found')) {
             // Node may not support simulate; proceed to submit
           } else {
-            return { success: false, error: msg };
+            return { success: false, error: describeWalletError(simErr) };
           }
         }
         const mempoolAck = await rpc.submitTransaction(rpcUrl, signedTxHex);
@@ -191,7 +202,7 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       } catch (e) {
         return {
           success: false,
-          error: e instanceof Error ? e.message : String(e),
+          error: describeWalletError(e),
         };
       }
     },
@@ -240,11 +251,18 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
       const tx = buildBatchTransaction({
         nonce,
         senderHex,
-        calls: steps.map((s) =>
-          s.kind === 'transfer'
-            ? { kind: 'transfer' as const, toHex: norm(s.toHex), amount: s.amount }
-            : { kind: 'contractCall' as const, contractHex: norm(s.contractHex), calldata: s.calldata }
-        ),
+        calls: steps.map((s) => {
+          if (s.kind === 'transfer') return { kind: 'transfer' as const, toHex: norm(s.toHex), amount: s.amount };
+          if (s.value != null && s.value > 0n) {
+            return {
+              kind: 'contractCallWithValue' as const,
+              contractHex: norm(s.contractHex),
+              calldata: s.calldata,
+              value: s.value,
+            };
+          }
+          return { kind: 'contractCall' as const, contractHex: norm(s.contractHex), calldata: s.calldata };
+        }),
       });
       return signTransactionInput(tx, privateKey, { chainId: await signingChainIdForRpc(rpcUrl) });
     },

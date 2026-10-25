@@ -8,6 +8,7 @@ import { blake3 } from '@noble/hashes/blake3.js';
 import * as ed from '@noble/ed25519';
 import type { Transaction, SignedTransaction } from './types';
 import { encodePayload, encodeAccessList, encodeSignedTransaction } from './bincode';
+import { rpcCall } from './rpc';
 
 /** Signable message = BLAKE3( nonce_LE(8) || sender(32) || bincode(payload) || bincode(access_list) ). */
 export function signableHash(tx: Transaction): Uint8Array {
@@ -92,34 +93,47 @@ export async function signTransaction(
 
 type HealthTxSigning = { v2_supported?: boolean; chain_id?: number | null };
 const chainIdCache = new Map<string, { at: number; value: bigint | null }>();
+/** Network-config chain id per RPC URL, registered by the Boing adapter; used when the node probe fails. */
+const configuredChainByRpc = new Map<string, bigint>();
+
+/** Remember the configured chain id for an RPC URL so a failed `boing_health` probe never degrades to legacy signing. */
+export function registerConfiguredSigningChainId(rpcUrl: string, chainId: bigint): void {
+  configuredChainByRpc.set(rpcUrl, chainId);
+}
 
 /**
  * Chain id the node at `rpcUrl` signs for (`boing_health.tx_signing`), or null for older nodes / local
  * dev chains without a chain id (legacy signing). Cached per RPC URL (null results for 60 s).
  */
-export async function signingChainIdForRpc(rpcUrl: string): Promise<bigint | null> {
+export async function signingChainIdForRpc(
+  rpcUrl: string,
+  fallbackChainId: bigint | null = configuredChainByRpc.get(rpcUrl) ?? null
+): Promise<bigint | null> {
   const hit = chainIdCache.get(rpcUrl);
-  if (hit && (hit.value != null || Date.now() - hit.at < 60_000)) return hit.value;
+  if (hit && (hit.value != null || Date.now() - hit.at < 60_000)) return hit.value ?? fallbackChainId ?? null;
   let value: bigint | null = null;
+  let probed = false;
   try {
-    const res = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'boing_health', params: [] }),
-    });
-    const j = (await res.json()) as { result?: { tx_signing?: HealthTxSigning } };
-    const ts = j?.result?.tx_signing;
+    // `rpcCall` is bounded by a request timeout, so a hung node cannot stall signing.
+    const health = (await rpcCall<{ tx_signing?: HealthTxSigning }>(rpcUrl, 'boing_health', [])) ?? {};
+    probed = true;
+    const ts = health.tx_signing;
     if (ts && ts.v2_supported && typeof ts.chain_id === 'number') value = BigInt(ts.chain_id);
   } catch {
     value = null;
   }
-  chainIdCache.set(rpcUrl, { at: Date.now(), value });
-  return value;
+  // Only cache a definitive answer (a probe that returned). A failed probe is retried on the next call
+  // after a short pause so a transient outage does not pin legacy signing for a minute.
+  chainIdCache.set(rpcUrl, { at: probed ? Date.now() : Date.now() - 55_000, value });
+  // Probe failed (or older node without tx_signing): prefer the network's configured chain id over
+  // legacy signing, because chain-bound networks reject legacy signatures after the v2 height.
+  return value ?? fallbackChainId ?? null;
 }
 
 /** Test hook. */
 export function clearSigningChainIdCache(): void {
   chainIdCache.clear();
+  configuredChainByRpc.clear();
 }
 
 /** Build SignedTransaction and return hex for boing_submitTransaction. Pass the network's chain id (v2). */
