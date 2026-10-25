@@ -1,10 +1,13 @@
-# Cloudflare Pages response headers. boing.express must never be framed (clickjacking protection for
-# the wallet and the /connect web signing flow, docs/WEB-SIGNING-FLOW.md).
+# Cloudflare Pages response headers for boing.express.
+# - Never framed (clickjacking protection for the wallet and the /connect web signing flow, docs/WEB-SIGNING-FLOW.md).
+# - Scripts only from this origin: no inline or eval'd script, so an injected tag cannot run.
+# - connect-src allows https RPC endpoints (custom RPC URLs must be https); loosen only if you host a plain-http dev node.
 /*
-  Content-Security-Policy: frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=()
 
 /connect
   Cache-Control: no-store

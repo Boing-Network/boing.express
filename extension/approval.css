@@ -307,3 +307,26 @@ body {
 .hidden {
   display: none;
 }
+
+.risk {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.risk.risk-danger {
+  border-color: rgba(239, 68, 68, 0.7);
+  background: rgba(239, 68, 68, 0.14);
+}
+.risk strong {
+  display: block;
+  margin-bottom: 4px;
+}
+.risk ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}

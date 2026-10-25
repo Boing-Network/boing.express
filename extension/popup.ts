@@ -65,6 +65,7 @@ import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/ty
 import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
 import { fetchNativeCurrency, formatNative, knownLedgerDecimals, ledgerDecimalsAt, maxSendableInput, plainTransferFeeLabel } from '../src/boing/nativeUnit';
 import { normalizeBoingNetworkId } from './config';
+import { AUTO_LOCK_OPTIONS, autoLockLabel, isSessionExpired, normalizeAutoLockMinutes, STORAGE_KEY_AUTO_LOCK_MINUTES } from '../src/security/autoLock';
 import { RevealError, createRevealSession, revealActivePrivateKeyHex, type RevealState } from '../src/security/revealPrivateKey';
 import {
   buildExtensionNetworksCatalog,
@@ -1071,6 +1072,38 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') revealSession.clear();
 });
 window.addEventListener('pagehide', () => revealSession.clear());
+// --- Auto-lock: the background also enforces the same idle limit; this closes an idle popup that is left open.
+let autoLockMinutes = normalizeAutoLockMinutes(undefined);
+let lastInteractionAt = Date.now();
+let lastActivityPingAt = 0;
+chrome.storage.local.get([STORAGE_KEY_AUTO_LOCK_MINUTES], (r) => {
+  autoLockMinutes = normalizeAutoLockMinutes(r?.[STORAGE_KEY_AUTO_LOCK_MINUTES]);
+  const sel = document.getElementById('auto-lock-select') as HTMLSelectElement | null;
+  if (!sel) return;
+  for (const m of AUTO_LOCK_OPTIONS) {
+    const o = document.createElement('option');
+    o.value = String(m);
+    o.textContent = autoLockLabel(m);
+    sel.appendChild(o);
+  }
+  sel.value = String(autoLockMinutes);
+  sel.addEventListener('change', () => {
+    autoLockMinutes = normalizeAutoLockMinutes(sel.value);
+    chrome.storage.local.set({ [STORAGE_KEY_AUTO_LOCK_MINUTES]: autoLockMinutes });
+  });
+});
+function noteInteraction(): void {
+  const now = Date.now();
+  lastInteractionAt = now;
+  if (privateKey && now - lastActivityPingAt > 10_000) {
+    lastActivityPingAt = now;
+    chrome.runtime.sendMessage({ type: 'WALLET_ACTIVITY' }, () => void chrome.runtime.lastError);
+  }
+}
+for (const ev of ['pointerdown', 'keydown', 'wheel'] as const) document.addEventListener(ev, noteInteraction, { passive: true });
+setInterval(() => {
+  if (privateKey && isSessionExpired(lastInteractionAt, Date.now(), autoLockMinutes)) $('btn-lock').click();
+}, 15_000);
 $('btn-lock').addEventListener('click', () => {
   accountId = null;
   revealSession.clear();

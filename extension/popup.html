@@ -301,6 +301,11 @@
             <button type="button" id="btn-add-account" class="btn-secondary" aria-label="Add account" data-testid="wallet-dashboard-add-account">Add account</button>
             <p class="hint">Create or import another key in the same vault. Your password stays the same.</p>
           </div>
+          <div class="card" data-testid="settings-auto-lock">
+            <h2 class="label"><label for="auto-lock-select">Auto-lock</label></h2>
+            <select id="auto-lock-select" class="input" aria-describedby="auto-lock-hint"></select>
+            <p class="hint" id="auto-lock-hint">Locks the wallet after this much time without activity. Locking also disconnects sites until you unlock again.</p>
+          </div>
           <div id="names-root" class="names-root"></div>
           <div class="card card-connected-sites" data-testid="settings-connected-sites">
             <h2 class="label">Connected sites</h2>

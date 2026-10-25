@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect, type Locator, type Page } from '@playwright/test';
-import { openPopupWithNewWallet } from './helpers/popup';
+import { openPopupWithNewWallet, connectDapp } from './helpers/popup';
 
 /** Extension UI hides scrollbars (scrollbar-width: none + ::-webkit-scrollbar) but keeps scrolling working. */
 const RUN = process.env.EXTENSION_E2E_FULL === '1';
@@ -62,9 +62,7 @@ describe('Extension hidden scrollbars (E2E, mocked RPC)', () => {
       const dapp = await context.newPage();
       await dapp.goto('http://127.0.0.1:3333/dapp.html', { waitUntil: 'domcontentloaded' });
       await dapp.waitForFunction(() => !!(window as unknown as { boing?: unknown }).boing, null, { timeout: 30_000 });
-      await dapp.evaluate(() =>
-        (window as unknown as { boing: { request: (a: unknown) => Promise<string[]> } }).boing.request({ method: 'boing_requestAccounts' })
-      );
+      await connectDapp(context, dapp);
       const approvalP = context.waitForEvent('page', { timeout: 30_000 });
       const sendP = dapp
         .evaluate(() => {

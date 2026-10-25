@@ -1,3 +1,5 @@
+import { assessOrigin } from '../src/security/originRisk';
+
 type TransactionApprovalDetail = {
   txType: string;
   summaryLine: string;
@@ -14,19 +16,9 @@ type ApprovalResponse = {
     message: string;
     transactionDetail?: TransactionApprovalDetail;
     txPipeline?: 'sign' | 'send';
+    kind?: 'connect' | 'sign';
   } | null;
 };
-
-/** Example JSON shape for documentation in the send pipeline (not a live RPC result). */
-const SIMULATION_EXAMPLE_SNIPPET = `{
-  "success": false,
-  "error": "execution reverted",
-  "suggested_access_list": {
-    "read": ["0x…"],
-    "write": []
-  },
-  "access_list_covers_suggestion": false
-}`;
 
 function $(id: string): HTMLElement {
   const el = document.getElementById(id);
@@ -85,19 +77,14 @@ function fillTxTable(tbody: HTMLTableSectionElement, rows: { label: string; valu
 
 function fillPipelineSteps(ol: HTMLOListElement, txPipeline: 'sign' | 'send'): void {
   ol.replaceChildren();
-  if (txPipeline === 'sign') {
-    const li = document.createElement('li');
-    li.textContent = 'Sign locally and return the hex to the dApp — nothing is broadcast.';
-    ol.appendChild(li);
-    return;
-  }
-  const steps = [
-    'Sign the transaction with your approved key.',
-    'Call boing_simulateTransaction on the selected RPC with the signed bytes.',
-    'If simulation succeeds (or the node has no simulator), call boing_submitTransaction.',
-    'If simulation fails with a suggested_access_list that is not already covered, Express merges it into access_list once, re-signs, and re-simulates before submit.',
-    'If simulation still fails, nothing is submitted; the dApp may receive suggested_access_list and access_list_auto_merged in the error data.',
-  ];
+  const steps =
+    txPipeline === 'sign'
+      ? ['Your wallet signs this transaction on your device.', 'The signed transaction is handed back to the site. Nothing is sent to the network by this approval.']
+      : [
+          'Your wallet signs this transaction on your device.',
+          'The network does a dry run first. If it would fail, nothing is sent and you are told why.',
+          'If the dry run passes, the transaction is sent to the network.',
+        ];
   for (const text of steps) {
     const li = document.createElement('li');
     li.textContent = text;
@@ -105,6 +92,26 @@ function fillPipelineSteps(ol: HTMLOListElement, txPipeline: 'sign' | 'send'): v
   }
 }
 
+function showOriginRisk(origin: string): void {
+  const risk = assessOrigin(origin);
+  const el = $('approval-risk');
+  if (risk.level === 'none') {
+    el.classList.add('hidden');
+    return;
+  }
+  el.replaceChildren();
+  const strong = document.createElement('strong');
+  strong.textContent = risk.level === 'danger' ? 'Be careful: this site looks risky' : 'Check this site before continuing';
+  const ul = document.createElement('ul');
+  for (const w of risk.warnings) {
+    const li = document.createElement('li');
+    li.textContent = w;
+    ul.appendChild(li);
+  }
+  el.append(strong, ul);
+  el.classList.toggle('risk-danger', risk.level === 'danger');
+  el.classList.remove('hidden');
+}
 async function main(): Promise<void> {
   const requestId = parseRequestId();
   if (!requestId) {
@@ -135,44 +142,41 @@ async function main(): Promise<void> {
   const subtitleEl = $('approval-subtitle');
   const txSection = $('approval-tx-section');
   const pipelineSection = $('approval-pipeline-section');
-  const simExampleWrap = $('approval-sim-example-wrap');
-  const simExamplePre = $('approval-sim-example');
   const messageBlock = $('approval-message-block');
+  showOriginRisk(approval.origin);
 
-  if (detail) {
+  if (approval.kind === 'connect') {
+    document.title = 'Connect to site';
+    titleEl.textContent = 'Connect to this site?';
+    subtitleEl.textContent =
+      'This site will be able to see your address and ask you to approve transactions and signatures. It cannot move your funds without your approval each time.';
+    txSection.classList.add('hidden');
+    pipelineSection.classList.add('hidden');
+    messageBlock.classList.add('hidden');
+    $('btn-approve').textContent = 'Connect';
+  } else if (detail) {
     document.title = 'Approve transaction';
     titleEl.textContent = 'Approve transaction';
-    subtitleEl.textContent = 'Review the transaction fields below before approving.';
+    subtitleEl.textContent = 'Check the amount and recipient below. Approve only if you started this action.';
     txSection.classList.remove('hidden');
     messageBlock.classList.add('hidden');
     fillTxTable($('approval-tx-tbody') as HTMLTableSectionElement, detail.rows);
 
     if (txPipeline === 'sign' || txPipeline === 'send') {
       pipelineSection.classList.remove('hidden');
-      $('approval-pipeline-title').textContent = txPipeline === 'send' ? 'Sign & send pipeline' : 'Sign-only pipeline';
       fillPipelineSteps($('approval-pipeline-steps') as HTMLOListElement, txPipeline);
-      if (txPipeline === 'send') {
-        simExampleWrap.classList.remove('hidden');
-        simExamplePre.textContent = SIMULATION_EXAMPLE_SNIPPET;
-      } else {
-        simExampleWrap.classList.add('hidden');
-        simExamplePre.textContent = '';
-      }
     } else {
       pipelineSection.classList.add('hidden');
-      simExampleWrap.classList.add('hidden');
     }
   } else {
     document.title = 'Approve signature';
     titleEl.textContent = 'Approve signature';
-    subtitleEl.textContent = 'Review this message carefully before approving.';
+    subtitleEl.textContent = 'Signing proves you own this address. It does not send funds. Read the message and approve only if you trust this site.';
     txSection.classList.add('hidden');
     pipelineSection.classList.add('hidden');
-    simExampleWrap.classList.add('hidden');
     messageBlock.classList.remove('hidden');
     $('approval-message').textContent = approval.message;
   }
-
   $('btn-approve').addEventListener('click', async () => {
     setBusy(true);
     try {

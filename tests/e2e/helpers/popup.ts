@@ -69,3 +69,19 @@ export function nonceOfSignedHex(hex: string): number {
   for (let i = 7; i >= 0; i--) n = n * 256 + parseInt(h.slice(i * 2, i * 2 + 2), 16);
   return n;
 }
+
+/**
+ * Connect a dApp page the way a user does: `boing_requestAccounts` opens a "Connect to this site?" approval
+ * window; click Connect and return the accounts the dApp receives.
+ */
+export async function connectDapp(context: BrowserContext, dapp: Page): Promise<string[]> {
+  const approvalP = context.waitForEvent('page', { timeout: 30_000 });
+  const accountsP = dapp.evaluate(() =>
+    (window as unknown as { boing: { request: (a: unknown) => Promise<string[]> } }).boing.request({ method: 'boing_requestAccounts' })
+  );
+  const approval = await approvalP;
+  await approval.waitForLoadState('domcontentloaded');
+  await expect(approval.locator('#approval-title')).toHaveText('Connect to this site?');
+  await approval.locator('#btn-approve').click();
+  return accountsP;
+}

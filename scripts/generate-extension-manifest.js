@@ -47,9 +47,8 @@ const mainnetRpc = resolveMainnetRpcUrl(env.VITE_BOING_MAINNET_RPC);
 const hostPermissions = [
   toExtensionHostPermission(testnetRpc),
   toExtensionHostPermission(mainnetRpc),
+  // Network metadata API (boingMeta). Only the configured RPC hosts above are otherwise reachable.
   'https://boing.network/*',
-  'https://boing-testnet-1.fly.dev/*',
-  'https://boing-testnet-2.fly.dev/*',
 ].filter((value, index, array) => Boolean(value) && array.indexOf(value) === index);
 
 manifest.host_permissions = hostPermissions;

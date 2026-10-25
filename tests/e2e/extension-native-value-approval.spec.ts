@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import { openPopupWithNewWallet } from './helpers/popup';
+import { openPopupWithNewWallet, connectDapp } from './helpers/popup';
 
 /**
  * dApp approval for a native BOING swap batch (boing.finance auto-wrap): the first step sends 1 BOING to wBOING as
@@ -36,9 +36,7 @@ describe('Extension dApp approval: native BOING value on contract calls (E2E, mo
       const dapp = await context.newPage();
       await dapp.goto('http://127.0.0.1:3333/dapp.html', { waitUntil: 'domcontentloaded' });
       await dapp.waitForFunction(() => !!(window as unknown as { boing?: unknown }).boing, null, { timeout: 30_000 });
-      const [account] = await dapp.evaluate(() =>
-        (window as unknown as { boing: { request: (a: unknown) => Promise<string[]> } }).boing.request({ method: 'boing_requestAccounts' })
-      );
+      const [account] = await connectDapp(context, dapp);
       const approve = `0x${word(0x02n)}${word(BigInt(POOL))}${word(10n ** 18n)}`;
       const swap = `0x${word(0x10n)}${word(0n)}${word(10n ** 18n)}${word(89n)}${word(0n)}`;
       const ids = [account.toLowerCase(), WBOING, POOL];

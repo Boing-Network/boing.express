@@ -7,6 +7,8 @@
  */
 
 import { signMessage } from '../src/crypto/keys';
+import { isExtensionPageSender, originFromContentSender } from '../src/security/senderGuard';
+import { isSessionExpired, normalizeAutoLockMinutes, STORAGE_KEY_AUTO_LOCK_MINUTES } from '../src/security/autoLock';
 import { looksLikeTransactionPreimage, TX_PREIMAGE_MESSAGE_REFUSED } from '../src/boing/messageSigning';
 import { buildSignedTransactionHex, signingChainIdForRpc } from '../src/boing/signing';
 import { transactionIdFromTransaction } from '../src/boing/bincode';
@@ -137,6 +139,8 @@ type PendingSignatureApproval = {
   transactionDetail?: TransactionApprovalDetail;
   /** Present when approving a native transaction: sign-only vs sign+simulate+submit. */
   txPipeline?: 'sign' | 'send';
+  /** `connect` = site connection request (no signing); default = signature / transaction approval. */
+  kind?: 'connect' | 'sign';
   resolve: () => void;
   reject: (error: BoingProviderError) => void;
   timeoutId: number;
@@ -145,7 +149,7 @@ type PendingSignatureApproval = {
 
 type ApprovalRecord = Pick<
   PendingSignatureApproval,
-  'requestId' | 'origin' | 'chainId' | 'address' | 'message' | 'transactionDetail' | 'txPipeline'
+  'requestId' | 'origin' | 'chainId' | 'address' | 'message' | 'transactionDetail' | 'txPipeline' | 'kind'
 >;
 
 /** Extra fields on provider errors (simulation hints, node forward). Aligned with RPC-API-SPEC / BOING-RPC-ERROR-CODES-FOR-DAPPS. */
@@ -229,7 +233,7 @@ function persistUnlockedSession(state: UnlockedState | null): Promise<void> {
   });
 }
 
-async function getUnlockedState(): Promise<UnlockedState | null> {
+async function loadUnlockedState(): Promise<UnlockedState | null> {
   if (unlocked) return unlocked;
   if (!chrome.storage.session) return null;
 
@@ -253,6 +257,94 @@ async function getUnlockedState(): Promise<UnlockedState | null> {
       resolve(null);
     });
   });
+}
+
+// --- Auto-lock: the unlocked key expires after N idle minutes (setting in the popup; 0 = never).
+const STORAGE_KEY_LAST_ACTIVITY = 'boing_last_activity';
+let lastActivityAt = Date.now();
+let lastActivityPersistedAt = 0;
+
+function touchActivity(): void {
+  lastActivityAt = Date.now();
+  if (!chrome.storage.session || lastActivityAt - lastActivityPersistedAt < 5_000) return;
+  lastActivityPersistedAt = lastActivityAt;
+  chrome.storage.session.set({ [STORAGE_KEY_LAST_ACTIVITY]: lastActivityAt }, () => void chrome.runtime.lastError);
+}
+
+function readAutoLockMinutes(): Promise<number> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY_AUTO_LOCK_MINUTES], (result) =>
+      resolve(normalizeAutoLockMinutes(result?.[STORAGE_KEY_AUTO_LOCK_MINUTES]))
+    );
+  });
+}
+
+function readPersistedActivity(): Promise<number | null> {
+  return new Promise((resolve) => {
+    if (!chrome.storage.session) return resolve(null);
+    chrome.storage.session.get([STORAGE_KEY_LAST_ACTIVITY], (result) => {
+      const v = result?.[STORAGE_KEY_LAST_ACTIVITY];
+      resolve(typeof v === 'number' ? v : null);
+    });
+  });
+}
+
+async function getUnlockedState(): Promise<UnlockedState | null> {
+  const wasInMemory = unlocked !== null;
+  const state = await loadUnlockedState();
+  if (!state) return null;
+  if (!wasInMemory) {
+    // Service worker restarted: recover the last-activity time from session storage.
+    const persisted = await readPersistedActivity();
+    if (persisted != null) lastActivityAt = persisted;
+  }
+  const minutes = await readAutoLockMinutes();
+  if (isSessionExpired(lastActivityAt, Date.now(), minutes)) {
+    await lockWalletNow('Wallet auto-locked after inactivity.');
+    return null;
+  }
+  return state;
+}
+
+async function lockWalletNow(message = 'Wallet locked in Boing Express.'): Promise<void> {
+  unlocked = null;
+  putBlobSessionsByOrigin.clear();
+  await persistUnlockedSession(null);
+  const origins = await getConnectedSites();
+  if (origins.length > 0) {
+    broadcastProviderEvent({ type: 'BOING_PROVIDER_EVENT', event: 'accountsChanged', payload: { accounts: [], origins } });
+    broadcastProviderEvent({
+      type: 'BOING_PROVIDER_EVENT',
+      event: 'disconnect',
+      payload: { origins, code: PROVIDER_ERROR_CODES.UNAUTHORIZED, message },
+    });
+  }
+}
+
+/** One in-flight connect prompt per origin; a site spamming requestAccounts gets one window, not many. */
+const pendingConnectApprovals = new Map<string, Promise<void>>();
+
+async function ensureSiteConnected(origin: string, address: string): Promise<void> {
+  if (!origin) {
+    throw providerError(PROVIDER_ERROR_CODES.UNAUTHORIZED, 'BOING_UNKNOWN_ORIGIN', 'Could not determine which site is asking to connect.');
+  }
+  if ((await getConnectedSites()).includes(origin)) return;
+  let inflight = pendingConnectApprovals.get(origin);
+  if (!inflight) {
+    inflight = (async () => {
+      const chainId = chainIdForNetwork(await getSelectedNetworkId());
+      await requestSignatureApproval({
+        origin,
+        chainId,
+        address,
+        message: 'Connect this site to your wallet.',
+        kind: 'connect',
+      });
+      await addConnectedSite(origin);
+    })().finally(() => pendingConnectApprovals.delete(origin));
+    pendingConnectApprovals.set(origin, inflight);
+  }
+  await inflight;
 }
 
 function serializeProviderError(error: unknown): ProviderErrorPayload {
@@ -619,6 +711,7 @@ function toApprovalRecord(pending: PendingSignatureApproval): ApprovalRecord {
     message: pending.message,
     transactionDetail: pending.transactionDetail,
     txPipeline: pending.txPipeline,
+    kind: pending.kind,
   };
 }
 
@@ -720,7 +813,12 @@ async function processPendingUnlockQueue(): Promise<void> {
       if (!account) {
         sendResp(undefined, serializeProviderError(providerError(PROVIDER_ERROR_CODES.UNAUTHORIZED, 'BOING_NO_WALLET', 'No wallet found.')));
       } else {
-        await addConnectedSite(item.origin);
+        try {
+          await ensureSiteConnected(item.origin, account);
+        } catch (err) {
+          sendResp(undefined, serializeProviderError(err));
+          continue;
+        }
         broadcastProviderEvent({
           type: 'BOING_PROVIDER_EVENT',
           event: 'accountsChanged',
@@ -819,6 +917,7 @@ async function requestSignatureApproval(data: {
   message: string;
   transactionDetail?: TransactionApprovalDetail;
   txPipeline?: 'sign' | 'send';
+  kind?: 'connect' | 'sign';
 }): Promise<void> {
   const requestId = `sign-${Date.now()}-${nextApprovalId++}`;
   return new Promise((resolve, reject) => {
@@ -837,6 +936,7 @@ async function requestSignatureApproval(data: {
       message: data.message,
       transactionDetail: data.transactionDetail,
       txPipeline: data.txPipeline,
+      kind: data.kind,
       resolve,
       reject,
       timeoutId,
@@ -940,6 +1040,20 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
 
   const msg = message as { type: string; [key: string]: unknown };
 
+  // Only this extension's own pages may drive the wallet; web pages (via the content script) may only
+  // forward dApp provider requests, and their origin is taken from the browser-supplied sender.
+  const fromExtensionPage = isExtensionPageSender(_sender, chrome.runtime.id, chrome.runtime.getURL(''));
+  if (!fromExtensionPage && msg.type !== 'BOING_PROVIDER_REQUEST') {
+    sendResponse(undefined);
+    return true;
+  }
+
+  if (msg.type === 'WALLET_ACTIVITY') {
+    touchActivity();
+    sendResponse({ ok: true });
+    return true;
+  }
+
   if (msg.type === 'BOING_REFRESH_NETWORK_META') {
     const force = msg.force === true;
     void (async () => {
@@ -971,6 +1085,7 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
           });
         }
       });
+      touchActivity();
       unlockWindowId = null;
       processPendingUnlockQueue();
     }
@@ -979,22 +1094,7 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
   }
 
   if (msg.type === 'WALLET_LOCK') {
-    unlocked = null;
-    putBlobSessionsByOrigin.clear();
-    persistUnlockedSession(null).then(() => getConnectedSites()).then((origins) => {
-      if (origins.length > 0) {
-        broadcastProviderEvent({
-          type: 'BOING_PROVIDER_EVENT',
-          event: 'accountsChanged',
-          payload: { accounts: [], origins },
-        });
-        broadcastProviderEvent({
-          type: 'BOING_PROVIDER_EVENT',
-          event: 'disconnect',
-          payload: { origins, code: PROVIDER_ERROR_CODES.UNAUTHORIZED, message: 'Wallet locked in Boing Express.' },
-        });
-      }
-    });
+    void lockWalletNow();
     sendResponse({ ok: true });
     return true;
   }
@@ -1035,6 +1135,7 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
   if (msg.type === 'GET_SESSION_RESTORE') {
     getUnlockedState().then((state) => {
       if (state && state.accountHex && state.privateKey && state.privateKey.length === 32) {
+        touchActivity();
         sendResponse({
           unlocked: true,
           accountHex: state.accountHex,
@@ -1073,7 +1174,9 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
     const id = msg.id as number | string;
     const method = typeof msg.method === 'string' ? msg.method : '';
     const params = Array.isArray(msg.params) ? msg.params : [];
-    const origin = typeof msg.origin === 'string' ? msg.origin : '';
+    const origin = fromExtensionPage
+      ? typeof msg.origin === 'string' ? msg.origin : ''
+      : originFromContentSender(_sender);
     handleProviderRequest(id, method, params, origin, sendResponse)
       .then((result) => sendResponse({ type: 'BOING_PROVIDER_RESPONSE', id, result, error: undefined }))
       .catch((error) => {
@@ -1124,8 +1227,9 @@ async function handleProviderRequest(
         pendingUnlockQueue.push({ id, method, params, origin, sendResponse, timeoutId });
         throw new QueuedForUnlock();
       }
-      await addConnectedSite(origin);
       const account = addressHex.startsWith('0x') ? addressHex : '0x' + addressHex;
+      await ensureSiteConnected(origin, account);
+      touchActivity();
       broadcastProviderEvent({
         type: 'BOING_PROVIDER_EVENT',
         event: 'accountsChanged',

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { nonceOfSignedHex, openPopupWithNewWallet } from './helpers/popup';
+import { nonceOfSignedHex, openPopupWithNewWallet, connectDapp } from './helpers/popup';
 
 /** Parity with the web wallet (0.1.12): Validator tab, chain Tx history, atomic bulk batch, dApp batch approval. */
 const RUN = process.env.EXTENSION_E2E_FULL === '1';
@@ -150,9 +150,7 @@ describe('Extension parity with web wallet (E2E, mocked RPC)', () => {
       const dapp = await context.newPage();
       await dapp.goto('http://127.0.0.1:3333/dapp.html', { waitUntil: 'domcontentloaded' });
       await dapp.waitForFunction(() => !!(window as unknown as { boing?: unknown }).boing, null, { timeout: 30_000 });
-      const accounts = await dapp.evaluate(() =>
-        (window as unknown as { boing: { request: (a: unknown) => Promise<string[]> } }).boing.request({ method: 'boing_requestAccounts' })
-      );
+      const accounts = await connectDapp(context, dapp);
       expect(accounts).toHaveLength(1);
       const approvalP = context.waitForEvent('page', { timeout: 30_000 });
       const sendP = dapp.evaluate(

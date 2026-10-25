@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import { openPopupWithNewWallet } from './helpers/popup';
+import { openPopupWithNewWallet, connectDapp } from './helpers/popup';
 
 /** dApp approval popup shows native amounts as BOING (18-decimal base units after the redenomination height). */
 const RUN = process.env.EXTENSION_E2E_FULL === '1';
@@ -33,9 +33,7 @@ describe('Extension dApp approval amounts (E2E, mocked RPC)', () => {
       const dapp = await context.newPage();
       await dapp.goto('http://127.0.0.1:3333/dapp.html', { waitUntil: 'domcontentloaded' });
       await dapp.waitForFunction(() => !!(window as unknown as { boing?: unknown }).boing, null, { timeout: 30_000 });
-      const accounts = await dapp.evaluate(() =>
-        (window as unknown as { boing: { request: (a: unknown) => Promise<string[]> } }).boing.request({ method: 'boing_requestAccounts' })
-      );
+      const accounts = await connectDapp(context, dapp);
       expect(accounts).toHaveLength(1);
       const approvalP = context.waitForEvent('page', { timeout: 30_000 });
       const sendP = dapp.evaluate(
