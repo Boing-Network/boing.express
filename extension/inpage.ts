@@ -10,7 +10,9 @@
  *   boing_simulateTransaction — params: [hexSignedTx]; forwards to node RPC (no extra signing). Connected origin required.
  *   boing_simulateContractCall — params: [contractHex, calldataHex, senderHex?, atBlock?]; unsigned contract_call dry-run per RPC-API-SPEC. Connected origin required. If senderHex is omitted, the active vault account is sent as the third RPC param when available.
  *   boing_listDexPools / boing_listDexTokens / boing_getDexToken — L1 DEX discovery; params mirror boing-sdk (single object in params array). Connected origin required. See docs/BOING-EXPRESS-WALLET.md.
- *   boing_getCapabilities - { version, features }, answered in the page; features has 'nativeValue' when contract calls may carry `value` (0.1.19+) and 'priorityTip' when `priority_tip` is signed (0.1.21+). Also exposed as provider.version / provider.features.
+ *   boing_getCapabilities - { version, features }, answered in the page; features has 'nativeValue' when contract calls may carry `value` (0.1.19+), 'priorityTip' when `priority_tip` is signed (0.1.21+), and 'putBlobSession' when `boing_requestPutBlobSession` is available (0.1.22+). Also exposed as provider.version / provider.features.
+ *   boing_requestPutBlobSession — one approval covering many subsequent put_blob sends (params: [{ maxBlobs, maxTotalBytes?, maxBytesPerBlob?, ttlMs? }]).
+ *   boing_getPutBlobSession / boing_endPutBlobSession — inspect or clear the origin's PutBlob publish session.
  *   boing_chainId           — current chain (0x1b01 testnet, 0x1b02 mainnet)
  *   boing_switchChain       — switch network
  *
@@ -21,7 +23,11 @@
 declare const __BOING_EXPRESS_VERSION__: string;
 /** Injected at build time from extension/manifest.base.json (vite.extension.inpage.config.ts). */
 const BOING_EXPRESS_VERSION: string = typeof __BOING_EXPRESS_VERSION__ === 'string' ? __BOING_EXPRESS_VERSION__ : '0.0.0';
-const BOING_EXPRESS_FEATURES: readonly string[] = Object.freeze(['nativeValue', 'priorityTip']);
+const BOING_EXPRESS_FEATURES: readonly string[] = Object.freeze([
+  'nativeValue',
+  'priorityTip',
+  'putBlobSession',
+]);
 
 const BOING_PROVIDER_SOURCE = 'boing-inpage';
 const BOING_CONTENT_SOURCE = 'boing-content';
@@ -34,6 +40,16 @@ type SerializedProviderError = {
   message?: string;
   data?: unknown;
 };
+
+const APPROVAL_METHODS = new Set([
+  'boing_requestAccounts',
+  'boing_signMessage',
+  'boing_signTransaction',
+  'boing_sendTransaction',
+  'boing_requestPutBlobSession',
+  'eth_requestAccounts',
+  'personal_sign',
+]);
 
 function sendToExtension(method: string, params: unknown[]): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -49,13 +65,14 @@ function sendToExtension(method: string, params: unknown[]): Promise<unknown> {
       },
       '*'
     );
-    // Timeout so we don't leave pending forever if content script is gone
+    // Approval flows need longer than a silent RPC; keep a bound so dead content scripts don't hang forever.
+    const timeoutMs = APPROVAL_METHODS.has(method) ? 3 * 60 * 1000 : 60_000;
     setTimeout(() => {
       if (pending.has(id)) {
         pending.delete(id);
         reject(new Error('Boing Express: request timed out'));
       }
-    }, 60000);
+    }, timeoutMs);
   });
 }
 
@@ -93,6 +110,7 @@ function createProvider(): unknown {
      * Capability flags.
      * - `nativeValue`: `value` on `contract_call` / batch steps is signed as ContractCallWithValue.
      * - `priorityTip` (0.1.21+): `priority_tip` / `priorityTip` on dApp JSON is bound into the signature.
+     * - `putBlobSession` (0.1.22+): `boing_requestPutBlobSession` — one approval for many PutBlob publishes.
      * Wallets without a flag drop that field silently — dApps should check before relying on it.
      */
     features: BOING_EXPRESS_FEATURES,

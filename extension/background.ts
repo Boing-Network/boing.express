@@ -47,6 +47,16 @@ import {
 } from './boingMetaExtension';
 import { parseVaultFromStoredJson, getActiveAddressHex } from '../src/storage/walletVault';
 import { addNftWatchEntries } from '../src/storage/nftWatchlist';
+import {
+  consumePutBlobSession,
+  createPutBlobSessionState,
+  isPutBlobSessionActive,
+  normalizePutBlobSessionRequest,
+  putBlobDataByteLengthFromDappTx,
+  putBlobSessionApprovalRows,
+  putBlobSessionToPublic,
+  type PutBlobSessionState,
+} from '../src/boing/putBlobSession';
 
 const STORAGE_KEY_WALLET = 'boing_wallet_enc';
 const STORAGE_KEY_CONNECTED_SITES = 'boing_connected_sites';
@@ -80,9 +90,16 @@ const BOING_METHODS = {
   LIST_DEX_POOLS: 'boing_listDexPools',
   LIST_DEX_TOKENS: 'boing_listDexTokens',
   GET_DEX_TOKEN: 'boing_getDexToken',
+  REQUEST_PUT_BLOB_SESSION: 'boing_requestPutBlobSession',
+  GET_PUT_BLOB_SESSION: 'boing_getPutBlobSession',
+  END_PUT_BLOB_SESSION: 'boing_endPutBlobSession',
   CHAIN_ID: 'boing_chainId',
   SWITCH_CHAIN: 'boing_switchChain',
 } as const;
+
+/** Origin → active PutBlob publish session (in-memory; cleared on worker restart / lock). */
+const putBlobSessionsByOrigin = new Map<string, PutBlobSessionState>();
+let nextPutBlobSessionId = 1;
 
 const METHOD_ALIASES: Record<string, string> = {
   eth_requestAccounts: BOING_METHODS.REQUEST_ACCOUNTS,
@@ -459,14 +476,36 @@ async function signOrSendBoingTransaction(
   // Native amounts as BOING: decimals of the block this tx lands in (18 = base units) + simulated fee.
   const amountCtx = await approvalAmountContext(rpcUrl, tx, unlockedState.privateKey);
 
-  await requestSignatureApproval({
-    origin,
-    chainId,
-    address: normalizedAddr,
-    message: transactionSummary(tx, amountCtx),
-    transactionDetail: buildTransactionApprovalDetail(tx, amountCtx),
-    txPipeline: method === BOING_METHODS.SEND_TRANSACTION ? 'send' : 'sign',
-  });
+  const putBlobBytes = putBlobDataByteLengthFromDappTx(txReq);
+  const session = putBlobSessionsByOrigin.get(origin);
+  const sessionOk =
+    putBlobBytes != null &&
+    isPutBlobSessionActive(session, origin, normalizedAddr) &&
+    putBlobBytes <= (session?.maxBytesPerBlob ?? 0);
+
+  if (sessionOk && session && putBlobBytes != null) {
+    try {
+      const next = consumePutBlobSession(session, putBlobBytes);
+      putBlobSessionsByOrigin.set(origin, next);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw providerError(
+        PROVIDER_ERROR_CODES.USER_REJECTED,
+        'BOING_PUT_BLOB_SESSION_EXHAUSTED',
+        msg
+      );
+    }
+    // One prior `boing_requestPutBlobSession` approval covers this PutBlob — no per-file popup.
+  } else {
+    await requestSignatureApproval({
+      origin,
+      chainId,
+      address: normalizedAddr,
+      message: transactionSummary(tx, amountCtx),
+      transactionDetail: buildTransactionApprovalDetail(tx, amountCtx),
+      txPipeline: method === BOING_METHODS.SEND_TRANSACTION ? 'send' : 'sign',
+    });
+  }
 
   // Security fix #2: chain-bound (v2) signature for the selected network's chain id.
   const signingChainId = await signingChainIdForRpc(rpcUrl);
@@ -941,6 +980,7 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
 
   if (msg.type === 'WALLET_LOCK') {
     unlocked = null;
+    putBlobSessionsByOrigin.clear();
     persistUnlockedSession(null).then(() => getConnectedSites()).then((origins) => {
       if (origins.length > 0) {
         broadcastProviderEvent({
@@ -961,6 +1001,7 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
 
   if (msg.type === 'BOING_ACTIVE_ACCOUNT_CHANGED') {
     unlocked = null;
+    putBlobSessionsByOrigin.clear();
     void persistUnlockedSession(null);
     const switchErr = providerError(
       PROVIDER_ERROR_CODES.UNAUTHORIZED,
@@ -1162,6 +1203,101 @@ async function handleProviderRequest(
 
       const messageBytes = messageToBytes(messageParam);
       return await signMessage(messageBytes, unlockedState.privateKey);
+    }
+
+    case BOING_METHODS.GET_PUT_BLOB_SESSION: {
+      if (!isConnected) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
+      }
+      const session = putBlobSessionsByOrigin.get(origin);
+      const addr = addressHex ? normalizeAddress(addressHex) : '';
+      if (!isPutBlobSessionActive(session, origin, addr)) {
+        if (session) putBlobSessionsByOrigin.delete(origin);
+        return null;
+      }
+      return putBlobSessionToPublic(session);
+    }
+
+    case BOING_METHODS.END_PUT_BLOB_SESSION: {
+      if (!isConnected) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
+      }
+      putBlobSessionsByOrigin.delete(origin);
+      return { ok: true };
+    }
+
+    case BOING_METHODS.REQUEST_PUT_BLOB_SESSION: {
+      if (!isConnected) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_ORIGIN_NOT_CONNECTED',
+          'Origin is not connected. Call boing_requestAccounts first.'
+        );
+      }
+      if (!addressHex) {
+        throw providerError(
+          PROVIDER_ERROR_CODES.UNAUTHORIZED,
+          'BOING_NO_WALLET',
+          'No wallet found. Create or import a wallet in Boing Express.'
+        );
+      }
+      let request;
+      try {
+        request = normalizePutBlobSessionRequest(params[0]);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        throw providerError(PROVIDER_ERROR_CODES.INVALID_PARAMS, 'BOING_INVALID_PARAMS', msg);
+      }
+      const unlockedSession = await getUnlockedState();
+      if (!unlockedSession) {
+        openUnlockWindow('sign');
+        const timeoutId = setTimeout(() => {
+          const idx = pendingUnlockQueue.findIndex((p) => p.id === id);
+          if (idx !== -1) {
+            const [item] = pendingUnlockQueue.splice(idx, 1);
+            rejectPendingUnlockItem(
+              item,
+              providerError(PROVIDER_ERROR_CODES.USER_REJECTED, 'BOING_UNLOCK_TIMEOUT', 'Unlock timed out. Please try again.')
+            );
+          }
+        }, PENDING_UNLOCK_TIMEOUT_MS) as unknown as number;
+        pendingUnlockQueue.push({ id, method, params, origin, sendResponse, timeoutId });
+        throw new QueuedForUnlock();
+      }
+      const normalizedAddr = normalizeAddress(addressHex);
+      const networkId = await getSelectedNetworkId();
+      const chainId = chainIdForNetwork(networkId);
+      const rows = putBlobSessionApprovalRows(request);
+      await requestSignatureApproval({
+        origin,
+        chainId,
+        address: normalizedAddr,
+        message: `Allow ${origin} to publish up to ${request.maxBlobs} L1 media blobs (PutBlob) without per-file approval.`,
+        transactionDetail: {
+          txType: 'put_blob_session',
+          summaryLine: `PutBlob session · ${request.maxBlobs} blobs`,
+          rows,
+        },
+        txPipeline: 'send',
+      });
+      const sessionId = `pbs-${Date.now()}-${nextPutBlobSessionId++}`;
+      const state = createPutBlobSessionState({
+        sessionId,
+        origin,
+        address: normalizedAddr,
+        chainId,
+        request,
+      });
+      putBlobSessionsByOrigin.set(origin, state);
+      return putBlobSessionToPublic(state);
     }
 
     case BOING_METHODS.SIGN_TRANSACTION:
