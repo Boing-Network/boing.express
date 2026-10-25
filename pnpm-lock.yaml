@@ -20,8 +20,8 @@ importers:
   .:
     dependencies:
       '@boing-network/boing-sdk':
-        specifier: ^0.5.24
-        version: 0.5.24
+        specifier: ^0.5.38
+        version: 0.5.38
       '@noble/ed25519':
         specifier: ^2.1.0
         version: 2.3.0
@@ -166,8 +166,8 @@ packages:
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
-  '@boing-network/boing-sdk@0.5.24':
-    resolution: {integrity: sha512-oanSEASgDPpWG5ROQZzTOzEKqodW/dvNpSoUhm9R8Dhmrqz1iEl4aoua+MZke+Qjcp0mJCmP3ymyNYrI36AuYw==}
+  '@boing-network/boing-sdk@0.5.38':
+    resolution: {integrity: sha512-wtKBZxkfsYY+W2LaWgWgXsgH+GnJ3mPDEy8qbpE3QQJ+UmjAfldulNhebhufB5p9tl8Vn0/bAhMs960t+0eX/g==}
 
   '@cloudflare/kv-asset-handler@0.5.0':
     resolution: {integrity: sha512-jxQYkj8dSIzc0cD6cMMNdOc1UVjqSqu8BZdor5s8cGjW2I8BjODt/kWPVdY+u9zj3ms75Q5qaZgnxUad83+eAg==}
@@ -1508,7 +1508,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@boing-network/boing-sdk@0.5.24':
+  '@boing-network/boing-sdk@0.5.38':
     dependencies:
       '@noble/ed25519': 2.3.0
       '@noble/hashes': 1.8.0
