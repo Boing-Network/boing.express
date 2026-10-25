@@ -1,4 +1,5 @@
 import { describeWalletError } from '../boing/errorMessages';
+import { buildAndSubmit, submitNote } from '../boing/submitRetry';
 import { checkNodeCompat, configuredChainIdDecimal, type NodeCompatStatus } from '../boing/nodeCompat';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -372,17 +373,10 @@ export function Dashboard() {
           return;
         }
       }
-      const nonce = await network.getNonce(accountId);
       const toId = accountIdFromHex(toHex);
-      const signedHex = await network.buildTransfer(
-        accountId,
-        toId,
-        amount,
-        nonce,
-        privateKey,
-        priorityTip
+      const result = await buildAndSubmit(network, accountId, (nonce) =>
+        network.buildTransfer(accountId, toId, amount, nonce, privateKey, priorityTip)
       );
-      const result = await network.submitTransaction(signedHex);
       if (result.success) {
         if (result.txHash) {
           addTxHistory(addressHint, network.config.id, result.txHash, 'send', `${sendAmount.trim()} BOING → ${toName ? `${toName}.boing` : `${toHex.slice(0, 6)}…${toHex.slice(-4)}`}`);
@@ -391,7 +385,7 @@ export function Dashboard() {
           setOnboarding(getOnboardingState());
           setLastTxHash(result.txHash);
         }
-        setSendSuccess(result.txHash ? `Sent! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
+        setSendSuccess(`${result.txHash ? `Sent! Tx: ${result.txHash.slice(0, 16)}…` : 'Transaction submitted'}${submitNote(result)}`);
         setSendAmount('');
         setSendTo('');
         setSendReview(null);
@@ -451,9 +445,7 @@ export function Dashboard() {
     }
     setBonding(true);
     try {
-      const nonce = await network.getNonce(accountId);
-      const signedHex = await network.buildBond(accountId, amount, nonce, privateKey);
-      const result = await network.submitTransaction(signedHex);
+      const result = await buildAndSubmit(network, accountId, (nonce) => network.buildBond!(accountId, amount, nonce, privateKey));
       if (result.success) {
         if (result.txHash) {
           addTxHistory(addressHint, network.config.id, result.txHash, 'bond');
@@ -500,9 +492,7 @@ export function Dashboard() {
     }
     setUnbonding(true);
     try {
-      const nonce = await network.getNonce(accountId);
-      const signedHex = await network.buildUnbond(accountId, amount, nonce, privateKey);
-      const result = await network.submitTransaction(signedHex);
+      const result = await buildAndSubmit(network, accountId, (nonce) => network.buildUnbond!(accountId, amount, nonce, privateKey));
       if (result.success) {
         if (result.txHash) {
           addTxHistory(addressHint, network.config.id, result.txHash, 'unbond');
@@ -550,9 +540,7 @@ export function Dashboard() {
     }
     setClaiming(true);
     try {
-      const nonce = await network.getNonce(accountId);
-      const signedHex = await network.buildClaimUnbond(accountId, nonce, privateKey);
-      const result = await network.submitTransaction(signedHex);
+      const result = await buildAndSubmit(network, accountId, (nonce) => network.buildClaimUnbond!(accountId, nonce, privateKey));
       if (result.success) {
         if (result.txHash) {
           addTxHistory(addressHint, network.config.id, result.txHash, 'claim_unbond');

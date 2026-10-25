@@ -5,6 +5,7 @@
 
 // Ensure Ed25519 SHA-512 shim is set before any wallet code (create/import/unlock/sign).
 import { describeWalletError } from '../src/boing/errorMessages';
+import { buildAndSubmit, submitNote } from '../src/boing/submitRetry';
 import { resolveRecipient, reverseName } from '../src/boing/names';
 import { setPendingName } from '../src/storage/pendingName';
 import '../src/crypto/keys';
@@ -47,7 +48,7 @@ import { addTokenWatchEntry, listTokenWatchlist, removeTokenWatchEntry } from '.
 import { addTxHistory, getTxHistory, type TxHistoryEntry } from '../src/storage/txHistory';
 import { chainRowToDisplay, fetchChainTxPage, mergeTxHistory, type DisplayTxEntry } from '../src/boing/chainTxHistory';
 import { mergeWithDefaultTokens } from '../src/boing/defaultTokens';
-import { confirmSendIsland, renderBulkIsland, renderClaimNameIsland, renderNamesIsland, renderPendingNameIsland, renderValidatorIsland, showAddressQrIsland } from './popupIslands';
+import { confirmSendIsland, confirmSendTipIsland, renderBulkIsland, renderClaimNameIsland, renderNamesIsland, renderPendingNameIsland, renderValidatorIsland, showAddressQrIsland } from './popupIslands';
 import { loadTokenHoldings, type TokenHolding } from '../src/boing/tokenHoldings';
 import { buildReferenceFungibleTransfer } from '../src/boing/referenceFungible';
 import { encodeReferenceTransferNftCalldata, normalizeHex64 } from '../src/boing/referenceNft';
@@ -1219,11 +1220,13 @@ document.getElementById('btn-native-tx-submit')?.addEventListener('click', async
     const obj = JSON.parse(raw) as unknown;
     assertFromMatchesSender(obj, accountIdToHex(accountId));
     const net = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
-    const nonce = await net.getNonce(accountId);
-    const tx = transactionFromDappJson(obj, accountId, nonce);
-    const signedHexNo0x = await buildSignedTransactionHex(tx, privateKey, await signingChainIdForRpc(net.config.rpcUrl));
-    const hex = signedHexNo0x.startsWith('0x') ? signedHexNo0x : `0x${signedHexNo0x}`;
-    const result = await net.submitTransaction(hex);
+    const signChainId = await signingChainIdForRpc(net.config.rpcUrl);
+    let tx!: ReturnType<typeof transactionFromDappJson>;
+    const result = await buildAndSubmit(net, accountId, async (nonce) => {
+      tx = transactionFromDappJson(obj, accountId, nonce);
+      const signedHexNo0x = await buildSignedTransactionHex(tx, privateKey, signChainId);
+      return signedHexNo0x.startsWith('0x') ? signedHexNo0x : ('0x' + signedHexNo0x);
+    });
     if (result.success) {
       if (result.txHash) recordTx(result.txHash, 'contract_call', tx.payload.kind);
       okEl.textContent = result.txHash ? `Submitted: ${result.txHash.slice(0, 20)}…` : 'Submitted.';
@@ -1431,20 +1434,22 @@ $('form-send').addEventListener('submit', async (e) => {
     showError('send-error', 'Insufficient balance');
     return;
   }
+  let priorityTip = 0n;
   {
     const cnet = getNetwork(selectedNetworkId, networksCatalog) ?? getDefaultNetwork(networksCatalog);
     const acct = accountId;
     const pk = privateKey;
-    const ok = await confirmSendIsland({
+    const chosenTip = await confirmSendTipIsland({
       title: 'Send BOING',
       to: toHex,
       toName,
       amount: `${amountStr.trim()} BOING`,
       network: cnet,
       mascotSrc: 'images/mascot-default.webp',
-      buildSigned: async () => cnet.buildTransfer(acct, accountIdFromHex(toHex), amount, await cnet.getNonce(acct), pk),
+      buildSigned: async (tip) => cnet.buildTransfer(acct, accountIdFromHex(toHex), amount, await cnet.getNonce(acct), pk, tip),
     });
-    if (!ok) return;
+    if (chosenTip === null) return;
+    priorityTip = chosenTip;
   }
   const sendBtn = document.getElementById('btn-send-submit') as HTMLButtonElement;
   const originalSendText = sendBtn?.textContent ?? 'Send';
@@ -1458,13 +1463,15 @@ $('form-send').addEventListener('submit', async (e) => {
       const again = await resolveRecipient(net.config.rpcUrl, toName);
       if (!again.ok || again.hex !== toHex) throw new Error(`${toName}.boing changed since review. Check the recipient.`);
     }
-    const nonce = await net.getNonce(accountId);
     const toId = accountIdFromHex(toHex);
-    const signedHex = await net.buildTransfer(accountId, toId, amount, nonce, privateKey);
-    const result = await net.submitTransaction(signedHex);
+    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildTransfer(accountId, toId, amount, nonce, privateKey, priorityTip), {
+      onRetry: () => {
+        if (sendBtn) sendBtn.textContent = 'Refreshing nonce…';
+      },
+    });
     if (result.success) {
       if (result.txHash) recordTx(result.txHash, 'send', `${amountStr.trim()} BOING → ${shortHexLabel(toHex, 6, 4)}`);
-      showSuccess('send-success', result.txHash ? `Sent! ${result.txHash.slice(0, 16)}…` : 'Transaction submitted');
+      showSuccess('send-success', `${result.txHash ? `Sent! ${result.txHash.slice(0, 16)}…` : 'Transaction submitted'}${submitNote(result)}`);
       ($('send-amount') as HTMLInputElement).value = '';
       ($('send-to') as HTMLInputElement).value = '';
       const balance = await net.getBalance(accountId);
@@ -1563,9 +1570,7 @@ $('form-bond').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Bonding…';
   try {
-    const nonce = await net.getNonce(accountId);
-    const signedHex = await net.buildBond!(accountId, amount, nonce, privateKey);
-    const result = await net.submitTransaction(signedHex);
+    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildBond!(accountId, amount, nonce, privateKey));
     if (result.success) {
       await refreshDashboardBalance();
       await refreshStake();
@@ -1605,9 +1610,7 @@ $('form-unbond').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Unbonding…';
   try {
-    const nonce = await net.getNonce(accountId);
-    const signedHex = await net.buildUnbond!(accountId, amount, nonce, privateKey);
-    const result = await net.submitTransaction(signedHex);
+    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildUnbond!(accountId, amount, nonce, privateKey));
     if (result.success) {
       await refreshDashboardBalance();
       await refreshStake();
@@ -1652,9 +1655,7 @@ $('btn-claim-unbond').addEventListener('click', async () => {
   btn.disabled = true;
   btn.textContent = 'Claiming…';
   try {
-    const nonce = await net.getNonce(accountId);
-    const signedHex = await net.buildClaimUnbond!(accountId, nonce, privateKey);
-    const result = await net.submitTransaction(signedHex);
+    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildClaimUnbond!(accountId, nonce, privateKey));
     if (result.success) {
       okEl.textContent = result.txHash ? `Claimed! Tx: ${result.txHash.slice(0, 16)}…` : 'Submitted';
       okEl.classList.remove('hidden');
@@ -2079,9 +2080,9 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
       const again = await resolveRecipient(net.config.rpcUrl, toName);
       if (!again.ok || again.hex !== toHex) throw new Error(`${toName}.boing changed since review. Check the recipient.`);
     }
-    const nonce = await net.getNonce(accountId);
-    const signed = await buildReferenceFungibleTransfer({ network: net, sender: accountId, tokenHex: t.tokenHex, toHex, amount, nonce, privateKey });
-    const res = await net.submitTransaction(signed);
+    const res = await buildAndSubmit(net, accountId, (nonce) =>
+      buildReferenceFungibleTransfer({ network: net, sender: accountId, tokenHex: t.tokenHex, toHex, amount, nonce, privateKey })
+    );
     if (!res.success) throw new Error(res.error ?? 'Submit failed');
     if (res.txHash) recordTx(res.txHash, 'token_send', `${formatBalance(amount.toString(), t.decimals, t.decimals)} ${t.symbol} → ${shortHexLabel(toHex, 6, 4)}`);
     showSuccess('token-send-success', res.txHash ? `Sent! ${res.txHash.slice(0, 16)}…` : 'Transaction submitted');

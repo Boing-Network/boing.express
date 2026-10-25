@@ -55,7 +55,8 @@ export interface WebSigningRequest {
 export interface WebSigningError {
   code: number;
   message: string;
-  data: { boingCode: string };
+  /** `reason` mirrors the node's `error.data.reason` for submit rejections (e.g. `stale_nonce`). */
+  data: { boingCode: string; reason?: string };
 }
 
 export interface WebSigningResponse {
@@ -81,8 +82,8 @@ export class WebRequestError extends Error {
   }
 }
 
-export function webError(boingCode: string, message: string, code = 4100): WebSigningError {
-  return { code, message, data: { boingCode } };
+export function webError(boingCode: string, message: string, code = 4100, reason?: string): WebSigningError {
+  return { code, message, data: reason ? { boingCode, reason } : { boingCode } };
 }
 
 export const USER_REJECTED_ERROR = webError('BOING_USER_REJECTED', 'User rejected the request.', 4001);

@@ -1,4 +1,5 @@
 import { describeWalletError } from '../boing/errorMessages';
+import { buildAndSubmit } from '../boing/submitRetry';
 import { useEffect, useState } from 'react';
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
@@ -68,13 +69,16 @@ export function TokenSendForm(props: {
     setReview({ toHex, toName: resolved.name, amount: v.rows[0]!.amount, tokenHex: token.tokenHex });
   }
 
-  function sign(r: { toHex: string; amount: bigint; tokenHex: string }) {
-    return async () => {
-      const pk = props.getPrivateKey();
-      if (!pk) throw new Error('Wallet locked');
-      const nonce = await props.network.getNonce(props.accountId);
-      return buildReferenceFungibleTransfer({ network: props.network, sender: props.accountId, tokenHex: r.tokenHex, toHex: r.toHex, amount: r.amount, nonce, privateKey: pk });
-    };
+  type TokenSendRow = { toHex: string; amount: bigint; tokenHex: string };
+
+  function buildWithNonce(r: TokenSendRow, nonce: bigint) {
+    const pk = props.getPrivateKey();
+    if (!pk) throw new Error('Wallet locked');
+    return buildReferenceFungibleTransfer({ network: props.network, sender: props.accountId, tokenHex: r.tokenHex, toHex: r.toHex, amount: r.amount, nonce, privateKey: pk });
+  }
+
+  function sign(r: TokenSendRow) {
+    return async () => buildWithNonce(r, await props.network.getNonce(props.accountId));
   }
 
   async function confirm() {
@@ -86,8 +90,7 @@ export function TokenSendForm(props: {
         const again = await resolveRecipient(props.network.config.rpcUrl, review.toName);
         if (!again.ok || again.hex !== review.toHex) throw new Error(`${review.toName}.boing changed since review. Go back and check the recipient.`);
       }
-      const signed = await sign(review)();
-      const res = await props.network.submitTransaction(signed);
+      const res = await buildAndSubmit(props.network, props.accountId, (nonce) => buildWithNonce(review, nonce));
       if (!res.success) throw new Error(res.error ?? 'Submit failed');
       props.onSent(res.txHash, `${formatBalance(review.amount.toString(), token.decimals, token.decimals)} ${token.symbol} → ${shortHexLabel(review.toHex, 6, 4)}`);
       setSuccess(res.txHash ? `Sent! Tx: ${res.txHash.slice(0, 16)}…` : 'Transaction submitted');

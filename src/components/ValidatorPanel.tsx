@@ -1,4 +1,5 @@
 import { describeWalletError } from '../boing/errorMessages';
+import { buildAndSubmit } from '../boing/submitRetry';
 import { useCallback, useEffect, useState } from 'react';
 import { boingNumber, formatNative, knownLedgerDecimals } from '../boing/nativeUnit';
 import type { AccountId } from '../boing/types';
@@ -109,10 +110,11 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
     }
     setBusy(true);
     try {
-      const nonce = await network.getNonce(accountId);
-      const tx: Transaction = { nonce, sender: accountId, payload, access_list: suggestedAccessList(accountId, payload) };
-      const signed = await buildSignedTransactionHex(tx, pk, await signingChainIdForRpc(network.config.rpcUrl));
-      const res = await network.submitTransaction(signed);
+      const chainId = await signingChainIdForRpc(network.config.rpcUrl);
+      const res = await buildAndSubmit(network, accountId, (nonce) => {
+        const tx: Transaction = { nonce, sender: accountId, payload, access_list: suggestedAccessList(accountId, payload) };
+        return buildSignedTransactionHex(tx, pk, chainId);
+      });
       if (!res.success) {
         setError(res.error ?? 'Submit failed');
         return false;

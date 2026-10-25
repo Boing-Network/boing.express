@@ -37,3 +37,9 @@ export async function buildAndSubmit(
   const again = await network.submitTransaction(await build(fresh));
   return { ...again, retriedNonce: true };
 }
+/** Short, plain-language suffix describing what the wallet did on its own; '' for a normal send. */
+export function submitNote(r: Pick<SubmitResult, 'retriedNonce' | 'alreadyPending'>): string {
+  if (r.alreadyPending) return ' (it was already waiting in the network queue)';
+  if (r.retriedNonce) return ' (another transaction landed first, so the wallet refreshed the nonce and sent it again)';
+  return '';
+}

@@ -17,6 +17,7 @@ import {
 } from '../boing/dappTxRequest';
 import { buildSignedTransactionHex, signingChainIdForRpc } from '../boing/signing';
 import { approvalAmountContext } from '../boing/approvalAmounts';
+import { buildAndSubmit } from '../boing/submitRetry';
 import { signMessage } from '../crypto/keys';
 import { looksLikeTransactionPreimage, messageToBytes, TX_PREIMAGE_MESSAGE_REFUSED } from '../boing/messageSigning';
 import type { Transaction } from '../boing/types';
@@ -239,15 +240,26 @@ export function WebSign() {
         return;
       }
       if (!tx) throw new Error(prepError ?? 'Transaction not ready.');
-      const signed = await buildSignedTransactionHex(tx, wallet.privateKey, await signingChainIdForRpc(network.config.rpcUrl));
-      const hex = signed.startsWith('0x') ? signed : `0x${signed}`;
+      const chainId = await signingChainIdForRpc(network.config.rpcUrl);
+      const signingKey = wallet.privateKey;
+      const signWith = async (t: Transaction) => {
+        const signed = await buildSignedTransactionHex(t, signingKey, chainId);
+        return signed.startsWith('0x') ? signed : `0x${signed}`;
+      };
+      const hex = await signWith(tx);
       if (req.method === 'boing_signTransaction') {
         respond(req, { result: hex }, 'Transaction signed. You can return to the app.');
         return;
       }
-      const sent = await network.submitTransaction(hex);
+      const requested = req.params[0] as Record<string, unknown> | undefined;
+      const explicitNonce = requested?.nonce !== undefined && requested?.nonce !== null && String(requested.nonce).trim() !== '';
+      // The approval can sit open for a while: for a wallet-chosen nonce, sign with the account's current
+      // nonce at send time, and re-sign once if the node says `stale_nonce`. A dApp-pinned nonce is sent as-is.
+      const sent = explicitNonce
+        ? await network.submitTransaction(hex)
+        : await buildAndSubmit(network, accountId, (nonce) => signWith({ ...tx, nonce }));
       if (!sent.success) {
-        respond(req, { error: webError('BOING_SUBMIT_FAILED', sent.error ?? 'Submit failed.', -32603) }, sent.error ?? 'Submit failed.');
+        respond(req, { error: webError('BOING_SUBMIT_FAILED', sent.error ?? 'Submit failed.', -32603, sent.reason) }, sent.error ?? 'Submit failed.');
         return;
       }
       respond(req, { result: sent.txHash ?? sent.txId }, 'Transaction sent. You can return to the app.');

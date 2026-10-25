@@ -31,8 +31,9 @@ import {
   RpcClientError,
   simulateContractCall,
   simulateTransaction,
-  submitTransaction,
+  submitTransactionDetailed,
 } from '../src/boing/rpc';
+import { rejectionFromError } from '../src/boing/submitRejection';
 import {
   BOING_MAINNET_CHAIN_ID,
   BOING_MAINNET_NETWORK_ID,
@@ -663,12 +664,49 @@ async function signOrSendBoingTransaction(
         }
       }
 
-    const tx_hash = await submitTransaction(rpcUrl, submitHex);
-    maybeWatchMintBatchFromTx(workingTx, networkId);
-    return {
-      tx_hash,
-      tx_id: transactionIdFromTransaction(workingTx),
+    // Submit. The node's own tx_id is authoritative (old nodes answered "ok": derive it locally).
+    // dApps still receive the node's raw rejection (`error.data.reason`) for anything we do not handle here.
+    const derivedId = () => transactionIdFromTransaction(workingTx);
+    const asResult = (answer: { txId?: string; ack: string }, extra: Record<string, unknown> = {}) => {
+      const id = answer.txId ?? derivedId();
+      return { tx_hash: id, tx_id: id, ...extra };
     };
+    let answer: { txId?: string; ack: string };
+    try {
+      answer = await submitTransactionDetailed(rpcUrl, submitHex);
+    } catch (submitErr) {
+      const rej = rejectionFromError(submitErr);
+      if (rej?.reason === 'already_in_mempool') {
+        // Same bytes already pending: report the pending id as success.
+        maybeWatchMintBatchFromTx(workingTx, networkId);
+        const pending = rej.txHash && /^0x[0-9a-fA-F]{64}$/.test(rej.txHash) ? rej.txHash.toLowerCase() : derivedId();
+        return { tx_hash: pending, tx_id: pending, already_pending: true };
+      }
+      if (rej?.reason === 'stale_nonce' && !hasExplicitNonce) {
+        // Another tx from this account landed first: refetch the nonce, re-sign once, resubmit.
+        const acc = await getAccount(rpcUrl, hexForRpc);
+        const fresh = BigInt(acc.nonce);
+        if (fresh === workingTx.nonce) throw submitErr;
+        workingTx = { ...workingTx, nonce: fresh };
+        const reSigned = await buildSignedTransactionHex(workingTx, unlockedState.privateKey, signingChainId);
+        submitHex = reSigned.startsWith('0x') ? reSigned : `0x${reSigned}`;
+        try {
+          answer = await submitTransactionDetailed(rpcUrl, submitHex);
+        } catch (retryErr) {
+          const again = rejectionFromError(retryErr);
+          if (again?.reason === 'already_in_mempool') {
+            const pending = again.txHash && /^0x[0-9a-fA-F]{64}$/.test(again.txHash) ? again.txHash.toLowerCase() : derivedId();
+            return { tx_hash: pending, tx_id: pending, already_pending: true, nonce_retried: true };
+          }
+          throw retryErr;
+        }
+        maybeWatchMintBatchFromTx(workingTx, networkId);
+        return asResult(answer, { nonce_retried: true });
+      }
+      throw submitErr;
+    }
+    maybeWatchMintBatchFromTx(workingTx, networkId);
+    return asResult(answer);
   } catch (e) {
     if (e instanceof BoingProviderError) throw e;
     if (e instanceof RpcClientError) throw e;

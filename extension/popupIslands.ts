@@ -71,21 +71,26 @@ function closeOverlay(): void {
  * The card closes on confirm; the caller submits and reports the result in its own form.
  */
 export function confirmSendIsland(props: Omit<SendConfirmProps, 'onConfirm' | 'onBack'>): Promise<boolean> {
+  return confirmSendTipIsland(props).then((tip) => tip !== null);
+}
+
+/** Same review step, but resolves with the priority tip the user chose (base units, 0n = none), or null on back. */
+export function confirmSendTipIsland(props: Omit<SendConfirmProps, 'onConfirm' | 'onBack'>): Promise<bigint | null> {
   const o = overlay();
-  if (!o) return Promise.resolve(true);
+  if (!o) return Promise.resolve(0n);
   return new Promise((resolve) => {
     o.wrap.classList.remove('hidden');
     rootFor(o.el).render(
       createElement(SendConfirm, {
         ...props,
         key: `${props.to}:${props.amount}:${Date.now()}`,
-        onConfirm: () => {
+        onConfirm: (priorityTip: bigint) => {
           closeOverlay();
-          resolve(true);
+          resolve(priorityTip);
         },
         onBack: () => {
           closeOverlay();
-          resolve(false);
+          resolve(null);
         },
       })
     );
