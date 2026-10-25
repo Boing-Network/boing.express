@@ -19,6 +19,7 @@
     "publish:extension": "node scripts/publish-extension.js",
     "prepare:extension": "node scripts/prepare-extension-for-load.js",
     "build:extension:load": "pnpm run build:extension && pnpm run prepare:extension",
+    "typecheck:ext": "tsc -p tsconfig.extension.json",
     "test": "vitest run",
     "fixtures:sync": "node scripts/sync-boing-fixtures.mjs",
     "fixtures:check": "node scripts/sync-boing-fixtures.mjs --check",
@@ -32,9 +33,9 @@
     "gateway:deploy": "wrangler deploy --config workers/rpc-gateway/wrangler.toml"
   },
   "dependencies": {
+    "@boing-network/boing-sdk": "^0.5.38",
     "@noble/ed25519": "^2.1.0",
     "@noble/hashes": "^2.0.1",
-    "@boing-network/boing-sdk": "^0.5.38",
     "jsqr": "^1.4.0",
     "qrcode-generator": "^1.4.4",
     "react": "^18.3.1",
@@ -44,6 +45,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261015.1",
     "@playwright/test": "^1.51.0",
+    "@types/chrome": "^0.3.6",
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

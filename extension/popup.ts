@@ -37,11 +37,7 @@ import {
   probeNftWatchlist,
   type NftHoldingStatus,
 } from '../src/boing/nftHoldings';
-import {
-  discoverAndPersistOwnedNfts,
-  NFT_DISCOVERY_SCAN_WINDOW,
-  type NftDiscoveryResult,
-} from '../src/boing/nftDiscovery';
+import { discoverAndPersistOwnedNfts } from '../src/boing/nftDiscovery';
 import { hydrateNftDisplayMetaList, type NftDisplayMeta } from '../src/boing/nftMetadata';
 import { parseTransferRecipientHex, transferOwnedNfts } from '../src/boing/nftTransfer';
 import { addNftWatchEntries, listNftWatchlist, removeNftWatchEntry } from '../src/storage/nftWatchlist';
@@ -53,15 +49,7 @@ import { confirmSendIsland, confirmSendTipIsland, renderBulkIsland, renderClaimN
 import { loadTokenHoldings, type TokenHolding } from '../src/boing/tokenHoldings';
 import { buildReferenceFungibleTransfer } from '../src/boing/referenceFungible';
 import { encodeReferenceTransferNftCalldata, normalizeHex64 } from '../src/boing/referenceNft';
-import {
-  formatBulkReport,
-  parseBulkCsv,
-  runSequentialBulkTransfer,
-  validateBulkRows,
-  type BulkRowInput,
-  type BulkRowResult,
-  type BulkRowValid,
-} from '../src/boing/bulkTransfer';
+import { validateBulkRows } from '../src/boing/bulkTransfer';
 import { buildSignedTransactionHex, signingChainIdForRpc } from '../src/boing/signing';
 import { getNetwork, getDefaultNetwork, DEFAULT_NETWORK_ID } from '../src/networks';
 import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/types';
@@ -214,7 +202,7 @@ async function appendViewTx(elId: string, txHash: string | null | undefined): Pr
   el.append(document.createTextNode(' '), a);
 }
 
-async function renderChoose(): void {
+async function renderChoose(): Promise<void> {
   if (hasStoredWallet()) {
     const w = getStoredWallet();
     const hint = w ? `${w.addressHex.slice(0, 8)}…${w.addressHex.slice(-8)}` : '';
@@ -375,7 +363,7 @@ function getConnectedSitesFromStorage(): Promise<string[]> {
           resolve([]);
           return;
         }
-        const arr = JSON.parse(raw) as unknown;
+        const arr = JSON.parse(raw as string) as unknown;
         resolve(Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : []);
       } catch {
         resolve([]);
@@ -543,26 +531,6 @@ function nftExplorerBase(): string {
   return (net.config.explorerUrl ?? 'https://boing.observer').replace(/\/$/, '');
 }
 
-function formatNftDiscoveryNote(discovery: NftDiscoveryResult): string {
-  if (discovery.error && discovery.blocksScanned === 0 && discovery.discovered.length === 0) {
-    return `Scan issue: ${discovery.error}`;
-  }
-  const expected = Math.max(0, discovery.toHeight - discovery.fromHeight + 1);
-  const parts = [
-    `Scanned ${discovery.blocksScanned}/${expected} (window ≤${NFT_DISCOVERY_SCAN_WINDOW})`,
-  ];
-  if (discovery.blocksFailed > 0) {
-    parts.push(`${discovery.blocksFailed} unavailable after retry — skipped`);
-  }
-  if (discovery.skippedOlderRange) {
-    parts.push(`catch-up capped below ${discovery.fromHeight}`);
-  }
-  if (discovery.persistedCount > 0) parts.push(`+${discovery.persistedCount} new`);
-  if (discovery.truncated) parts.push('hit scan cap');
-  if (discovery.error) parts.push(`partial: ${discovery.error}`);
-  return parts.join(' · ');
-}
-
 function renderNftTransferPick(): void {
   const pick = document.getElementById('nft-transfer-pick');
   if (!pick) return;
@@ -654,7 +622,7 @@ async function refreshNfts(): Promise<void> {
     const net = getCurrentNetwork();
     const explorer = nftExplorerBase();
     const isTestnet = Boolean(net.config.isTestnet);
-    const discovery = await discoverAndPersistOwnedNfts(
+    await discoverAndPersistOwnedNfts(
       net.config.rpcUrl,
       ownerHex,
       selectedNetworkId
@@ -818,8 +786,6 @@ async function refreshNfts(): Promise<void> {
 
 async function goDashboard(): Promise<void> {
   if (!accountId || !privateKey) return;
-  const network = getDefaultNetwork(networksCatalog);
-  const net = getNetwork(selectedNetworkId, networksCatalog) ?? network;
 
   refreshAccountSelect();
   ($('address') as HTMLElement).textContent = formatAddress(accountId, false);
@@ -1241,8 +1207,8 @@ document.getElementById('btn-native-tx-submit')?.addEventListener('click', async
     const signChainId = await signingChainIdForRpc(net.config.rpcUrl);
     let tx!: ReturnType<typeof transactionFromDappJson>;
     const result = await buildAndSubmit(net, accountId, async (nonce) => {
-      tx = transactionFromDappJson(obj, accountId, nonce);
-      const signedHexNo0x = await buildSignedTransactionHex(tx, privateKey, signChainId);
+      tx = transactionFromDappJson(obj, accountId!, nonce);
+      const signedHexNo0x = await buildSignedTransactionHex(tx, privateKey!, signChainId);
       return signedHexNo0x.startsWith('0x') ? signedHexNo0x : ('0x' + signedHexNo0x);
     });
     if (result.success) {
@@ -1483,7 +1449,7 @@ $('form-send').addEventListener('submit', async (e) => {
       if (!again.ok || again.hex !== toHex) throw new Error(`${toName}.boing changed since review. Check the recipient.`);
     }
     const toId = accountIdFromHex(toHex);
-    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildTransfer(accountId, toId, amount, nonce, privateKey, priorityTip), {
+    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildTransfer(accountId!, toId, amount, nonce, privateKey!, priorityTip), {
       onRetry: () => {
         if (sendBtn) sendBtn.textContent = 'Refreshing nonce…';
       },
@@ -1590,7 +1556,7 @@ $('form-bond').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Bonding…';
   try {
-    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildBond!(accountId, amount, nonce, privateKey));
+    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildBond!(accountId!, amount, nonce, privateKey!));
     if (result.success) {
       await refreshDashboardBalance();
       await refreshStake();
@@ -1630,7 +1596,7 @@ $('form-unbond').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Unbonding…';
   try {
-    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildUnbond!(accountId, amount, nonce, privateKey));
+    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildUnbond!(accountId!, amount, nonce, privateKey!));
     if (result.success) {
       await refreshDashboardBalance();
       await refreshStake();
@@ -1675,7 +1641,7 @@ $('btn-claim-unbond').addEventListener('click', async () => {
   btn.disabled = true;
   btn.textContent = 'Claiming…';
   try {
-    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildClaimUnbond!(accountId, nonce, privateKey));
+    const result = await buildAndSubmit(net, accountId, (nonce) => net.buildClaimUnbond!(accountId!, nonce, privateKey!));
     if (result.success) {
       okEl.textContent = result.txHash ? `Claimed! Tx: ${result.txHash.slice(0, 16)}…` : 'Submitted';
       okEl.classList.remove('hidden');
@@ -2120,7 +2086,7 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
       if (!again.ok || again.hex !== toHex) throw new Error(`${toName}.boing changed since review. Check the recipient.`);
     }
     const res = await buildAndSubmit(net, accountId, (nonce) =>
-      buildReferenceFungibleTransfer({ network: net, sender: accountId, tokenHex: t.tokenHex, toHex, amount, nonce, privateKey })
+      buildReferenceFungibleTransfer({ network: net, sender: accountId!, tokenHex: t.tokenHex, toHex, amount, nonce, privateKey: privateKey! })
     );
     if (!res.success) throw new Error(res.error ?? 'Submit failed');
     if (res.txHash) recordTx(res.txHash, 'token_send', `${formatBalance(amount.toString(), t.decimals, t.decimals)} ${t.symbol} → ${shortHexLabel(toHex, 6, 4)}`);

@@ -164,6 +164,8 @@ type BoingProviderErrorData = {
   /** From `boing_simulateTransaction` when execution fails — dApp can merge into next tx `access_list`. */
   suggested_access_list?: { read: string[]; write: string[] };
   access_list_covers_suggestion?: boolean;
+  /** Set when the wallet already retried with the suggested access list merged in. */
+  access_list_auto_merged?: boolean;
 };
 
 /** Serialized on the wire to dApps (`window.boing.request`). */
@@ -243,7 +245,7 @@ async function loadUnlockedState(): Promise<UnlockedState | null> {
 
   return new Promise((resolve) => {
     chrome.storage.session.get([STORAGE_KEY_UNLOCKED_SESSION], (result) => {
-      const raw = result[STORAGE_KEY_UNLOCKED_SESSION];
+      const raw = result[STORAGE_KEY_UNLOCKED_SESSION] as { accountHex?: unknown; privateKey?: unknown } | undefined;
       if (
         raw &&
         typeof raw === 'object' &&
@@ -410,7 +412,7 @@ function getConnectedSites(): Promise<string[]> {
           resolve([]);
           return;
         }
-        const parsed = JSON.parse(raw) as unknown;
+        const parsed = JSON.parse(raw as string) as unknown;
         resolve(Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string') : []);
       } catch {
         resolve([]);
@@ -1056,8 +1058,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     let oldOrigins: string[] = [];
     let newOrigins: string[] = [];
     try {
-      oldOrigins = changes[STORAGE_KEY_CONNECTED_SITES].oldValue ? JSON.parse(changes[STORAGE_KEY_CONNECTED_SITES].oldValue) : [];
-      newOrigins = changes[STORAGE_KEY_CONNECTED_SITES].newValue ? JSON.parse(changes[STORAGE_KEY_CONNECTED_SITES].newValue) : [];
+      oldOrigins = changes[STORAGE_KEY_CONNECTED_SITES].oldValue ? JSON.parse(changes[STORAGE_KEY_CONNECTED_SITES].oldValue as string) : [];
+      newOrigins = changes[STORAGE_KEY_CONNECTED_SITES].newValue ? JSON.parse(changes[STORAGE_KEY_CONNECTED_SITES].newValue as string) : [];
     } catch {
       oldOrigins = [];
       newOrigins = [];

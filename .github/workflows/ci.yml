@@ -28,5 +28,8 @@ jobs:
       - name: Typecheck
         run: pnpm exec tsc -b --pretty false
 
+      - name: Typecheck extension (background, popup, approval)
+        run: pnpm run typecheck:ext
+
       - name: Unit tests
         run: pnpm test

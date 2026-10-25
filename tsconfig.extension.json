@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "composite": false, "incremental": false },
+  "include": ["src", "extension/background.ts", "extension/approval.ts", "extension/popup.ts", "extension/boingMetaExtension.ts"]
+}
