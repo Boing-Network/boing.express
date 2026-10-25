@@ -20,6 +20,8 @@
     "prepare:extension": "node scripts/prepare-extension-for-load.js",
     "build:extension:load": "pnpm run build:extension && pnpm run prepare:extension",
     "test": "vitest run",
+    "fixtures:sync": "node scripts/sync-boing-fixtures.mjs",
+    "fixtures:check": "node scripts/sync-boing-fixtures.mjs --check",
     "test:e2e": "pnpm run build:extension && playwright test",
     "test:e2e:web": "pnpm build && playwright test -c playwright.web.config.ts",
     "test:e2e:multi": "pnpm run build:extension && playwright test tests/e2e/extension-multi-account.spec.ts",

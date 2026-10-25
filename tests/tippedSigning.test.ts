@@ -4,10 +4,10 @@
  * tip must be byte-identical to the untipped v2 transaction (the field is skipped, as in Rust
  * `skip_serializing_if = is_zero_u128`).
  *
- * No Rust-generated fixture for the tipped digest exists in boing.network yet. These vectors were computed
- * with @boing-network/boing-sdk and are re-derived below from the documented byte layout with an
- * independent BLAKE3 call, so the test is a spec check, not just an SDK-equals-wallet check. If the node
- * publishes a Rust fixture, add it to TIPPED_VECTORS (keeping `source`) and these assertions apply as-is.
+ * The Rust-generated golden vectors from boing.network are checked in tests/txSigningGolden.test.ts (vendored
+ * fixture, `pnpm fixtures:sync`). The vectors below were computed with @boing-network/boing-sdk and are re-derived
+ * from the documented byte layout with an independent BLAKE3 call, so this file also covers SDK-equals-wallet and
+ * the wire-format edge cases (zero tip, high u128 half) the shared fixture does not.
  */
 import { describe, expect, it } from 'vitest';
 import * as ed from '@noble/ed25519';
