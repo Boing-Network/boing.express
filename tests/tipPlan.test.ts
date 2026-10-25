@@ -65,3 +65,28 @@ describe('applyChosenTip', () => {
     expect(applyChosenTip(base({ priorityTip: 3n }), allowed, 1000n).priorityTip).toBe(3n);
   });
 });
+
+describe('planTip against the documented capability flags', () => {
+  beforeEach(() => clearNetworkInfoCaches());
+  afterEach(() => vi.unstubAllGlobals());
+  const stubBoth = (health: unknown, policy: unknown) =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_u: string, init?: { body?: string }) => {
+        const b = JSON.parse(String(init?.body ?? '{}'));
+        return new Response(JSON.stringify({ jsonrpc: '2.0', id: b.id, result: b.method === 'boing_health' ? health : policy }));
+      }),
+    );
+  it('hides the chooser when boing_health says tx_signing.priority_tips_supported is false', async () => {
+    stubBoth({ tx_signing: { priority_tips_supported: false } }, { optional_priority_tips: true });
+    expect((await planTip('https://rpc.test/5', base(), { decimals: 18, fee })).allowed).toBe(false);
+  });
+  it('hides the chooser when the node advertises a different tip domain', async () => {
+    stubBoth({ tx_signing: { priority_tips_supported: true, priority_tip_domain: 'BOING_TX_OTHER' } }, {});
+    expect((await planTip('https://rpc.test/6', base(), { decimals: 18, fee })).allowed).toBe(false);
+  });
+  it('shows it for the real documented health shape', async () => {
+    stubBoth({ tx_signing: { priority_tips_supported: true, priority_tip_domain: 'BOING_TX_PRIORITY' } }, { optional_priority_tips: true });
+    expect((await planTip('https://rpc.test/7', base(), { decimals: 18, fee })).allowed).toBe(true);
+  });
+});

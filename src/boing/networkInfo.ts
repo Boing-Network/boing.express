@@ -1,11 +1,14 @@
 /**
  * Shared parsing + cached fetch of the node's self-description, used by every surface (web, popup, approval):
- *  - `boing_getNetworkInfo`      -> chain id/name, `end_user.explorer_url`, optional `min_wallet_version` / `recommended_sdk`
+ *  - `boing_getNetworkInfo` / `boing_health` -> chain id/name, `end_user.explorer_url`, `client_hints`
+ *    (`min_wallet_version`, `recommended_wallet_version`, `recommended_sdk`, `sdk_npm_package`) and
+ *    `tx_signing.priority_tips_supported` / `priority_tip_domain`. Field names and nesting are exactly the documented ones.
  *  - `boing_getNetworkFeePolicy` -> `optional_priority_tips`, micro-fee and tip-split fields
  *
- * Everything here is tolerant: older nodes lack fields (or the whole method) and the wallet must keep working,
- * so absent data parses to `undefined` / "unknown", never to an error. Read-only RPCs only (no operator methods).
- * Source of truth: boing.network docs/RPC-API-SPEC.md.
+ * Everything here is tolerant of ABSENCE: older nodes lack fields (or the whole method) and the wallet must keep
+ * working, so missing data parses to `undefined` / "unknown", never to an error. Present-but-malformed values are
+ * ignored too (a version hint must be semver). Read-only RPCs only (no operator methods).
+ * Source of truth: boing.network docs/RPC-API-SPEC.md (`boing_health`, `boing_getNetworkInfo`).
  */
 import { rpcCall } from './rpc';
 
@@ -49,10 +52,30 @@ export interface NetworkInfoMeta {
   /** `end_user.explorer_url` (null / absent on nodes without `BOING_EXPLORER_URL`). */
   explorerUrl?: string;
   faucetUrl?: string;
-  /** Oldest Boing Express the node operator supports (semver). Not in the spec yet: absent is normal. */
+  /** `client_hints.min_wallet_version`: oldest Boing Express release that signs correctly for the network (semver, advisory). */
   minWalletVersion?: string;
-  /** Operator's recommended `@boing-network/boing-sdk` version. Not in the spec yet: absent is normal. */
+  /** `client_hints.recommended_wallet_version`: latest tested Boing Express release (semver, advisory). */
+  recommendedWalletVersion?: string;
+  /** `client_hints.recommended_sdk`: latest tested `@boing-network/boing-sdk` release (semver, advisory). */
   recommendedSdk?: string;
+  /** `client_hints.sdk_npm_package`, e.g. `@boing-network/boing-sdk`. */
+  sdkNpmPackage?: string;
+  /** `tx_signing.priority_tips_supported`; undefined when the node does not say (older nodes). */
+  priorityTipsSupported?: boolean;
+  /** `tx_signing.priority_tip_domain`, e.g. `BOING_TX_PRIORITY`. */
+  priorityTipDomain?: string;
+}
+
+/** The signing domain this wallet uses for a non-zero priority tip. */
+export const PRIORITY_TIP_DOMAIN = 'BOING_TX_PRIORITY';
+
+const SEMVER = /^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$/;
+
+/** Semver string without a leading `v`, or undefined when it is not semver (hints are advisory: junk is dropped). */
+function semver(v: unknown): string | undefined {
+  const s = str(v);
+  const m = s ? SEMVER.exec(s) : null;
+  return m ? m[1] : undefined;
 }
 
 /** Parse a `boing_getNetworkInfo` (or `boing_health`) result. Unknown shapes parse to `{}`. */
@@ -60,15 +83,19 @@ export function parseNetworkInfo(raw: unknown): NetworkInfoMeta {
   const r = asRecord(raw);
   if (!r) return {};
   const endUser = asRecord(r.end_user);
-  const wallet = asRecord(r.wallet) ?? asRecord(r.client_requirements);
+  const hints = asRecord(r.client_hints);
   const ts = asRecord(r.tx_signing);
   return {
     chainId: num(r.chain_id) ?? num(ts?.chain_id),
     chainName: str(r.chain_name) ?? str(endUser?.chain_display_name),
     explorerUrl: cleanHttpUrl(endUser?.explorer_url),
     faucetUrl: cleanHttpUrl(endUser?.faucet_url),
-    minWalletVersion: str(r.min_wallet_version) ?? str(wallet?.min_wallet_version) ?? str(wallet?.min_version),
-    recommendedSdk: str(r.recommended_sdk) ?? str(wallet?.recommended_sdk),
+    minWalletVersion: semver(hints?.min_wallet_version),
+    recommendedWalletVersion: semver(hints?.recommended_wallet_version),
+    recommendedSdk: semver(hints?.recommended_sdk),
+    sdkNpmPackage: str(hints?.sdk_npm_package),
+    priorityTipsSupported: typeof ts?.priority_tips_supported === 'boolean' ? ts.priority_tips_supported : undefined,
+    priorityTipDomain: str(ts?.priority_tip_domain),
   };
 }
 
@@ -124,6 +151,7 @@ const policyCache = new Map<string, Entry<FeePolicy>>();
 export function clearNetworkInfoCaches(): void {
   infoCache.clear();
   policyCache.clear();
+  signingCache.clear();
 }
 
 function fresh<T>(e: Entry<T> | undefined): e is Entry<T> {
@@ -142,6 +170,43 @@ export async function fetchNetworkInfoMeta(rpcUrl: string): Promise<NetworkInfoM
     infoCache.set(rpcUrl, { at: Date.now(), ok: false, value: {} });
     return {};
   }
+}
+
+/** Cached `boing_health` signing capabilities (tips). Never throws; `{}` (unknown) on failure. */
+const signingCache = new Map<string, Entry<NetworkInfoMeta>>();
+export async function fetchSigningSupport(rpcUrl: string): Promise<NetworkInfoMeta> {
+  const hit = signingCache.get(rpcUrl);
+  if (fresh(hit)) return hit.value;
+  try {
+    const value = parseNetworkInfo(await rpcCall<unknown>(rpcUrl, 'boing_health', []));
+    signingCache.set(rpcUrl, { at: Date.now(), ok: true, value });
+    return value;
+  } catch {
+    signingCache.set(rpcUrl, { at: Date.now(), ok: false, value: {} });
+    return {};
+  }
+}
+
+export interface TipSupport {
+  /** The wallet may offer a priority tip on this network. */
+  allowed: boolean;
+  /** Why not, when `allowed` is false. */
+  reason?: 'policy' | 'unsupported' | 'domain';
+}
+
+/**
+ * Whether priority tips can honestly be offered. All three must hold, and each only blocks on an explicit "no"
+ * (unknown / absent keeps tips available, like older nodes):
+ *  - `boing_getNetworkFeePolicy.optional_priority_tips` is not false,
+ *  - `boing_health.tx_signing.priority_tips_supported` is not false,
+ *  - `boing_health.tx_signing.priority_tip_domain`, when reported, is the `BOING_TX_PRIORITY` domain this wallet signs.
+ */
+export async function fetchTipSupport(rpcUrl: string): Promise<TipSupport> {
+  const [policy, signing] = await Promise.all([fetchFeePolicy(rpcUrl), fetchSigningSupport(rpcUrl)]);
+  if (!policy.tipsAllowed) return { allowed: false, reason: 'policy' };
+  if (signing.priorityTipsSupported === false) return { allowed: false, reason: 'unsupported' };
+  if (signing.priorityTipDomain !== undefined && signing.priorityTipDomain !== PRIORITY_TIP_DOMAIN) return { allowed: false, reason: 'domain' };
+  return { allowed: true };
 }
 
 /** Cached `boing_getNetworkFeePolicy`. Never throws; the unknown fallback keeps tips available. */

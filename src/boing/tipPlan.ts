@@ -2,12 +2,13 @@
  * Priority-tip plan for dApp approvals (extension approval window + web /sign).
  *
  * The approval screen shows the speed chooser only when it can honestly apply: the node accepts tips
- * (`optional_priority_tips` is not false), the ledger is in 18-decimal base units, and the dApp did not already set a tip
+ * (`boing_getNetworkFeePolicy.optional_priority_tips` and `boing_health.tx_signing.priority_tips_supported` are not false and
+ * the advertised tip domain is `BOING_TX_PRIORITY`), the ledger is in 18-decimal base units, and the dApp did not already set a tip
  * (a dApp tip wins and is shown read-only). The plan crosses the extension message boundary as strings (`TipPlanWire`).
  */
 import type { NativeAmountContext } from './dappTxRequest';
 import { MAX_CUSTOM_TIP } from './feeTips';
-import { fetchFeePolicy } from './networkInfo';
+import { fetchTipSupport } from './networkInfo';
 import type { Transaction } from './types';
 
 export interface TipPlan {
@@ -29,8 +30,8 @@ export async function planTip(rpcUrl: string, tx: Transaction, ctx: NativeAmount
   const fee = ctx.fee && ctx.fee.decimals >= 18 ? ctx.fee.amount : null;
   if (tx.priorityTip != null && tx.priorityTip > 0n) return { allowed: false, locked: tx.priorityTip, fee };
   if ((ctx.decimals ?? 18) < 18) return { allowed: false, fee };
-  const policy = await fetchFeePolicy(rpcUrl);
-  return { allowed: policy.tipsAllowed, fee };
+  const support = await fetchTipSupport(rpcUrl);
+  return { allowed: support.allowed, fee };
 }
 
 export function tipPlanToWire(p: TipPlan): TipPlanWire {

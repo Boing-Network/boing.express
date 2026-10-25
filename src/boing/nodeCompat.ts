@@ -10,7 +10,7 @@
  * Source of truth: boing.network docs/RPC-API-SPEC.md (`boing_health`) and docs/BOING-SIGNED-TRANSACTION-ENCODING.md.
  */
 
-import { fetchNetworkInfoMeta, parseNetworkInfo } from './networkInfo';
+import { fetchNetworkInfoMeta, mergeNetworkInfo, parseNetworkInfo } from './networkInfo';
 import { rpcCall } from './rpc';
 import { walletVersion } from './walletVersion';
 
@@ -22,11 +22,13 @@ export type NodeCompatIssueCode =
   | 'no_chain_id'
   | 'signing_v2_unsupported'
   | 'node_too_old'
-  | 'wallet_too_old';
+  | 'wallet_too_old'
+  | 'wallet_update_available';
 
 export interface NodeCompatIssue {
   code: NodeCompatIssueCode;
-  level: Exclude<NodeCompatLevel, 'ok'>;
+  /** `info` is an advisory (for example "a newer wallet is available"); it never raises the overall level above `ok`. */
+  level: 'info' | 'warn' | 'error';
   /** Plain-language message safe to show to end users. */
   message: string;
 }
@@ -66,6 +68,38 @@ export function compareVersions(a: [number, number, number], b: [number, number,
   return 0;
 }
 
+/**
+ * Compare two semver strings (`1.2.3`, `v1.2.3`, `1.2.3-rc.1`, build metadata ignored): -1, 0 or 1; null when either is
+ * not semver. A pre-release sorts below its release (`0.1.22-rc.1` < `0.1.22`); pre-release identifiers compare per semver.org.
+ */
+export function compareSemver(a: string, b: string): -1 | 0 | 1 | null {
+  const re = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/;
+  const x = re.exec(a.trim());
+  const y = re.exec(b.trim());
+  if (!x || !y) return null;
+  for (let i = 1; i <= 3; i++) {
+    const d = Number(x[i]) - Number(y[i]);
+    if (d !== 0) return d < 0 ? -1 : 1;
+  }
+  const pa = x[4]?.split('.');
+  const pb = y[4]?.split('.');
+  if (!pa && !pb) return 0;
+  if (!pa) return 1;
+  if (!pb) return -1;
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    if (pa[i] === undefined) return -1;
+    if (pb[i] === undefined) return 1;
+    const na = /^\d+$/.test(pa[i]);
+    const nb = /^\d+$/.test(pb[i]);
+    if (na && nb) {
+      const d = Number(pa[i]) - Number(pb[i]);
+      if (d !== 0) return d < 0 ? -1 : 1;
+    } else if (na !== nb) return na ? -1 : 1;
+    else if (pa[i] !== pb[i]) return pa[i] < pb[i] ? -1 : 1;
+  }
+  return 0;
+}
+
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v != null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 }
@@ -82,8 +116,11 @@ export function evaluateNodeHealth(
   health: unknown,
   expected: { chainId: number | null; networkName?: string },
   now: number = Date.now(),
-  /** Optional wallet-version gate. `minWalletVersion` defaults to the one in `health`; unknown versions never warn. */
-  wallet: { version?: string | null; minWalletVersion?: string | null } = {}
+  /**
+   * Optional wallet-version hints. They default to `health.client_hints`; unknown versions never warn. `version` is the
+   * running wallet (build-time), the others are advisory semver strings from `client_hints`.
+   */
+  wallet: { version?: string | null; minWalletVersion?: string | null; recommendedWalletVersion?: string | null } = {}
 ): NodeCompatStatus {
   const h = asRecord(health);
   const issues: NodeCompatIssue[] = [];
@@ -141,17 +178,27 @@ export function evaluateNodeHealth(
     });
   }
 
-  const walletNow = parseNodeVersion(wallet.version);
-  const minWallet = parseNodeVersion(wallet.minWalletVersion ?? parseNetworkInfo(h).minWalletVersion);
-  if (walletNow && minWallet && compareVersions(walletNow, minWallet) < 0) {
+  const hints = parseNetworkInfo(h);
+  const walletNow = wallet.version?.trim() || null;
+  const minWallet = wallet.minWalletVersion ?? hints.minWalletVersion;
+  const recommendedWallet = wallet.recommendedWalletVersion ?? hints.recommendedWalletVersion;
+  const belowMin = !!(walletNow && minWallet && compareSemver(walletNow, minWallet) === -1);
+  if (walletNow && minWallet && belowMin) {
     issues.push({
       code: 'wallet_too_old',
       level: 'warn',
-      message: `This network asks for Boing Express ${minWallet.join('.')} or newer, and you have ${walletNow.join('.')}. Update the wallet to avoid failed or confusing transactions.`,
+      message: `This network asks for Boing Express ${minWallet} or newer, and you have ${walletNow}. Update the wallet to avoid failed or confusing transactions.`,
+    });
+  } else if (walletNow && recommendedWallet && compareSemver(walletNow, recommendedWallet) === -1) {
+    // Advisory only (the node never enforces it): shown once the wallet is already above the minimum.
+    issues.push({
+      code: 'wallet_update_available',
+      level: 'info',
+      message: `Boing Express ${recommendedWallet} is available (you have ${walletNow}).`,
     });
   }
 
-  const level: NodeCompatLevel = issues.some((i) => i.level === 'error') ? 'error' : issues.length > 0 ? 'warn' : 'ok';
+  const level: NodeCompatLevel = issues.some((i) => i.level === 'error') ? 'error' : issues.some((i) => i.level === 'warn') ? 'warn' : 'ok';
   return {
     level,
     issues,
@@ -194,9 +241,16 @@ export async function checkNodeCompat(
     const health = await rpcCall<unknown>(rpcUrl, 'boing_health', []);
     // The wallet-version gate may live in `boing_getNetworkInfo`; only ask when this build knows its own version.
     const version = walletVersion();
-    let minWalletVersion: string | undefined = parseNetworkInfo(health).minWalletVersion;
-    if (version && !minWalletVersion) minWalletVersion = (await fetchNetworkInfoMeta(rpcUrl)).minWalletVersion;
-    status = evaluateNodeHealth(health, expected, now(), { version, minWalletVersion });
+    // `boing_health` already carries `client_hints`; only fall back to `boing_getNetworkInfo` when it has none.
+    let hints = parseNetworkInfo(health);
+    if (version && hints.minWalletVersion === undefined && hints.recommendedWalletVersion === undefined) {
+      hints = mergeNetworkInfo(hints, await fetchNetworkInfoMeta(rpcUrl));
+    }
+    status = evaluateNodeHealth(health, expected, now(), {
+      version,
+      minWalletVersion: hints.minWalletVersion,
+      recommendedWalletVersion: hints.recommendedWalletVersion,
+    });
   } catch {
     status = evaluateNodeHealth(null, expected, now());
   }
