@@ -3,7 +3,8 @@ import { resolve } from 'path';
 import { readFileSync } from 'node:fs';
 import { resolveMainnetRpcUrl, resolveTestnetRpcUrl } from './src/networks/rpcConfig';
 
-const walletVersion = (JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8')) as { version?: string }).version ?? '';
+// The wallet's release version is the extension manifest version (package.json stays 0.1.0 and is not the release number).
+const walletVersion = (JSON.parse(readFileSync(resolve(__dirname, 'extension/manifest.base.json'), 'utf8')) as { version?: string }).version ?? '';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');

@@ -225,7 +225,7 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
             ok: true,
             head_height: 1,
             ...(chainId == null ? {} : { chain_id: chainId, tx_signing: { v2_supported: true, domain: 'BOING_TX_V2', chain_id: chainId, priority_tips_supported: true, priority_tip_domain: 'BOING_TX_PRIORITY' } }),
-        client_hints: { min_wallet_version: '0.1.15', recommended_wallet_version: '0.1.22', recommended_sdk: '0.5.38', sdk_npm_package: '@boing-network/boing-sdk' },
+            client_hints: { min_wallet_version: '0.1.15', recommended_wallet_version: '0.1.22', recommended_sdk: '0.5.38', sdk_npm_package: '@boing-network/boing-sdk' },
             ...(opts.batchSupport
               ? { rpc_surface: { tx_payload_batch: true, tx_batch_max_calls: 16, tx_batch_max_calldata_bytes: 65536 } }
               : {}),
