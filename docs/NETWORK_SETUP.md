@@ -32,8 +32,23 @@ network you selected (`src/boing/nodeCompat.ts`):
 | `tx_signing.v2_supported` is false | **Error.** The node would reject chain-bound signatures. |
 | Node did not report a chain id | Warning. Continue only if you trust the node. |
 | `client_version` older than `MIN_SUPPORTED_NODE_VERSION` (`0.1.0`) | Warning. Some features may not work. |
-| Network asks for a newer wallet (`min_wallet_version` in `boing_getNetworkInfo` or `boing_health`) than the running one | Warning (`wallet_too_old`). Never blocks. An unknown wallet or network version never warns. |
+| Network asks for a newer wallet (`client_hints.min_wallet_version`) than the running one | Warning (`wallet_too_old`). Never blocks. An unknown wallet or network version never warns. |
+| Wallet is above the minimum but below `client_hints.recommended_wallet_version` | Info note (`wallet_update_available`) in the banner. Advisory only: it does not make the banner an error and never blocks. |
 | `boing_health` unreachable | Warning ("balances may be out of date"). Transactions are still attempted. |
+
+### Client hints and capability flags (documented shapes)
+
+Both `boing_health` and `boing_getNetworkInfo` return (boing.network `docs/RPC-API-SPEC.md`):
+
+```json
+{ "client_hints": { "min_wallet_version": "0.1.15", "recommended_wallet_version": "0.1.22", "recommended_sdk": "0.5.38", "sdk_npm_package": "@boing-network/boing-sdk", "note": "..." },
+  "tx_signing": { "v2_supported": true, "domain": "BOING_TX_V2", "priority_tips_supported": true, "priority_tip_domain": "BOING_TX_PRIORITY" } }
+```
+
+- The wallet reads exactly these paths (`parseNetworkInfo` in `src/boing/networkInfo.ts`); the earlier guesses (top-level `min_wallet_version`, `wallet.*`, `client_requirements`) are gone. Versions are compared as semver (`compareSemver`: leading `v` accepted, pre-release sorts below its release); a hint that is not semver is ignored.
+- Hints are advisory and never enforced by the node, so they never block. `boing_health` already carries them, so `boing_getNetworkInfo` is only asked as a fallback when health has no hints.
+- The running wallet version is the **extension manifest version** (`extension/manifest.base.json`), injected as `__WALLET_VERSION__` by both Vite configs (`package.json` stays `0.1.0` and is not the release number; `tests/walletReleaseVersion.test.ts` guards this).
+- `recommended_sdk` is informational for dApp developers; the wallet reads and keeps it but shows nothing.
 
 Results are cached per RPC URL (60 s when healthy, 5 s after a failed probe) so the check adds no visible latency. The check runs in both the
 extension popup and the web app (`data-testid="node-compat-banner"`).
@@ -49,9 +64,9 @@ instead of silently falling back to legacy (chain-less) signatures. A non-zero p
 
 - The base fee is the chain's micro-fee (about 21 000 gas, see `boing_getNetworkFeePolicy`). The Send review shows the **simulated** fee (`boing_simulateTransaction`) before you confirm; "Estimating..." is announced to screen readers while it loads.
 - **Speed chooser** (`FeeChooser`, `src/boing/feeTips.ts`): Slow = 0 tip (default), Normal = 1 x the SDK micro tip, Fast = 10 x, Custom = typed BOING, capped at 1 BOING so a typo cannot burn funds.
-- Tips are hidden when the node reports `optional_priority_tips: false` and on ledgers with fewer than 18 decimals (tips are 18-decimal base-unit amounts). Unknown policy (old node, RPC error) is treated as "tips allowed".
+- Tips are hidden when the node says no: `boing_getNetworkFeePolicy.optional_priority_tips: false`, `boing_health.tx_signing.priority_tips_supported: false`, or a `tx_signing.priority_tip_domain` other than `BOING_TX_PRIORITY` (the domain this wallet signs). They are also hidden on ledgers with fewer than 18 decimals (tips are 18-decimal base-unit amounts). Unknown or missing values (old node, RPC error) are treated as "tips allowed"; only an explicit no hides the chooser (`fetchTipSupport` / `planTip`).
 - A non-zero tip is signed with the `BOING_TX_PRIORITY` domain (see "Signing chain id"). Dapp-set tips are honored as-is.
-- Submit failures (`stale_nonce`, `insufficient_fee`, `pool_full`, ...) are mapped to plain-language messages in `src/boing/submitRejection.ts`; `stale_nonce` is retried exactly once with a refreshed nonce (`src/boing/submitRetry.ts`).
+- Submit failures (`stale_nonce`, `insufficient_fee`, `pool_full`, ...) are mapped to plain-language messages in `src/boing/submitRejection.ts` (wording and vocabulary kept aligned with boing.observer's `describeRpcRejection`: zero-tip, priority tip, QA pool; `tests/submitRejection.test.ts` checks parity); `stale_nonce` is retried exactly once with a refreshed nonce (`src/boing/submitRetry.ts`).
 
 ## Explorer links
 
@@ -64,4 +79,7 @@ Transaction and account links go to boing.observer: `<base>/tx/<64-hex id>?netwo
   `@boing-network/boing-sdk` (transfer, contract call with value, batch, `PutBlob`, tip). Bump the SDK, run `pnpm test`;
   a failure means the wire format moved and the wallet encoder must follow.
 - `tests/txSigningV2.test.ts` holds the Rust golden vector for the V2 signing hash.
+- `tests/txSigningGolden.test.ts` consumes boing.network's `docs/fixtures/tx-signing-golden-vectors.json` (V2, tipped, mainnet, u128-max tip): domain, payload/access-list encoding, digest, signature and signed-transaction bytes must all match.
+- `tests/chainMetadataDrift.test.ts` compares the built-in testnet/mainnet config (chain id and hex, name, public RPC, explorer, faucet, testnet flag), the native currency (BOING, 18 decimals) and the signing domains with boing.network's `docs/chain-metadata.json`. If boing.network changes any of them, this test fails until `src/networks` follows.
+- Both fixtures are **vendored** in `tests/fixtures/` so CI is hermetic. After boing.network changes them run `pnpm fixtures:sync` (copies from `../boing.network` or `BOING_NETWORK_DIR`) and commit; `pnpm fixtures:check` reports drift and is a no-op when the sibling repo is absent.
 - `src/boing/nodeCompat.test.ts` embeds a trimmed copy of a real testnet `boing_health` response; refresh it when `boing_health` gains fields.
