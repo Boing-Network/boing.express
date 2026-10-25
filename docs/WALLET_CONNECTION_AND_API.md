@@ -125,12 +125,15 @@ Wallets may support these aliases so existing dApp code or libraries that use Et
 
 ### Connect / disconnect
 
-- **Connect:** When a site calls `boing_requestAccounts`, the extension adds the page’s **origin** to a stored “connected sites” list and returns the current account. Only those origins can later call `boing_accounts`, `boing_signMessage`, transaction methods, `boing_simulateTransaction`, `boing_simulateContractCall`, or DEX discovery methods (**`boing_listDexPools`**, **`boing_listDexTokens`**, **`boing_getDexToken`**).
+- **Connect:** When a site calls `boing_requestAccounts`, the extension opens a **"Connect to this site?"** approval window (deduplicated per origin; suspicious origins get a warning banner). Only after the user approves is the origin added to the stored "connected sites" list and the current account returned. Rejecting returns EIP-1193 style error `4001`. Only connected origins can later call `boing_accounts`, `boing_signMessage`, transaction methods, `boing_simulateTransaction`, `boing_simulateContractCall`, or DEX discovery methods (`boing_listDexPools`, `boing_listDexTokens`, `boing_getDexToken`).
 - **Disconnect:** In the extension popup, **Wallet** tab → **Connected sites** lists each origin with a **Disconnect** button. Removing a site revokes access until the user connects again from that origin.
 
 ### Security and UX
 
 - **Origin tracking:** Connected sites are stored in `chrome.storage.local`; only those origins get accounts and can request signing.
+- **Origin comes from the browser:** the dApp origin is read from the content-script sender (`sender.origin`), never from the page message, and privileged messages are accepted only from extension pages. See [SECURITY.md](SECURITY.md).
+- **Auto-lock:** the wallet locks after a configurable idle period (default 15 minutes). While locked, signing methods fail until the user unlocks.
+- **Node errors:** errors forwarded from the node keep `data.rpc`, and dApp-facing errors keep `data.boingCode` so dApps can show precise messages.
 - **Unlock required for signing:** Signing uses a key held in memory only after the user unlocks in the extension popup. After **Lock**, `boing_signMessage` and transaction methods fail until the user unlocks again. **`boing_simulateTransaction`** does not use the private key but still requires a **connected** origin.
 - **Account format:** 32-byte Boing account ids are exposed as 64 hex characters with optional `0x` prefix (e.g. `0x7f3a2b1c...`).
 - **Chain IDs:** Testnet `0x1b01` (6913), Mainnet `0x1b02` (6914).

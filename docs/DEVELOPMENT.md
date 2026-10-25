@@ -22,6 +22,7 @@ Boing Express uses the **Boing Design System** variant **Aqua Personal** (person
 
 ### Automated tests
 
+- **See also:** [TESTING.md](TESTING.md) for the full command list (typecheck, unit, web e2e, headed extension e2e) and [NETWORK_SETUP.md](NETWORK_SETUP.md) for env vars and the runtime node check.
 - **Unit / integration:** `pnpm test` (Vitest), including RPC gateway allowlist logic under `workers/rpc-gateway/src/allowlist.ts`.
 - **RPC gateway (optional):** Cloudflare Worker in **`workers/rpc-gateway/`** — `pnpm run gateway:dev` (create **`workers/rpc-gateway/.dev.vars`** from **`.dev.vars.example`** first), `pnpm run gateway:deploy` for production. Optional **`GATEWAY_CACHE_TTL_SECONDS`** / **`GATEWAY_RATE_LIMIT_PER_MINUTE`** in **`wrangler.toml`**; optional **`RATE_LIMIT_KV`** binding for distributed limits. CI: **`.github/workflows/deploy-gateway.yml`**. Operator and partner notes: **[RPC_GATEWAY.md](RPC_GATEWAY.md)**.
 - **Extension smoke (opt-in):** `pnpm exec playwright install chromium` once, then `EXTENSION_E2E=1 pnpm run test:e2e`. This builds the extension, serves `tests/e2e/static`, loads the unpacked `extension/` folder in Playwright’s Chromium (headed), and checks `window.boing`, `supportsBoingNativeRpc`, `boing_chainId`, and event listener APIs (`on` / `removeListener` for multi-account style subscriptions). Skipped unless `EXTENSION_E2E=1`.

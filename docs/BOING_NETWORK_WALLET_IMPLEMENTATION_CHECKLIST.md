@@ -51,7 +51,7 @@ These should already work and must remain stable:
 - support `boing_chainId`
 - support `boing_switchChain`
 - support `boing_signTransaction`, `boing_sendTransaction`, `boing_simulateTransaction`, **`boing_simulateContractCall`** (extension provider; unsigned contract-call dry-run per RPC-API-SPEC — see **docs/BOING-EXPRESS-WALLET.md**)
-- support **`boing_listDexPools`**, **`boing_listDexTokens`**, **`boing_getDexToken`** (connected origin; same JSON-RPC params as **@boing-network/boing-sdk** ≥ 0.5.24 discovery helpers)
+- support **`boing_listDexPools`**, **`boing_listDexTokens`**, **`boing_getDexToken`** (connected origin; same JSON-RPC params as **@boing-network/boing-sdk** ≥ 0.5.38 discovery helpers)
 - expose `supportsBoingNativeRpc: true` for **boing-sdk** detection
 - parse explicit **`access_list` / `accessList`** on dApp transaction JSON (32-byte Boing accounts)
 - allow compatibility aliases:

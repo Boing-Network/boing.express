@@ -90,11 +90,36 @@ Recommended pre-review copy: `pnpm run build:extension:unpacked` → load **`ext
 | [docs/BOING-EXPRESS-WALLET.md](docs/BOING-EXPRESS-WALLET.md) | Product + integration spec |
 | [docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md) | Optional HTTPS JSON-RPC Worker |
 | [docs/CODEBASE-ALIGNMENT.md](docs/CODEBASE-ALIGNMENT.md) | Local summary of cross-repo URLs |
+| [docs/NETWORK_SETUP.md](docs/NETWORK_SETUP.md) | Network config, runtime node check, signing chain id |
+| [docs/SECURITY.md](docs/SECURITY.md) | Security model, auto-lock, CSP |
+| [docs/TESTING.md](docs/TESTING.md) | Unit, web and extension e2e tests |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Portal / protocol handoff |
 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Aqua Personal tokens |
 | Upstream [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) | On-chain NFT↔token link registry (SDK / dApp discovery) |
 | Upstream [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) | On-chain builder attestation registry (builder signal; companions remain project authority) |
 
+## Everyday use and safety
+
+- **Backup check:** after creating a wallet you must retype the last 6 characters of your key before continuing.
+- **Plain-language errors:** RPC and node errors are translated (for example "insufficient balance", "nonce too low", "wrong network").
+- **Wrong-network guard:** a banner appears and broadcasting is refused when the node is on a different chain than the one you selected.
+- **Auto-lock:** the extension locks after 15 idle minutes by default (Settings).
+- **dApp prompts:** explicit "Connect to this site?" and signing approvals, with warnings for suspicious origins.
+
+More: [docs/SECURITY.md](docs/SECURITY.md), [docs/NETWORK_SETUP.md](docs/NETWORK_SETUP.md), [docs/TESTING.md](docs/TESTING.md).
+
+## Scripts
+
+| Command | Purpose |
+|---------|---------|
+| `pnpm dev` | Vite dev server on http://localhost:5173 |
+| `pnpm build` | Type check and build `dist/` |
+| `pnpm run build:extension` | Build the MV3 extension into `extension/` |
+| `pnpm test` | Unit tests (Vitest) |
+| `pnpm test:e2e:web` | Web end-to-end tests (Playwright) |
+| `EXTENSION_E2E=1 EXTENSION_E2E_FULL=1 pnpm test:e2e` | Extension end-to-end tests (headed Chromium) |
+
+Requires Node 20+ and pnpm 9 (`corepack enable`).
 ## License
 
 MIT
