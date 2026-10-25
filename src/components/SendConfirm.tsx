@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { NetworkAdapter } from '../networks/types';
-import {
-  estimateSendFee,
-  feeLabel,
-  priorityTipLadderForUi,
-  type FeeEstimate,
-} from '../boing/feeEstimate';
+import { estimateSendFee, feeLabel, type FeeEstimate } from '../boing/feeEstimate';
+import { DEFAULT_TIP_CHOICE, resolveTip, type TipChoice } from '../boing/feeTips';
+import { fetchFeePolicy, UNKNOWN_FEE_POLICY, type FeePolicy } from '../boing/networkInfo';
 import { formatNative } from '../boing/nativeUnit';
+import { FeeChooser } from './FeeChooser';
 import { shortAddress } from '../boing/qr';
 import styles from './SendConfirm.module.css';
 
@@ -34,20 +32,32 @@ export type SendConfirmProps = {
   showPriorityTip?: boolean;
 };
 
-const TIP_LABELS: Record<string, string> = {
-  normal: 'Normal',
-  faster: 'Faster',
-  priority: 'Priority',
-  urgent: 'Urgent',
-};
 
 /** Review step before any send (BOING, token, NFT): recipient, amount, simulated fee, one big confirm. */
 export function SendConfirm(p: SendConfirmProps) {
-  const showTip = p.showPriorityTip !== false;
-  const ladder = useMemo(() => (showTip ? priorityTipLadderForUi() : []), [showTip]);
-  const [tipIndex, setTipIndex] = useState(0);
-  const priorityTip = ladder[tipIndex]?.tip ?? 0n;
+  const wantsTip = p.showPriorityTip !== false;
+  const [policy, setPolicy] = useState<FeePolicy>(UNKNOWN_FEE_POLICY);
+  const [choice, setChoice] = useState<TipChoice>(DEFAULT_TIP_CHOICE);
   const [est, setEst] = useState<FeeEstimate | null>(null);
+  const rpcUrl = p.network.config?.rpcUrl;
+
+  useEffect(() => {
+    if (!wantsTip || !rpcUrl) return;
+    let live = true;
+    void fetchFeePolicy(rpcUrl).then((fp) => {
+      if (live) setPolicy(fp);
+    });
+    return () => {
+      live = false;
+    };
+  }, [wantsTip, rpcUrl]);
+
+  // Tips are base-unit (18-decimal) amounts: hide the chooser on ledgers that still use whole BOING, and when the node
+  // says tips are not accepted (`optional_priority_tips: false`).
+  const lowDecimals = est?.state === 'ok' && est.decimals < 18;
+  const showTip = wantsTip && policy.tipsAllowed && !lowDecimals;
+  const resolved = showTip ? resolveTip(choice) : { tip: 0n };
+  const priorityTip = resolved.tip;
 
   useEffect(() => {
     let live = true;
@@ -63,8 +73,8 @@ export function SendConfirm(p: SendConfirmProps) {
 
   const to = p.to.startsWith('0x') ? p.to : `0x${p.to}`;
   const failed = est?.state === 'fail';
-  const tipRow = ladder[tipIndex];
   const decimals = est?.state === 'ok' ? est.decimals : 18;
+  const feeBase = est?.state === 'ok' && est.decimals >= 18 ? est.fee : null;
 
   return (
     <section className={styles.card} data-testid="send-confirm" aria-label={`${p.title}: review`}>
@@ -108,30 +118,16 @@ export function SendConfirm(p: SendConfirmProps) {
             {est?.state === 'ok' && (p.txCount ?? 1) > 1 ? ` (${p.txCount} txs)` : ''}
           </dd>
         </div>
-        {showTip && tipRow && tipRow.tip > 0n && (
+        {showTip && priorityTip > 0n && (
           <div className={styles.row}>
             <dt>Priority tip</dt>
-            <dd data-testid="send-confirm-tip">{formatNative(tipRow.tip, decimals)} BOING</dd>
+            <dd data-testid="send-confirm-tip">{formatNative(priorityTip, decimals)} BOING</dd>
           </div>
         )}
       </dl>
-      {showTip && ladder.length > 0 && (
-        <div className={styles.tipGroup} role="group" aria-label="Priority tip" data-testid="send-confirm-tip-ladder">
-          <p className={styles.tipHint}>Optional tip for faster inclusion (base fee still applies).</p>
-          <div className={styles.tipOptions}>
-            {ladder.map((tier, i) => (
-              <button
-                key={tier.label}
-                type="button"
-                className={`${styles.tipBtn} ${i === tipIndex ? styles.tipBtnActive : ''}`}
-                onClick={() => setTipIndex(i)}
-                disabled={p.busy}
-                data-testid={`send-confirm-tip-${tier.label}`}
-              >
-                {TIP_LABELS[tier.label] ?? tier.label}
-              </button>
-            ))}
-          </div>
+      {showTip && (
+        <div className={styles.tipGroup} data-testid="send-confirm-tip-ladder">
+          <FeeChooser fee={feeBase} value={choice} onChange={setChoice} disabled={p.busy} testIdPrefix="send-confirm-speed" />
         </div>
       )}
       {failed && (
@@ -148,7 +144,7 @@ export function SendConfirm(p: SendConfirmProps) {
         type="button"
         className={styles.confirm}
         onClick={() => p.onConfirm(priorityTip)}
-        disabled={p.busy || failed}
+        disabled={p.busy || failed || !!resolved.error}
         data-testid="send-confirm-submit"
       >
         {p.busy ? 'Sending…' : 'Confirm send'}

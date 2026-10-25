@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Approve Signature</title>
   <link rel="stylesheet" href="approval.css" />
+  <link rel="stylesheet" href="popup-islands.css" />
 </head>
 <body>
   <main class="approval-shell">
@@ -36,6 +37,10 @@
             <tbody id="approval-tx-tbody"></tbody>
           </table>
         </div>
+      </section>
+
+      <section id="approval-fee-section" class="tx-section hidden" aria-label="Transaction speed">
+        <div id="approval-fee-root"></div>
       </section>
 
       <section id="approval-pipeline-section" class="pipeline-section hidden" aria-label="Signing pipeline">

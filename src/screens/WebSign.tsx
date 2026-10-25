@@ -17,6 +17,8 @@ import {
 } from '../boing/dappTxRequest';
 import { buildSignedTransactionHex, signingChainIdForRpc } from '../boing/signing';
 import { approvalAmountContext } from '../boing/approvalAmounts';
+import { applyChosenTip, planTip, type TipPlan } from '../boing/tipPlan';
+import { FeeChooserState, LockedTip } from '../components/FeeChooser';
 import { buildAndSubmit } from '../boing/submitRetry';
 import { signMessage } from '../crypto/keys';
 import { looksLikeTransactionPreimage, messageToBytes, TX_PREIMAGE_MESSAGE_REFUSED } from '../boing/messageSigning';
@@ -79,6 +81,9 @@ export function WebSign() {
   const [detail, setDetail] = useState<TransactionApprovalDetail | null>(null);
   const [summary, setSummary] = useState('');
   const [prepError, setPrepError] = useState<string | null>(null);
+  const [tipPlan, setTipPlan] = useState<TipPlan | null>(null);
+  const [chosenTip, setChosenTip] = useState(0n);
+  const [tipValid, setTipValid] = useState(true);
   const answered = useRef(false);
   const replay = useMemo(() => createStorageReplayStore(window.localStorage, () => Date.now()), []);
   const sites = useMemo(() => createConnectedSitesStore(window.localStorage), []);
@@ -183,7 +188,9 @@ export function WebSign() {
         const t = transactionFromDappJson(txReq, accountId, nonce);
         if (cancelled) return;
         const amountCtx = await approvalAmountContext(network.config.rpcUrl, t, wallet.privateKey);
+        const plan = await planTip(network.config.rpcUrl, t, amountCtx);
         if (cancelled) return;
+        setTipPlan(plan);
         setTx(t);
         setSummary(transactionSummary(t, amountCtx));
         setDetail(buildTransactionApprovalDetail(t, amountCtx));
@@ -246,7 +253,9 @@ export function WebSign() {
         const signed = await buildSignedTransactionHex(t, signingKey, chainId);
         return signed.startsWith('0x') ? signed : `0x${signed}`;
       };
-      const hex = await signWith(tx);
+      // A speed picked here applies only when the dApp set no tip itself.
+      const finalTx = tipPlan ? applyChosenTip(tx, tipPlan, chosenTip) : tx;
+      const hex = await signWith(finalTx);
       if (req.method === 'boing_signTransaction') {
         respond(req, { result: hex }, 'Transaction signed. You can return to the app.');
         return;
@@ -257,7 +266,7 @@ export function WebSign() {
       // nonce at send time, and re-sign once if the node says `stale_nonce`. A dApp-pinned nonce is sent as-is.
       const sent = explicitNonce
         ? await network.submitTransaction(hex)
-        : await buildAndSubmit(network, accountId, (nonce) => signWith({ ...tx, nonce }));
+        : await buildAndSubmit(network, accountId, (nonce) => signWith({ ...finalTx, nonce }));
       if (!sent.success) {
         respond(req, { error: webError('BOING_SUBMIT_FAILED', sent.error ?? 'Submit failed.', -32603, sent.reason) }, sent.error ?? 'Submit failed.');
         return;
@@ -269,7 +278,7 @@ export function WebSign() {
     } finally {
       setBusy(false);
     }
-  }, [req, accountId, senderHex, wallet.privateKey, sites, respond, messageInfo, tx, prepError, network, refuse]);
+  }, [req, accountId, senderHex, wallet.privateKey, sites, respond, messageInfo, tx, prepError, network, refuse, tipPlan, chosenTip]);
 
   const onUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,6 +407,17 @@ export function WebSign() {
               </div>
             ))}
           </dl>
+          {tipPlan?.locked != null ? <LockedTip tip={tipPlan.locked} testId="web-sign-tip-locked" /> : null}
+          {tipPlan?.allowed ? (
+            <FeeChooserState
+              fee={tipPlan.fee}
+              testIdPrefix="web-sign-speed"
+              onTipChange={(tip, valid) => {
+                setChosenTip(tip);
+                setTipValid(valid);
+              }}
+            />
+          ) : null}
         </div>
       ) : null}
       {prepError ? (
@@ -405,7 +425,7 @@ export function WebSign() {
           <button type="button" className={styles.secondary} onClick={() => refuse('BOING_INVALID_TX', prepError)} data-testid="web-sign-close">Close</button>
         </div>
       ) : (
-        buttons(!!tx, isSend ? 'Sign and send' : 'Sign')
+        buttons(!!tx && tipValid, isSend ? 'Sign and send' : 'Sign')
       )}
     </>
   );

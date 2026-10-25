@@ -15,6 +15,7 @@ import { transactionIdFromTransaction } from '../src/boing/bincode';
 import { accountIdFromHex, accountIdToHex } from '../src/boing/types';
 import { mergeSuggestedAccessListHex } from '../src/boing/accessList';
 import { approvalAmountContext } from '../src/boing/approvalAmounts';
+import { applyChosenTip, planTip, tipPlanToWire, type TipPlan, type TipPlanWire } from '../src/boing/tipPlan';
 import {
   assertFromMatchesSender,
   buildTransactionApprovalDetail,
@@ -142,16 +143,18 @@ type PendingSignatureApproval = {
   txPipeline?: 'sign' | 'send';
   /** `connect` = site connection request (no signing); default = signature / transaction approval. */
   kind?: 'connect' | 'sign';
-  resolve: () => void;
+  /** Resolves with the priority tip the user picked in the approval window (0 = none). */
+  resolve: (r: { priorityTip: bigint }) => void;
   reject: (error: BoingProviderError) => void;
   timeoutId: number;
   windowId?: number;
+  tipPlan?: TipPlan;
 };
 
 type ApprovalRecord = Pick<
   PendingSignatureApproval,
   'requestId' | 'origin' | 'chainId' | 'address' | 'message' | 'transactionDetail' | 'txPipeline' | 'kind'
->;
+> & { tipPlan?: TipPlanWire };
 
 /** Extra fields on provider errors (simulation hints, node forward). Aligned with RPC-API-SPEC / BOING-RPC-ERROR-CODES-FOR-DAPPS. */
 type BoingProviderErrorData = {
@@ -562,12 +565,14 @@ async function signOrSendBoingTransaction(
     }
   }
 
-  const tx = transactionFromDappJson(txReq, sender, nonceDefault);
+  let tx = transactionFromDappJson(txReq, sender, nonceDefault);
   const networkId = await getSelectedNetworkId();
   const chainId = chainIdForNetwork(networkId);
 
   // Native amounts as BOING: decimals of the block this tx lands in (18 = base units) + simulated fee.
   const amountCtx = await approvalAmountContext(rpcUrl, tx, unlockedState.privateKey);
+
+  const tipPlan = await planTip(rpcUrl, tx, amountCtx);
 
   const putBlobBytes = putBlobDataByteLengthFromDappTx(txReq);
   const session = putBlobSessionsByOrigin.get(origin);
@@ -590,14 +595,17 @@ async function signOrSendBoingTransaction(
     }
     // One prior `boing_requestPutBlobSession` approval covers this PutBlob — no per-file popup.
   } else {
-    await requestSignatureApproval({
+    const approved = await requestSignatureApproval({
       origin,
       chainId,
       address: normalizedAddr,
       message: transactionSummary(tx, amountCtx),
       transactionDetail: buildTransactionApprovalDetail(tx, amountCtx),
       txPipeline: method === BOING_METHODS.SEND_TRANSACTION ? 'send' : 'sign',
+      tipPlan,
     });
+    // The user may have picked a speed in the approval window; a tip the dApp set itself always wins.
+    tx = applyChosenTip(tx, tipPlan, approved.priorityTip);
   }
 
   // Security fix #2: chain-bound (v2) signature for the selected network's chain id.
@@ -750,6 +758,7 @@ function toApprovalRecord(pending: PendingSignatureApproval): ApprovalRecord {
     transactionDetail: pending.transactionDetail,
     txPipeline: pending.txPipeline,
     kind: pending.kind,
+    ...(pending.tipPlan ? { tipPlan: tipPlanToWire(pending.tipPlan) } : {}),
   };
 }
 
@@ -937,7 +946,12 @@ async function processPendingUnlockQueue(): Promise<void> {
   }
 }
 
-function resolvePendingApproval(requestId: string): void {
+/** `priorityTip` from the approval page: a decimal string of base units; anything else means no tip. Range is enforced by `applyChosenTip`. */
+function chosenTipFromMessage(raw: unknown): bigint {
+  return typeof raw === 'string' && /^\d{1,39}$/.test(raw) ? BigInt(raw) : 0n;
+}
+
+function resolvePendingApproval(requestId: string, priorityTip: bigint = 0n): void {
   const pending = clearPendingApproval(requestId);
   if (!pending) return;
   if (pending.windowId != null) {
@@ -945,7 +959,7 @@ function resolvePendingApproval(requestId: string): void {
       void chrome.runtime.lastError;
     });
   }
-  pending.resolve();
+  pending.resolve({ priorityTip });
 }
 
 async function requestSignatureApproval(data: {
@@ -956,7 +970,8 @@ async function requestSignatureApproval(data: {
   transactionDetail?: TransactionApprovalDetail;
   txPipeline?: 'sign' | 'send';
   kind?: 'connect' | 'sign';
-}): Promise<void> {
+  tipPlan?: TipPlan;
+}): Promise<{ priorityTip: bigint }> {
   const requestId = `sign-${Date.now()}-${nextApprovalId++}`;
   return new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => {
@@ -975,6 +990,7 @@ async function requestSignatureApproval(data: {
       transactionDetail: data.transactionDetail,
       txPipeline: data.txPipeline,
       kind: data.kind,
+      tipPlan: data.tipPlan,
       resolve,
       reject,
       timeoutId,
@@ -1197,7 +1213,7 @@ chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) =
     const requestId = typeof msg.requestId === 'string' ? msg.requestId : '';
     const approved = msg.approved === true;
     if (approved) {
-      resolvePendingApproval(requestId);
+      resolvePendingApproval(requestId, chosenTipFromMessage(msg.priorityTip));
     } else {
       rejectPendingApproval(
         requestId,

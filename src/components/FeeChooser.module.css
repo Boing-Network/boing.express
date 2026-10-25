@@ -1,0 +1,99 @@
+.group {
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  text-align: left;
+}
+.legend {
+  padding: 0;
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  color: rgba(230, 247, 255, 0.75);
+}
+.options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.option {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+/* Visually hidden but focusable: keeps native radio keyboard behaviour. */
+.radio {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.pill {
+  display: block;
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  background: transparent;
+  color: rgba(230, 247, 255, 0.92);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+}
+.radio:checked + .pill {
+  border-color: rgba(0, 229, 255, 0.9);
+  background: rgba(0, 229, 255, 0.14);
+  color: #8ff5ff;
+}
+.radio:focus-visible + .pill {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+.radio:disabled + .pill {
+  opacity: 0.5;
+  cursor: default;
+}
+.hint {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: rgba(230, 247, 255, 0.78);
+}
+.custom {
+  margin-top: 8px;
+}
+.customLabel {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  color: rgba(230, 247, 255, 0.85);
+}
+.customInput {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  background: rgba(0, 0, 0, 0.25);
+  color: #e6f7ff;
+  font: inherit;
+  font-size: 0.9rem;
+}
+.customInput:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 1px;
+}
+.customInput[aria-invalid='true'] {
+  border-color: #ff8a8a;
+}
+.error {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #ffb3b3;
+}
+.summary {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: rgba(230, 247, 255, 0.9);
+}

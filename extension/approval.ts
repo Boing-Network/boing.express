@@ -1,4 +1,6 @@
 import { assessOrigin } from '../src/security/originRisk';
+import { tipPlanFromWire, type TipPlanWire } from '../src/boing/tipPlan';
+import { renderApprovalFeeIsland } from './approvalFeeIsland';
 
 type TransactionApprovalDetail = {
   txType: string;
@@ -17,6 +19,7 @@ type ApprovalResponse = {
     transactionDetail?: TransactionApprovalDetail;
     txPipeline?: 'sign' | 'send';
     kind?: 'connect' | 'sign';
+    tipPlan?: TipPlanWire;
   } | null;
 };
 
@@ -55,8 +58,17 @@ async function sendRuntimeMessage<T>(message: Record<string, unknown>): Promise<
   });
 }
 
+/** Priority tip picked in the speed chooser (base units); 0 when none / not shown. */
+let chosenTip = 0n;
+let chosenTipValid = true;
+
 async function resolveApproval(requestId: string, approved: boolean): Promise<void> {
-  await sendRuntimeMessage({ type: 'RESOLVE_SIGN_APPROVAL', requestId, approved });
+  await sendRuntimeMessage({
+    type: 'RESOLVE_SIGN_APPROVAL',
+    requestId,
+    approved,
+    ...(approved && chosenTip > 0n ? { priorityTip: chosenTip.toString() } : {}),
+  });
   window.close();
 }
 
@@ -162,6 +174,16 @@ async function main(): Promise<void> {
     messageBlock.classList.add('hidden');
     fillTxTable($('approval-tx-tbody') as HTMLTableSectionElement, detail.rows);
 
+    const tipPlan = tipPlanFromWire(approval.tipPlan);
+    if (tipPlan.allowed || tipPlan.locked != null) {
+      $('approval-fee-section').classList.remove('hidden');
+      renderApprovalFeeIsland($('approval-fee-root'), tipPlan, (tip, valid) => {
+        chosenTip = tip;
+        chosenTipValid = valid;
+        ($('btn-approve') as HTMLButtonElement).disabled = !valid;
+      });
+    }
+
     if (txPipeline === 'sign' || txPipeline === 'send') {
       pipelineSection.classList.remove('hidden');
       fillPipelineSteps($('approval-pipeline-steps') as HTMLOListElement, txPipeline);
@@ -178,6 +200,7 @@ async function main(): Promise<void> {
     $('approval-message').textContent = approval.message;
   }
   $('btn-approve').addEventListener('click', async () => {
+    if (!chosenTipValid) return;
     setBusy(true);
     try {
       await resolveApproval(requestId, true);
