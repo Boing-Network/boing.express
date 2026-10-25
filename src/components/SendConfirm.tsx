@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { NetworkAdapter } from '../networks/types';
 import { estimateSendFee, feeLabel, type FeeEstimate } from '../boing/feeEstimate';
 import { DEFAULT_TIP_CHOICE, resolveTip, type TipChoice } from '../boing/feeTips';
@@ -40,6 +40,12 @@ export function SendConfirm(p: SendConfirmProps) {
   const [choice, setChoice] = useState<TipChoice>(DEFAULT_TIP_CHOICE);
   const [est, setEst] = useState<FeeEstimate | null>(null);
   const rpcUrl = p.network.config?.rpcUrl;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // Move focus to the review heading so keyboard / screen-reader users land on the new step, not on a removed form.
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (!wantsTip || !rpcUrl) return;
@@ -77,7 +83,17 @@ export function SendConfirm(p: SendConfirmProps) {
   const feeBase = est?.state === 'ok' && est.decimals >= 18 ? est.fee : null;
 
   return (
-    <section className={styles.card} data-testid="send-confirm" aria-label={`${p.title}: review`}>
+    <section
+      className={styles.card}
+      data-testid="send-confirm"
+      aria-label={`${p.title}: review`}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && !p.busy) {
+          e.stopPropagation();
+          p.onBack();
+        }
+      }}
+    >
       <div className={styles.top}>
         <button type="button" className={styles.back} onClick={p.onBack} disabled={p.busy} aria-label="Back to edit" data-testid="send-confirm-back">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -86,7 +102,7 @@ export function SendConfirm(p: SendConfirmProps) {
         </button>
       </div>
       <img src={p.mascotSrc ?? '/assets/mascot-default.png'} alt="" className={styles.mascot} aria-hidden />
-      <h2 className={styles.title}>{p.title}</h2>
+      <h2 className={styles.title} ref={headingRef} tabIndex={-1}>{p.title}</h2>
       <dl className={styles.rows}>
         {p.toName ? (
           <>
@@ -113,7 +129,7 @@ export function SendConfirm(p: SendConfirmProps) {
         </div>
         <div className={styles.row}>
           <dt>Network fee</dt>
-          <dd data-testid="send-confirm-fee" data-exact={est?.state === 'ok' && est.exact ? 'true' : 'false'}>
+          <dd data-testid="send-confirm-fee" aria-live="polite" aria-busy={est === null} data-exact={est?.state === 'ok' && est.exact ? 'true' : 'false'}>
             {feeLabel(est)}
             {est?.state === 'ok' && (p.txCount ?? 1) > 1 ? ` (${p.txCount} txs)` : ''}
           </dd>
@@ -145,6 +161,7 @@ export function SendConfirm(p: SendConfirmProps) {
         className={styles.confirm}
         onClick={() => p.onConfirm(priorityTip)}
         disabled={p.busy || failed || !!resolved.error}
+        aria-busy={p.busy ? true : undefined}
         data-testid="send-confirm-submit"
       >
         {p.busy ? 'Sending…' : 'Confirm send'}

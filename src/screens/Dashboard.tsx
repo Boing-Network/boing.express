@@ -22,6 +22,7 @@ import { getLockAfterLabel } from '../storage/lockSettings';
 import type { BalanceResult } from '../networks/types';
 import { chainIdHexToDecimal } from '../networks/chainIds';
 import { SiteLogo } from '../components/SiteLogo';
+import { nextTabId } from '../components/tabNav';
 import { NftHoldingsPanel } from '../components/NftHoldingsPanel';
 import { RevealPrivateKeyPanel } from '../components/RevealPrivateKeyPanel';
 import { ConnectedSitesPanel } from '../components/ConnectedSitesPanel';
@@ -615,7 +616,7 @@ export function Dashboard() {
   if (!accountId) {
     return (
       <div className={`${styles.wrap} page-app`}>
-        <p className={styles.addressHint}>Loading wallet…</p>
+        <p className={styles.addressHint} role="status" aria-live="polite" aria-busy="true">Loading wallet…</p>
       </div>
     );
   }
@@ -796,7 +797,19 @@ export function Dashboard() {
       )}
 
       <main className={styles.main}>
-        <nav className={styles.tabBar} role="tablist" aria-label="Wallet sections">
+        <nav
+          className={styles.tabBar}
+          role="tablist"
+          aria-label="Wallet sections"
+          onKeyDown={(e) => {
+            const ids = WALLET_TABS.filter(({ id }) => !(id === 'validate' && !showValidateTab) && !(id === 'faucet' && !showFaucetTab)).map((t) => t.id);
+            const next = nextTabId(ids, activeTab as (typeof ids)[number], e.key);
+            if (!next) return;
+            e.preventDefault();
+            setActiveTab(next);
+            document.getElementById(`tab-${next}`)?.focus();
+          }}
+        >
           {WALLET_TABS.map(({ id, label, aria }) => {
             if (id === 'validate' && !showValidateTab) return null;
             if (id === 'faucet' && !showFaucetTab) return null;
@@ -808,6 +821,7 @@ export function Dashboard() {
                 role="tab"
                 id={`tab-${id}`}
                 aria-selected={selected}
+                tabIndex={selected || (activeTab === 'settings' && id === 'wallet') ? 0 : -1}
                 aria-controls={`panel-${id}`}
                 className={`${styles.tabBtn} ${selected ? styles.tabBtnActive : ''}`}
                 onClick={() => setActiveTab(id)}
@@ -1008,7 +1022,7 @@ export function Dashboard() {
                 </p>
               )}
               {mergedHistory.length === 0 ? (
-                <p className={styles.addressHint} data-testid="tx-history-empty">
+                <p className={styles.addressHint} role="status" aria-live="polite" aria-busy={chainLoading && !chainLoaded} data-testid="tx-history-empty">
                   {chainLoading && !chainLoaded ? 'Loading transactions…' : 'No transactions yet.'}
                 </p>
               ) : (
@@ -1085,13 +1099,27 @@ export function Dashboard() {
             hidden={activeTab !== 'transfer'}
             className={`${styles.tabPanel} ${activeTab === 'transfer' ? styles.tabPanelActive : ''}`}
           >
-            <div className={styles.segmented} role="tablist" aria-label="Asset to transfer">
+            <div
+              className={styles.segmented}
+              role="tablist"
+              aria-label="Asset to transfer"
+              onKeyDown={(e) => {
+                const modes = ['boing', 'token', 'nft', 'bulk'] as const;
+                const next = nextTabId(modes, transferMode as (typeof modes)[number], e.key);
+                if (!next) return;
+                e.preventDefault();
+                setTransferMode(next);
+                document.getElementById(`transfer-mode-tab-${next}`)?.focus();
+              }}
+            >
               {(['boing', 'token', 'nft', 'bulk'] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
                   role="tab"
+                  id={`transfer-mode-tab-${m}`}
                   aria-selected={transferMode === m}
+                  tabIndex={transferMode === m ? 0 : -1}
                   className={`${styles.segmentedBtn} ${transferMode === m ? styles.segmentedBtnActive : ''}`}
                   onClick={() => setTransferMode(m)}
                   data-testid={`transfer-mode-${m}`}
@@ -1171,9 +1199,9 @@ export function Dashboard() {
                       Max
                     </button>
                   </div>
-                  {sendError && <p className={styles.error} data-testid="send-error">{sendError}</p>}
+                  {sendError && <p className={styles.error} role="alert" data-testid="send-error">{sendError}</p>}
                   {sendSuccess && (
-                    <p className={styles.success} data-testid="send-success">
+                    <p className={styles.success} role="status" data-testid="send-success">
                       {sendSuccess}
                       {lastTxHash && (
                         <>
@@ -1306,9 +1334,9 @@ export function Dashboard() {
                   inputMode="decimal"
                   aria-label="Amount to bond"
                 />
-                {bondError && <p className={styles.error}>{bondError}</p>}
+                {bondError && <p className={styles.error} role="alert">{bondError}</p>}
                 {bondSuccess && (
-                  <p className={styles.success}>
+                  <p className={styles.success} role="status">
                     {bondSuccess}
                     {lastTxHash && (
                       <>
@@ -1334,9 +1362,9 @@ export function Dashboard() {
                   inputMode="decimal"
                   aria-label="Amount to unbond"
                 />
-                {unbondError && <p className={styles.error}>{unbondError}</p>}
+                {unbondError && <p className={styles.error} role="alert">{unbondError}</p>}
                 {unbondSuccess && (
-                  <p className={styles.success}>
+                  <p className={styles.success} role="status">
                     {unbondSuccess}
                     {lastTxHash && (
                       <>
@@ -1353,7 +1381,7 @@ export function Dashboard() {
             )}
             {network.buildClaimUnbond && hasPendingUnbond && !showValidatorTab && (
               <form onSubmit={handleClaimUnbond} className={styles.form}>
-                {claimError && <p className={styles.error}>{claimError}</p>}
+                {claimError && <p className={styles.error} role="alert">{claimError}</p>}
                 {claimSuccess && (
                   <p className={styles.success} role="status">
                     {claimSuccess}
@@ -1402,7 +1430,7 @@ export function Dashboard() {
                   </button>
                 </div>
                 {faucetStatus === 'ok' && faucetResult && (
-                  <p className={styles.success} data-testid="faucet-success">
+                  <p className={styles.success} role="status" data-testid="faucet-success">
                     {faucetResult.amount ? `${faucetResult.amount} BOING requested from the testnet faucet.` : 'Testnet BOING requested.'} It arrives with the
                     next block (a few seconds); your balance updates automatically.
                     {accountExplorerUrl && (
@@ -1415,7 +1443,7 @@ export function Dashboard() {
                     {faucetResult.warning && <><br />Note: {faucetResult.warning}</>}
                   </p>
                 )}
-                {faucetError && <p className={styles.error}>{faucetError}</p>}
+                {faucetError && <p className={styles.error} role="alert">{faucetError}</p>}
               </section>
             </div>
           )}
@@ -1582,7 +1610,7 @@ export function Dashboard() {
                     </button>
                   </div>
                   {rpcOverrides[network.config.id] && (
-                    <p className={styles.success}>Using override: {rpcOverrides[network.config.id]}</p>
+                    <p className={styles.success} role="status">Using override: {rpcOverrides[network.config.id]}</p>
                   )}
                 </div>
               )}

@@ -43,12 +43,12 @@
   --border: rgba(0, 229, 204, 0.2);
   --text: #f8fafc;
   --text-secondary: #94a3b8;
-  --muted: #64748b;
+  --muted: #8b9bb3; /* AA on --bg and --surface-elevated (was #64748b, 3.3:1) */
   --primary-color: #00E5CC;
   --secondary-color: #00B4FF;
   --accent-neon: #00E5CC;
   --accent-glow: rgba(0, 229, 204, 0.3);
-  --danger: #ef4444;
+  --danger: #f87171; /* AA for text on --surface-elevated (was #ef4444, 4.1:1) */
   --success: #10b981;
   --radius: 1rem;
   --radius-sm: 0.5rem;

@@ -1,4 +1,5 @@
 import { assessOrigin } from '../src/security/originRisk';
+import { renderOriginRisk } from '../src/security/originRiskBanner';
 import { tipPlanFromWire, type TipPlanWire } from '../src/boing/tipPlan';
 import { renderApprovalFeeIsland } from './approvalFeeIsland';
 
@@ -105,24 +106,7 @@ function fillPipelineSteps(ol: HTMLOListElement, txPipeline: 'sign' | 'send'): v
 }
 
 function showOriginRisk(origin: string): void {
-  const risk = assessOrigin(origin);
-  const el = $('approval-risk');
-  if (risk.level === 'none') {
-    el.classList.add('hidden');
-    return;
-  }
-  el.replaceChildren();
-  const strong = document.createElement('strong');
-  strong.textContent = risk.level === 'danger' ? 'Be careful: this site looks risky' : 'Check this site before continuing';
-  const ul = document.createElement('ul');
-  for (const w of risk.warnings) {
-    const li = document.createElement('li');
-    li.textContent = w;
-    ul.appendChild(li);
-  }
-  el.append(strong, ul);
-  el.classList.toggle('risk-danger', risk.level === 'danger');
-  el.classList.remove('hidden');
+  renderOriginRisk(document, $('approval-risk'), assessOrigin(origin));
 }
 async function main(): Promise<void> {
   const requestId = parseRequestId();

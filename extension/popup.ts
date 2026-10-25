@@ -5,6 +5,7 @@
 
 // Ensure Ed25519 SHA-512 shim is set before any wallet code (create/import/unlock/sign).
 import { describeWalletError } from '../src/boing/errorMessages';
+import { nextTabId } from '../src/components/tabNav';
 import { buildAndSubmit, submitNote } from '../src/boing/submitRetry';
 import { resolveRecipient, reverseName } from '../src/boing/names';
 import { setPendingName } from '../src/storage/pendingName';
@@ -70,7 +71,8 @@ import { normalizeBoingNetworkId } from './config';
 import { isBackupConfirmed } from '../src/security/backupVerify';
 import { checkNodeCompat, configuredChainIdDecimal } from '../src/boing/nodeCompat';
 import { explorerAccountUrl, explorerBaseFor, explorerTxUrl } from '../src/boing/explorerLinks';
-import { AUTO_LOCK_OPTIONS, autoLockLabel, isSessionExpired, normalizeAutoLockMinutes, STORAGE_KEY_AUTO_LOCK_MINUTES } from '../src/security/autoLock';
+import { isSessionExpired, normalizeAutoLockMinutes, STORAGE_KEY_AUTO_LOCK_MINUTES } from '../src/security/autoLock';
+import { bindAutoLockSelect } from '../src/security/autoLockUi';
 import { RevealError, createRevealSession, revealActivePrivateKeyHex, type RevealState } from '../src/security/revealPrivateKey';
 import {
   buildExtensionNetworksCatalog,
@@ -448,6 +450,10 @@ function switchTab(tabId: TabId): void {
     gear.setAttribute('aria-expanded', tabId === 'settings' ? 'true' : 'false');
   }
   if (tabId !== 'settings') lastMainTab = tabId;
+  // Roving tabindex: exactly one tab stop in the tab bar (the active tab, or the last main tab while Settings is open).
+  document.querySelectorAll<HTMLElement>('.tab-btn').forEach((el) => {
+    el.tabIndex = el.id === `tab-${lastMainTab}` ? 0 : -1;
+  });
 }
 
 let lastMainTab: TabId = 'wallet';
@@ -1132,16 +1138,9 @@ chrome.storage.local.get([STORAGE_KEY_AUTO_LOCK_MINUTES], (r) => {
   autoLockMinutes = normalizeAutoLockMinutes(r?.[STORAGE_KEY_AUTO_LOCK_MINUTES]);
   const sel = document.getElementById('auto-lock-select') as HTMLSelectElement | null;
   if (!sel) return;
-  for (const m of AUTO_LOCK_OPTIONS) {
-    const o = document.createElement('option');
-    o.value = String(m);
-    o.textContent = autoLockLabel(m);
-    sel.appendChild(o);
-  }
-  sel.value = String(autoLockMinutes);
-  sel.addEventListener('change', () => {
-    autoLockMinutes = normalizeAutoLockMinutes(sel.value);
-    chrome.storage.local.set({ [STORAGE_KEY_AUTO_LOCK_MINUTES]: autoLockMinutes });
+  bindAutoLockSelect(document, sel, autoLockMinutes, (minutes) => {
+    autoLockMinutes = minutes;
+    chrome.storage.local.set({ [STORAGE_KEY_AUTO_LOCK_MINUTES]: minutes });
   });
 });
 function noteInteraction(): void {
@@ -1902,6 +1901,7 @@ function setTransferMode(mode: TransferMode): void {
     const on = b.dataset.transferMode === mode;
     b.classList.toggle('active', on);
     b.setAttribute('aria-selected', on ? 'true' : 'false');
+    b.tabIndex = on ? 0 : -1;
   });
   for (const m of ['boing', 'token', 'nft', 'bulk'] as const) {
     document.getElementById(`transfer-pane-${m}`)?.classList.toggle('hidden', m !== mode);
@@ -1914,6 +1914,24 @@ function setTransferMode(mode: TransferMode): void {
 document.querySelectorAll<HTMLElement>('[data-transfer-mode]').forEach((b) => {
   b.addEventListener('click', () => setTransferMode(b.dataset.transferMode as TransferMode));
 });
+
+/** Arrow / Home / End keys move between the visible tabs of a tablist and activate the target (click handlers do the work). */
+function enableTabKeyboard(tablist: Element | null): void {
+  tablist?.addEventListener('keydown', (ev) => {
+    const e = ev as KeyboardEvent;
+    const tabs = Array.from(tablist.querySelectorAll<HTMLElement>('[role="tab"]')).filter((t) => !t.classList.contains('hidden'));
+    const current = tabs.findIndex((t) => t === document.activeElement);
+    if (current < 0) return;
+    const next = nextTabId(tabs.map((_, i) => String(i)), String(current), e.key);
+    if (next === null) return;
+    e.preventDefault();
+    const target = tabs[Number(next)]!;
+    target.click();
+    target.focus();
+  });
+}
+enableTabKeyboard(document.querySelector('nav.tab-bar[role="tablist"]'));
+enableTabKeyboard(document.querySelector('.segmented[role="tablist"]'));
 
 // --- Fungible tokens (Wallet list + Transfer > Token)
 let tokenHoldings: TokenHolding[] = [];

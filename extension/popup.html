@@ -113,11 +113,11 @@
         </div>
       </div>
       <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
-        <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet" data-testid="wallet-tab-wallet">Wallet</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transaction history" data-testid="wallet-tab-transactions">Tx</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-transfer" aria-selected="false" aria-controls="panel-transfer" data-tab="transfer" data-testid="wallet-tab-transfer">Transfer</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-validate" aria-selected="false" aria-controls="panel-validate" data-tab="validate" aria-label="Validate and stake" data-testid="wallet-tab-validate">Validate</button>
-            <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
+        <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" tabindex="0" aria-controls="panel-wallet" data-tab="wallet" data-testid="wallet-tab-wallet">Wallet</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" tabindex="-1" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transaction history" data-testid="wallet-tab-transactions">Tx</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-transfer" aria-selected="false" tabindex="-1" aria-controls="panel-transfer" data-tab="transfer" data-testid="wallet-tab-transfer">Transfer</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-validate" aria-selected="false" tabindex="-1" aria-controls="panel-validate" data-tab="validate" aria-label="Validate and stake" data-testid="wallet-tab-validate">Validate</button>
+            <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" tabindex="-1" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>
       <div class="tab-panels">
         <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
@@ -189,12 +189,12 @@
         </section>
         <section id="panel-transfer" class="tab-panel" role="tabpanel" aria-labelledby="tab-transfer" hidden>
           <div class="segmented" role="tablist" aria-label="Asset to transfer">
-            <button type="button" class="segmented-btn active" data-transfer-mode="boing" aria-selected="true" data-testid="transfer-mode-boing">BOING</button>
-            <button type="button" class="segmented-btn" data-transfer-mode="token" aria-selected="false" data-testid="transfer-mode-token">Token</button>
-            <button type="button" class="segmented-btn" data-transfer-mode="nft" aria-selected="false" data-testid="transfer-mode-nft">NFT</button>
-            <button type="button" class="segmented-btn" data-transfer-mode="bulk" aria-selected="false" data-testid="transfer-mode-bulk">Bulk</button>
+            <button type="button" class="segmented-btn active" role="tab" id="transfer-mode-tab-boing" tabindex="0" data-transfer-mode="boing" aria-selected="true" data-testid="transfer-mode-boing">BOING</button>
+            <button type="button" class="segmented-btn" role="tab" id="transfer-mode-tab-token" tabindex="-1" data-transfer-mode="token" aria-selected="false" data-testid="transfer-mode-token">Token</button>
+            <button type="button" class="segmented-btn" role="tab" id="transfer-mode-tab-nft" tabindex="-1" data-transfer-mode="nft" aria-selected="false" data-testid="transfer-mode-nft">NFT</button>
+            <button type="button" class="segmented-btn" role="tab" id="transfer-mode-tab-bulk" tabindex="-1" data-transfer-mode="bulk" aria-selected="false" data-testid="transfer-mode-bulk">Bulk</button>
           </div>
-          <div class="card transfer-pane" id="transfer-pane-boing" data-testid="transfer-pane-boing">
+          <div class="card transfer-pane" id="transfer-pane-boing" role="tabpanel" aria-labelledby="transfer-mode-tab-boing" data-testid="transfer-pane-boing" role="tabpanel" aria-labelledby="transfer-mode-tab-boing">
             <h2 class="label">Send BOING</h2>
             <form id="form-send" class="form">
               <div class="row row-amount">
@@ -210,7 +210,7 @@
               <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Review BOING send" data-testid="send-submit">Review send</button>
             </form>
           </div>
-          <div class="card transfer-pane hidden" id="transfer-pane-token" data-testid="transfer-pane-token">
+          <div class="card transfer-pane hidden" id="transfer-pane-token" role="tabpanel" aria-labelledby="transfer-mode-tab-token" data-testid="transfer-pane-token" role="tabpanel" aria-labelledby="transfer-mode-tab-token">
             <h2 class="label">Send token</h2>
             <p class="hint">Boing reference tokens (v1 and v2). Sending to your own address is refused (v1 self-transfer bug).</p>
             <form id="form-token-send" class="form">
@@ -228,7 +228,7 @@
               <button type="submit" id="btn-token-send" class="btn-primary" data-testid="token-send-submit">Review send</button>
             </form>
           </div>
-          <div class="card transfer-pane hidden" id="transfer-pane-nft" data-testid="transfer-pane-nft">
+          <div class="card transfer-pane hidden" id="transfer-pane-nft" role="tabpanel" aria-labelledby="transfer-mode-tab-nft" data-testid="transfer-pane-nft" role="tabpanel" aria-labelledby="transfer-mode-tab-nft">
             <h2 class="label">Transfer NFT</h2>
             <form id="form-nft-transfer" class="form">
               <ul id="nft-transfer-pick" class="connected-sites-list nft-pick-list" aria-label="Owned NFTs to transfer"></ul>
@@ -243,7 +243,7 @@
               <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
             </form>
           </div>
-          <div class="card transfer-pane hidden" id="transfer-pane-bulk">
+          <div class="card transfer-pane hidden" id="transfer-pane-bulk" role="tabpanel" aria-labelledby="transfer-mode-tab-bulk">
             <!-- Same mixed BOING / token / NFT bulk component as the web wallet (native batch when supported). -->
             <div id="bulk-root"></div>
           </div>

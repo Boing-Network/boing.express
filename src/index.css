@@ -37,7 +37,7 @@
   /* Text */
   --text-primary: #f0f9ff;
   --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-muted: #8b9bb3; /* 5.8:1 on --boing-navy-mid (was #64748b, 3.5:1: failed WCAG AA for small hint text) */
   --text-accent: var(--express-primary);
 
   /* Cards & surfaces */
@@ -125,7 +125,7 @@
   --transition: var(--motion-transition);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --success: var(--trust-green);
-  --danger: #ef4444;
+  --danger: #f87171; /* AA (>=4.5:1) on every dark surface (was #ef4444: 4.4:1 on navy-mid) */
   --express-primary-dashed: rgba(0, 232, 200, 0.5);
 }
 
