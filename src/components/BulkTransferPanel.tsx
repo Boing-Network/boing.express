@@ -1,3 +1,4 @@
+import { describeWalletError } from '../boing/errorMessages';
 import { useEffect, useRef, useState } from 'react';
 import type { AccountId } from '../boing/types';
 import { accountIdFromHex, accountIdToHex } from '../boing/types';
@@ -285,7 +286,7 @@ export function BulkTransferPanel(props: {
       setValidated(null);
       props.onFinished();
     } catch (e) {
-      setStartError(`Could not send the batch: ${e instanceof Error ? e.message : String(e)}. Nothing was sent.`);
+      setStartError(`Could not send the batch: ${describeWalletError(e)}. Nothing was sent.`);
     }
   }
 
@@ -340,7 +341,7 @@ export function BulkTransferPanel(props: {
         shouldCancel: () => cancelRef.current,
       });
     } catch (e) {
-      setStartError(`Could not start: ${e instanceof Error ? e.message : String(e)}. Nothing was sent.`);
+      setStartError(`Could not start: ${describeWalletError(e)}. Nothing was sent.`);
       return;
     }
     for (const r of rep.results) {

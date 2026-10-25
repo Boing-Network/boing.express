@@ -1,3 +1,4 @@
+import { describeWalletError } from '../boing/errorMessages';
 import { useCallback, useEffect, useState } from 'react';
 import { boingNumber, formatNative, knownLedgerDecimals } from '../boing/nativeUnit';
 import type { AccountId } from '../boing/types';
@@ -60,7 +61,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
       setLoadError(null);
     } catch (e) {
       setReport(null);
-      setLoadError(e instanceof Error ? e.message : String(e));
+      setLoadError(describeWalletError(e));
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
       setTimeout(() => void refresh(), 3000);
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(describeWalletError(e));
       return false;
     } finally {
       setBusy(false);
@@ -134,7 +135,7 @@ export function ValidatorPanel({ network, accountId, getPrivateKey, onSubmitted 
     try {
       seed = parseNodeSecretHex(nodeKeyInput);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(describeWalletError(err));
       return;
     }
     const payload = await buildRegisterPayload(accountId, seed, await signingChainIdForRpc(rpcUrl));

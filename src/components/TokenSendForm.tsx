@@ -1,3 +1,4 @@
+import { describeWalletError } from '../boing/errorMessages';
 import { useEffect, useState } from 'react';
 import type { AccountId } from '../boing/types';
 import { accountIdToHex } from '../boing/types';
@@ -47,7 +48,7 @@ export function TokenSendForm(props: {
     try {
       resolved = await resolveRecipient(props.network.config.rpcUrl, to);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(describeWalletError(err));
       return;
     }
     if (!resolved.ok) {
@@ -94,7 +95,7 @@ export function TokenSendForm(props: {
       setAmount('');
       setReview(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(describeWalletError(err));
     } finally {
       setBusy(false);
     }

@@ -62,6 +62,8 @@
         <input type="checkbox" id="backup-acknowledged" aria-label="I have saved my private key" data-testid="wallet-backup-ack" />
         <span>I have saved my private key in a safe place</span>
       </label>
+      <label class="backup-confirm" for="backup-confirm">Type the last 6 characters of your key to confirm you saved it</label>
+      <input type="text" id="backup-confirm" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="12" placeholder="Last 6 characters" data-testid="wallet-backup-confirm" />
       <p id="backup-error" class="error hidden"></p>
       <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet" disabled data-testid="wallet-backup-continue">I've backed it up — Continue</button>
     </div>
@@ -120,6 +122,7 @@
       <div class="tab-panels">
         <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
           <div id="pending-name-root"></div>
+          <p id="compat-banner" class="hint compat-banner hidden" role="status" aria-live="polite" data-testid="node-compat-banner"></p>
           <div class="assets-composition" data-testid="assets-composition">
             <p id="primary-name" class="primary-name hidden" data-testid="wallet-primary-name"></p>
             <div class="assets-tokens" data-testid="wallet-tokens">

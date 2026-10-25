@@ -1,3 +1,5 @@
+import { describeWalletError } from '../boing/errorMessages';
+import { checkNodeCompat, configuredChainIdDecimal, type NodeCompatStatus } from '../boing/nodeCompat';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
@@ -133,6 +135,22 @@ export function Dashboard() {
   /** One tab for validating (open registration) and the secondary bond/unbond actions. */
   const showValidateTab = showStakeTab || showValidatorTab;
 
+  const [nodeCompat, setNodeCompat] = useState<NodeCompatStatus | null>(null);
+  useEffect(() => {
+    let live = true;
+    setNodeCompat(null);
+    void checkNodeCompat(network.config.rpcUrl, {
+      chainId: configuredChainIdDecimal(network.config.chainId),
+      networkName: network.config.name,
+    }).then((s) => {
+      if (live) setNodeCompat(s);
+    });
+    return () => {
+      live = false;
+    };
+  }, [network.config.rpcUrl, network.config.chainId, network.config.name]);
+  const nodeCompatIssues = (nodeCompat?.issues ?? []).filter((i) => i.code !== 'unreachable');
+
   const address = accountId ? formatAddress(accountId, false) : '';
   const addressHint = address ? `${address.slice(0, 8)}…${address.slice(-8)}` : '';
   useEffect(() => {
@@ -157,12 +175,12 @@ export function Dashboard() {
     try {
       const [bal, h, st, unbondStatus] = await Promise.all([
         network.getBalance(accountId).catch((e) => {
-          setBalanceError(e instanceof Error ? e.message : String(e));
+          setBalanceError(describeWalletError(e));
           return null;
         }),
         network.getChainHeight?.().catch(() => null) ?? Promise.resolve(null),
         network.getStake ? network.getStake(accountId).catch((e) => {
-          setStakeError(e instanceof Error ? e.message : String(e));
+          setStakeError(describeWalletError(e));
           return null;
         }) : Promise.resolve(null),
         network.getUnbondStatus
@@ -257,7 +275,7 @@ export function Dashboard() {
         setChainCursor(page.next_cursor);
         setChainLoaded(true);
       } catch (e) {
-        setChainError(e instanceof Error ? e.message : String(e));
+        setChainError(describeWalletError(e));
       } finally {
         setChainLoading(false);
       }
@@ -312,7 +330,7 @@ export function Dashboard() {
     try {
       resolved = await resolveRecipient(network.config.rpcUrl, sendTo);
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : String(err));
+      setSendError(describeWalletError(err));
       return;
     }
     if (!resolved.ok) {
@@ -382,7 +400,7 @@ export function Dashboard() {
         setSendError(result.error ?? 'Submit failed');
       }
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : String(err));
+      setSendError(describeWalletError(err));
     } finally {
       setSending(false);
     }
@@ -407,7 +425,7 @@ export function Dashboard() {
       }
     } catch (err) {
       setFaucetStatus('err');
-      setFaucetError(err instanceof Error ? err.message : String(err));
+      setFaucetError(describeWalletError(err));
     }
   }
 
@@ -449,7 +467,7 @@ export function Dashboard() {
         setBondError(result.error ?? 'Submit failed');
       }
     } catch (err) {
-      setBondError(err instanceof Error ? err.message : String(err));
+      setBondError(describeWalletError(err));
     } finally {
       setBonding(false);
     }
@@ -498,7 +516,7 @@ export function Dashboard() {
         setUnbondError(result.error ?? 'Submit failed');
       }
     } catch (err) {
-      setUnbondError(err instanceof Error ? err.message : String(err));
+      setUnbondError(describeWalletError(err));
     } finally {
       setUnbonding(false);
     }
@@ -547,7 +565,7 @@ export function Dashboard() {
         setClaimError(result.error ?? 'Submit failed');
       }
     } catch (err) {
-      setClaimError(err instanceof Error ? err.message : String(err));
+      setClaimError(describeWalletError(err));
     } finally {
       setClaiming(false);
     }
@@ -595,7 +613,7 @@ export function Dashboard() {
     } catch (err) {
       setQaResult({
         result: 'reject',
-        message: err instanceof Error ? err.message : String(err),
+        message: describeWalletError(err),
       });
     } finally {
       setQaValidating(false);
@@ -732,6 +750,16 @@ export function Dashboard() {
           </button>
         </div>
       </header>
+
+      {nodeCompatIssues.length > 0 && (
+        <aside
+          className={nodeCompat?.level === 'error' ? styles.error : styles.networkDiscoveryBar}
+          role={nodeCompat?.level === 'error' ? 'alert' : 'status'}
+          data-testid="node-compat-banner"
+        >
+          {nodeCompatIssues.map((i) => i.message).join(' ')}
+        </aside>
+      )}
 
       {showNetworkDiscoveryBar && (
         <aside className={styles.networkDiscoveryBar} aria-live="polite">

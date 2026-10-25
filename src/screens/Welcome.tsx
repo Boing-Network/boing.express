@@ -1,3 +1,4 @@
+import { isBackupConfirmed } from '../security/backupVerify';
 import { useState, useEffect } from 'react';
 import { useWallet } from '../context/WalletContext';
 import styles from './Welcome.module.css';
@@ -51,6 +52,7 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
   const [privateKeyHex, setPrivateKeyHex] = useState('');
   const [backupKeyHex, setBackupKeyHex] = useState('');
   const [backupAcknowledged, setBackupAcknowledged] = useState(false);
+  const [backupConfirmText, setBackupConfirmText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [copiedBackup, setCopiedBackup] = useState(false);
@@ -85,6 +87,7 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
       setBackupKeyHex(keyHex);
       setStep('backup');
       setBackupAcknowledged(false);
+    setBackupConfirmText('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create wallet');
     } finally {
@@ -281,7 +284,7 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
             Save this key in a safe place. Anyone with it can control your wallet. You won’t see it again here.
           </p>
           <div className={styles.backupKeyWrap}>
-            <code className={styles.backupKey}>{backupKeyHex}</code>
+            <code className={styles.backupKey} data-testid="wallet-backup-key">{backupKeyHex}</code>
             <button type="button" className={styles.copyBtn} onClick={copyBackupKey}>
               {copiedBackup ? 'Copied' : 'Copy'}
             </button>
@@ -296,13 +299,29 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
             />
             <span>I have saved my private key in a safe place</span>
           </label>
+          <label className={styles.checkboxWrap} htmlFor="backup-confirm">
+            <span>Type the last 6 characters of your key to confirm you saved it</span>
+          </label>
+          <input
+            id="backup-confirm"
+            type="text"
+            className={styles.input}
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            maxLength={12}
+            placeholder="Last 6 characters"
+            value={backupConfirmText}
+            onChange={(e) => setBackupConfirmText(e.target.value)}
+            data-testid="wallet-backup-confirm"
+          />
           {error && <p className={styles.error}>{error}</p>}
           <button
             type="button"
             className={styles.primary}
             data-testid="wallet-backup-continue"
             onClick={handleBackupContinue}
-            disabled={loading || !backupAcknowledged}
+            disabled={loading || !backupAcknowledged || !isBackupConfirmed(backupKeyHex, backupConfirmText)}
           >
             {loading ? 'Unlocking…' : "I've backed it up — Continue"}
           </button>

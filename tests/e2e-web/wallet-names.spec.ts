@@ -24,6 +24,8 @@ test.describe('.boing names (mocked RPC)', () => {
     await page.getByTestId('wallet-create-password').fill(PASSWORD);
     await page.getByTestId('wallet-create-password-confirm').fill(PASSWORD);
     await page.getByTestId('wallet-create-submit').click();
+    const backupKey = ((await page.getByTestId('wallet-backup-key').textContent()) ?? '').trim();
+    await page.getByTestId('wallet-backup-confirm').fill(backupKey.slice(-6));
     await page.getByTestId('wallet-backup-ack').check();
     await page.getByTestId('wallet-backup-continue').click();
     await expect(page.getByTestId('wallet-claim-name')).toBeVisible();

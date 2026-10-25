@@ -4,6 +4,7 @@
  * multi-select transfer as N× transfer_nft (no on-chain batch).
  */
 
+import { describeWalletError } from '../boing/errorMessages';
 import { useCallback, useEffect, useState } from 'react';
 import type { AccountId } from '../boing/types';
 import { accountIdToHex, formatAddress } from '../boing/types';
@@ -132,7 +133,7 @@ export function NftHoldingsPanel({
           available: false,
           items: [],
           indexer: null,
-          reason: e instanceof Error ? e.message : String(e),
+          reason: describeWalletError(e),
           pagesFetched: 0,
           truncated: false,
         };
@@ -197,7 +198,7 @@ export function NftHoldingsPanel({
         );
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(describeWalletError(e));
     } finally {
       setDiscovering(false);
       setLoading(false);
@@ -221,7 +222,7 @@ export function NftHoldingsPanel({
       setAddSuccess('Added to watchlist — verifying ownership…');
       await refresh();
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : String(err));
+      setAddError(describeWalletError(err));
     }
   }
 
@@ -282,7 +283,7 @@ export function NftHoldingsPanel({
         parseTransferRecipientHex(r.hex, accountIdToHex(accountId));
         setNftRecipient(r);
       } catch (err) {
-        setTransferError(err instanceof Error ? err.message : String(err));
+        setTransferError(describeWalletError(err));
         return;
       }
       setConfirmBatch(true);
@@ -351,7 +352,7 @@ export function NftHoldingsPanel({
         void refresh();
       }, 5_000);
     } catch (err) {
-      setTransferError(err instanceof Error ? err.message : String(err));
+      setTransferError(describeWalletError(err));
       setConfirmBatch(false);
     } finally {
       setTransferring(false);

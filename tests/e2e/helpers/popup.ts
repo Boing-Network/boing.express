@@ -45,7 +45,7 @@ export async function openPopupWithNewWallet(
   await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password"]').fill(E2E_PASSWORD);
   await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password-confirm"]').fill(E2E_PASSWORD);
   await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
-  await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-ack"]').check();
+  await confirmBackupInPopup(popup);
   await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
   if (opts.beforeClaimName) await opts.beforeClaimName(popup);
   else await skipClaimNameIfShown(popup);
@@ -84,4 +84,12 @@ export async function connectDapp(context: BrowserContext, dapp: Page): Promise<
   await expect(approval.locator('#approval-title')).toHaveText('Connect to this site?');
   await approval.locator('#btn-approve').click();
   return accountsP;
+}
+
+/** Backup screen: type the last 6 characters of the shown key (the confirmation step), then tick the acknowledgement. */
+export async function confirmBackupInPopup(popup: Page): Promise<void> {
+  const scope = popup.locator('#screen-backup:not(.hidden)');
+  const key = ((await scope.locator('#backup-key').textContent()) ?? '').trim();
+  await scope.locator('[data-testid="wallet-backup-confirm"]').fill(key.slice(-6));
+  await scope.locator('[data-testid="wallet-backup-ack"]').check();
 }

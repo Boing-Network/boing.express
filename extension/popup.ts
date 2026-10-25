@@ -4,6 +4,7 @@
  */
 
 // Ensure Ed25519 SHA-512 shim is set before any wallet code (create/import/unlock/sign).
+import { describeWalletError } from '../src/boing/errorMessages';
 import { resolveRecipient, reverseName } from '../src/boing/names';
 import { setPendingName } from '../src/storage/pendingName';
 import '../src/crypto/keys';
@@ -65,6 +66,8 @@ import { accountIdFromHex, formatAddress, accountIdToHex } from '../src/boing/ty
 import { formatBalance, parseDecimalAmount } from '../src/boing/amount';
 import { fetchNativeCurrency, formatNative, knownLedgerDecimals, ledgerDecimalsAt, maxSendableInput, plainTransferFeeLabel } from '../src/boing/nativeUnit';
 import { normalizeBoingNetworkId } from './config';
+import { isBackupConfirmed } from '../src/security/backupVerify';
+import { checkNodeCompat, configuredChainIdDecimal } from '../src/boing/nodeCompat';
 import { AUTO_LOCK_OPTIONS, autoLockLabel, isSessionExpired, normalizeAutoLockMinutes, STORAGE_KEY_AUTO_LOCK_MINUTES } from '../src/security/autoLock';
 import { RevealError, createRevealSession, revealActivePrivateKeyHex, type RevealState } from '../src/security/revealPrivateKey';
 import {
@@ -278,9 +281,33 @@ function mountNameIslands(): void {
   }
 }
 
+/** Verify the selected node really is the network the user picked; warn (or block sending) on mismatch. */
+async function refreshNodeCompat(): Promise<void> {
+  const banner = document.getElementById('compat-banner');
+  if (!banner) return;
+  const net = getCurrentNetwork();
+  const forNetwork = selectedNetworkId;
+  const status = await checkNodeCompat(net.config.rpcUrl, {
+    chainId: configuredChainIdDecimal(net.config.chainId),
+    networkName: net.config.name,
+  });
+  if (forNetwork !== selectedNetworkId) return; // user switched while we were checking
+  // An unreachable node is already reported by the balance error; only show real mismatches here.
+  const issues = status.issues.filter((i) => i.code !== 'unreachable');
+  if (issues.length === 0) {
+    banner.classList.add('hidden');
+    return;
+  }
+  banner.textContent = issues.map((i) => i.message).join(' ');
+  banner.classList.toggle('error', status.level === 'error');
+  banner.classList.toggle('hint', status.level !== 'error');
+  banner.classList.remove('hidden');
+}
+
 async function refreshDashboardBalance(): Promise<void> {
   if (!accountId) return;
   const net = getCurrentNetwork();
+  void refreshNodeCompat();
   const retryBtn = document.getElementById('btn-balance-retry');
   ($('balance') as HTMLElement).textContent = '…';
   ($('balance-error') as HTMLElement).classList.add('hidden');
@@ -292,7 +319,7 @@ async function refreshDashboardBalance(): Promise<void> {
     if (retryBtn) retryBtn.classList.add('hidden');
   } catch (e) {
     ($('balance') as HTMLElement).textContent = '—';
-    ($('balance-error') as HTMLElement).textContent = e instanceof Error ? e.message : String(e);
+    ($('balance-error') as HTMLElement).textContent = describeWalletError(e);
     ($('balance-error') as HTMLElement).classList.remove('hidden');
     if (retryBtn) retryBtn.classList.remove('hidden');
   }
@@ -757,7 +784,7 @@ async function refreshNfts(): Promise<void> {
     updateNftTransferChrome();
   } catch (e) {
     if (errEl) {
-      errEl.textContent = e instanceof Error ? e.message : String(e);
+      errEl.textContent = describeWalletError(e);
       errEl.classList.remove('hidden');
     }
   }
@@ -838,6 +865,8 @@ $('form-create').addEventListener('submit', async (e) => {
     const ack = document.getElementById('backup-acknowledged') as HTMLInputElement;
     const btnContinue = $('btn-backup-continue') as HTMLButtonElement;
     if (ack) ack.checked = false;
+    const confirmInput = document.getElementById('backup-confirm') as HTMLInputElement | null;
+    if (confirmInput) confirmInput.value = '';
     btnContinue.disabled = true;
     showScreen('backup');
   } catch (err) {
@@ -855,11 +884,14 @@ $('btn-backup-copy').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('backup-acknowledged')?.addEventListener('change', () => {
-  const ack = document.getElementById('backup-acknowledged') as HTMLInputElement;
-  const btnContinue = $('btn-backup-continue') as HTMLButtonElement;
-  btnContinue.disabled = !ack?.checked;
-});
+function updateBackupContinue(): void {
+  const ack = document.getElementById('backup-acknowledged') as HTMLInputElement | null;
+  const typed = (document.getElementById('backup-confirm') as HTMLInputElement | null)?.value ?? '';
+  const keyHex = ($('backup-key') as HTMLElement).textContent ?? '';
+  ($('btn-backup-continue') as HTMLButtonElement).disabled = !(ack?.checked && isBackupConfirmed(keyHex, typed));
+}
+document.getElementById('backup-acknowledged')?.addEventListener('change', updateBackupContinue);
+document.getElementById('backup-confirm')?.addEventListener('input', updateBackupContinue);
 
 $('btn-backup-continue').addEventListener('click', async () => {
   if (addingAccountMode) {
@@ -1204,7 +1236,7 @@ document.getElementById('btn-native-tx-submit')?.addEventListener('click', async
       errEl.classList.remove('hidden');
     }
   } catch (e) {
-    errEl.textContent = e instanceof Error ? e.message : String(e);
+    errEl.textContent = describeWalletError(e);
     errEl.classList.remove('hidden');
   } finally {
     btn.disabled = false;
@@ -1233,7 +1265,7 @@ document.getElementById('form-nft-add')?.addEventListener('submit', async (e) =>
     tokEl.value = '';
     await refreshNfts();
   } catch (err) {
-    errEl.textContent = err instanceof Error ? err.message : String(err);
+    errEl.textContent = describeWalletError(err);
     errEl.classList.remove('hidden');
   }
 });
@@ -1269,7 +1301,7 @@ document.getElementById('form-nft-transfer')?.addEventListener('submit', async (
     nftToHex = parseTransferRecipientHex(r.hex, accountIdToHex(accountId));
     nftToName = r.name;
   } catch (err) {
-    errEl.textContent = err instanceof Error ? err.message : String(err);
+    errEl.textContent = describeWalletError(err);
     errEl.classList.remove('hidden');
     return;
   }
@@ -1342,7 +1374,7 @@ document.getElementById('form-nft-transfer')?.addEventListener('submit', async (
       btn.disabled = false;
     }
   } catch (err) {
-    errEl.textContent = err instanceof Error ? err.message : String(err);
+    errEl.textContent = describeWalletError(err);
     errEl.classList.remove('hidden');
     nftConfirmBatch = false;
     updateNftTransferChrome();
@@ -1383,7 +1415,7 @@ $('form-send').addEventListener('submit', async (e) => {
     toHex = r.hex;
     toName = r.name;
   } catch (err) {
-    showError('send-error', err instanceof Error ? err.message : String(err));
+    showError('send-error', describeWalletError(err));
     return;
   }
   if (accountId && toHex.toLowerCase() === accountIdToHex(accountId).toLowerCase()) {
@@ -1442,7 +1474,7 @@ $('form-send').addEventListener('submit', async (e) => {
       showError('send-error', result.error ?? 'Submit failed');
     }
   } catch (err) {
-    showError('send-error', err instanceof Error ? err.message : String(err));
+    showError('send-error', describeWalletError(err));
   } finally {
     if (sendBtn) {
       sendBtn.disabled = false;
@@ -1492,7 +1524,7 @@ $('btn-faucet').addEventListener('click', async () => {
       ($('faucet-error') as HTMLElement).classList.remove('hidden');
     }
   } catch (err) {
-    ($('faucet-error') as HTMLElement).textContent = err instanceof Error ? err.message : String(err);
+    ($('faucet-error') as HTMLElement).textContent = describeWalletError(err);
     ($('faucet-error') as HTMLElement).classList.remove('hidden');
   } finally {
     faucetBtn.disabled = false;
@@ -1543,7 +1575,7 @@ $('form-bond').addEventListener('submit', async (e) => {
       ($('bond-error') as HTMLElement).classList.remove('hidden');
     }
   } catch (err) {
-    ($('bond-error') as HTMLElement).textContent = err instanceof Error ? err.message : String(err);
+    ($('bond-error') as HTMLElement).textContent = describeWalletError(err);
     ($('bond-error') as HTMLElement).classList.remove('hidden');
   } finally {
     btn.disabled = false;
@@ -1585,7 +1617,7 @@ $('form-unbond').addEventListener('submit', async (e) => {
       ($('unbond-error') as HTMLElement).classList.remove('hidden');
     }
   } catch (err) {
-    ($('unbond-error') as HTMLElement).textContent = err instanceof Error ? err.message : String(err);
+    ($('unbond-error') as HTMLElement).textContent = describeWalletError(err);
     ($('unbond-error') as HTMLElement).classList.remove('hidden');
   } finally {
     btn.disabled = false;
@@ -1633,7 +1665,7 @@ $('btn-claim-unbond').addEventListener('click', async () => {
       errEl.classList.remove('hidden');
     }
   } catch (err) {
-    errEl.textContent = err instanceof Error ? err.message : String(err);
+    errEl.textContent = describeWalletError(err);
     errEl.classList.remove('hidden');
   } finally {
     btn.disabled = false;
@@ -1735,7 +1767,7 @@ async function loadChainHistory(cursor: string | null): Promise<void> {
     }
   } catch (e) {
     if (errEl) {
-      errEl.textContent = `Could not load on-chain history: ${e instanceof Error ? e.message : String(e)}`;
+      errEl.textContent = `Could not load on-chain history: ${describeWalletError(e)}`;
       errEl.classList.remove('hidden');
     }
   } finally {
@@ -1886,7 +1918,7 @@ async function refreshTokens(): Promise<void> {
   } catch (e) {
     tokenHoldings = [];
     if (err) {
-      err.textContent = e instanceof Error ? e.message : String(e);
+      err.textContent = describeWalletError(e);
       err.classList.remove('hidden');
     }
   }
@@ -2008,7 +2040,7 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
     toHex = r.hex;
     toName = r.name;
   } catch (err) {
-    showError('token-send-error', err instanceof Error ? err.message : String(err));
+    showError('token-send-error', describeWalletError(err));
     return;
   }
   const v = validateBulkRows([{ to: toHex, amount: ($('token-send-amount') as HTMLInputElement).value }], {
@@ -2057,7 +2089,7 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
     ($('token-send-to') as HTMLInputElement).value = '';
     window.setTimeout(() => void refreshTokens(), 2000);
   } catch (err) {
-    showError('token-send-error', err instanceof Error ? err.message : String(err));
+    showError('token-send-error', describeWalletError(err));
   } finally {
     btn.disabled = false;
     btn.textContent = prev ?? 'Send token';

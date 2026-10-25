@@ -1,3 +1,4 @@
+import { describeWalletError } from '../boing/errorMessages';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { knownLedgerDecimals, oneBoing } from '../boing/nativeUnit';
 import type { AccountId } from '../boing/types';
@@ -84,7 +85,7 @@ export function NamesPanel(p: NamesPanelProps) {
       setHead(info?.head_height ?? null);
       setBlocksPerYear(info?.registry?.blocks_per_year ?? null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(describeWalletError(e));
       setOwned([]);
     }
   }, [rpcUrl, me]);
@@ -118,7 +119,7 @@ export function NamesPanel(p: NamesPanelProps) {
       setActionValue('');
       window.setTimeout(() => void reload(), 2500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(describeWalletError(e));
     } finally {
       setBusy(null);
     }
@@ -144,7 +145,7 @@ export function NamesPanel(p: NamesPanelProps) {
       setQuery('');
       void reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(describeWalletError(e));
     } finally {
       setBusy(null);
     }
