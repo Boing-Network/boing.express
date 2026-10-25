@@ -31,6 +31,9 @@ import { BulkTransferPanel } from '../components/BulkTransferPanel';
 import { ValidatorPanel } from '../components/ValidatorPanel';
 import { useTokenHoldings } from '../components/useTokenHoldings';
 import { SendConfirm } from '../components/SendConfirm';
+import { explorerAccountUrl, explorerTxUrl } from '../boing/explorerLinks';
+import { useExplorerBase } from '../components/useExplorerBase';
+import { ViewTxLink } from '../components/ViewTxLink';
 import { resolveRecipient, reverseName } from '../boing/names';
 import { NamesPanel } from '../components/NamesPanel';
 import { PendingNameBanner } from '../components/PendingNameBanner';
@@ -319,9 +322,10 @@ export function Dashboard() {
     setTimeout(() => setTxHashCopied(false), 2000);
   }
 
-  const explorerBase = network.config.explorerUrl?.replace(/\/$/, '') ?? '';
+  const explorerBase = useExplorerBase(network.config);
   const isMainnet = !network.config.isTestnet;
-  const accountExplorerUrl = explorerBase ? `${explorerBase}/account/${address}` : '';
+  const accountExplorerUrl = explorerAccountUrl(explorerBase, address, !isMainnet) ?? '';
+  const lastTxUrl = lastTxHash ? explorerTxUrl(explorerBase, lastTxHash, !isMainnet) : null;
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -1049,7 +1053,7 @@ export function Dashboard() {
                           )}
                         </span>
                         {explorerBase ? (
-                          <a className={styles.txHash} href={`${explorerBase}/tx/${hash}`} target="_blank" rel="noopener noreferrer">
+                          <a className={styles.txHash} href={explorerTxUrl(explorerBase, hash, !isMainnet) ?? `${explorerBase}/tx/${hash}`} target="_blank" rel="noopener noreferrer">
                             {hash.slice(0, 12)}…
                           </a>
                         ) : (
@@ -1177,6 +1181,7 @@ export function Dashboard() {
                           <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>
                             {txHashCopied ? 'Copied' : 'Copy tx hash'}
                           </button>
+                          <ViewTxLink url={lastTxUrl} />
                         </>
                       )}
                     </p>
@@ -1308,7 +1313,7 @@ export function Dashboard() {
                     {lastTxHash && (
                       <>
                         {' · '}
-                        <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>{txHashCopied ? 'Copied' : 'Copy tx hash'}</button>
+                        <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>{txHashCopied ? 'Copied' : 'Copy tx hash'}</button><ViewTxLink url={lastTxUrl} />
                       </>
                     )}
                   </p>
@@ -1336,7 +1341,7 @@ export function Dashboard() {
                     {lastTxHash && (
                       <>
                         {' · '}
-                        <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>{txHashCopied ? 'Copied' : 'Copy tx hash'}</button>
+                        <button type="button" className={styles.copyTxBtn} onClick={copyTxHash}>{txHashCopied ? 'Copied' : 'Copy tx hash'}</button><ViewTxLink url={lastTxUrl} />
                       </>
                     )}
                   </p>

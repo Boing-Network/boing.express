@@ -1,6 +1,9 @@
 import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
 import { resolveMainnetRpcUrl, resolveTestnetRpcUrl } from './src/networks/rpcConfig';
+
+const walletVersion = (JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8')) as { version?: string }).version ?? '';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -37,6 +40,7 @@ export default defineConfig(({ mode }) => {
       minify: true,
     },
     define: {
+      __WALLET_VERSION__: JSON.stringify(walletVersion),
       'import.meta.env.VITE_BOING_TESTNET_RPC': JSON.stringify(testnetRpc),
       'import.meta.env.VITE_BOING_MAINNET_RPC': JSON.stringify(mainnetRpc),
       'import.meta.env.VITE_BOING_TESTNET_RPC_EXPLICIT': JSON.stringify(testnetRpcExplicit ? 'true' : 'false'),

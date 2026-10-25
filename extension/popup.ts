@@ -69,6 +69,7 @@ import { fetchNativeCurrency, formatNative, knownLedgerDecimals, ledgerDecimalsA
 import { normalizeBoingNetworkId } from './config';
 import { isBackupConfirmed } from '../src/security/backupVerify';
 import { checkNodeCompat, configuredChainIdDecimal } from '../src/boing/nodeCompat';
+import { explorerAccountUrl, explorerBaseFor, explorerTxUrl } from '../src/boing/explorerLinks';
 import { AUTO_LOCK_OPTIONS, autoLockLabel, isSessionExpired, normalizeAutoLockMinutes, STORAGE_KEY_AUTO_LOCK_MINUTES } from '../src/security/autoLock';
 import { RevealError, createRevealSession, revealActivePrivateKeyHex, type RevealState } from '../src/security/revealPrivateKey';
 import {
@@ -191,6 +192,24 @@ function showSuccess(id: string, message: string): void {
   const el = $(id);
   el.textContent = message;
   el.classList.remove('hidden');
+}
+
+/** After a send: append a "View transaction" deep link (boing.observer or the node's explorer) to a success line. */
+async function appendViewTx(elId: string, txHash: string | null | undefined): Promise<void> {
+  if (!txHash) return;
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const cfg = getCurrentNetwork().config;
+  const url = explorerTxUrl(await explorerBaseFor(cfg), txHash, Boolean(cfg.isTestnet));
+  if (!url || el.querySelector('.view-tx-link')) return;
+  const a = document.createElement('a');
+  a.className = 'view-tx-link';
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.textContent = 'View transaction';
+  a.dataset.testid = 'view-tx-link';
+  el.append(document.createTextNode(' '), a);
 }
 
 async function renderChoose(): void {
@@ -1231,6 +1250,7 @@ document.getElementById('btn-native-tx-submit')?.addEventListener('click', async
       if (result.txHash) recordTx(result.txHash, 'contract_call', tx.payload.kind);
       okEl.textContent = result.txHash ? `Submitted: ${result.txHash.slice(0, 20)}…` : 'Submitted.';
       okEl.classList.remove('hidden');
+      void appendViewTx(okEl.id, result.txHash);
       await maybeWatchMintBatch(tx);
       await refreshDashboardBalance();
       void refreshNfts();
@@ -1472,6 +1492,7 @@ $('form-send').addEventListener('submit', async (e) => {
     if (result.success) {
       if (result.txHash) recordTx(result.txHash, 'send', `${amountStr.trim()} BOING → ${shortHexLabel(toHex, 6, 4)}`);
       showSuccess('send-success', `${result.txHash ? `Sent! ${result.txHash.slice(0, 16)}…` : 'Transaction submitted'}${submitNote(result)}`);
+      void appendViewTx('send-success', result.txHash);
       ($('send-amount') as HTMLInputElement).value = '';
       ($('send-to') as HTMLInputElement).value = '';
       const balance = await net.getBalance(accountId);
@@ -1513,7 +1534,7 @@ $('btn-faucet').addEventListener('click', async () => {
         );
         if (explorer) {
           const a = document.createElement('a');
-          a.href = `${explorer}/account/${formatAddress(accountId, false)}`;
+          a.href = explorerAccountUrl(explorer, formatAddress(accountId, false), Boolean(net.config.isTestnet)) ?? explorer;
           a.target = '_blank';
           a.rel = 'noopener noreferrer';
           a.textContent = 'View on Boing Observer';
@@ -1792,7 +1813,7 @@ function refreshTxHistory(): void {
   const explorer = (getCurrentNetwork().config.explorerUrl ?? '').replace(/\/$/, '');
   if (explorerLink) {
     explorerLink.classList.toggle('hidden', !explorer);
-    if (explorer) explorerLink.href = `${explorer}/account/${formatAddress(accountId, false)}`;
+    if (explorer) explorerLink.href = explorerAccountUrl(explorer, formatAddress(accountId, false), Boolean(getCurrentNetwork().config.isTestnet)) ?? explorer;
   }
   const key = `${accountIdToHex(accountId)}:${selectedNetworkId}`;
   const sameAccount = key === chainKey;
@@ -1864,7 +1885,7 @@ function refreshTxHistory(): void {
     link.className = 'tx-history-hash';
     link.textContent = `${hash.slice(0, 12)}…${hash.slice(-8)}`;
     if (explorer && link instanceof HTMLAnchorElement) {
-      link.href = `${explorer}/tx/${hash}`;
+      link.href = explorerTxUrl(explorer, hash, Boolean(getCurrentNetwork().config.isTestnet)) ?? `${explorer}/tx/${hash}`;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
     }
@@ -2086,6 +2107,7 @@ document.getElementById('form-token-send')?.addEventListener('submit', async (e)
     if (!res.success) throw new Error(res.error ?? 'Submit failed');
     if (res.txHash) recordTx(res.txHash, 'token_send', `${formatBalance(amount.toString(), t.decimals, t.decimals)} ${t.symbol} → ${shortHexLabel(toHex, 6, 4)}`);
     showSuccess('token-send-success', res.txHash ? `Sent! ${res.txHash.slice(0, 16)}…` : 'Transaction submitted');
+    void appendViewTx('token-send-success', res.txHash);
     ($('token-send-amount') as HTMLInputElement).value = '';
     ($('token-send-to') as HTMLInputElement).value = '';
     window.setTimeout(() => void refreshTokens(), 2000);

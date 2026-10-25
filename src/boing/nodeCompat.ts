@@ -10,7 +10,9 @@
  * Source of truth: boing.network docs/RPC-API-SPEC.md (`boing_health`) and docs/BOING-SIGNED-TRANSACTION-ENCODING.md.
  */
 
+import { fetchNetworkInfoMeta, parseNetworkInfo } from './networkInfo';
 import { rpcCall } from './rpc';
+import { walletVersion } from './walletVersion';
 
 export type NodeCompatLevel = 'ok' | 'warn' | 'error';
 
@@ -19,7 +21,8 @@ export type NodeCompatIssueCode =
   | 'chain_mismatch'
   | 'no_chain_id'
   | 'signing_v2_unsupported'
-  | 'node_too_old';
+  | 'node_too_old'
+  | 'wallet_too_old';
 
 export interface NodeCompatIssue {
   code: NodeCompatIssueCode;
@@ -78,7 +81,9 @@ function finiteNumber(v: unknown): number | null {
 export function evaluateNodeHealth(
   health: unknown,
   expected: { chainId: number | null; networkName?: string },
-  now: number = Date.now()
+  now: number = Date.now(),
+  /** Optional wallet-version gate. `minWalletVersion` defaults to the one in `health`; unknown versions never warn. */
+  wallet: { version?: string | null; minWalletVersion?: string | null } = {}
 ): NodeCompatStatus {
   const h = asRecord(health);
   const issues: NodeCompatIssue[] = [];
@@ -136,6 +141,16 @@ export function evaluateNodeHealth(
     });
   }
 
+  const walletNow = parseNodeVersion(wallet.version);
+  const minWallet = parseNodeVersion(wallet.minWalletVersion ?? parseNetworkInfo(h).minWalletVersion);
+  if (walletNow && minWallet && compareVersions(walletNow, minWallet) < 0) {
+    issues.push({
+      code: 'wallet_too_old',
+      level: 'warn',
+      message: `This network asks for Boing Express ${minWallet.join('.')} or newer, and you have ${walletNow.join('.')}. Update the wallet to avoid failed or confusing transactions.`,
+    });
+  }
+
   const level: NodeCompatLevel = issues.some((i) => i.level === 'error') ? 'error' : issues.length > 0 ? 'warn' : 'ok';
   return {
     level,
@@ -176,7 +191,12 @@ export async function checkNodeCompat(
   }
   let status: NodeCompatStatus;
   try {
-    status = evaluateNodeHealth(await rpcCall<unknown>(rpcUrl, 'boing_health', []), expected, now());
+    const health = await rpcCall<unknown>(rpcUrl, 'boing_health', []);
+    // The wallet-version gate may live in `boing_getNetworkInfo`; only ask when this build knows its own version.
+    const version = walletVersion();
+    let minWalletVersion: string | undefined = parseNetworkInfo(health).minWalletVersion;
+    if (version && !minWalletVersion) minWalletVersion = (await fetchNetworkInfoMeta(rpcUrl)).minWalletVersion;
+    status = evaluateNodeHealth(health, expected, now(), { version, minWalletVersion });
   } catch {
     status = evaluateNodeHealth(null, expected, now());
   }
