@@ -4,6 +4,7 @@
  */
 
 import type { AccountId } from '../boing/types';
+import type { Rejection, RejectionReason } from '../boing/submitRejection';
 
 export interface NetworkConfig {
   id: string;
@@ -29,6 +30,14 @@ export interface SubmitResult {
   /** Raw mempool ack (`"ok"` from current boing-node). */
   mempoolAck?: string;
   error?: string;
+  /** Node `error.data.reason` (or legacy message match) when the submit was rejected. */
+  reason?: RejectionReason;
+  /** Structured rejection (have/need, expected nonce, ...) for UI. */
+  rejection?: Rejection;
+  /** True when the node already had this exact tx pending (`already_in_mempool`); treated as success. */
+  alreadyPending?: boolean;
+  /** True when the wallet re-signed once with a fresh nonce after `stale_nonce`. */
+  retriedNonce?: boolean;
 }
 
 /** One step of a native atomic batch (mirrors boing-sdk `BuildBatchCall`). */

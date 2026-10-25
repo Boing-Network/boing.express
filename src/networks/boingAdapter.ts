@@ -9,6 +9,7 @@ import { accountIdToHex } from '../boing/types';
 import { buildSignedTransactionHex, registerConfiguredSigningChainId, signingChainIdForRpc } from '../boing/signing';
 import { checkNodeCompat, configuredChainIdDecimal } from '../boing/nodeCompat';
 import { describeWalletError } from '../boing/errorMessages';
+import { describeRejection, rejectionFromError, rejectionFromMessage } from '../boing/submitRejection';
 import { transactionIdFromSignedTransactionHex } from '../boing/bincode';
 import { suggestedAccessList } from '../boing/accessList';
 import * as rpc from '../boing/rpc';
@@ -162,6 +163,27 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
     },
 
     async submitTransaction(signedTxHex: string): Promise<SubmitResult> {
+      const testnet = config.isTestnet === true;
+      const derive = (): string | undefined => {
+        try {
+          return transactionIdFromSignedTransactionHex(signedTxHex.startsWith('0x') ? signedTxHex : `0x${signedTxHex}`);
+        } catch {
+          return undefined;
+        }
+      };
+      /** Map a thrown error to a typed result: `error.data.reason` first, message patterns second. */
+      const rejected = (e: unknown): SubmitResult => {
+        const rej = rejectionFromError(e);
+        if (rej?.reason === 'already_in_mempool') {
+          // Exact same bytes already pending: that is success, with the id the node reported.
+          const id = rej.txHash && /^0x[0-9a-fA-F]{64}$/.test(rej.txHash) ? rej.txHash.toLowerCase() : derive();
+          return { success: true, txHash: id, txId: id, alreadyPending: true, reason: rej.reason, rejection: rej };
+        }
+        if (rej && rej.reason !== 'other') {
+          return { success: false, error: describeRejection(rej, { testnet }), reason: rej.reason, rejection: rej };
+        }
+        return { success: false, error: describeWalletError(e) };
+      };
       try {
         // Refuse to broadcast when the node is on a different chain than the selected network.
         const compat = await checkNodeCompat(rpcUrl, {
@@ -179,31 +201,27 @@ export function createBoingAdapter(config: NetworkConfig): NetworkAdapter {
             (simRaw as { success?: boolean }).success === false
           ) {
             const err = (simRaw as { error?: string }).error?.trim();
-            return { success: false, error: err ? describeWalletError(new Error(err)) : 'Simulation reported failure.' };
+            if (!err) return { success: false, error: 'Simulation reported failure.' };
+            const rej = rejectionFromMessage(err);
+            if (rej && rej.reason !== 'already_in_mempool') {
+              return { success: false, error: describeRejection(rej, { testnet }), reason: rej.reason, rejection: rej };
+            }
+            return { success: false, error: describeWalletError(new Error(err)) };
           }
         } catch (simErr) {
           const msg = simErr instanceof Error ? simErr.message : String(simErr);
           if (msg.includes('Method not found')) {
             // Node may not support simulate; proceed to submit
           } else {
-            return { success: false, error: describeWalletError(simErr) };
+            return rejected(simErr);
           }
         }
-        const mempoolAck = await rpc.submitTransaction(rpcUrl, signedTxHex);
-        let txId: string | undefined;
-        try {
-          txId = transactionIdFromSignedTransactionHex(
-            signedTxHex.startsWith('0x') ? signedTxHex : `0x${signedTxHex}`
-          );
-        } catch {
-          txId = undefined;
-        }
-        return { success: true, txHash: txId ?? mempoolAck, txId, mempoolAck };
+        const answer = await rpc.submitTransactionDetailed(rpcUrl, signedTxHex);
+        // Prefer the node's real id; older nodes answered "ok", so derive it from the signed bytes.
+        const txId = answer.txId ?? derive();
+        return { success: true, txHash: txId ?? answer.ack, txId, mempoolAck: answer.ack };
       } catch (e) {
-        return {
-          success: false,
-          error: describeWalletError(e),
-        };
+        return rejected(e);
       }
     },
 

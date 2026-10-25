@@ -8,6 +8,7 @@
  */
 
 import { RpcClientError } from './rpc';
+import { describeRejection, rejectionFromRpcData } from './submitRejection';
 
 /** Pattern -> friendly text. First match wins; patterns are matched case-insensitively against the node message. */
 const MESSAGE_PATTERNS: Array<[RegExp, (m: RegExpExecArray) => string]> = [
@@ -66,6 +67,10 @@ export function describeWalletError(err: unknown): string {
   const raw = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
   const code = err instanceof RpcClientError ? err.code : undefined;
   const data = err instanceof RpcClientError ? err.data : undefined;
+
+  // Node-sent \error.data.reason\ wins over message text (RPC-API-SPEC rejection shapes).
+  const rejection = rejectionFromRpcData(err);
+  if (rejection && rejection.reason !== 'other') return describeRejection(rejection);
 
   if (code === -32050) {
     const q = qaDetails(data);

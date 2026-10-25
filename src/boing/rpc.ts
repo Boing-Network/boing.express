@@ -146,6 +146,38 @@ export function parseSubmitTransactionResult(result: unknown): string {
   throw new RpcClientError('RPC response missing tx_hash');
 }
 
+const TX_ID_RE = /^0x[0-9a-fA-F]{64}$/;
+
+/** The node's real transaction id from a submit result: `tx_id`, else `tx_hash` when it is a 32-byte hex id. */
+export interface ParsedSubmitResponse {
+  /** Real id (`0x` + 64 hex, lower case) when the node supplied one; absent on nodes that answered `"ok"`. */
+  txId?: string;
+  /** Raw `tx_hash` field (`"ok"` on nodes before 2026-10-16). */
+  ack: string;
+}
+
+export function parseSubmitResponse(result: unknown): ParsedSubmitResponse {
+  const ack = parseSubmitTransactionResult(result);
+  let txId: string | undefined;
+  if (result != null && typeof result === 'object' && !Array.isArray(result)) {
+    const o = result as { tx_id?: unknown; tx_hash?: unknown };
+    for (const c of [o.tx_id, o.tx_hash]) {
+      if (typeof c === 'string' && TX_ID_RE.test(c)) {
+        txId = c.toLowerCase();
+        break;
+      }
+    }
+  } else if (typeof result === 'string' && TX_ID_RE.test(result)) {
+    txId = result.toLowerCase();
+  }
+  return { txId, ack };
+}
+
+/** Submit and return the node's full answer (real id when available). Throws RpcClientError (with `data.reason`) on rejection. */
+export function submitTransactionDetailed(rpcUrl: string, hexSignedTx: string): Promise<ParsedSubmitResponse> {
+  return rpcCall<unknown>(rpcUrl, 'boing_submitTransaction', [hexSignedTx]).then(parseSubmitResponse);
+}
+
 /** Submit signed tx hex. Returns tx hash string (e.g. `"ok"` or hex from QA pool). */
 export function submitTransaction(rpcUrl: string, hexSignedTx: string): Promise<string> {
   return rpcCall<unknown>(rpcUrl, 'boing_submitTransaction', [hexSignedTx]).then(parseSubmitTransactionResult);
