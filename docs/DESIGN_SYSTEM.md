@@ -133,7 +133,9 @@ Use classes `.btn-primary`, `.btn-secondary`, `.btn-ghost` or `data-variant="pri
 
 - **Focus:** Interactive elements use a visible focus ring (accent color) — see `:focus-visible` in `src/index.css`.
 - **Motion:** `prefers-reduced-motion: reduce` is respected; animations are disabled or minimal.
-- **Contrast:** Primary text on dark backgrounds meets WCAG AA where applicable; check new combinations with the token palette.
+- **Contrast:** Text colours meet WCAG AA (4.5:1) on every dark surface; this is enforced by `tests/a11yContrast.test.ts`. `--text-muted` is `#8b9bb3` and `--danger` is `#f87171` (the earlier `#64748b` and `#ef4444` measured 3.3 to 4.4:1 on the navy surfaces). Use `--text-muted` only for hints, never for essential information that has no other cue.
+- **Tabs (keyboard):** wallet section tabs and the Transfer asset switch are ARIA tablists with a roving tabindex (one tab stop). Left/Right wrap, Home/End jump (`src/components/tabNav.ts`, mirrored in `extension/popup.ts`). While Settings is open the last main tab stays the tab stop.
+- **Live regions:** loading and empty states use `role="status"` (`aria-busy` while loading); errors use `role="alert"`; success messages use `role="status"`. SendConfirm moves focus to its heading when the review step opens, announces the fee while it is estimated, marks the confirm button `aria-busy` while sending, and Escape goes back (blocked while sending).
 
 ---
 
@@ -204,7 +206,7 @@ All non-`:root` instances were replaced with CSS variables. Tokens in `:root` in
 
 ### Contrast (WCAG)
 
-- Primary text `#F0FFFE` on `#0A0E1A` — AAA. Secondary passes AA.
+- Muted/secondary/danger text: see Accessibility above (guarded by a test). Primary text `#F0FFFE` on `#0A0E1A` — AAA. Secondary passes AA.
 
 ### Rules enforced
 

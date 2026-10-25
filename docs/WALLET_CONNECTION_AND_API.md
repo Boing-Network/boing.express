@@ -66,6 +66,7 @@ const result = await window.boing.request({ method: '<method>', params: [...] })
 - **`from`:** optional; if set, must match the active account.
 - **`nonce`:** optional decimal string; if omitted, the wallet fetches the next nonce from RPC.
 - **`priority_tip` / `priorityTip` (0.1.21+):** optional decimal ledger base units for preferred inclusion. `0` / omitted keeps historical encode/sign. Non-zero uses `BOING_TX_PRIORITY` and appends tip on the wire. Check `features.includes('priorityTip')`. Product default remains a tiny **micro base fee** (~0.00021 BOING/transfer); tip is optional.
+- **Speed chooser (approval window and `/sign`):** when a dApp does not set `priority_tip`, the approval shows a Slow / Normal / Fast / Custom chooser (`src/components/FeeChooser.tsx`, plan in `src/boing/tipPlan.ts`). Slow = no tip (the default, identical to the historical wire format); Normal and Fast reuse the SDK `suggestPriorityTipLadder()` rungs; Custom is typed in BOING and capped at 1 BOING. The chooser is hidden, and the transaction left untouched, when the node says `optional_priority_tips: false`, when the ledger reports fewer than 18 decimals, or when the dApp already set a tip (a dApp tip wins and is shown read-only). A tip always switches signing to the `BOING_TX_PRIORITY` domain; the signed hex shown to the dApp matches what was approved.
 
 ### Provider surface for SDK alignment
 

@@ -20,10 +20,27 @@ First time only: `pnpm exec playwright install chromium`.
   - `connectDapp(context, dapp)` approves the explicit "Connect to this site?" prompt.
 - `EXTENSION_E2E_RPC_MOCK_HOSTS` adds extra hostnames to mock.
 
+## Hermetic e2e (no real network)
+
+Every spec that uses `installBoingNetworkMocks` (web `tests/e2e-web` and extension `tests/e2e`) is hermetic: a guard route is registered first and **aborts any http(s) request that leaves localhost without a mock**. Playwright runs later routes first and `route.fallback()` hands unmatched requests to earlier ones, so mocks win and everything else hits the guard. Google Fonts and the boing.observer NFT API are stubbed.
+
+Options on `installBoingNetworkMocks(context, opts)` (`tests/e2e/helpers/boingRouteMocks.ts`):
+
+| Option | Meaning |
+|--------|---------|
+| `blocked: string[]` | Receives every URL the guard blocked. Assert it is `[]` in a spec to prove nothing leaked. |
+| `hermetic: false` | Turn the guard off (default is on). |
+| `chainId` | Chain id advertised by the mocked `boing_health` (default 6913, testnet). `null` omits `chain_id` / `tx_signing` entirely, which exercises the "node did not report a chain id" warning; `6914` exercises the wrong-network error. |
+| `healthExtra` | Extra fields merged into the `boing_health` answer (for example `min_wallet_version`). |
+| `rpc` | Per-method hook returning a result to override a mocked RPC method. |
+
+`tests/e2e/extension-a11y-compat.spec.ts` covers the node-compat banner (no chain id, matching chain, wrong chain), popup tab keyboard navigation and the approval-page origin-risk banner.
+
 ## What the unit tests guard
 
 - **Wire format:** `sdkParity.test.ts`, `txSigningV2.test.ts`, `bulkBatch.test.ts`.
 - **Node errors:** `src/boing/errorMessages.test.ts` maps node error strings and JSON-RPC codes to plain language.
 - **Node compatibility:** `src/boing/nodeCompat.test.ts` uses a fixture of a real testnet `boing_health` response.
+- **Accessibility and UI states:** `tests/a11yContrast.test.ts` (WCAG AA 4.5:1 for muted, secondary, danger and success text on every dark surface, read from the CSS tokens so a palette change that fails AA fails the build), `tests/a11yMarkup.test.tsx` (tab keyboard model `nextTabId`; SendConfirm focus target, live fee row, busy confirm button, alert errors), `tests/originRiskBanner.test.ts` (approval-page banner: hidden, caution, danger, textContent-only), `tests/autoLockUi.test.ts` (popup auto-lock select and idle rule), `tests/sessionStore.test.ts` (web session sealing). Component tests render with `react-dom/server`; DOM helpers take a document-like parameter and run against `tests/fakeDom.ts` (no jsdom).
 - **Security helpers:** `src/security/*.test.ts` (sender validation, auto-lock, origin risk, backup confirmation) and
   `tests/securityConfig.test.ts` (manifest permissions and CSP must stay minimal).
