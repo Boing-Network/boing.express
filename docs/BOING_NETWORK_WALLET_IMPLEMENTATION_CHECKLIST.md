@@ -131,7 +131,7 @@ When a site requests signing and the wallet is locked, the wallet now returns a 
 
 Status: implemented.
 
-- **Web app:** Unlock once per session; session persists in `sessionStorage` across page refresh/navigation within the same tab. Optional inactivity timeout (5 / 15 / 30 min or Never) with configurable setting in Dashboard. "Lock" button clears session and requires password again.
+- **Web app:** Unlock once per session; the session persists across page refresh/navigation within the same tab as AES-GCM ciphertext in `sessionStorage` (sealing key is non-extractable, in IndexedDB; 12 h ceiling; see SECURITY.md). Optional inactivity timeout (5 / 15 / 30 min or Never) with configurable setting in Dashboard. "Lock" button clears session and requires password again.
 - **Extension:** Unlock once; session survives popup close/reopen within the same browser session via `chrome.storage.session`. When locked, `boing_requestAccounts` and `boing_accounts` return a clear "Wallet is locked" error or `[]`; dApp requests do not get account data until the user unlocks Boing Express.
 
 ## Priority 2: Next Phase

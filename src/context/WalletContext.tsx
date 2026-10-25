@@ -24,7 +24,7 @@ import {
   createAdditionalAccount,
   importAdditionalAccount,
 } from '../storage/walletStore';
-import { saveSession, clearSession, getSession } from '../storage/sessionStore';
+import { saveSession, clearSession, getSession, touchSession } from '../storage/sessionStore';
 import {
   getLockAfterMinutes,
   setLockAfterMinutes as persistLockAfterMinutes,
@@ -191,15 +191,24 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }, [networksCatalog]);
 
   useEffect(() => {
-    const session = getSession();
-    if (session && hasStoredWallet()) {
+    // The unlocked key is sealed under a non-extractable WebCrypto key (see storage/sessionStore.ts); restoring is async.
+    let cancelled = false;
+    void getSession({ lockAfterMinutes: getLockAfterMinutes() }).then((session) => {
+      if (cancelled || !session) return;
+      if (!hasStoredWallet()) {
+        clearSession();
+        return;
+      }
       setState((s) => ({
         ...s,
         accountId: session.publicKey,
         privateKey: session.privateKey,
         isUnlocked: true,
       }));
-    }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const resolvedNetwork = resolveNetwork(state.network, rpcOverrides);
@@ -223,7 +232,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const unlock = useCallback(async (password: string) => {
     const [publicKey, privateKey] = await unlockWallet(password);
-    saveSession(publicKey, privateKey);
+    await saveSession(publicKey, privateKey);
     setState((s) => ({
       ...s,
       accountId: publicKey,
@@ -242,7 +251,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     await importAndSaveWallet(password, privateKeyHex);
     bumpVault();
     const [publicKey, privateKey] = await unlockWallet(password);
-    saveSession(publicKey, privateKey);
+    await saveSession(publicKey, privateKey);
     setState((s) => ({
       ...s,
       accountId: publicKey,
@@ -265,7 +274,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       await importAdditionalAccount(password, privateKeyHex);
       bumpVault();
       const [publicKey, privateKey] = await unlockWallet(password);
-      saveSession(publicKey, privateKey);
+      await saveSession(publicKey, privateKey);
       setState((s) => ({
         ...s,
         accountId: publicKey,
@@ -322,7 +331,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       }, lockAfterMinutes * 60 * 1000);
     };
     scheduleLock();
-    const onActivity = () => scheduleLock();
+    const onActivity = () => {
+      scheduleLock();
+      touchSession();
+    };
     document.addEventListener('click', onActivity);
     document.addEventListener('keydown', onActivity);
     return () => {

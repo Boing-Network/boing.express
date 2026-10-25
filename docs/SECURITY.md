@@ -6,6 +6,13 @@
 - **Auto-lock:** the extension locks after 15 minutes of inactivity by default (choices: never, 5, 15, 30, 60 minutes;
   Settings in the popup). The deadline is checked when the key is next needed, so no extra `alarms` permission is
   required. The web app has its own "Lock after" setting.
+- **Web app session sealing:** the unlocked key is never written to `sessionStorage` in plaintext. After unlock the key
+  pair is sealed with AES-256-GCM under a fresh, non-extractable WebCrypto key. That key is kept as an opaque handle in
+  IndexedDB (one per tab), and only the ciphertext goes to `sessionStorage`. A storage dump, devtools or a synced
+  profile shows ciphertext and cannot export the key. The session ends on Lock, logout, tab close, after the idle
+  auto-lock (activity is recorded so the setting also holds across refreshes) or after 12 hours at most. If WebCrypto or
+  IndexedDB is unavailable the session is not persisted at all (you re-enter the password); there is no plaintext
+  fallback. A legacy plaintext session from an older version is deleted and re-sealed once on first load.
 - **Message sender validation:** privileged background messages (unlock, sign, approve, settings) are accepted only
   from extension pages. Content scripts may only forward `BOING_PROVIDER_REQUEST`, and the dApp origin is taken from the
   browser-provided sender, never from the page payload.
@@ -22,5 +29,8 @@
 
 ## Known limitations
 
-- The web app keeps the unlocked key in `sessionStorage` until it auto-locks or the tab closes.
-- There is no mnemonic phrase; the backup is the raw private key.
+- Script running in the wallet's own origin (an XSS bug) can still ask the browser to use the session key while the
+  web app is unlocked, exactly as it could use an in-memory key. Auto-lock, the 12-hour session ceiling and the strict
+  CSP limit that window; they do not remove it. The extension keeps its key in the service worker, not in page storage.
+- There is no mnemonic phrase yet; the backup is the raw private key. A proposal (not implemented, awaiting review) is in
+  [RECOVERY_PHRASE_DESIGN.md](RECOVERY_PHRASE_DESIGN.md).

@@ -93,7 +93,8 @@ Results by method:
    it is dropped if the opener navigated elsewhere. The wallet then closes itself.
 6. The dApp treats the popup closing without a response as `4001`.
 
-The unlocked key lives in per-tab `sessionStorage`, so the popup asks for the wallet password each time it opens.
+The unlocked key is sealed per tab (AES-GCM under a non-extractable WebCrypto key held in IndexedDB; only ciphertext is in
+`sessionStorage`), so a new popup window asks for the wallet password each time it opens. See [SECURITY.md](SECURITY.md).
 
 ### Redirect (fallback, e.g. when popups are blocked or in in-app browsers)
 
