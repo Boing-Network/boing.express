@@ -183,7 +183,7 @@ describe('Extension popup redesign (E2E, mocked RPC)', () => {
       const st = popup.getByTestId('bulk-progress-row');
       await expect(st.nth(0)).toHaveAttribute('data-status', 'submitted');
       await expect(st.nth(1)).toHaveAttribute('data-status', 'failed');
-      await expect(st.nth(1)).toContainText('insufficient balance for fee');
+      await expect(st.nth(1)).toContainText('Your balance is too low');
       await expect(st.nth(2)).toHaveAttribute('data-status', 'not_sent');
       expect(submitted.map(nonceOfSignedHex)).toEqual([0, 1]);
       await expect(popup.getByTestId('bulk-done')).toBeVisible();
