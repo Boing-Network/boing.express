@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { installBoingNetworkMocks } from '../e2e/helpers/boingRouteMocks';
 
 const WALLET = 'http://127.0.0.1:4174';
 const DAPP = 'http://127.0.0.1:3333/web-dapp.html';
@@ -37,31 +38,20 @@ async function result(dapp: Page): Promise<{ ok?: unknown; error?: { code: numbe
 }
 
 test('connect + sign from a dApp via boing.express popup', async ({ context }) => {
-  // Hermetic native-unit rules: the 20 BOING assertion must not depend on the live testnet being reachable.
-  await context.route(/testnet-rpc\.boing\.network/, async (route) => {
-    let method = '';
-    try {
-      method = (JSON.parse(route.request().postData() || '{}') as { method?: string }).method ?? '';
-    } catch {
-      /* not JSON */
-    }
-    if (method !== 'boing_getNetworkInfo') return route.fallback();
-    return route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers: { 'access-control-allow-origin': '*' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        result: {
-          chain_id: 6913,
-          head_height: 5000,
-          native_currency: { symbol: 'BOING', decimals: 18, base_unit_decimals: 18, base_units_from_height: 1050 },
-        },
-      }),
-    });
-  });
-  const walletPage = await context.newPage();
+  // Hermetic: every RPC (and any other external request) is mocked, so the 20 BOING assertion never depends on the
+  // live testnet. Only `boing_getNetworkInfo` needs a bespoke answer (native-unit rules).
+  const blocked: string[] = [];
+  await installBoingNetworkMocks(context, {
+    blocked,
+    rpc: (method) =>
+      method === 'boing_getNetworkInfo'
+        ? {
+            chain_id: 6913,
+            head_height: 5000,
+            native_currency: { symbol: 'BOING', decimals: 18, base_unit_decimals: 18, base_units_from_height: 1050 },
+          }
+        : undefined,
+  });  const walletPage = await context.newPage();
   await importWallet(walletPage);
 
   const dapp = await context.newPage();
@@ -106,6 +96,8 @@ test('connect + sign from a dApp via boing.express popup', async ({ context }) =
   await expect(popup.getByTestId('web-sign-prep-error')).toContainText(/own address/i);
   await popup.getByTestId('web-sign-close').click();
   expect((await result(dapp)).error?.data?.boingCode).toBe('BOING_INVALID_TX');
+  // Nothing left localhost without a mock.
+  expect(blocked).toEqual([]);
 });
 
 test('/connect refuses to render when framed and without an opener', async ({ page }) => {

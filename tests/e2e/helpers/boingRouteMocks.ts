@@ -104,6 +104,22 @@ export interface BoingMockOptions {
   account?: () => unknown;
   /** Generic hook checked first: return a result (anything but `undefined`) to answer `method`. */
   rpc?: (method: string, params: unknown[]) => unknown;
+  /**
+   * `chain_id` advertised by `boing_health` (default 6913, the Boing testnet). Pass `null` to omit it, like an older
+   * node or a local dev chain, so the wallet's "node did not report a chain id" warning is exercised.
+   */
+  chainId?: number | null;
+  /** Extra fields merged into the `boing_health` result (e.g. `min_wallet_version`). */
+  healthExtra?: Record<string, unknown>;
+  /** Receives the URL of every request that was blocked because it left localhost without being mocked. */
+  blocked?: string[];
+  /** Set false to let unmocked external requests through (default: they are aborted, so specs stay hermetic). */
+  hermetic?: boolean;
+}
+
+/** Hosts that are always allowed (the locally served wallet / test dApp). */
+function isLocalHost(url: URL): boolean {
+  return url.hostname === '127.0.0.1' || url.hostname === 'localhost' || url.hostname === '[::1]';
 }
 
 /** Signed tx hex → payload discriminant (u32 LE after nonce u64 + sender 32 bytes). */
@@ -119,6 +135,35 @@ const BATCH_DECODE_ERROR = 'Invalid transaction: invalid value: integer `9`, exp
 
 export async function installBoingNetworkMocks(context: BrowserContext, opts: BoingMockOptions = {}): Promise<void> {
   let submitCount = 0;
+  // Registered first, so every later (more specific) route wins and only truly unmocked traffic reaches this guard.
+  if (opts.hermetic !== false) {
+    await context.route(
+      (url: URL) => (url.protocol === 'http:' || url.protocol === 'https:') && !isLocalHost(url),
+      async (route) => {
+        opts.blocked?.push(route.request().url());
+        await route.abort('blockedbyclient');
+      }
+    );
+  }
+  // Third-party assets the app pulls in: stubbed so nothing depends on (or leaks to) the public internet.
+  await context.route(
+    (url: URL) => url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com',
+    async (route) => {
+      await route.fulfill({ status: 200, contentType: 'text/css; charset=utf-8', headers: { 'access-control-allow-origin': '*' }, body: '/* e2e: fonts stubbed */' });
+    }
+  );
+  // boing.observer NFT owner index: answers like an observer whose indexer is not live yet (the wallet degrades gracefully).
+  await context.route(
+    (url: URL) => url.hostname === 'boing.observer' && url.pathname.startsWith('/api/'),
+    async (route) => {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json; charset=utf-8',
+        headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify({ error: 'NFT owner indexer is not configured yet' }),
+      });
+    }
+  );
   await context.route(
     (url: URL) => url.hostname === 'boing.network' && url.pathname.startsWith('/api/networks'),
     async (route) => {
@@ -132,7 +177,7 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
 
   await context.route((url: URL) => shouldMockJsonRpcUrl(url), async (route, request) => {
     if (request.method() !== 'POST') {
-      await route.continue();
+      await route.fallback();
       return;
     }
 
@@ -140,7 +185,7 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
     try {
       payload = request.postDataJSON() as typeof payload;
     } catch {
-      await route.continue();
+      await route.fallback();
       return;
     }
 
@@ -172,17 +217,22 @@ export async function installBoingNetworkMocks(context: BrowserContext, opts: Bo
       case 'boing_chainHeight':
         await fulfillJsonRpc(route, jsonRpcResult(id, 1));
         return;
-      case 'boing_health':
-        if (!opts.batchSupport) break;
+      case 'boing_health': {
+        const chainId = opts.chainId === undefined ? 6913 : opts.chainId;
         await fulfillJsonRpc(
           route,
           jsonRpcResult(id, {
             ok: true,
             head_height: 1,
-            rpc_surface: { tx_payload_batch: true, tx_batch_max_calls: 16, tx_batch_max_calldata_bytes: 65536 },
+            ...(chainId == null ? {} : { chain_id: chainId, tx_signing: { v2_supported: true, domain: 'BOING_TX_V2', chain_id: chainId } }),
+            ...(opts.batchSupport
+              ? { rpc_surface: { tx_payload_batch: true, tx_batch_max_calls: 16, tx_batch_max_calldata_bytes: 65536 } }
+              : {}),
+            ...(opts.healthExtra ?? {}),
           })
         );
         return;
+      }
       case 'boing_simulateTransaction': {
         const hex = String((payload.params ?? [])[0] ?? '');
         if (opts.rejectBatchDecode && payloadVariantOfSignedHex(hex) === 9) {
