@@ -132,6 +132,9 @@ result is sent to that other origin rather than to the attacker. The user also s
 ## Known limitations
 
 - `boing_switchChain` is not a web method. The user switches network in the wallet, and the provider binds the chain on the client.
-- No session-level "remember approval". Every signature needs a click, by design.
+- No general session-level "remember approval". Every signature needs a click, by design —
+  **exception (0.1.22+):** `boing_requestPutBlobSession` grants a time-boxed, origin-bound
+  PutBlob-only publish quota so NFT media uploads can skip per-file popups after one approval.
+  Transfers, deploys, and other tx types still require per-request approval.
 - Redirect mode reloads the dApp. Apps must call `consumeBoingWebRedirectResponse()` on load to pick up the result.
   finance and observer use popup mode.
