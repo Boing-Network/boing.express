@@ -39,13 +39,13 @@ const CODE_TEXT: Record<number, string> = {
   [-32601]: 'This network node does not support that feature yet.',
   [-32602]: 'The network rejected one of the transaction fields. Check the address and amount.',
   [-32603]: 'The network node hit an internal error. Try again shortly.',
-  [-32016]: 'Too many requests. Wait a moment and try again.',
+  [-32016]: 'The faucet is rate-limited for this account. Wait about a minute and try again.',
   [-32051]: 'This deployment was sent to the community review pool and is waiting for votes.',
   [-32052]: 'No pending review item was found for this transaction.',
-  [-32053]: 'Only pool administrators can vote on this item.',
+  [-32053]: 'This account is not eligible to vote on that review item (not a pool member, its own deployment, or stake below the minimum).',
   [-32054]: 'Community review is currently turned off by governance.',
-  [-32055]: 'The community review pool is full. Try again later.',
-  [-32056]: 'You have reached the limit of deployments waiting for review.',
+  [-32055]: 'The community review (QA) pool is full. Try again later.',
+  [-32056]: 'You have reached the limit of deployments waiting in the community review (QA) pool.',
   [-32057]: 'This RPC requires operator access.',
 };
 

@@ -137,18 +137,18 @@ export function describeRejection(r: Rejection, opts: DescribeRejectionOptions =
     case 'insufficient_fee': {
       if (r.have != null && r.need != null) {
         const short = r.need > r.have ? r.need - r.have : 0n;
-        return `Your balance is ${formatBaseUnitsAsBoing(r.have, decimals)} BOING, but the network needs ${formatBaseUnitsAsBoing(r.need, decimals)} BOING to cover the fee${short > 0n ? ` (${formatBaseUnitsAsBoing(short, decimals)} BOING short)` : ''}. Add funds or send a smaller amount${opts.testnet ? ', or use the faucet' : ''}.`;
+        return `Your balance is ${formatBaseUnitsAsBoing(r.have, decimals)} BOING, but the network needs ${formatBaseUnitsAsBoing(r.need, decimals)} BOING to cover the fee (network fee plus any priority tip)${short > 0n ? ` (${formatBaseUnitsAsBoing(short, decimals)} BOING short)` : ''}. Add funds or send a smaller amount${opts.testnet ? ', or use the faucet' : ''}.`;
       }
       return 'Your balance is too low to cover the network fee. Add funds or send a smaller amount.';
     }
     case 'already_in_mempool':
       return 'This transaction was already submitted and is waiting to be included. No need to send it again.';
     case 'free_pending_limit':
-      return 'You have too many zero-fee transactions waiting. Wait for them to confirm and try again.';
+      return 'You have too many zero-tip transactions waiting. Wait for them to confirm, or add a priority tip and send again.';
     case 'free_tx_balance_gate':
       return r.have != null && r.need != null
-        ? `Zero-fee sends need a balance of at least ${formatBaseUnitsAsBoing(r.need, decimals)} BOING (you have ${formatBaseUnitsAsBoing(r.have, decimals)} BOING).`
-        : 'Your balance is too low to send a zero-fee transaction. Add a little BOING and try again.';
+        ? `Zero-tip sends need a balance of at least ${formatBaseUnitsAsBoing(r.need, decimals)} BOING (you have ${formatBaseUnitsAsBoing(r.have, decimals)} BOING). Add funds or add a priority tip.`
+        : 'Your balance is too low to send a zero-tip transaction. Add a little BOING or a priority tip and try again.';
     case 'native_value_not_active':
       return r.activeFrom != null
         ? `Sending BOING with a contract call starts at block ${r.activeFrom}. Try again once the network reaches it.`
@@ -156,8 +156,8 @@ export function describeRejection(r: Rejection, opts: DescribeRejectionOptions =
     case 'pool_full':
     case 'deployer_cap':
       return r.reason === 'pool_full'
-        ? 'The community review pool is full. Try again later.'
-        : 'You have reached the limit of deployments waiting for review.';
+        ? 'The community review (QA) pool is full. Try again later.'
+        : 'You have reached the limit of deployments waiting in the community review (QA) pool.';
     default:
       return r.message?.trim() || 'The network rejected this transaction.';
   }

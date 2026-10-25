@@ -133,3 +133,42 @@ describe('buildAndSubmit (one stale_nonce retry)', () => {
     expect(r.reason).toBe('unknown_sender');
   });
 });
+
+describe('parity with boing.observer describeRpcRejection (same reasons, same vocabulary)', () => {
+  // Every `data.reason` the observer branches on, per boing.network docs/RPC-API-SPEC.md.
+  const REASONS = [
+    'unknown_sender',
+    'stale_nonce',
+    'insufficient_fee',
+    'already_in_mempool',
+    'free_pending_limit',
+    'free_tx_balance_gate',
+    'native_value_not_active',
+    'pool_full',
+    'deployer_cap',
+  ];
+  it('recognises every reason the observer does, with a non-generic message', () => {
+    for (const reason of REASONS) {
+      const r = rejectionFromRpcData(new RpcClientError('x', -32000, { reason }));
+      expect(r?.reason, reason).toBe(reason);
+      expect(describeRejection(r!), reason).not.toBe('The network rejected this transaction.');
+    }
+  });
+  it('uses the shared "zero-tip" and priority-tip vocabulary, not the old "zero-fee"', () => {
+    const msgs = ['free_pending_limit', 'free_tx_balance_gate']
+      .map((reason) => describeRejection(rejectionFromRpcData(new RpcClientError('x', -32000, { reason }))!))
+      .join(' ');
+    expect(msgs).toMatch(/zero-tip/);
+    expect(msgs).toMatch(/priority tip/);
+    expect(msgs).not.toMatch(/zero-fee/);
+  });
+  it('insufficient_fee says the need covers the fee plus any priority tip', () => {
+    const r = rejectionFromRpcData(new RpcClientError('x', -32000, { reason: 'insufficient_fee', have: '100000000000000', need: '210000000000000' }))!;
+    expect(describeRejection(r)).toMatch(/0\.0001 BOING.*0\.00021 BOING.*priority tip/s);
+  });
+  it('QA pool voter-ineligible and faucet rate-limit codes follow docs/BOING-RPC-ERROR-CODES-FOR-DAPPS.md', () => {
+    expect(describeWalletError(new RpcClientError('x', -32053))).toMatch(/not eligible to vote/);
+    expect(describeWalletError(new RpcClientError('x', -32053))).not.toMatch(/administrator/i);
+    expect(describeWalletError(new RpcClientError('x', -32016))).toMatch(/faucet is rate-limited/);
+  });
+});
