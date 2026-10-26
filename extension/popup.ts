@@ -58,6 +58,7 @@ import { fetchNativeCurrency, formatNative, knownLedgerDecimals, ledgerDecimalsA
 import { normalizeBoingNetworkId } from './config';
 import { isBackupConfirmed } from '../src/security/backupVerify';
 import { checkNodeCompat, configuredChainIdDecimal } from '../src/boing/nodeCompat';
+import { renderCompatBanner } from '../src/boing/updateNote';
 import { explorerAccountUrl, explorerBaseFor, explorerTxUrl } from '../src/boing/explorerLinks';
 import { isSessionExpired, normalizeAutoLockMinutes, STORAGE_KEY_AUTO_LOCK_MINUTES } from '../src/security/autoLock';
 import { bindAutoLockSelect } from '../src/security/autoLockUi';
@@ -302,16 +303,15 @@ async function refreshNodeCompat(): Promise<void> {
     networkName: net.config.name,
   });
   if (forNetwork !== selectedNetworkId) return; // user switched while we were checking
-  // An unreachable node is already reported by the balance error; only show real mismatches here.
-  const issues = status.issues.filter((i) => i.code !== 'unreachable');
-  if (issues.length === 0) {
-    banner.classList.add('hidden');
-    return;
+  // An unreachable node is already reported by the balance error; only real mismatches (and the dismissible
+  // update-available advisory) are shown here.
+  let store: Storage | null = null;
+  try {
+    store = window.localStorage;
+  } catch {
+    /* storage blocked: the advisory just cannot be remembered as dismissed */
   }
-  banner.textContent = issues.map((i) => i.message).join(' ');
-  banner.classList.toggle('error', status.level === 'error');
-  banner.classList.toggle('hint', status.level !== 'error');
-  banner.classList.remove('hidden');
+  renderCompatBanner(banner, status, store, document);
 }
 
 async function refreshDashboardBalance(): Promise<void> {

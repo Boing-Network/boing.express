@@ -8,6 +8,7 @@
  * boing.network is the source of truth. Never edit the copies by hand: re-run this script after the network repo changes
  * (the vendored copy is what CI uses, so CI needs no sibling checkout). Line endings are ignored when comparing.
  */
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +21,14 @@ const FILES = [
 ];
 const check = process.argv.includes('--check');
 const norm = (s) => s.replace(/\r\n/g, '\n');
+/** True when the upstream file has uncommitted edits (so the copy would vendor unreleased content). */
+function upstreamDirty(rel) {
+  try {
+    return execFileSync('git', ['-C', network, 'status', '--porcelain', '--', rel], { encoding: 'utf8' }).trim() !== '';
+  } catch {
+    return false;
+  }
+}
 
 if (!existsSync(network)) {
   console.error(`boing.network checkout not found at ${network} (set BOING_NETWORK_DIR).`);
@@ -35,6 +44,7 @@ for (const [from, to] of FILES) {
     drift++;
     continue;
   }
+  if (upstreamDirty(from)) console.warn(`warning: boing.network/${from} has uncommitted changes; the comparison/copy includes unreleased content.`);
   const want = norm(readFileSync(src, 'utf8'));
   const have = existsSync(dst) ? norm(readFileSync(dst, 'utf8')) : null;
   if (check) {

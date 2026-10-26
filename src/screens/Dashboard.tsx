@@ -1,6 +1,7 @@
 import { describeWalletError } from '../boing/errorMessages';
 import { buildAndSubmit, submitNote } from '../boing/submitRetry';
 import { checkNodeCompat, configuredChainIdDecimal, type NodeCompatStatus } from '../boing/nodeCompat';
+import { dismissUpdateNote, updateNoteDismissLabel, visibleCompatIssues, visibleUpdateNote } from '../boing/updateNote';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
@@ -154,7 +155,11 @@ export function Dashboard() {
       live = false;
     };
   }, [network.config.rpcUrl, network.config.chainId, network.config.name]);
-  const nodeCompatIssues = (nodeCompat?.issues ?? []).filter((i) => i.code !== 'unreachable');
+  // Bumped when the update note is dismissed so the banner re-reads the stored dismissal.
+  const [, setUpdateNoteDismissals] = useState(0);
+  const compatStore = typeof window !== 'undefined' ? window.localStorage : null;
+  const nodeCompatIssues = visibleCompatIssues(nodeCompat?.issues ?? [], compatStore);
+  const updateNote = visibleUpdateNote(nodeCompatIssues);
 
   const address = accountId ? formatAddress(accountId, false) : '';
   const addressHint = address ? `${address.slice(0, 8)}…${address.slice(-8)}` : '';
@@ -750,7 +755,21 @@ export function Dashboard() {
           role={nodeCompat?.level === 'error' ? 'alert' : 'status'}
           data-testid="node-compat-banner"
         >
-          {nodeCompatIssues.map((i) => i.message).join(' ')}
+          <span>{nodeCompatIssues.map((i) => i.message).join(' ')}</span>
+          {updateNote?.version && (
+            <button
+              type="button"
+              className={styles.compatDismiss}
+              data-testid="compat-dismiss-update"
+              aria-label={updateNoteDismissLabel(updateNote.version)}
+              onClick={() => {
+                dismissUpdateNote(compatStore, updateNote.version!);
+                setUpdateNoteDismissals((n) => n + 1);
+              }}
+            >
+              Dismiss
+            </button>
+          )}
         </aside>
       )}
 

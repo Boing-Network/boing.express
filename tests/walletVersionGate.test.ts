@@ -51,7 +51,7 @@ describe('recommended_wallet_version (advisory)', () => {
   it('is an info note that does not raise the level', () => {
     const s = evaluateNodeHealth(h, expected, 1, { version: '0.1.20' });
     expect(s.level).toBe('ok');
-    expect(s.issues).toEqual([{ code: 'wallet_update_available', level: 'info', message: 'Boing Express 0.1.22 is available (you have 0.1.20).' }]);
+    expect(s.issues).toEqual([{ code: 'wallet_update_available', level: 'info', message: 'Boing Express 0.1.22 is available (you have 0.1.20).', version: '0.1.22' }]);
   });
   it('is replaced by the warning when below the minimum, and silent when current', () => {
     expect(evaluateNodeHealth(h, expected, 1, { version: '0.1.14' }).issues.map((i) => i.code)).toEqual(['wallet_too_old']);

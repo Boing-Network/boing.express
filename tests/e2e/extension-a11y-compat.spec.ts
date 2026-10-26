@@ -31,6 +31,24 @@ describe('Extension: node-compat banner, keyboard tabs, origin-risk banner (E2E,
     }
   });
 
+  test('update-available note is advisory, and Dismiss hides it for that recommended version', async () => {
+    test.setTimeout(120_000);
+    const { popup, close } = await openPopupWithNewWallet({
+      healthExtra: { client_hints: { min_wallet_version: '0.1.15', recommended_wallet_version: '9.9.9' } },
+    });
+    try {
+      const banner = popup.getByTestId('node-compat-banner');
+      await expect(banner).toBeVisible({ timeout: 30_000 });
+      await expect(banner).toContainText('Boing Express 9.9.9 is available');
+      await expect(banner).not.toHaveClass(/error/);
+      await popup.getByTestId('compat-dismiss-update').click();
+      await expect(banner).toBeHidden();
+      expect(await popup.evaluate(() => window.localStorage.getItem('boing_update_note_dismissed_version'))).toBe('9.9.9');
+    } finally {
+      await close();
+    }
+  });
+
   test('a node on the wrong chain shows a blocking error', async () => {
     test.setTimeout(120_000);
     const { popup, close } = await openPopupWithNewWallet({ chainId: 6914 });

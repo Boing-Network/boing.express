@@ -31,6 +31,8 @@ export interface NodeCompatIssue {
   level: 'info' | 'warn' | 'error';
   /** Plain-language message safe to show to end users. */
   message: string;
+  /** For wallet_update_available: the recommended wallet version the note is about (the dismissal key). */
+  version?: string;
 }
 
 export interface NodeCompatStatus {
@@ -195,6 +197,7 @@ export function evaluateNodeHealth(
       code: 'wallet_update_available',
       level: 'info',
       message: `Boing Express ${recommendedWallet} is available (you have ${walletNow}).`,
+      version: recommendedWallet,
     });
   }
 

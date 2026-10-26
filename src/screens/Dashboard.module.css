@@ -129,6 +129,25 @@
   border-radius: 8px;
 }
 
+.compatDismiss {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--text, inherit);
+  background: transparent;
+  border: 1px solid var(--card-border, var(--border));
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.compatDismiss:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.compatDismiss:focus-visible {
+  outline: 2px solid var(--accent, #6ea8fe);
+  outline-offset: 2px;
+}
+
 .networkDiscoveryText {
   flex: 1 1 12rem;
 }
