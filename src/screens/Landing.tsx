@@ -124,6 +124,7 @@ export function Landing() {
             <a href="https://boing.network/testnet/join" target="_blank" rel="noopener noreferrer">Join Testnet</a>
             <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">Faucet</a>
             <a href="https://boing.network" target="_blank" rel="noopener noreferrer">Boing Network</a>
+            <a href="https://discord.gg/K3w9nbUw4N" target="_blank" rel="noopener noreferrer">Discord</a>
             <a href="https://boing.network/docs/rpc-api" target="_blank" rel="noopener noreferrer">RPC API</a>
             <Link to="/docs">Documentation</Link>
             <Link to="/support">Support</Link>

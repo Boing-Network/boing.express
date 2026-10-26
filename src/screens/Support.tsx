@@ -72,7 +72,11 @@ export function Support() {
             <a href="https://boing.network" target="_blank" rel="noopener noreferrer">
               Boing Network
             </a>
-            . For wallet-specific issues, you can open an issue on the project repository or reach out via the Boing community.
+            . For wallet-specific issues, you can open an issue on the project repository or reach out via the{' '}
+            <a href="https://discord.gg/K3w9nbUw4N" target="_blank" rel="noopener noreferrer">
+              Boing Discord
+            </a>
+            .
           </p>
 
           <Link to="/" className={styles.back}>← Back to home</Link>
