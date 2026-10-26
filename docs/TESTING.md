@@ -4,7 +4,8 @@
 |---------|----------------|
 | `pnpm exec tsc -b` | Type check of `src` |
 | `pnpm run typecheck:ext` | Type check of the extension entry points (`background`, `popup`, `approval`; `tsconfig.extension.json`, uses `@types/chrome`). Runs in CI. |
-| `pnpm fixtures:check` / `pnpm fixtures:sync` | Verify / refresh the vendored boing.network fixtures (golden signing vectors, `chain-metadata.json`) in `tests/fixtures/` |
+| `pnpm fixtures:check` / `pnpm fixtures:sync` | Verify / refresh the vendored boing.network fixtures (golden signing vectors, `chain-metadata.json`) in `tests/fixtures/`; `sync` also regenerates `src/networks/chainDefaults.generated.ts`, `check` also verifies it |
+| `pnpm generate:chain-defaults` | Regenerates `src/networks/chainDefaults.generated.ts` from the vendored `chain-metadata.json` (also runs on `pnpm build` and `build:extension`) |
 | `pnpm test` | Vitest unit tests: signing, bincode, SDK parity, node compat, error messages, security helpers, RPC gateway allowlist |
 | `pnpm build` | Type check + production web build to `dist/` |
 | `pnpm run build:extension` | Builds the MV3 extension into `extension/` (background, popup, approval page, content script, inpage provider) |
@@ -36,12 +37,12 @@ Options on `installBoingNetworkMocks(context, opts)` (`tests/e2e/helpers/boingRo
 | `healthExtra` | Extra fields merged into the `boing_health` answer (for example `client_hints: { min_wallet_version: '9.9.9' }`; the default mock already reports the documented `client_hints` and `tx_signing.priority_tips_supported`). |
 | `rpc` | Per-method hook returning a result to override a mocked RPC method. |
 
-`tests/e2e/extension-a11y-compat.spec.ts` covers the node-compat banner (no chain id, matching chain, wrong chain), popup tab keyboard navigation and the approval-page origin-risk banner.
+`tests/e2e/extension-a11y-compat.spec.ts` covers the node-compat banner (no chain id, matching chain, wrong chain), popup tab keyboard navigation and the approval-page origin-risk banner, plus the dismissible update-available note (`healthExtra` with a newer `recommended_wallet_version`). `tests/e2e-web/wallet-update-note.spec.ts` covers the same note in the web wallet.
 
 ## What the unit tests guard
 
 - **Wire format:** `sdkParity.test.ts`, `txSigningV2.test.ts`, `txSigningGolden.test.ts` (boing.network golden vectors), `bulkBatch.test.ts`.
-- **Network identity:** `chainMetadataDrift.test.ts` (built-in config vs `docs/chain-metadata.json`), `networkInfo.test.ts` (documented `client_hints` / `tx_signing` shapes, `fetchTipSupport`), `walletVersionGate.test.ts` (semver gate, recommended-update advisory), `walletReleaseVersion.test.ts`.
+- **Network identity:** `chainMetadataDrift.test.ts` (built-in config and the committed generated defaults vs `docs/chain-metadata.json`, generator validation), `networkInfo.test.ts` (documented `client_hints` / `tx_signing` shapes, `fetchTipSupport`), `walletVersionGate.test.ts` (semver gate, recommended-update advisory), `updateNote.test.ts` (per-version dismissal, popup banner rendering), `walletReleaseVersion.test.ts`.
 - **Node errors:** `src/boing/errorMessages.test.ts` maps node error strings and JSON-RPC codes to plain language.
 - **Node compatibility:** `src/boing/nodeCompat.test.ts` uses a fixture of a real testnet `boing_health` response.
 - **Accessibility and UI states:** `tests/a11yContrast.test.ts` (WCAG AA 4.5:1 for muted, secondary, danger and success text on every dark surface, read from the CSS tokens so a palette change that fails AA fails the build), `tests/a11yMarkup.test.tsx` (tab keyboard model `nextTabId`; SendConfirm focus target, live fee row, busy confirm button, alert errors), `tests/originRiskBanner.test.ts` (approval-page banner: hidden, caution, danger, textContent-only), `tests/autoLockUi.test.ts` (popup auto-lock select and idle rule), `tests/sessionStore.test.ts` (web session sealing). Component tests render with `react-dom/server`; DOM helpers take a document-like parameter and run against `tests/fakeDom.ts` (no jsdom).
