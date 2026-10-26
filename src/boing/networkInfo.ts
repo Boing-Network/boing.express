@@ -11,6 +11,7 @@
  * Source of truth: boing.network docs/RPC-API-SPEC.md (`boing_health`, `boing_getNetworkInfo`).
  */
 import { rpcCall } from './rpc';
+import { SIGNING_DOMAINS } from '../networks/chainDefaults.generated';
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v != null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -67,7 +68,7 @@ export interface NetworkInfoMeta {
 }
 
 /** The signing domain this wallet uses for a non-zero priority tip. */
-export const PRIORITY_TIP_DOMAIN = 'BOING_TX_PRIORITY';
+export const PRIORITY_TIP_DOMAIN: string = SIGNING_DOMAINS.priorityTip;
 
 const SEMVER = /^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$/;
 

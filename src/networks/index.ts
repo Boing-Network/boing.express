@@ -8,10 +8,15 @@ import {
   BOING_MAINNET_CHAIN_ID_HEX,
   BOING_TESTNET_CHAIN_ID_HEX,
 } from './chainIds';
+import { BUILTIN_NETWORKS } from './chainDefaults.generated';
 import { DEFAULT_TESTNET_RPC, resolveMainnetRpcUrl, resolveTestnetRpcUrl } from './rpcConfig';
 
+const TESTNET = BUILTIN_NETWORKS.testnet;
+const MAINNET = BUILTIN_NETWORKS.mainnet;
+
 const defaultTestnetRpc = DEFAULT_TESTNET_RPC;
-const defaultMainnetRpc = '';
+/** Empty until boing.network publishes a public mainnet RPC in chain-metadata.json (then mainnet is offered by default). */
+const defaultMainnetRpc = MAINNET.defaultRpcUrl;
 
 /** Build network list from RPC URLs (for app: use env; for extension: pass URLs). */
 export function createNetworks(
@@ -21,12 +26,12 @@ export function createNetworks(
   const networks: NetworkAdapter[] = [
     createBoingAdapter({
       id: 'boing-testnet',
-      name: 'Boing Testnet',
+      name: TESTNET.name,
       rpcUrl: resolveTestnetRpcUrl(testnetRpc),
       chainId: BOING_TESTNET_CHAIN_ID_HEX,
-      isTestnet: true,
-      faucetUrl: 'https://boing.network/faucet',
-      explorerUrl: 'https://boing.observer',
+      isTestnet: TESTNET.isTestnet,
+      faucetUrl: TESTNET.faucetUrl ?? undefined,
+      explorerUrl: TESTNET.explorerUrl,
     }),
   ];
 
@@ -34,11 +39,12 @@ export function createNetworks(
   if (configuredMainnetRpc) {
     networks.push(createBoingAdapter({
       id: 'boing-mainnet',
-      name: 'Boing Mainnet',
+      name: MAINNET.name,
       rpcUrl: configuredMainnetRpc,
       chainId: BOING_MAINNET_CHAIN_ID_HEX,
-      isTestnet: false,
-      explorerUrl: 'https://boing.observer',
+      isTestnet: MAINNET.isTestnet,
+      faucetUrl: MAINNET.faucetUrl ?? undefined,
+      explorerUrl: MAINNET.explorerUrl,
     }));
   }
 

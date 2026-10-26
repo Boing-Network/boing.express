@@ -4,9 +4,12 @@
  * without history and on testnet 6913 from height 1050, whole BOING before it. `native_currency` in
  * `boing_getNetworkInfo` says which; older nodes report `decimals: 0` only.
  */
+import { NATIVE_CURRENCY } from '../networks/chainDefaults.generated';
 import { rpcCall } from './rpc';
 
-export const BOING_BASE_DECIMALS = 18;
+/** Generated from boing.network chain-metadata.json (
+ative_currency.decimals). */
+export const BOING_BASE_DECIMALS: number = NATIVE_CURRENCY.decimals;
 /** Fee per gas in base units under the 18-decimals rule (0.000001 BOING). */
 export const GAS_PRICE_BASE_UNITS = 1_000_000_000_000n;
 /** Whole-BOING rule (before the switch): 21,000 gas = 1 BOING, rounded up. */

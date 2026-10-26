@@ -2,11 +2,14 @@
  * EIP-155–style chain IDs exposed to dApps (Boing Express `boing_chainId` / `eth_chainId`).
  * Align with docs/THREE-CODEBASE-ALIGNMENT.md §3. Not embedded in Boing block headers on L1.
  */
-export const BOING_TESTNET_CHAIN_ID_HEX = '0x1b01' as const;
-export const BOING_TESTNET_CHAIN_ID_DECIMAL = 6913;
+import { BUILTIN_NETWORKS } from './chainDefaults.generated';
 
-export const BOING_MAINNET_CHAIN_ID_HEX = '0x1b02' as const;
-export const BOING_MAINNET_CHAIN_ID_DECIMAL = 6914;
+/** Generated from boing.network chain-metadata.json (see scripts/generate-chain-defaults.mjs); do not hard-code here. */
+export const BOING_TESTNET_CHAIN_ID_HEX = BUILTIN_NETWORKS.testnet.chainIdHex;
+export const BOING_TESTNET_CHAIN_ID_DECIMAL = BUILTIN_NETWORKS.testnet.chainId;
+
+export const BOING_MAINNET_CHAIN_ID_HEX = BUILTIN_NETWORKS.mainnet.chainIdHex;
+export const BOING_MAINNET_CHAIN_ID_DECIMAL = BUILTIN_NETWORKS.mainnet.chainId;
 
 export function chainIdHexToDecimal(hex: string): string {
   const raw = hex.trim().replace(/^0x/i, '');

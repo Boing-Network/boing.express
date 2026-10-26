@@ -1,4 +1,7 @@
-const DEFAULT_TESTNET_RPC = 'https://testnet-rpc.boing.network';
+import { BUILTIN_NETWORKS } from './chainDefaults.generated';
+
+/** Generated default (boing.network chain-metadata.json); VITE_BOING_TESTNET_RPC still overrides it. */
+const DEFAULT_TESTNET_RPC = BUILTIN_NETWORKS.testnet.defaultRpcUrl;
 
 function normalizeRpcUrl(value: string | null | undefined): string {
   const trimmed = typeof value === 'string' ? value.trim() : '';

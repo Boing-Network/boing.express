@@ -1,5 +1,5 @@
 /**
- * The running wallet's own version, injected at build time (`__WALLET_VERSION__`, from package.json).
+ * The running wallet's own version, injected at build time (`__WALLET_VERSION__`, from the extension manifest release version).
  * Undefined in unit tests / unknown builds: callers must treat "unknown" as "do not warn".
  */
 declare const __WALLET_VERSION__: string | undefined;

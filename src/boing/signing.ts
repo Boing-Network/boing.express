@@ -9,6 +9,7 @@ import * as ed from '@noble/ed25519';
 import type { Transaction, SignedTransaction } from './types';
 import { encodePayload, encodeAccessList, encodeSignedTransaction } from './bincode';
 import { rpcCall } from './rpc';
+import { SIGNING_DOMAINS } from '../networks/chainDefaults.generated';
 
 /** Signable message = BLAKE3( nonce_LE(8) || sender(32) || bincode(payload) || bincode(access_list) ). */
 export function signableHash(tx: Transaction): Uint8Array {
@@ -25,8 +26,9 @@ export function signableHash(tx: Transaction): Uint8Array {
   return blake3(input);
 }
 
-const DOMAIN_V2 = new TextEncoder().encode('BOING_TX_V2');
-const DOMAIN_PRIORITY = new TextEncoder().encode('BOING_TX_PRIORITY');
+// Domains come from boing.network chain-metadata.json (generated); tests/txSigningGolden.test.ts pins the resulting digests.
+const DOMAIN_V2 = new TextEncoder().encode(SIGNING_DOMAINS.tx);
+const DOMAIN_PRIORITY = new TextEncoder().encode(SIGNING_DOMAINS.priorityTip);
 
 /**
  * v2 (chain-bound) signable hash, security fix #2 (cross-chain replay):

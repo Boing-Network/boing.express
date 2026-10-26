@@ -1,4 +1,7 @@
 import { readFileSync } from 'node:fs';
+// @ts-expect-error plain ESM script without type declarations
+import { OUTPUT_PATH, generate, renderChainDefaults } from '../scripts/generate-chain-defaults.mjs';
+import { BUILTIN_NETWORKS, NATIVE_CURRENCY, SIGNING_DOMAINS } from '../src/networks/chainDefaults.generated';
 import { describe, expect, it } from 'vitest';
 import { createNetworks } from '../src/networks';
 import {
@@ -101,5 +104,74 @@ describe('built-in network config matches boing.network docs/chain-metadata.json
   it('signing domains', () => {
     expect(meta.signing.priority_tip_signing_domain).toBe(PRIORITY_TIP_DOMAIN);
     expect(meta.signing.tx_signing_domain).toBe('BOING_TX_V2');
+  });
+});
+describe('generated defaults (src/networks/chainDefaults.generated.ts)', () => {
+  it('is current: re-running the generator on the vendored metadata gives the committed file (run `pnpm fixtures:sync`)', () => {
+    const committed = readFileSync(OUTPUT_PATH, 'utf8').replace(/\r\n/g, '\n');
+    expect(committed).toBe(generate());
+  });
+
+  it('the generated values equal the vendored metadata', () => {
+    for (const key of ['testnet', 'mainnet'] as const) {
+      const n = net(key);
+      const g = BUILTIN_NETWORKS[key];
+      expect(g).toEqual({
+        status: n.status,
+        chainId: n.chain_id,
+        chainIdHex: n.chain_id_hex,
+        name: n.chain_name,
+        defaultRpcUrl: n.rpc_urls[0] ?? '',
+        explorerUrl: n.explorer_url,
+        faucetUrl: n.faucet_url,
+        walletUrl: (n as unknown as { wallet_url: string | null }).wallet_url ?? null,
+        isTestnet: n.is_testnet,
+      });
+    }
+    expect(NATIVE_CURRENCY.decimals).toBe(meta.native_currency.decimals);
+    expect(NATIVE_CURRENCY.baseUnitsPerBoing).toBe(meta.native_currency.base_units_per_boing);
+    expect(SIGNING_DOMAINS.tx).toBe(meta.signing.tx_signing_domain);
+    expect(SIGNING_DOMAINS.priorityTip).toBe(meta.signing.priority_tip_signing_domain);
+  });
+
+  it('user-visible behaviour is unchanged: testnet is the live default, mainnet is hidden until it has an RPC', () => {
+    expect(BUILTIN_NETWORKS.testnet.defaultRpcUrl).toBe('https://testnet-rpc.boing.network');
+    expect(createNetworks().map((n) => n.config.id)).toEqual(['boing-testnet']);
+    expect(createNetworks(undefined, MAINNET_TEST_RPC).map((n) => n.config.id)).toEqual(['boing-testnet', 'boing-mainnet']);
+    expect(createNetworks()[0].config).toMatchObject({
+      chainId: '0x1b01',
+      name: 'Boing Testnet',
+      isTestnet: true,
+      faucetUrl: 'https://boing.network/faucet',
+      explorerUrl: 'https://boing.observer',
+    });
+  });
+
+  describe('generator input validation', () => {
+    const valid = () => JSON.parse(JSON.stringify(meta));
+    it('renders a stable, LF-only file', () => {
+      const a = renderChainDefaults(valid());
+      expect(a).toBe(renderChainDefaults(valid()));
+      expect(a).not.toContain('\r');
+    });
+    it('uses the first RPC url once a network has one', () => {
+      const m = valid();
+      m.networks.find((n: { key: string }) => n.key === 'mainnet').rpc_urls = ['https://mainnet-rpc.example', 'https://b.example'];
+      expect(renderChainDefaults(m)).toContain("defaultRpcUrl: 'https://mainnet-rpc.example'");
+    });
+    it('escapes quotes in string values', () => {
+      const m = valid();
+      m.networks[0].chain_name = `Boing "Test" it's`;
+      expect(renderChainDefaults(m)).toContain(`name: 'Boing "Test" it\\'s'`);
+    });
+    it('rejects an unknown schema version, a chain id / hex mismatch and a missing network', () => {
+      expect(() => renderChainDefaults({ ...valid(), schema_version: 2 })).toThrow(/schema_version/);
+      const bad = valid();
+      bad.networks[0].chain_id_hex = '0x1b02';
+      expect(() => renderChainDefaults(bad)).toThrow(/does not match/);
+      const missing = valid();
+      missing.networks = missing.networks.filter((n: { key: string }) => n.key !== 'mainnet');
+      expect(() => renderChainDefaults(missing)).toThrow(/no "mainnet"/);
+    });
   });
 });
