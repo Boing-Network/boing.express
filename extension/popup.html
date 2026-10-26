@@ -43,8 +43,19 @@
       </div>
     </div>
     <div id="screen-create" class="screen hidden">
-      <p class="subtitle">Generate a new keypair. Back up your key.</p>
+      <p class="subtitle">Create a new account. Choose how you want to back it up.</p>
       <form id="form-create" class="form">
+        <fieldset class="method-choice">
+          <legend class="hint">How do you want to back up this account?</legend>
+          <label class="row backup-checkbox">
+            <input type="radio" name="create-method" value="phrase" checked data-testid="wallet-create-method-phrase" />
+            <span><strong>Recovery phrase (recommended).</strong> 24 words you write on paper. Works in any wallet that supports Boing.</span>
+          </label>
+          <label class="row backup-checkbox">
+            <input type="radio" name="create-method" value="key" data-testid="wallet-create-method-key" />
+            <span><strong>Private key (advanced).</strong> One long code you must store safely.</span>
+          </label>
+        </fieldset>
         <input type="password" id="create-password" placeholder="Password (min 8 chars)" class="input" data-testid="wallet-create-password" />
         <input type="password" id="create-confirm" placeholder="Confirm password" class="input" data-testid="wallet-create-password-confirm" />
         <p id="create-error" class="error hidden"></p>
@@ -53,17 +64,31 @@
       <button type="button" id="btn-create-back" class="btn-text" aria-label="Back">Back</button>
     </div>
     <div id="screen-backup" class="screen hidden">
-      <p class="subtitle">Save this key in a safe place. Anyone with it can control your wallet.</p>
-      <div class="row">
-        <code id="backup-key" class="backup-key"></code>
-        <button type="button" id="btn-backup-copy" class="btn-small" aria-label="Copy private key">Copy</button>
+      <p id="backup-subtitle" class="subtitle">Save this key in a safe place. Anyone with it can control your wallet.</p>
+      <div id="backup-key-block">
+        <div class="row">
+          <code id="backup-key" class="backup-key"></code>
+          <button type="button" id="btn-backup-copy" class="btn-small" aria-label="Copy private key">Copy</button>
+        </div>
+      </div>
+      <div id="backup-phrase-block" class="hidden">
+        <ol id="backup-phrase-words" class="phrase-grid" aria-label="Recovery phrase" data-testid="wallet-phrase-words"></ol>
+        <p class="hint">Write the words on paper, in this order. Do not take a screenshot or save them in a notes app or email.</p>
       </div>
       <label class="row backup-checkbox">
-        <input type="checkbox" id="backup-acknowledged" aria-label="I have saved my private key" data-testid="wallet-backup-ack" />
-        <span>I have saved my private key in a safe place</span>
+        <input type="checkbox" id="backup-acknowledged" aria-label="I have saved my backup" data-testid="wallet-backup-ack" />
+        <span id="backup-ack-text">I have saved my private key in a safe place</span>
       </label>
-      <label class="backup-confirm" for="backup-confirm">Type the last 6 characters of your key to confirm you saved it</label>
-      <input type="text" id="backup-confirm" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="12" placeholder="Last 6 characters" data-testid="wallet-backup-confirm" />
+      <div id="backup-key-confirm">
+        <label class="backup-confirm" for="backup-confirm">Type the last 6 characters of your key to confirm you saved it</label>
+        <input type="text" id="backup-confirm" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="12" placeholder="Last 6 characters" data-testid="wallet-backup-confirm" />
+      </div>
+      <div id="backup-phrase-confirm" class="hidden">
+        <label class="backup-confirm">Type these words from your phrase to check you wrote it down</label>
+        <input type="text" id="backup-phrase-confirm-0" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="wallet-phrase-confirm-0" />
+        <input type="text" id="backup-phrase-confirm-1" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="wallet-phrase-confirm-1" />
+        <input type="text" id="backup-phrase-confirm-2" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="wallet-phrase-confirm-2" />
+      </div>
       <p id="backup-error" class="error hidden"></p>
       <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet" disabled data-testid="wallet-backup-continue">I've backed it up — Continue</button>
     </div>
@@ -71,9 +96,21 @@
       <div id="claim-name-root"></div>
     </div>
     <div id="screen-import" class="screen hidden">
-      <p class="subtitle">Enter 64-char hex private key.</p>
+      <p id="import-subtitle" class="subtitle">Enter your 12 or 24 word recovery phrase.</p>
       <form id="form-import" class="form">
-        <textarea id="import-key" placeholder="0x... or 64 hex chars" class="textarea" rows="3" data-testid="wallet-import-key"></textarea>
+        <fieldset class="method-choice">
+          <legend class="hint">What do you want to import?</legend>
+          <label class="row backup-checkbox">
+            <input type="radio" name="import-method" value="phrase" checked data-testid="wallet-import-method-phrase" />
+            <span>Recovery phrase (12 or 24 words)</span>
+          </label>
+          <label class="row backup-checkbox">
+            <input type="radio" name="import-method" value="key" data-testid="wallet-import-method-key" />
+            <span>Private key (64 hex characters)</span>
+          </label>
+        </fieldset>
+        <textarea id="import-phrase" placeholder="Type your words in order, separated by spaces" class="textarea" rows="3" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="wallet-import-phrase"></textarea>
+        <textarea id="import-key" placeholder="0x... or 64 hex chars" class="textarea hidden" rows="3" data-testid="wallet-import-key"></textarea>
         <input type="password" id="import-password" placeholder="Password (min 8 chars)" class="input" data-testid="wallet-import-password" />
         <input type="password" id="import-confirm" placeholder="Confirm password" class="input" data-testid="wallet-import-password-confirm" />
         <p id="import-error" class="error hidden"></p>
@@ -316,6 +353,24 @@
             <ul id="connected-sites-list" class="connected-sites-list" aria-label="List of connected sites"></ul>
             <p id="connected-sites-empty" class="connected-sites-empty hidden">No sites connected.</p>
           </div>
+          <details class="card reveal-key-card" data-testid="reveal-recovery-phrase">
+            <summary class="label">Recovery phrase</summary>
+            <p id="reveal-recovery-phrase-none" class="hint hidden" data-testid="reveal-recovery-phrase-none">This account was set up with a private key, so it has no recovery phrase. Its private key (below) is its backup. To get a recovery phrase, add a new account and choose "Recovery phrase".</p>
+            <div id="reveal-phrase-body">
+              <p class="error" role="note">Anyone with these words controls this account and its funds. Never type them into a website, share them, or send them to anyone (Boing will never ask). Write them on paper and keep them offline.</p>
+              <form id="form-reveal-phrase">
+                <input type="password" id="reveal-phrase-password" placeholder="Wallet password" class="input" autocomplete="current-password" aria-label="Wallet password" data-testid="reveal-phrase-password" />
+                <button type="submit" id="btn-reveal-phrase" class="btn-secondary" data-testid="reveal-phrase-submit">Show phrase</button>
+              </form>
+              <div id="reveal-phrase-output" class="hidden">
+                <p class="hint">Hidden automatically after 30 seconds or when this popup closes.</p>
+                <ol id="reveal-phrase-words" class="phrase-grid" aria-label="Recovery phrase" data-testid="reveal-phrase-words"></ol>
+                <button type="button" id="btn-reveal-phrase-toggle" class="btn-secondary" data-testid="reveal-phrase-toggle">Show</button>
+                <button type="button" id="btn-reveal-phrase-done" class="btn-secondary">Done</button>
+              </div>
+              <p id="reveal-phrase-error" class="error hidden"></p>
+            </div>
+          </details>
           <details class="card reveal-key-card" data-testid="reveal-private-key">
             <summary class="label">Export private key</summary>
             <p class="error" role="note">Anyone with this key controls this account and its funds. Never share it, paste it into a website, or send it to anyone (Boing will never ask). Use it only in tools you trust, such as the boing CLI (BOING_SECRET_HEX).</p>

@@ -23,6 +23,10 @@ import {
   getActiveAccountIndex,
   createAdditionalAccount,
   importAdditionalAccount,
+  createWalletWithPhrase,
+  importWalletFromPhrase,
+  getActiveRecoveryInfo,
+  unlockActiveRecoveryPhrase,
   removeAccountAtIndex,
 } from '../src/storage/walletStore.extension';
 import { assertFromMatchesSender, describeReferenceMintBatchCalldata, transactionFromDappJson } from '../src/boing/dappTxRequest';
@@ -63,6 +67,8 @@ import { explorerAccountUrl, explorerBaseFor, explorerTxUrl } from '../src/boing
 import { isSessionExpired, normalizeAutoLockMinutes, STORAGE_KEY_AUTO_LOCK_MINUTES } from '../src/security/autoLock';
 import { bindAutoLockSelect } from '../src/security/autoLockUi';
 import { RevealError, createRevealSession, revealActivePrivateKeyHex, type RevealState } from '../src/security/revealPrivateKey';
+import { revealActiveRecoveryPhrase } from '../src/security/revealRecoveryPhrase';
+import { isPhraseConfirmed, parseRecoveryPhrase, pickConfirmationPositions } from '../src/crypto/recoveryPhrase';
 import {
   buildExtensionNetworksCatalog,
   loadExtensionMetaCacheAsync,
@@ -112,6 +118,10 @@ let addingAccountMode = false;
 let accountId: Uint8Array | null = null;
 let privateKey: Uint8Array | null = null;
 let pendingBackupPassword = '';
+/** Backup screen mode: the classic private-key backup or the recovery-phrase backup (memory only; cleared on finish). */
+let backupMode: 'key' | 'phrase' = 'key';
+let pendingPhrase = '';
+let phraseConfirmPositions: number[] = [];
 let selectedNetworkId = DEFAULT_NETWORK_ID;
 /** Last displayed balance string (for Max button). */
 let lastDisplayBalance = '0';
@@ -848,23 +858,87 @@ $('form-create').addEventListener('submit', async (e) => {
     showError('create-error', 'Passwords do not match');
     return;
   }
+  const method = (document.querySelector('input[name="create-method"]:checked') as HTMLInputElement | null)?.value ?? 'phrase';
   try {
-    const { privateKeyHex } = addingAccountMode
-      ? await createAdditionalAccount(password)
-      : await createAndSaveWallet(password);
-    pendingBackupPassword = password;
-    ($('backup-key') as HTMLElement).textContent = privateKeyHex;
-    const ack = document.getElementById('backup-acknowledged') as HTMLInputElement;
-    const btnContinue = $('btn-backup-continue') as HTMLButtonElement;
-    if (ack) ack.checked = false;
-    const confirmInput = document.getElementById('backup-confirm') as HTMLInputElement | null;
-    if (confirmInput) confirmInput.value = '';
-    btnContinue.disabled = true;
-    showScreen('backup');
+    if (method === 'phrase') {
+      const { phrase } = await createWalletWithPhrase(password, addingAccountMode);
+      pendingBackupPassword = password;
+      showPhraseBackup(phrase);
+    } else {
+      const { privateKeyHex } = addingAccountMode
+        ? await createAdditionalAccount(password)
+        : await createAndSaveWallet(password);
+      pendingBackupPassword = password;
+      showKeyBackup(privateKeyHex);
+    }
   } catch (err) {
     showError('create-error', err instanceof Error ? err.message : 'Failed to create wallet');
   }
 });
+
+function resetBackupCommon(): void {
+  const ack = document.getElementById('backup-acknowledged') as HTMLInputElement | null;
+  if (ack) ack.checked = false;
+  ($('btn-backup-continue') as HTMLButtonElement).disabled = true;
+  hideError('backup-error');
+}
+
+function showKeyBackup(privateKeyHex: string): void {
+  backupMode = 'key';
+  pendingPhrase = '';
+  ($('backup-key') as HTMLElement).textContent = privateKeyHex;
+  $('backup-subtitle').textContent = 'Save this key in a safe place. Anyone with it can control your wallet.';
+  $('backup-ack-text').textContent = 'I have saved my private key in a safe place';
+  $('backup-key-block').classList.remove('hidden');
+  $('backup-key-confirm').classList.remove('hidden');
+  $('backup-phrase-block').classList.add('hidden');
+  $('backup-phrase-confirm').classList.add('hidden');
+  const confirmInput = document.getElementById('backup-confirm') as HTMLInputElement | null;
+  if (confirmInput) confirmInput.value = '';
+  resetBackupCommon();
+  showScreen('backup');
+}
+
+function showPhraseBackup(phrase: string): void {
+  backupMode = 'phrase';
+  pendingPhrase = phrase;
+  const words = phrase.split(' ');
+  phraseConfirmPositions = pickConfirmationPositions(words.length, 3);
+  $('backup-subtitle').textContent =
+    'These ' + words.length + ' words are the backup for this account. Anyone who has them controls your funds. Write them down in order and keep them offline.';
+  $('backup-ack-text').textContent = 'I have written down my recovery phrase and stored it safely';
+  const list = $('backup-phrase-words');
+  list.textContent = '';
+  words.forEach((w, i) => {
+    const li = document.createElement('li');
+    li.setAttribute('data-testid', 'wallet-phrase-word-' + (i + 1));
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = i + 1 + '.';
+    li.append(n, document.createTextNode(w));
+    list.append(li);
+  });
+  phraseConfirmPositions.forEach((pos, i) => {
+    const input = $('backup-phrase-confirm-' + i) as HTMLInputElement;
+    input.value = '';
+    input.placeholder = 'Word #' + (pos + 1);
+    input.setAttribute('aria-label', 'Word number ' + (pos + 1));
+  });
+  $('backup-key').textContent = '';
+  $('backup-key-block').classList.add('hidden');
+  $('backup-key-confirm').classList.add('hidden');
+  $('backup-phrase-block').classList.remove('hidden');
+  $('backup-phrase-confirm').classList.remove('hidden');
+  resetBackupCommon();
+  showScreen('backup');
+}
+
+function clearPhraseBackup(): void {
+  pendingPhrase = '';
+  phraseConfirmPositions = [];
+  $('backup-phrase-words').textContent = '';
+  for (let i = 0; i < 3; i++) ($('backup-phrase-confirm-' + i) as HTMLInputElement).value = '';
+}
 
 $('btn-backup-copy').addEventListener('click', async () => {
   const key = ($('backup-key') as HTMLElement).textContent;
@@ -878,10 +952,18 @@ $('btn-backup-copy').addEventListener('click', async () => {
 
 function updateBackupContinue(): void {
   const ack = document.getElementById('backup-acknowledged') as HTMLInputElement | null;
-  const typed = (document.getElementById('backup-confirm') as HTMLInputElement | null)?.value ?? '';
-  const keyHex = ($('backup-key') as HTMLElement).textContent ?? '';
-  ($('btn-backup-continue') as HTMLButtonElement).disabled = !(ack?.checked && isBackupConfirmed(keyHex, typed));
+  let confirmed: boolean;
+  if (backupMode === 'phrase') {
+    const typedWords = [0, 1, 2].map((i) => (document.getElementById('backup-phrase-confirm-' + i) as HTMLInputElement | null)?.value ?? '');
+    confirmed = isPhraseConfirmed(pendingPhrase, phraseConfirmPositions, typedWords);
+  } else {
+    const typed = (document.getElementById('backup-confirm') as HTMLInputElement | null)?.value ?? '';
+    const keyHex = ($('backup-key') as HTMLElement).textContent ?? '';
+    confirmed = isBackupConfirmed(keyHex, typed);
+  }
+  ($('btn-backup-continue') as HTMLButtonElement).disabled = !(ack?.checked && confirmed);
 }
+for (let i = 0; i < 3; i++) document.getElementById('backup-phrase-confirm-' + i)?.addEventListener('input', updateBackupContinue);
 document.getElementById('backup-acknowledged')?.addEventListener('change', updateBackupContinue);
 document.getElementById('backup-confirm')?.addEventListener('input', updateBackupContinue);
 
@@ -919,6 +1001,7 @@ async function finishBackup(): Promise<void> {
     accountId = pub;
     privateKey = priv;
     addingAccountMode = false;
+    clearPhraseBackup();
     chrome.runtime.sendMessage({
       type: 'WALLET_UNLOCK',
       accountHex: accountIdToHex(pub),
@@ -942,11 +1025,20 @@ $('btn-create-back').addEventListener('click', () => {
 // --- Import
 $('form-import').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const importMethod = (document.querySelector('input[name="import-method"]:checked') as HTMLInputElement | null)?.value ?? 'phrase';
   const hex = ($('import-key') as HTMLTextAreaElement).value.replace(/\s/g, '').replace(/^0x/i, '');
+  const phraseInput = ($('import-phrase') as HTMLTextAreaElement).value;
   const password = ($('import-password') as HTMLInputElement).value;
   const confirm = ($('import-confirm') as HTMLInputElement).value;
   hideError('import-error');
-  if (hex.length !== 64 || !/^[0-9a-fA-F]+$/.test(hex)) {
+  if (importMethod === 'phrase') {
+    try {
+      parseRecoveryPhrase(phraseInput);
+    } catch (err) {
+      showError('import-error', err instanceof Error ? err.message : 'That recovery phrase is not valid.');
+      return;
+    }
+  } else if (hex.length !== 64 || !/^[0-9a-fA-F]+$/.test(hex)) {
     showError('import-error', 'Private key must be 64 hex characters');
     return;
   }
@@ -965,7 +1057,10 @@ $('form-import').addEventListener('submit', async (e) => {
     importBtn.textContent = 'Importing…';
   }
   try {
-    if (addingAccountMode) {
+    if (importMethod === 'phrase') {
+      await importWalletFromPhrase(password, phraseInput, addingAccountMode);
+      ($('import-phrase') as HTMLTextAreaElement).value = '';
+    } else if (addingAccountMode) {
       await importAdditionalAccount(password, hex);
     } else {
       await importAndSaveWallet(password, hex);
@@ -989,7 +1084,15 @@ $('form-import').addEventListener('submit', async (e) => {
     }
   }
 });
+function syncImportMethod(): void {
+  const m = (document.querySelector('input[name="import-method"]:checked') as HTMLInputElement | null)?.value ?? 'phrase';
+  $('import-phrase').classList.toggle('hidden', m !== 'phrase');
+  $('import-key').classList.toggle('hidden', m !== 'key');
+  $('import-subtitle').textContent = m === 'phrase' ? 'Enter your 12 or 24 word recovery phrase.' : 'Enter 64-char hex private key.';
+}
+document.querySelectorAll('input[name="import-method"]').forEach((el) => el.addEventListener('change', syncImportMethod));
 $('btn-import-back').addEventListener('click', () => {
+  ($('import-phrase') as HTMLTextAreaElement).value = '';
   if (addingAccountMode) {
     addingAccountMode = false;
     void goDashboard();
@@ -1038,13 +1141,16 @@ document.getElementById('btn-settings')?.addEventListener('click', () => {
   if (document.getElementById('panel-settings')?.hasAttribute('hidden')) {
     switchTab('settings');
     void refreshConnectedSites();
+    refreshRecoveryCard();
   } else {
     revealSession.clear();
+    phraseSession.clear();
     switchTab(lastMainTab);
   }
 });
 document.getElementById('btn-settings-back')?.addEventListener('click', () => {
   revealSession.clear();
+  phraseSession.clear();
   switchTab(lastMainTab);
 });
 
@@ -1092,10 +1198,61 @@ document.getElementById('btn-reveal-key-copy')?.addEventListener('click', async 
     showError('reveal-key-error', 'Copy failed. Select the key manually.');
   }
 });
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') revealSession.clear();
+// --- Reveal recovery phrase (same rules as the private key: password re-entry, memory only, hidden by default, auto-clear, no copy button)
+const phraseSession = createRevealSession((s: RevealState) => {
+  const out = document.getElementById('reveal-phrase-output');
+  const form = document.getElementById('form-reveal-phrase');
+  const list = document.getElementById('reveal-phrase-words');
+  const toggle = document.getElementById('btn-reveal-phrase-toggle');
+  if (!out || !form || !list || !toggle) return;
+  out.classList.toggle('hidden', !s.keyHex);
+  form.classList.toggle('hidden', !!s.keyHex);
+  list.textContent = '';
+  if (s.keyHex) {
+    s.keyHex.split(' ').forEach((w, i) => {
+      const li = document.createElement('li');
+      li.setAttribute('data-testid', 'reveal-phrase-word-' + (i + 1));
+      const n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = i + 1 + '.';
+      li.append(n, document.createTextNode(s.visible ? w : '\u2022\u2022\u2022\u2022'));
+      list.append(li);
+    });
+  }
+  (list as HTMLElement).style.userSelect = s.visible ? 'text' : 'none';
+  toggle.textContent = s.visible ? 'Hide' : 'Show';
 });
-window.addEventListener('pagehide', () => revealSession.clear());
+function refreshRecoveryCard(): void {
+  const has = !!getActiveRecoveryInfo();
+  document.getElementById('reveal-recovery-phrase-none')?.classList.toggle('hidden', has);
+  document.getElementById('reveal-phrase-body')?.classList.toggle('hidden', !has);
+  hideError('reveal-phrase-error');
+  phraseSession.clear();
+}
+document.getElementById('form-reveal-phrase')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError('reveal-phrase-error');
+  const input = document.getElementById('reveal-phrase-password') as HTMLInputElement | null;
+  const password = input?.value ?? '';
+  if (input) input.value = '';
+  try {
+    phraseSession.set(await revealActiveRecoveryPhrase(password, { readPhrase: unlockActiveRecoveryPhrase }));
+  } catch (err) {
+    showError('reveal-phrase-error', err instanceof RevealError ? err.message : 'Could not show the recovery phrase.');
+  }
+});
+document.getElementById('btn-reveal-phrase-toggle')?.addEventListener('click', () => phraseSession.toggleVisible());
+document.getElementById('btn-reveal-phrase-done')?.addEventListener('click', () => phraseSession.clear());
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    revealSession.clear();
+    phraseSession.clear();
+  }
+});
+window.addEventListener('pagehide', () => {
+  revealSession.clear();
+  phraseSession.clear();
+});
 // --- Auto-lock: the background also enforces the same idle limit; this closes an idle popup that is left open.
 let autoLockMinutes = normalizeAutoLockMinutes(undefined);
 let lastInteractionAt = Date.now();
@@ -1124,6 +1281,7 @@ setInterval(() => {
 $('btn-lock').addEventListener('click', () => {
   accountId = null;
   revealSession.clear();
+  phraseSession.clear();
   privateKey = null;
   chrome.runtime.sendMessage({ type: 'WALLET_LOCK' });
   renderChoose();

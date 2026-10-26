@@ -4,6 +4,13 @@ import { useWallet } from '../context/WalletContext';
 import styles from './Welcome.module.css';
 import { ClaimNameStep } from '../components/ClaimNameStep';
 import { setPendingName } from '../storage/pendingName';
+import { RecoveryPhraseGrid } from '../components/RecoveryPhraseGrid';
+import {
+  isPhraseConfirmed,
+  normalizeMnemonicWords,
+  parseRecoveryPhrase,
+  pickConfirmationPositions,
+} from '../crypto/recoveryPhrase';
 
 export type WelcomeProps = {
   /** From dashboard while unlocked: open multi-account create/import flow */
@@ -36,6 +43,8 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
     importWallet,
     createAnotherAccount,
     importAnotherAccount,
+    createWalletWithPhrase,
+    importWalletFromPhrase,
     network,
   } = useWallet();
 
@@ -56,6 +65,16 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [copiedBackup, setCopiedBackup] = useState(false);
+  /** New accounts default to a recovery phrase; "key" keeps the classic private-key backup. */
+  const [createMethod, setCreateMethod] = useState<'phrase' | 'key'>('phrase');
+  const [importMethod, setImportMethod] = useState<'phrase' | 'key'>('phrase');
+  const [phraseInput, setPhraseInput] = useState('');
+  /** Memory only: never written to storage, logs or the URL; cleared as soon as backup is finished. */
+  const [backupPhrase, setBackupPhrase] = useState('');
+  const [confirmPositions, setConfirmPositions] = useState<number[]>([]);
+  const [confirmWords, setConfirmWords] = useState<string[]>(['', '', '']);
+  const phraseBackupWords = backupPhrase ? normalizeMnemonicWords(backupPhrase) : [];
+  const phraseConfirmed = backupPhrase ? isPhraseConfirmed(backupPhrase, confirmPositions, confirmWords) : false;
   async function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -82,8 +101,19 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
     }
     setLoading(true);
     try {
+      if (createMethod === 'phrase') {
+        const { phrase } = await createWalletWithPhrase(password, accountFlow === 'add-secondary');
+        setBackupPhrase(phrase);
+        setConfirmPositions(pickConfirmationPositions(normalizeMnemonicWords(phrase).length, 3));
+        setConfirmWords(['', '', '']);
+        setBackupKeyHex('');
+        setStep('backup');
+        setBackupAcknowledged(false);
+        return;
+      }
       const { privateKeyHex: keyHex } =
         accountFlow === 'add-secondary' ? await createAnotherAccount(password) : await createWallet(password);
+      setBackupPhrase('');
       setBackupKeyHex(keyHex);
       setStep('backup');
       setBackupAcknowledged(false);
@@ -109,6 +139,8 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
     setLoading(true);
     try {
       await unlock(password);
+      setBackupPhrase('');
+      setConfirmWords(['', '', '']);
       setAccountFlow('initial');
       if (addAccountWhileUnlocked) {
         onLeaveAddAccount?.();
@@ -130,6 +162,39 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
   async function handleImport(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (importMethod === 'phrase') {
+      let canonical: string;
+      try {
+        canonical = parseRecoveryPhrase(phraseInput);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'That recovery phrase is not valid.');
+        return;
+      }
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+      setLoading(true);
+      try {
+        await importWalletFromPhrase(password, canonical, accountFlow === 'add-secondary');
+        setPhraseInput('');
+        if (accountFlow === 'add-secondary') {
+          setAccountFlow('initial');
+          if (addAccountWhileUnlocked) {
+            onLeaveAddAccount?.();
+          }
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to import wallet');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     const hex = privateKeyHex.replace(/\s/g, '').replace(/^0x/i, '');
     if (hex.length !== 64 || !/^[0-9a-fA-F]+$/.test(hex)) {
       setError('Private key must be 64 hex characters (32 bytes)');
@@ -279,10 +344,44 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
       <div className={`${styles.wrap} ${styles.heroWrap} page-app`}>
         <div className={`${styles.card} ${styles.heroCard}`}>
           <img src={`${ASSETS}/${MASCOT_BY_STEP.backup}`} alt="" className={styles.mascot} aria-hidden />
-          <h1 className={styles.title}>Back up your private key</h1>
+          <h1 className={styles.title}>{backupPhrase ? 'Write down your recovery phrase' : 'Back up your private key'}</h1>
           <p className={styles.subtitle}>
-            Save this key in a safe place. Anyone with it can control your wallet. You won’t see it again here.
+            {backupPhrase
+              ? 'These words are the only way to get your account back if you lose this device. Write them on paper, in order, and keep them offline. Anyone who has them controls your wallet. You won’t see them again here.'
+              : 'Save this key in a safe place. Anyone with it can control your wallet. You won’t see it again here.'}
           </p>
+          {backupPhrase ? (
+            <>
+              <RecoveryPhraseGrid words={phraseBackupWords} />
+              <label className={styles.checkboxWrap}>
+                <input
+                  type="checkbox"
+                  checked={backupAcknowledged}
+                  onChange={(e) => setBackupAcknowledged(e.target.checked)}
+                  className={styles.checkbox}
+                  data-testid="wallet-backup-ack"
+                />
+                <span>I have written down my recovery phrase and stored it safely</span>
+              </label>
+              <p className={styles.hint}>To check you wrote it down correctly, type these words from your phrase:</p>
+              {confirmPositions.map((pos, i) => (
+                <input
+                  key={pos}
+                  type="text"
+                  className={styles.input}
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  placeholder={`Word #${pos + 1}`}
+                  aria-label={`Word number ${pos + 1}`}
+                  value={confirmWords[i] ?? ''}
+                  onChange={(e) => setConfirmWords((w) => w.map((x, j) => (j === i ? e.target.value : x)))}
+                  data-testid={`wallet-phrase-confirm-${i}`}
+                />
+              ))}
+            </>
+          ) : (
+          <>
           <div className={styles.backupKeyWrap}>
             <code className={styles.backupKey} data-testid="wallet-backup-key">{backupKeyHex}</code>
             <button type="button" className={styles.copyBtn} onClick={copyBackupKey}>
@@ -315,13 +414,19 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
             onChange={(e) => setBackupConfirmText(e.target.value)}
             data-testid="wallet-backup-confirm"
           />
+          </>
+          )}
           {error && <p className={styles.error}>{error}</p>}
           <button
             type="button"
             className={styles.primary}
             data-testid="wallet-backup-continue"
             onClick={handleBackupContinue}
-            disabled={loading || !backupAcknowledged || !isBackupConfirmed(backupKeyHex, backupConfirmText)}
+            disabled={
+              loading ||
+              !backupAcknowledged ||
+              (backupPhrase ? !phraseConfirmed : !isBackupConfirmed(backupKeyHex, backupConfirmText))
+            }
           >
             {loading ? 'Unlocking…' : "I've backed it up — Continue"}
           </button>
@@ -355,9 +460,36 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
           <img src={`${ASSETS}/${MASCOT_BY_STEP.create}`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>{accountFlow === 'add-secondary' ? 'Create another account' : 'Create wallet'}</h1>
           <p className={styles.subtitle}>
-            Generate a new Ed25519 keypair. Back up your key — we don’t store it on any server.
+            {createMethod === 'phrase'
+              ? 'We’ll give you 24 words to write down. They are the only way to get your account back if you lose this device — we don’t store them on any server.'
+              : 'Generate a new Ed25519 keypair. Back up your key — we don’t store it on any server.'}
           </p>
           <form onSubmit={handleCreate} className={styles.form}>
+            <fieldset style={{ border: 0, padding: 0, margin: 0, textAlign: 'left' }}>
+              <legend className={styles.hint}>How do you want to back up this account?</legend>
+              <label className={styles.checkboxWrap}>
+                <input
+                  type="radio"
+                  name="create-method"
+                  checked={createMethod === 'phrase'}
+                  onChange={() => setCreateMethod('phrase')}
+                  className={styles.checkbox}
+                  data-testid="wallet-create-method-phrase"
+                />
+                <span>Recovery phrase (24 words) — recommended</span>
+              </label>
+              <label className={styles.checkboxWrap}>
+                <input
+                  type="radio"
+                  name="create-method"
+                  checked={createMethod === 'key'}
+                  onChange={() => setCreateMethod('key')}
+                  className={styles.checkbox}
+                  data-testid="wallet-create-method-key"
+                />
+                <span>Private key only (64-character hex)</span>
+              </label>
+            </fieldset>
             <input
               type="password"
               placeholder="Password (min 8 characters)"
@@ -400,9 +532,48 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
         <img src={`${ASSETS}/${MASCOT_BY_STEP.import}`} alt="" className={styles.mascot} aria-hidden />
         <h1 className={styles.title}>{accountFlow === 'add-secondary' ? 'Import another account' : 'Import wallet'}</h1>
         <p className={styles.subtitle}>
-          Enter your 64-character hex private key (32 bytes). It will be encrypted with your password.
+          {importMethod === 'phrase'
+            ? 'Enter your 12- or 24-word recovery phrase. It is turned into your account on this device and encrypted with your password.'
+            : 'Enter your 64-character hex private key (32 bytes). It will be encrypted with your password.'}
         </p>
         <form onSubmit={handleImport} className={styles.form}>
+          <fieldset style={{ border: 0, padding: 0, margin: 0, textAlign: 'left' }}>
+            <label className={styles.checkboxWrap}>
+              <input
+                type="radio"
+                name="import-method"
+                checked={importMethod === 'phrase'}
+                onChange={() => setImportMethod('phrase')}
+                className={styles.checkbox}
+                data-testid="wallet-import-method-phrase"
+              />
+              <span>Recovery phrase</span>
+            </label>
+            <label className={styles.checkboxWrap}>
+              <input
+                type="radio"
+                name="import-method"
+                checked={importMethod === 'key'}
+                onChange={() => setImportMethod('key')}
+                className={styles.checkbox}
+                data-testid="wallet-import-method-key"
+              />
+              <span>Private key</span>
+            </label>
+          </fieldset>
+          {importMethod === 'phrase' ? (
+            <textarea
+              placeholder="word1 word2 word3 …"
+              value={phraseInput}
+              onChange={(e) => setPhraseInput(e.target.value)}
+              className={styles.textarea}
+              rows={3}
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              data-testid="wallet-import-phrase"
+            />
+          ) : (
           <textarea
             placeholder="0x... or 64 hex chars"
             value={privateKeyHex}
@@ -411,6 +582,7 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
             rows={3}
             data-testid="wallet-import-key"
           />
+          )}
           <input
             type="password"
             placeholder="Password (min 8 characters)"

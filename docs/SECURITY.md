@@ -2,7 +2,14 @@
 
 - **Keys:** generated and used only in the browser or extension. The vault is encrypted with AES-GCM using a key derived
   by PBKDF2 (310,000 iterations). Private keys are never logged or sent anywhere. The backup is the 32-byte Ed25519
-  private key as hex; the wallet asks you to retype its last 6 characters before you can continue.
+  private key as hex (accounts created as "Private key"; the wallet asks you to retype its last 6 characters) or, for
+  accounts created with a recovery phrase (the default), the 24-word BIP-39 phrase. See the next bullet.
+- **Recovery phrase:** new wallets default to a 24-word BIP-39 phrase (import accepts 12 or 24 words), derived with SLIP-0010
+  Ed25519 at `m/44'/1112492366'/<account>'/0'/0'` with an empty passphrase. The phrase is shown once at creation (you must
+  confirm three words) and can be shown again only after re-entering the wallet password; it is held in memory only,
+  hidden by default, cleared after 30 seconds or when you leave the tab, and has no copy button. The vault stores only
+  the entropy, encrypted with your wallet password (AES-GCM, PBKDF2 310,000). Accounts created before phrases existed are
+  not changed and keep their private-key backup. Details: [RECOVERY_PHRASE_DESIGN.md](RECOVERY_PHRASE_DESIGN.md).
 - **Auto-lock:** the extension locks after 15 minutes of inactivity by default (choices: never, 5, 15, 30, 60 minutes;
   Settings in the popup). The deadline is checked when the key is next needed, so no extra `alarms` permission is
   required. The web app has its own "Lock after" setting.
@@ -32,5 +39,7 @@
 - Script running in the wallet's own origin (an XSS bug) can still ask the browser to use the session key while the
   web app is unlocked, exactly as it could use an in-memory key. Auto-lock, the 12-hour session ceiling and the strict
   CSP limit that window; they do not remove it. The extension keeps its key in the service worker, not in page storage.
-- There is no mnemonic phrase yet; the backup is the raw private key. A proposal (not implemented, awaiting review) is in
-  [RECOVERY_PHRASE_DESIGN.md](RECOVERY_PHRASE_DESIGN.md).
+- A raw-key account cannot be given a recovery phrase (a phrase produces a key; it cannot be computed from an existing
+  key). To get one, add a new account with "Recovery phrase" and move funds. The recovery-phrase code has not had an
+  independent review yet (the algorithms are standard BIP-39 and SLIP-0010 and are tested against their official vectors).
+- Anyone who sees the words controls the account. The wallet cannot recover a lost phrase or password.

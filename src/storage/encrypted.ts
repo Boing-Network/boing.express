@@ -1,5 +1,5 @@
 /**
- * Encrypt/decrypt private key with user password. Uses Web Crypto AES-GCM.
+ * Encrypt/decrypt secrets with the user password. Uses Web Crypto AES-GCM (PBKDF2-SHA256, 310,000 iterations).
  * Store ciphertext in localStorage/IndexedDB; never store plaintext keys.
  */
 
@@ -33,15 +33,15 @@ function getPasswordKey(password: string, salt: Uint8Array): Promise<CryptoKey> 
   );
 }
 
-/** Encrypt private key (32 bytes) with password. Returns hex string: salt(32 hex) + iv(24 hex) + ciphertext. */
-export async function encryptPrivateKey(privateKey: Uint8Array, password: string): Promise<string> {
+/** Encrypt arbitrary bytes with a password. Returns hex: salt(32 hex) + iv(24 hex) + ciphertext. */
+export async function encryptBytes(plain: Uint8Array, password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(SALT_LEN));
   const iv = crypto.getRandomValues(new Uint8Array(IV_LEN));
   const key = await getPasswordKey(password, salt);
   const cipher = await crypto.subtle.encrypt(
     { name: ALG, iv, tagLength: 128 },
     key,
-    privateKey
+    plain
   );
   const combined = new Uint8Array(salt.length + iv.length + cipher.byteLength);
   combined.set(salt, 0);
@@ -52,8 +52,8 @@ export async function encryptPrivateKey(privateKey: Uint8Array, password: string
     .join('');
 }
 
-/** Decrypt private key from hex blob produced by encryptPrivateKey. */
-export async function decryptPrivateKey(hexBlob: string, password: string): Promise<Uint8Array> {
+/** Decrypt a hex blob produced by encryptBytes. Throws on a wrong password or tampered data. */
+export async function decryptBytes(hexBlob: string, password: string): Promise<Uint8Array> {
   if (hexBlob.length < (SALT_LEN + IV_LEN) * 2 || hexBlob.length % 2 !== 0)
     throw new Error('Invalid encrypted blob');
   const raw = new Uint8Array(hexBlob.length / 2);
@@ -67,7 +67,17 @@ export async function decryptPrivateKey(hexBlob: string, password: string): Prom
     key,
     ciphertext
   );
-  const out = new Uint8Array(dec);
+  return new Uint8Array(dec);
+}
+
+/** Encrypt private key (32 bytes) with password. Returns hex string: salt(32 hex) + iv(24 hex) + ciphertext. */
+export async function encryptPrivateKey(privateKey: Uint8Array, password: string): Promise<string> {
+  return encryptBytes(privateKey, password);
+}
+
+/** Decrypt private key from hex blob produced by encryptPrivateKey. */
+export async function decryptPrivateKey(hexBlob: string, password: string): Promise<Uint8Array> {
+  const out = await decryptBytes(hexBlob, password);
   if (out.length !== 32) throw new Error('Decrypted key must be 32 bytes');
   return out;
 }

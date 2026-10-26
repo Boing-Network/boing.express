@@ -14,7 +14,10 @@ import {
   parseVaultFromStoredJson,
   getActiveAccountEntry,
   isLegacyVaultV1,
+  vaultWithEntry,
 } from './walletVault';
+import { buildPhraseEntry, readEntryPhrase } from './recoveryVault';
+import { generateRecoveryPhrase } from '../crypto/recoveryPhrase';
 
 const STORAGE_KEY = 'boing_wallet_enc';
 
@@ -217,4 +220,38 @@ export async function removeAccountAtIndex(index: number): Promise<void> {
   if (activeIndex < 0) activeIndex = 0;
   if (activeIndex >= accounts.length) activeIndex = accounts.length - 1;
   await persistVault({ version: 2, activeIndex, accounts });
+}
+
+/** Recovery-phrase info for the active account, or null for accounts set up with a private key. */
+export function getActiveRecoveryInfo(): { words: 12 | 24 } | null {
+  const a = cacheVault ? getActiveAccountEntry(cacheVault) : null;
+  return a?.recovery ? { words: a.recovery.words } : null;
+}
+
+/** Decrypt the active account's recovery phrase (wallet password required). Throws PhraseAccountError. */
+export async function unlockActiveRecoveryPhrase(password: string): Promise<string> {
+  return readEntryPhrase(cacheVault ? getActiveAccountEntry(cacheVault) : null, password);
+}
+
+/**
+ * New account from a fresh 24-word recovery phrase (BIP-39 + SLIP-0010, see docs/RECOVERY_PHRASE_DESIGN.md).
+ * With `additional`, the account is appended to the existing vault and made active.
+ */
+export async function createWalletWithPhrase(
+  password: string,
+  additional = false
+): Promise<{ addressHex: string; phrase: string }> {
+  const phrase = generateRecoveryPhrase();
+  const v = additional ? cacheVault : null;
+  const { entry, addressHex } = await buildPhraseEntry(phrase, password, v);
+  await persistVault(vaultWithEntry(v, entry, additional ? 'append' : 'replace'));
+  return { addressHex, phrase };
+}
+
+/** Restore an account from a 12- or 24-word recovery phrase. */
+export async function importWalletFromPhrase(password: string, phrase: string, additional = false): Promise<string> {
+  const v = additional ? cacheVault : null;
+  const { entry, addressHex } = await buildPhraseEntry(phrase, password, v);
+  await persistVault(vaultWithEntry(v, entry, additional ? 'append' : 'replace'));
+  return addressHex;
 }

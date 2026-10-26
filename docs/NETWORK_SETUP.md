@@ -41,7 +41,7 @@ network you selected (`src/boing/nodeCompat.ts`):
 Both `boing_health` and `boing_getNetworkInfo` return (boing.network `docs/RPC-API-SPEC.md`):
 
 ```json
-{ "client_hints": { "min_wallet_version": "0.1.15", "recommended_wallet_version": "0.1.22", "recommended_sdk": "0.5.38", "sdk_npm_package": "@boing-network/boing-sdk", "note": "..." },
+{ "client_hints": { "min_wallet_version": "0.1.18", "recommended_wallet_version": "0.1.22", "recommended_sdk": "0.5.38", "sdk_npm_package": "@boing-network/boing-sdk", "note": "..." },
   "tx_signing": { "v2_supported": true, "domain": "BOING_TX_V2", "priority_tips_supported": true, "priority_tip_domain": "BOING_TX_PRIORITY" } }
 ```
 

@@ -41,6 +41,7 @@ const PASSWORD = 'TestWallet99!';
     await popup.getByTestId('wallet-landing-create').click();
     await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password"]').fill(PASSWORD);
     await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password-confirm"]').fill(PASSWORD);
+    await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-method-key"]').check();
     await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
     await confirmBackupInPopup(popup);
     await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();

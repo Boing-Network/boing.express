@@ -10,6 +10,7 @@ const NEWER = { client_hints: { min_wallet_version: '0.1.15', recommended_wallet
 async function importWallet(page: Page) {
   await page.goto(`${WALLET}/wallet`);
   await page.getByTestId('wallet-landing-import').click();
+  await page.getByTestId('wallet-import-method-key').check();
   await page.getByPlaceholder('0x... or 64 hex chars').fill(TEST_KEY);
   await page.getByPlaceholder('Password (min 8 characters)').fill(PASSWORD);
   await page.getByPlaceholder('Confirm password').fill(PASSWORD);

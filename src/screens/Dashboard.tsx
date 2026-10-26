@@ -26,6 +26,7 @@ import { SiteLogo } from '../components/SiteLogo';
 import { nextTabId } from '../components/tabNav';
 import { NftHoldingsPanel } from '../components/NftHoldingsPanel';
 import { RevealPrivateKeyPanel } from '../components/RevealPrivateKeyPanel';
+import { RevealRecoveryPhrasePanel } from '../components/RevealRecoveryPhrasePanel';
 import { ConnectedSitesPanel } from '../components/ConnectedSitesPanel';
 import { TokenHoldingsPanel } from '../components/TokenHoldingsPanel';
 import { TokenSendForm } from '../components/TokenSendForm';
@@ -1507,6 +1508,7 @@ export function Dashboard() {
               />
             )}
             {activeTab === 'settings' && <ConnectedSitesPanel />}
+            {activeTab === 'settings' && <RevealRecoveryPhrasePanel />}
             {activeTab === 'settings' && <RevealPrivateKeyPanel />}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>Deploy check</h2>

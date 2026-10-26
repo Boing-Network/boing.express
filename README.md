@@ -26,6 +26,7 @@ flowchart LR
 - **Assets / NFTs:** BOING balance plus reference-NFT watchlist, recent-block discovery, and `transfer_nft` (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)). Official NFT↔fungible **companion peers** are read from the on-chain registry and shown under matching collections — [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md). Optional on-chain **builder attested** signal (separate registry; read-only when surfaced) — [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md)
 - **Signing:** BLAKE3 signable hash + Ed25519; bincode layout matches `boing-primitives`
 - **Security:** Client-only key generation, password-encrypted storage (AES-GCM), keys never sent to any server
+- **Recovery phrase:** new wallets get a 24-word BIP-39 phrase (import accepts 12 or 24); SLIP-0010 Ed25519, no new dependencies. Raw-key accounts keep working unchanged. Shown again only after your password. [docs/RECOVERY_PHRASE_DESIGN.md](docs/RECOVERY_PHRASE_DESIGN.md)
 - **Extension:** Injects `window.boing` for dApp connect; Connected sites management in the popup
 
 ## 🧰 Tech stack
@@ -100,7 +101,7 @@ Recommended pre-review copy: `pnpm run build:extension:unpacked` → load **`ext
 
 ## Everyday use and safety
 
-- **Backup check:** after creating a wallet you must retype the last 6 characters of your key before continuing.
+- **Backup check:** new wallets default to a 24-word recovery phrase (BIP-39, SLIP-0010 Ed25519 path `m/44'/1112492366'/0'/0'/0'`); you must confirm three words before continuing. Choosing "Private key" instead keeps the classic check (retype the last 6 characters). Import accepts a 12 or 24 word phrase or a raw key. See [docs/RECOVERY_PHRASE_DESIGN.md](docs/RECOVERY_PHRASE_DESIGN.md).
 - **Plain-language errors:** RPC and node errors are translated (for example "insufficient balance", "nonce too low", "wrong network").
 - **Wrong-network guard:** a banner appears and broadcasting is refused when the node is on a different chain than the one you selected.
 - **Auto-lock:** the extension locks after 15 idle minutes by default (Settings).

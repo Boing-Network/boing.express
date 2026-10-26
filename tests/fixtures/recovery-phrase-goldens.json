@@ -1,0 +1,85 @@
+{
+  "_source": "Independent Python reference (hashlib PBKDF2/HMAC + cryptography Ed25519), see docs/RECOVERY_PHRASE_DESIGN.md. Entropy is a fixed byte pattern; path m/44'/1112492366'/<account>'/0'/0'.",
+  "vectors": [
+    {
+      "name": "seq24",
+      "entropy": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum bullet absurd math era live bid rhythm alien crouch range attend journey unaware",
+      "account": 0,
+      "path": "m/44'/1112492366'/0'/0'/0'",
+      "seed": "0a6d060f6242aece4b074e48e7d8166f792a9b2bb7b295fa5ac289eda7647290c3d80e7436d6e9e34e72769c06f6582192d0b57ae4a97e9e24c8972a770a57d9",
+      "privateKey": "2d8d11c826d46e0f8942d5072ee088afdc7ef185ccd3e28e030dd7c754254536",
+      "address": "0x1676d0170b299e45c05bc167244f90fc6aa02f621fa5496c363d7ec9e7beab98"
+    },
+    {
+      "name": "seq24",
+      "entropy": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum bullet absurd math era live bid rhythm alien crouch range attend journey unaware",
+      "account": 1,
+      "path": "m/44'/1112492366'/1'/0'/0'",
+      "seed": "0a6d060f6242aece4b074e48e7d8166f792a9b2bb7b295fa5ac289eda7647290c3d80e7436d6e9e34e72769c06f6582192d0b57ae4a97e9e24c8972a770a57d9",
+      "privateKey": "bb58ec6d986eebb0344581fb51b7bce7f0b246fe311991e54df569ca09daa279",
+      "address": "0x703388cd8329edcb97537ddc369383e649600870e8c03b162a5246e0d2e618f3"
+    },
+    {
+      "name": "seq12",
+      "entropy": "000102030405060708090a0b0c0d0e0f",
+      "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum buyer",
+      "account": 0,
+      "path": "m/44'/1112492366'/0'/0'/0'",
+      "seed": "3779b041fab425e9c0fd55846b2a03e9a388fb12784067bd8ebdb464c2574a05bcc7a8eb54d7b2a2c8420ff60f630722ea5132d28605dbc996c8ca7d7a8311c0",
+      "privateKey": "e622bbb80363434ca6f60bf7ea20ef14f601d654994b623d75ac7c20a03b178c",
+      "address": "0x6ad083c7f68e3edb180b8c224d9a01f8ed1ef67b0ca7cce06bd59fe7ac5c839a"
+    },
+    {
+      "name": "seq12",
+      "entropy": "000102030405060708090a0b0c0d0e0f",
+      "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum buyer",
+      "account": 1,
+      "path": "m/44'/1112492366'/1'/0'/0'",
+      "seed": "3779b041fab425e9c0fd55846b2a03e9a388fb12784067bd8ebdb464c2574a05bcc7a8eb54d7b2a2c8420ff60f630722ea5132d28605dbc996c8ca7d7a8311c0",
+      "privateKey": "4e76b40e00022b23d29ba21bb65eb3b26fabeca19d190be6ccaf379aa9dc426f",
+      "address": "0x2673201e51da2164986141abe2aa51bab4ef5dfab85dacb5c972d927075dec1f"
+    },
+    {
+      "name": "zero24",
+      "entropy": "0000000000000000000000000000000000000000000000000000000000000000",
+      "phrase": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
+      "account": 0,
+      "path": "m/44'/1112492366'/0'/0'/0'",
+      "seed": "408b285c123836004f4b8842c89324c1f01382450c0d439af345ba7fc49acf705489c6fc77dbd4e3dc1dd8cc6bc9f043db8ada1e243c4a0eafb290d399480840",
+      "privateKey": "05f73a83eae67bde115dc864d3114c722fbb31ec11f742125d5aa3dbc510c9ee",
+      "address": "0x491ad4e718c418aecbf41a6195a9a5ca20ff69606e48b430248b7347c5416b59"
+    },
+    {
+      "name": "zero24",
+      "entropy": "0000000000000000000000000000000000000000000000000000000000000000",
+      "phrase": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
+      "account": 1,
+      "path": "m/44'/1112492366'/1'/0'/0'",
+      "seed": "408b285c123836004f4b8842c89324c1f01382450c0d439af345ba7fc49acf705489c6fc77dbd4e3dc1dd8cc6bc9f043db8ada1e243c4a0eafb290d399480840",
+      "privateKey": "c4377b483084243eabdaa227bd2f60921590fd0fbac39adccb9d7949a0df76c8",
+      "address": "0xc50b5d0ec6802f6888f765300f02bcd3c5223d4503abd4bb93ec32c59bf23d0d"
+    },
+    {
+      "name": "ff12",
+      "entropy": "ffffffffffffffffffffffffffffffff",
+      "phrase": "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong",
+      "account": 0,
+      "path": "m/44'/1112492366'/0'/0'/0'",
+      "seed": "b6a6d8921942dd9806607ebc2750416b289adea669198769f2e15ed926c3aa92bf88ece232317b4ea463e84b0fcd3b53577812ee449ccc448eb45e6f544e25b6",
+      "privateKey": "f447308fce3cd0d37485d973788ec3c36669d503761e723a13c786be0105e768",
+      "address": "0xc86c9fbe6d16203c40ab1ccfbca9ecf7495e7a64c76f9bc01e6717976eff3e17"
+    },
+    {
+      "name": "ff12",
+      "entropy": "ffffffffffffffffffffffffffffffff",
+      "phrase": "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong",
+      "account": 1,
+      "path": "m/44'/1112492366'/1'/0'/0'",
+      "seed": "b6a6d8921942dd9806607ebc2750416b289adea669198769f2e15ed926c3aa92bf88ece232317b4ea463e84b0fcd3b53577812ee449ccc448eb45e6f544e25b6",
+      "privateKey": "182829e67398c517491ea32992777fdc6b4512fb92faa7bb42b71bb23281cfc3",
+      "address": "0x7890574ead6b78d93553bba1aabe9d2872e053a6357b7177eb9ea64de5a68125"
+    }
+  ]
+}

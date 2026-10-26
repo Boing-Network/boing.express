@@ -22,10 +22,9 @@ export async function skipClaimNameIfShown(popup: Page): Promise<void> {
   if (await skip.isVisible()) await skip.click();
 }
 
-/** Launch the unpacked extension with mocked RPC, create a wallet, and land on the dashboard. */
-export async function openPopupWithNewWallet(
-  mock: BoingMockOptions = {},
-  opts: { beforeClaimName?: (popup: Page) => Promise<void>; expectBalance?: string } = {}
+/** Launch the unpacked extension with mocked RPC and open the popup on the first-run screen (no wallet yet). */
+export async function openFreshPopup(
+  mock: BoingMockOptions = {}
 ): Promise<{ context: BrowserContext; popup: Page; close: () => Promise<void> }> {
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boing-e2e-redesign-'));
   const context = await chromium.launchPersistentContext(userDataDir, {
@@ -41,16 +40,6 @@ export async function openPopupWithNewWallet(
   await popup.setViewportSize({ width: 380, height: 600 });
   await popup.goto(`chrome-extension://${extensionId}/popup.html`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await expect(popup.getByTestId('wallet-landing-create')).toBeVisible({ timeout: 45_000 });
-  await popup.getByTestId('wallet-landing-create').click();
-  await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password"]').fill(E2E_PASSWORD);
-  await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password-confirm"]').fill(E2E_PASSWORD);
-  await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
-  await confirmBackupInPopup(popup);
-  await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
-  if (opts.beforeClaimName) await opts.beforeClaimName(popup);
-  else await skipClaimNameIfShown(popup);
-  await expect(popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-header-lock"]')).toBeVisible({ timeout: 45_000 });
-  await expect(popup.locator('#balance')).toHaveText(opts.expectBalance ?? '1000000', { timeout: 30_000 });
   const close = async () => {
     await Promise.race([context.close(), new Promise<void>((r) => setTimeout(r, 12_000))]);
     try {
@@ -60,6 +49,32 @@ export async function openPopupWithNewWallet(
     }
   };
   return { context, popup, close };
+}
+
+/**
+ * Launch the unpacked extension with mocked RPC, create a wallet, and land on the dashboard.
+ * Default is the classic private-key backup (what most existing specs exercise); `phrase: true` takes the
+ * recommended recovery-phrase path and returns the 24 words.
+ */
+export async function openPopupWithNewWallet(
+  mock: BoingMockOptions = {},
+  opts: { beforeClaimName?: (popup: Page) => Promise<void>; expectBalance?: string; phrase?: boolean } = {}
+): Promise<{ context: BrowserContext; popup: Page; close: () => Promise<void>; phrase: string[] }> {
+  const { context, popup, close } = await openFreshPopup(mock);
+  await popup.getByTestId('wallet-landing-create').click();
+  await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password"]').fill(E2E_PASSWORD);
+  await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password-confirm"]').fill(E2E_PASSWORD);
+  if (!opts.phrase) await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-method-key"]').check();
+  await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
+  let phrase: string[] = [];
+  if (opts.phrase) phrase = await confirmPhraseBackupInPopup(popup);
+  else await confirmBackupInPopup(popup);
+  await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
+  if (opts.beforeClaimName) await opts.beforeClaimName(popup);
+  else await skipClaimNameIfShown(popup);
+  await expect(popup.locator('#screen-dashboard:not(.hidden) [data-testid="wallet-header-lock"]')).toBeVisible({ timeout: 45_000 });
+  await expect(popup.locator('#balance')).toHaveText(opts.expectBalance ?? '1000000', { timeout: 30_000 });
+  return { context, popup, close, phrase };
 }
 
 /** Nonce of a signed Boing tx hex (bincode: u64 LE nonce first). */
@@ -92,4 +107,19 @@ export async function confirmBackupInPopup(popup: Page): Promise<void> {
   const key = ((await scope.locator('#backup-key').textContent()) ?? '').trim();
   await scope.locator('[data-testid="wallet-backup-confirm"]').fill(key.slice(-6));
   await scope.locator('[data-testid="wallet-backup-ack"]').check();
+}
+
+/** Phrase backup screen: read the 24 words, answer the 3 "which word is #N" checks, tick the acknowledgement. Returns the words. */
+export async function confirmPhraseBackupInPopup(popup: Page): Promise<string[]> {
+  const scope = popup.locator('#screen-backup:not(.hidden)');
+  await expect(scope.locator('[data-testid="wallet-phrase-words"] li').nth(23)).toBeVisible({ timeout: 45_000 });
+  const raw = await scope.locator('[data-testid="wallet-phrase-words"] li').allTextContents();
+  const words = raw.map((t) => t.replace(/^\s*\d+\.\s*/, '').trim());
+  for (let i = 0; i < 3; i++) {
+    const ph = (await scope.locator(`[data-testid="wallet-phrase-confirm-${i}"]`).getAttribute('placeholder')) ?? '';
+    const pos = Number(ph.replace(/\D/g, ''));
+    await scope.locator(`[data-testid="wallet-phrase-confirm-${i}"]`).fill(words[pos - 1] ?? '');
+  }
+  await scope.locator('[data-testid="wallet-backup-ack"]').check();
+  return words;
 }

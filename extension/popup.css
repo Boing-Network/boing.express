@@ -1019,3 +1019,19 @@ details.assets-subform > .form, details.assets-subform > .textarea { margin-top:
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
+
+/* Recovery phrase (BIP-39) */
+.method-choice { border: 0; padding: 0; margin: 0 0 0.5rem; }
+.phrase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem 0.6rem;
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+}
+.phrase-grid .n { opacity: 0.6; display: inline-block; width: 1.8em; }
+.hidden { display: none; }

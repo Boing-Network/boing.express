@@ -23,6 +23,8 @@ import {
   getActiveAccountIndex,
   createAdditionalAccount,
   importAdditionalAccount,
+  createWalletWithPhrase as storeCreateWalletWithPhrase,
+  importWalletFromPhrase as storeImportWalletFromPhrase,
 } from '../storage/walletStore';
 import { saveSession, clearSession, getSession, touchSession } from '../storage/sessionStore';
 import {
@@ -70,6 +72,10 @@ type WalletContextValue = WalletState & {
   createAnotherAccount: (password: string) => Promise<{ privateKeyHex: string }>;
   /** Append imported account and unlock it (same password). */
   importAnotherAccount: (password: string, privateKeyHex: string) => Promise<void>;
+  /** New account from a fresh recovery phrase (24 words). `additional` appends to the existing vault. */
+  createWalletWithPhrase: (password: string, additional?: boolean) => Promise<{ phrase: string }>;
+  /** Restore from a 12- or 24-word recovery phrase and unlock. */
+  importWalletFromPhrase: (password: string, phrase: string, additional?: boolean) => Promise<void>;
   lock: () => void;
   logout: () => void;
   getPrivateKey: () => Uint8Array | null;
@@ -285,6 +291,31 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     [bumpVault]
   );
 
+  const createWalletWithPhrase = useCallback(
+    async (password: string, additional = false) => {
+      const { phrase } = await storeCreateWalletWithPhrase(password, additional);
+      bumpVault();
+      return { phrase };
+    },
+    [bumpVault]
+  );
+
+  const importWalletFromPhrase = useCallback(
+    async (password: string, phrase: string, additional = false) => {
+      await storeImportWalletFromPhrase(password, phrase, additional);
+      bumpVault();
+      const [publicKey, privateKey] = await unlockWallet(password);
+      await saveSession(publicKey, privateKey);
+      setState((s) => ({
+        ...s,
+        accountId: publicKey,
+        privateKey,
+        isUnlocked: true,
+      }));
+    },
+    [bumpVault]
+  );
+
   const setLockAfterMinutes = useCallback((value: LockAfterMinutes) => {
     persistLockAfterMinutes(value);
     setLockAfterMinutesState(value);
@@ -379,6 +410,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     importWallet,
     createAnotherAccount,
     importAnotherAccount,
+    createWalletWithPhrase,
+    importWalletFromPhrase,
     lock,
     logout,
     getPrivateKey,

@@ -23,6 +23,7 @@ test.describe('.boing names (mocked RPC)', () => {
     await page.getByTestId('wallet-landing-create').click();
     await page.getByTestId('wallet-create-password').fill(PASSWORD);
     await page.getByTestId('wallet-create-password-confirm').fill(PASSWORD);
+    await page.getByTestId('wallet-create-method-key').check();
     await page.getByTestId('wallet-create-submit').click();
     const backupKey = ((await page.getByTestId('wallet-backup-key').textContent()) ?? '').trim();
     await page.getByTestId('wallet-backup-confirm').fill(backupKey.slice(-6));
@@ -58,6 +59,7 @@ test.describe('.boing names (mocked RPC)', () => {
     const skip = page.getByRole('button', { name: 'Skip intro' });
     if (await skip.isVisible().catch(() => false)) await skip.click();
     await page.getByTestId('wallet-landing-import').click();
+    await page.getByTestId('wallet-import-method-key').check();
     await page.getByPlaceholder('0x... or 64 hex chars').fill(TEST_KEY);
     await page.getByPlaceholder('Password (min 8 characters)').fill(PASSWORD);
     await page.getByPlaceholder('Confirm password').fill(PASSWORD);
@@ -94,6 +96,7 @@ test.describe('.boing names (mocked RPC)', () => {
     const skip = page.getByRole('button', { name: 'Skip intro' });
     if (await skip.isVisible().catch(() => false)) await skip.click();
     await page.getByTestId('wallet-landing-import').click();
+    await page.getByTestId('wallet-import-method-key').check();
     await page.getByPlaceholder('0x... or 64 hex chars').fill(TEST_KEY);
     await page.getByPlaceholder('Password (min 8 characters)').fill(PASSWORD);
     await page.getByPlaceholder('Confirm password').fill(PASSWORD);

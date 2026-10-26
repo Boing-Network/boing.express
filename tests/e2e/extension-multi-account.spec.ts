@@ -86,6 +86,7 @@ describePopup('Extension popup (E2E)', () => {
       await popup.getByTestId('wallet-landing-create').click();
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password"]').fill(E2E_PASSWORD);
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password-confirm"]').fill(E2E_PASSWORD);
+      await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-method-key"]').check();
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
       await confirmBackupInPopup(popup);
       await popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-continue"]').click();
@@ -101,6 +102,7 @@ describePopup('Extension popup (E2E)', () => {
       await popup.locator('#screen-add-pick:not(.hidden) [data-testid="wallet-add-pick-create"]').click();
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password"]').fill(E2E_PASSWORD);
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password-confirm"]').fill(E2E_PASSWORD);
+      await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-method-key"]').check();
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
       await expect(popup.locator('#screen-backup:not(.hidden) [data-testid="wallet-backup-ack"]')).toBeVisible({
         timeout: 20_000,
@@ -141,6 +143,7 @@ describePopup('Extension popup (E2E)', () => {
       await popup.getByTestId('wallet-landing-create').click();
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password"]').fill(E2E_PASSWORD);
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-password-confirm"]').fill(E2E_PASSWORD);
+      await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-method-key"]').check();
       await popup.locator('#screen-create:not(.hidden) [data-testid="wallet-create-submit"]').click();
       await expect(popup.locator('#backup-key')).toHaveText(/[0-9a-f]{64}/i, { timeout: 30_000 });
       const backupKey = ((await popup.locator('#backup-key').textContent()) ?? '').trim();
