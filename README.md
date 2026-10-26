@@ -82,6 +82,10 @@ Recommended pre-review copy: `pnpm run build:extension:unpacked` → load **`ext
 - **Explorer:** `https://boing.observer/account/<address>`
 - **Alignment:** [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md)
 
+## 💬 Community
+
+Questions or feedback? Join the [Boing Network Discord](https://discord.gg/K3w9nbUw4N).
+
 ## 📚 Docs in this repo
 
 | Doc | For |

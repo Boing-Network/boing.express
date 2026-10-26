@@ -215,6 +215,7 @@ export const DOCS: Record<string, Doc> = {
           <li><a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">Faucet</a> — Testnet BOING</li>
           <li><a href="https://boing.observer" target="_blank" rel="noopener noreferrer">Boing Observer</a> — Explorer</li>
           <li><a href="https://boing.network/docs/rpc-api" target="_blank" rel="noopener noreferrer">RPC API</a> — Network API docs</li>
+          <li><a href="https://discord.gg/K3w9nbUw4N" target="_blank" rel="noopener noreferrer">Discord</a> — Community chat</li>
         </ul>
         <h2>Boing Express</h2>
         <ul>
