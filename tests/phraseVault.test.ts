@@ -179,4 +179,63 @@ describe('walletStore (web localStorage) with phrases', () => {
     expect(bare(addr)).toBe(bare(g24.address));
     expect(store.listAccountSummaries()).toHaveLength(1);
   });
+
+  it('a phrase created on one profile restores on a brand-new profile (new password) to the same account and key', async () => {
+    const mem = new Map<string, string>();
+    const stub = () =>
+      vi.stubGlobal('localStorage', {
+        getItem: (k: string) => mem.get(k) ?? null,
+        setItem: (k: string, v: string) => void mem.set(k, v),
+        removeItem: (k: string) => void mem.delete(k),
+      });
+    // Profile A: create a wallet and note its address and key.
+    const a = await import('../src/storage/walletStore');
+    const created = await a.createWalletWithPhrase(PW);
+    const [pubA, privA] = await a.unlockWallet(PW);
+    const keyA = bytesToHex(privA);
+    // Profile B: nothing stored at all (fresh browser/device), restore from the words only, with a different password.
+    mem.clear();
+    vi.resetModules();
+    stub();
+    const b = await import('../src/storage/walletStore');
+    expect(b.hasStoredWallet()).toBe(false);
+    const NEW_PW = 'a different password 42';
+    const restored = await b.importWalletFromPhrase(NEW_PW, created.phrase.toUpperCase());
+    expect(bare(restored)).toBe(bare(created.addressHex));
+    const [pubB, privB] = await b.unlockWallet(NEW_PW);
+    expect(bare(accountIdToHex(pubB))).toBe(bare(accountIdToHex(pubA)));
+    expect(bytesToHex(privB)).toBe(keyA);
+    expect(b.getActiveRecoveryInfo()).toEqual({ words: 24 });
+    expect(await b.unlockActiveRecoveryPhrase(NEW_PW)).toBe(created.phrase);
+    await expect(b.unlockWallet(PW)).rejects.toBeDefined();
+  });
+
+  it('raw private-key accounts are unchanged: same storage shape, no recovery field, untouched by adding a phrase account', async () => {
+    const store = await import('../src/storage/walletStore');
+    const { addressHex, privateKeyHex } = await store.createAndSaveWallet(PW);
+    const stored = JSON.parse(localStorage.getItem('boing_wallet_enc')!) as { version: number; accounts: Record<string, unknown>[] };
+    expect(stored.version).toBe(2);
+    expect(Object.keys(stored.accounts[0]!).sort()).toEqual(['addressHex', 'encrypted']);
+    expect(store.getActiveRecoveryInfo()).toBeNull();
+    const before = JSON.stringify(stored.accounts[0]);
+
+    // Unlock still yields exactly the key that was shown at creation.
+    const [pub, priv] = await store.unlockWallet(PW);
+    expect(bytesToHex(priv)).toBe(privateKeyHex.replace(/^0x/, ''));
+    expect(bare(accountIdToHex(pub))).toBe(bare(addressHex));
+
+    // Importing a raw key account on a fresh profile also stays recovery-free.
+    await store.importAdditionalAccount(PW, '0x' + '11'.repeat(32));
+    expect(store.getActiveRecoveryInfo()).toBeNull();
+
+    // Adding a phrase account leaves the existing raw-key entry byte-for-byte as it was.
+    await store.importWalletFromPhrase(PW, g12.phrase, true);
+    const after = JSON.parse(localStorage.getItem('boing_wallet_enc')!) as { accounts: Record<string, unknown>[] };
+    expect(JSON.stringify(after.accounts[0])).toBe(before);
+    expect('recovery' in after.accounts[1]!).toBe(false);
+    expect('recovery' in after.accounts[2]!).toBe(true);
+    store.setActiveAccountIndex(0);
+    expect(store.getActiveRecoveryInfo()).toBeNull();
+    await expect(store.unlockActiveRecoveryPhrase(PW)).rejects.toThrow('no recovery phrase');
+  });
 });

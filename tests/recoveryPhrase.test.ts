@@ -105,6 +105,11 @@ describe('BIP-39 input handling', () => {
 });
 
 describe('SLIP-0010 ed25519 official vectors', () => {
+  // The SLIP-0010 spec publishes ed25519 vectors 1 and 2 only. Its other vectors are secp256k1/nist256p1/curve25519, and the
+  // "retry" vectors are nist256p1-only (ed25519 never needs a retry). So there is no official ed25519 vector 3-5 to add.
+  it('covers every official ed25519 vector in the spec (1 and 2)', () => {
+    expect(Object.keys(slip10Vectors).sort()).toEqual(['v1', 'v2']);
+  });
   for (const [name, v] of Object.entries(slip10Vectors)) {
     it(`test vector ${name}: every chain`, async () => {
       for (const [path, chainCode, priv, pub] of v.chains) {

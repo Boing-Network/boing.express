@@ -52,7 +52,7 @@ the optional field and entries without it behave as before.
 ## Verification
 
 - `tests/fixtures/bip39-vectors.json`: the official BIP-39 English vectors (12 and 24 words).
-- `tests/fixtures/slip10-ed25519-vectors.json`: the official SLIP-0010 Ed25519 test vectors 1 and 2.
+- `tests/fixtures/slip10-ed25519-vectors.json`: the official SLIP-0010 Ed25519 test vectors 1 and 2. These are all the official Ed25519 vectors: the spec has no Ed25519 vectors 3-5 (its extra vectors are nist256p1-only retry cases), so none are fabricated here.
 - `tests/fixtures/recovery-phrase-goldens.json`: Boing goldens (phrase -> path -> private key -> address).
 - `tests/recoveryPhrase.test.ts`, `tests/phraseVault.test.ts`: round trips, single-word substitutions and adjacent
   swaps rejected, length rules, vault encryption, import restores the same address, raw-key accounts untouched.
