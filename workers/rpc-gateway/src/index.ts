@@ -141,12 +141,7 @@ export default {
       return new Response(JSON.stringify({ error: 'forbidden', reason: deny }), { status: 403, headers: h });
     }
 
-    const rl = await rateLimitResponseIfExceeded(request, env);
-    if (rl) {
-      mergeCors(rl.headers, env);
-      return rl;
-    }
-
+    // Cache hits are served before rate limiting so they cost no KV write (and no upstream call).
     const cacheTtl = parseCacheTtlSeconds(env.GATEWAY_CACHE_TTL_SECONDS);
     const cacheReq = cacheTtl > 0 ? await cacheRequestForRpcBody(url.origin, parsed) : null;
     if (cacheReq) {
@@ -157,6 +152,12 @@ export default {
         mergeCors(h, env);
         return new Response(cached.body, { status: cached.status, headers: h });
       }
+    }
+
+    const rl = await rateLimitResponseIfExceeded(request, env);
+    if (rl) {
+      mergeCors(rl.headers, env);
+      return rl;
     }
 
     let upstreamRes: Response;

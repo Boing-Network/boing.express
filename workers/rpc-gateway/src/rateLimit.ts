@@ -33,7 +33,7 @@ function pruneSoftBuckets(): void {
   }
 }
 
-function checkSoftRateLimit(bucketKey: string, limit: number): boolean {
+export function checkSoftRateLimit(bucketKey: string, limit: number): boolean {
   pruneSoftBuckets();
   const now = Date.now();
   const windowMs = 60_000;
@@ -49,6 +49,28 @@ function checkSoftRateLimit(bucketKey: string, limit: number): boolean {
   return true;
 }
 
+/** After a KV failure (quota, outage), skip KV for this long and use the soft limiter instead. */
+const KV_COOLDOWN_MS = 5 * 60_000;
+let kvDisabledUntil = 0;
+let kvWarned = false;
+
+function noteKvFailure(err: unknown): void {
+  kvDisabledUntil = Date.now() + KV_COOLDOWN_MS;
+  if (!kvWarned) {
+    kvWarned = true;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`rate-limit: KV unavailable, using in-isolate limiter (${msg.slice(0, 160)})`);
+  }
+}
+
+/** Test helper: reset module state. */
+export function resetRateLimitStateForTests(): void {
+  softBuckets.clear();
+  kvDisabledUntil = 0;
+  kvWarned = false;
+}
+
+/** Throws when KV fails; the caller falls back to the soft limiter. */
 async function checkKvRateLimit(kv: KVNamespace, bucketKey: string, limit: number): Promise<boolean> {
   const minute = Math.floor(Date.now() / 60_000);
   const key = `rl:${minute}:${bucketKey}`;
@@ -65,6 +87,18 @@ async function checkKvRateLimit(kv: KVNamespace, bucketKey: string, limit: numbe
   return true;
 }
 
+/** True when the request is within the limit. Never throws: KV errors fall back to the soft limiter. */
+async function withinLimit(env: Env, id: string, limit: number): Promise<boolean> {
+  if (env.RATE_LIMIT_KV && Date.now() >= kvDisabledUntil) {
+    try {
+      return await checkKvRateLimit(env.RATE_LIMIT_KV, id, limit);
+    } catch (err) {
+      noteKvFailure(err);
+    }
+  }
+  return checkSoftRateLimit(id, limit);
+}
+
 /**
  * @returns JSON Response when rate limited, or null when allowed.
  */
@@ -72,14 +106,16 @@ export async function rateLimitResponseIfExceeded(request: Request, env: Env): P
   const limit = parsePositiveInt(env.GATEWAY_RATE_LIMIT_PER_MINUTE, 0);
   if (limit <= 0) return null;
 
-  const id = await identityTag(request);
-
-  if (env.RATE_LIMIT_KV) {
-    const ok = await checkKvRateLimit(env.RATE_LIMIT_KV, id, limit);
-    if (ok) return null;
-  } else {
-    if (checkSoftRateLimit(id, limit)) return null;
+  let ok = true;
+  try {
+    const id = await identityTag(request);
+    ok = await withinLimit(env, id, limit);
+  } catch (err) {
+    // Fail open: a limiter fault must never turn into a Worker exception (HTTP 500 / error 1101).
+    noteKvFailure(err);
+    return null;
   }
+  if (ok) return null;
 
   const body = JSON.stringify({
     error: 'rate_limited',
