@@ -1,4 +1,4 @@
-/* Boing Express — Aqua Personal theme (Design System variant)
+/* Boing Express — shared Boing theme (deep navy + electric blue)
    See docs/DESIGN_SYSTEM.md and boing-design-themes/express/index.html
    Breakpoints: >1024px full desktop, ≤1024px reduced columns, ≤640px single column / compact nav
 */
@@ -6,7 +6,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
 
 /* ============================================================
-   BOING EXPRESS — AQUA PERSONAL DESIGN TOKENS
+   BOING EXPRESS — DESIGN TOKENS (shared Boing palette)
    Source: docs/DESIGN_SYSTEM.md, Boing Design System — Site Variants
    ============================================================ */
 :root {
@@ -15,43 +15,57 @@
   --bp-mobile: 640px;
 
   /* Core brand (shared with all Boing sites) */
-  --boing-black: #050c18;
-  --boing-navy: #0a1628;
-  --boing-navy-mid: #0d1f3c;
-  --boing-navy-light: #122244;
+  --boing-black: #050A1A;
+  --boing-navy: #0A1128;
+  --boing-navy-mid: #101A38;
+  --boing-navy-light: #18244A;
 
-  /* Express accent palette — warm teal-cyan, trust-forward */
-  --express-primary: #00e8c8;
-  --express-primary-glow: rgba(0, 232, 200, 0.25);
-  --express-secondary: #00b4d8;
-  --express-accent: #48cae4;
-  --express-warm: #0096c7;
-  --express-soft: #90e0ef;
-  --trust-green: #2dd4bf;
-  --trust-green-glow: rgba(45, 212, 191, 0.2);
+  /* Unified Boing tokens (identical in boing.network, boing.express, boing.observer, boing.finance) */
+  --boing-navy-950: #050A1A;
+  --boing-navy-900: #0A1128;
+  --boing-navy-800: #101A38;
+  --boing-navy-700: #18244A;
+  --boing-line: rgba(120, 150, 220, 0.18);
+  --boing-accent: #3B8CFF;
+  --boing-accent-soft: #8DB8FF;
+  --boing-accent-ink: #040814;
+  --boing-text: #F0F4F8;
+  --boing-success: #34D399;
+  --boing-warning: #FBBF24; /* testnet label only */
+  --boing-danger: #F87171;
+
+  /* Express accent palette — electric blue on deep navy (token names kept from the earlier teal theme) */
+  --express-primary: #3B8CFF;
+  --express-primary-glow: rgba(59, 140, 255, 0.25);
+  --express-secondary: #2563EB;
+  --express-accent: #8DB8FF;
+  --express-warm: #2563EB;
+  --express-soft: #8DB8FF;
+  --trust-green: #34D399;
+  --trust-green-glow: rgba(52, 211, 153, 0.2);
   --shield-gold: #fbbf24;
-  --purple-mid: #7c3aed;
-  --purple-light: #a78bfa;
-  --neon-green: #00ff88;
+  --purple-mid: #2563EB;
+  --purple-light: #8DB8FF;
+  --neon-green: #34D399;
 
   /* Text */
-  --text-primary: #f0f9ff;
+  --text-primary: #F0F4F8;
   --text-secondary: #94a3b8;
   --text-muted: #8b9bb3; /* 5.8:1 on --boing-navy-mid (was #64748b, 3.5:1: failed WCAG AA for small hint text) */
   --text-accent: var(--express-primary);
 
   /* Cards & surfaces */
-  --card-bg: rgba(10, 22, 40, 0.72);
-  --card-border: rgba(0, 232, 200, 0.18);
-  --card-border-hover: rgba(0, 232, 200, 0.45);
-  --card-glow: rgba(0, 232, 200, 0.08);
-  --glass-bg: rgba(13, 31, 60, 0.6);
-  --glass-border: rgba(0, 180, 216, 0.22);
-  --nav-bg: rgba(5, 12, 24, 0.85);
-  --nav-border: rgba(0, 232, 200, 0.12);
+  --card-bg: rgba(10, 17, 40, 0.72);
+  --card-border: rgba(59, 140, 255, 0.18);
+  --card-border-hover: rgba(59, 140, 255, 0.45);
+  --card-glow: rgba(59, 140, 255, 0.08);
+  --glass-bg: rgba(16, 26, 56, 0.6);
+  --glass-border: rgba(37, 99, 235, 0.22);
+  --nav-bg: rgba(5, 10, 26, 0.85);
+  --nav-border: rgba(59, 140, 255, 0.12);
 
   /* Shadows */
-  --shadow-teal: 0 0 24px rgba(0, 232, 200, 0.18);
+  --shadow-teal: 0 0 24px rgba(59, 140, 255, 0.18);
   --shadow-card: 0 4px 32px rgba(0, 0, 0, 0.4);
 
   /* Typography — Comfortaa site-wide (matches extension) */
@@ -88,18 +102,18 @@
   --mascot-yellow: #ffe000;
   --glow-cyan: var(--express-primary-glow);
   --glow-cyan-subtle: var(--card-glow);
-  --hex-grid-stroke: rgba(0, 232, 200, 0.06);
-  --glow-cyan-soft: rgba(0, 232, 200, 0.15);
-  --glow-blue: rgba(0, 180, 216, 0.35);
-  --accent-cyan-subtle: rgba(0, 180, 216, 0.1);
-  --overlay-from: rgba(5, 12, 24, 0.3);
-  --overlay-to: rgba(5, 12, 24, 0.6);
-  --overlay-mid: rgba(5, 12, 24, 0.4);
-  --overlay-light: rgba(5, 12, 24, 0.25);
-  --overlay-heavy: rgba(5, 12, 24, 0.5);
-  --overlay-radial: rgba(13, 31, 60, 0.15);
+  --hex-grid-stroke: rgba(59, 140, 255, 0.06);
+  --glow-cyan-soft: rgba(59, 140, 255, 0.15);
+  --glow-blue: rgba(37, 99, 235, 0.35);
+  --accent-cyan-subtle: rgba(37, 99, 235, 0.1);
+  --overlay-from: rgba(5, 10, 26, 0.3);
+  --overlay-to: rgba(5, 10, 26, 0.6);
+  --overlay-mid: rgba(5, 10, 26, 0.4);
+  --overlay-light: rgba(5, 10, 26, 0.25);
+  --overlay-heavy: rgba(5, 10, 26, 0.5);
+  --overlay-radial: rgba(16, 26, 56, 0.15);
   --glow-gold: rgba(251, 191, 36, 0.35);
-  --glow-purple: rgba(124, 58, 237, 0.35);
+  --glow-purple: rgba(37, 99, 235, 0.35);
   --shadow: rgba(0, 0, 0, 0.35);
   --shadow-hover: rgba(0, 0, 0, 0.45);
   --font-sans: var(--font-body);
@@ -126,24 +140,24 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --success: var(--trust-green);
   --danger: #f87171; /* AA (>=4.5:1) on every dark surface (was #ef4444: 4.4:1 on navy-mid) */
-  --express-primary-dashed: rgba(0, 232, 200, 0.5);
+  --express-primary-dashed: rgba(59, 140, 255, 0.5);
 }
 
 /* Page variants (data-page): subtle accent shift per section — design system */
 [data-page="wallet"] {
   --express-primary: var(--trust-green);
   --express-primary-glow: var(--trust-green-glow);
-  --express-primary-dashed: rgba(45, 212, 191, 0.5);
-  --card-border: rgba(45, 212, 191, 0.18);
-  --card-border-hover: rgba(45, 212, 191, 0.45);
+  --express-primary-dashed: rgba(52, 211, 153, 0.5);
+  --card-border: rgba(52, 211, 153, 0.18);
+  --card-border-hover: rgba(52, 211, 153, 0.45);
 }
 [data-page="docs"],
 [data-page="legal"] {
   --express-primary: var(--express-secondary);
-  --express-primary-glow: rgba(0, 180, 216, 0.25);
-  --express-primary-dashed: rgba(0, 180, 216, 0.5);
-  --card-border: rgba(0, 180, 216, 0.18);
-  --card-border-hover: rgba(0, 180, 216, 0.45);
+  --express-primary-glow: rgba(37, 99, 235, 0.25);
+  --express-primary-dashed: rgba(37, 99, 235, 0.5);
+  --card-border: rgba(37, 99, 235, 0.18);
+  --card-border-hover: rgba(37, 99, 235, 0.45);
 }
 
 /* Subtle animations — respect reduced motion */
@@ -231,7 +245,7 @@ html {
 
 body {
   /* Base slab (matches engraved scene — see EngraveSceneBackdrop) */
-  background-color: #06080c;
+  background-color: #050A1A;
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -372,7 +386,7 @@ button[data-variant="primary"] {
 .btn-primary:hover,
 button[data-variant="primary"]:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 32px rgba(0, 232, 200, 0.55), 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 32px rgba(59, 140, 255, 0.55), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 /* === SECONDARY BUTTON (Aqua Personal) === */
@@ -380,7 +394,7 @@ button[data-variant="primary"]:hover {
 button[data-variant="secondary"] {
   background-color: transparent;
   color: var(--express-primary);
-  border: 1.5px dashed rgba(0, 232, 200, 0.5);
+  border: 1.5px dashed rgba(59, 140, 255, 0.5);
   border-radius: var(--radius-pill);
   padding: 14px 28px;
   cursor: pointer;
@@ -389,7 +403,7 @@ button[data-variant="secondary"] {
 
 .btn-secondary:hover,
 button[data-variant="secondary"]:hover {
-  background-color: rgba(0, 232, 200, 0.08);
+  background-color: rgba(59, 140, 255, 0.08);
   border-color: var(--express-primary);
   box-shadow: 0 0 12px var(--express-primary-glow);
 }
@@ -468,7 +482,7 @@ input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--express-primary);
-  box-shadow: 0 0 0 3px rgba(0, 232, 200, 0.12);
+  box-shadow: 0 0 0 3px rgba(59, 140, 255, 0.12);
 }
 input:focus-visible,
 textarea:focus-visible,

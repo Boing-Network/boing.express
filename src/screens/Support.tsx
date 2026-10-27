@@ -14,7 +14,7 @@ export function Support() {
 
         <article className={styles.article}>
           <p>
-            Boing Express is the non-custodial wallet for Boing Network. Use this page to find help,
+            Boing Express is a non-custodial wallet designed for the Boing ecosystem. Use this page to find help,
             docs, and links for the incentivized testnet and beyond.
           </p>
 

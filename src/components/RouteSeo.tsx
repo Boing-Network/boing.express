@@ -3,9 +3,9 @@ import { useLocation } from 'react-router-dom';
 import { DOCS } from '../screens/docs/docContent';
 
 const SITE = 'https://boing.express';
-const HOME_TITLE = 'Boing Express — Non-Custodial Wallet for Boing Network | boing.express';
+const HOME_TITLE = 'Boing Express — Your gateway to Boing | boing.express';
 const HOME_DESC =
-  'Boing Express is the official non-custodial wallet for Boing Network. Create or import a wallet, send and receive BOING, use the testnet faucet. The DeFi that always bounces back.';
+  'Boing Express is a non-custodial wallet designed for the Boing ecosystem. Create or import a wallet, get testnet BOING, send and receive, and connect to apps. Public testnet — mainnet not live.';
 
 function setNamedMeta(name: string, content: string) {
   let el = document.querySelector(`meta[name="${name}"]`);
@@ -44,7 +44,7 @@ function seoForPath(pathname: string): { title: string; description: string; can
     return {
       title: 'Wallet | Boing Express',
       description:
-        'Create or import a non-custodial Boing Express wallet. Send and receive BOING on Boing Network.',
+        'Create or import a non-custodial Boing Express wallet. Get testnet BOING, send and receive on the Boing public testnet.',
       canonicalPath: '/wallet',
     };
   }
@@ -55,7 +55,7 @@ function seoForPath(pathname: string): { title: string; description: string; can
     return {
       title: doc ? `${doc.title} | Boing Express Docs` : 'Docs | Boing Express',
       description:
-        'Boing Express wallet documentation: getting started, security, browser extension, QA, and FAQ.',
+        'Boing Express wallet documentation: getting started, security, browser extension, the Boing Quality Gate, and FAQ.',
       canonicalPath: path === '/docs' ? '/docs' : `/docs/${slug}`,
     };
   }
@@ -71,7 +71,7 @@ function seoForPath(pathname: string): { title: string; description: string; can
   if (path === '/support') {
     return {
       title: 'Support | Boing Express',
-      description: 'Get help with Boing Express, the official non-custodial wallet for Boing Network.',
+      description: 'Get help with Boing Express, a non-custodial wallet designed for the Boing ecosystem.',
       canonicalPath: '/support',
     };
   }
@@ -79,7 +79,7 @@ function seoForPath(pathname: string): { title: string; description: string; can
   if (path === '/terms') {
     return {
       title: 'Terms of Use | Boing Express',
-      description: 'Terms of use for Boing Express, the official non-custodial wallet for Boing Network.',
+      description: 'Terms of use for Boing Express, a non-custodial wallet designed for the Boing ecosystem.',
       canonicalPath: '/terms',
     };
   }

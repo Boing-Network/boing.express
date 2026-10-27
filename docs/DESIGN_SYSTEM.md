@@ -1,6 +1,7 @@
-# Boing Design System — Express (Aqua Personal)
+# Boing Design System — Express
 
-> 👋 **Everyday users:** the look is dark, teal, Comfortaa — same family as boing.network.  
+> **Rebrand note:** Express now uses the shared Boing palette (deep navy + electric blue `#3B8CFF`, tokens listed in `src/index.css` under "Unified Boing tokens" and in boing.network `BRAND.md`). Older sections below that mention teal / "Aqua Personal" describe the previous theme; token *names* such as `--express-primary` were kept, their values changed.  
+> 👋 **Everyday users:** the look is dark navy with one electric-blue accent, Comfortaa — same family as boing.network.  
 > 🛠️ **Developers:** tokens in `src/index.css`. This is the **Aqua Personal** variant. Do not invent a fourth palette.  
 > 🛰️ **Operators:** n/a — visual system only.
 
@@ -28,7 +29,7 @@ The Boing Design System is **one foundational theme with three variants** — on
 
 | Site | Variant name | Personality | Primary accent(s) |
 |------|----------------|-------------|--------------------|
-| **boing.express** | **Aqua Personal** | Personal · Secure · Approachable · Trustworthy | #00e8c8 warm teal-cyan |
+| **boing.express** | **Your gateway to Boing** | Personal · Secure · Approachable · Evidence-led | #3B8CFF electric blue |
 | **boing.finance** | **Deep Trade** | Professional · Data-driven · Dynamic · Powerful | #00e5ff electric cyan + #00ff88 profit green |
 | **boing.network** | **Cosmic Foundation** | Authoritative · Technical · Epic · Foundational | #7c3aed deep violet + #06b6d4 cosmic cyan |
 
@@ -46,7 +47,7 @@ Shared across all three: dark base (boing-black, boing-navy), glassmorphism card
 - **Typography (boing.express):** Comfortaa (300–700) for display, body, and code tokens (`--font-display`, `--font-body`, `--font-mono`). Other Boing properties may use different stacks per their variant guides.
 - **Background system:** Base gradient → structural layer (grid/nebula/caustics) → star field → shooting stars → atmospheric glow.
 - **Cards:** Glassmorphism (backdrop blur, semi-transparent background, 1px accent border, hover brighten).
-- **Tagline:** “Authentic. Decentralized. Optimal. Quality-Assured.”
+- **Tagline:** “Boing Network — Quality, enforced by the protocol.” (Express line: “Your gateway to Boing”)
 - **Six pillars:** Security, Scalability, Decentralization, Authenticity, Transparency, Quality Assurance.
 
 ---
@@ -59,12 +60,12 @@ Shared across all three: dark base (boing-black, boing-navy), glassmorphism card
 
 | Token | Value | Role |
 |-------|--------|------|
-| `--express-primary` | #00e8c8 | Primary CTA, active states, borders |
+| `--express-primary` | #3B8CFF | Primary CTA, active states, borders |
 | `--express-secondary` | #00b4d8 | Secondary elements, gradients |
 | `--express-accent` | #48cae4 | Highlights, hover |
 | `--express-warm` | #0096c7 | Deeper trust-blue contrast |
 | `--express-soft` | #90e0ef | Soft pastel accents |
-| `--trust-green` | #2dd4bf | Security / “safe” indicators |
+| `--trust-green` | #34D399 | Security / “safe” indicators |
 | `--shield-gold` | #fbbf24 | Premium / security badges |
 
 **Background character:** Underwater caustics, warm teal-cyan shooting stars, calm “deep ocean at night” feel.

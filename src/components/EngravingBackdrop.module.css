@@ -6,8 +6,8 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  --stone-deep: #06080c;
-  --stone-mid: #0c1018;
+  --stone-deep: #050A1A;
+  --stone-mid: #0A1128;
   --stone-vein: #121a24;
 }
 
@@ -221,7 +221,7 @@
 }
 
 .neonI {
-  --neon-c: #9f8fff;
+  --neon-c: #8DB8FF;
   left: 42%;
   bottom: 8%;
   --neon-dur: 3.6s;

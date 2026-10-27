@@ -2,8 +2,8 @@
   width: 100%;
   padding: 0.45rem 1rem;
   text-align: center;
-  background: color-mix(in srgb, var(--express-primary, #00e8c8) 10%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--express-primary, #00e8c8) 22%, transparent);
+  background: color-mix(in srgb, var(--express-primary, #3B8CFF) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--express-primary, #3B8CFF) 22%, transparent);
   position: relative;
   z-index: 1001;
 }
@@ -17,7 +17,7 @@
 }
 
 .link {
-  color: var(--express-primary, #00e8c8);
+  color: var(--express-primary, #3B8CFF);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;

@@ -116,13 +116,13 @@ After every code change, run `pnpm run build:extension` then `pnpm run prepare:e
 **Short description (132 chars max):**
 
 ```
-Boing Express — the wallet for Boing Network. Send and receive BOING, non-custodial, testnet faucet.
+Boing Express — your gateway to Boing. A non-custodial wallet for the Boing public testnet: get test BOING, send, receive.
 ```
 
 **Detailed description:**
 
 ```
-Boing Express is the wallet for Boing Network — non-custodial; your keys never leave your device.
+Boing Express is a non-custodial wallet designed for the Boing ecosystem. Your keys never leave your device. Boing is in public testnet; mainnet is not live.
 
 What you can do:
 • Create a new wallet or import an existing one with a 64-character hex private key

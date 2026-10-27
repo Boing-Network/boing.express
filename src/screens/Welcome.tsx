@@ -232,7 +232,7 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
         <div className={`${styles.card} ${styles.heroCard}`}>
           <img src={`${ASSETS}/${MASCOT_BY_STEP.choose}`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>Welcome to Boing Express</h1>
-          <p className={styles.subtitle}>Your non-custodial wallet for Boing Network</p>
+          <p className={styles.subtitle}>Your gateway to Boing</p>
           <div className={styles.actions}>
             <button type="button" className={`${styles.primary} ${styles.heroPrimary}`} data-testid="wallet-landing-create" onClick={() => setStep('create')}>
               Create New Wallet
@@ -248,6 +248,7 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
             </svg>
             Your keys never leave your device
           </p>
+          <p className={styles.testnetNote} data-testid="wallet-testnet-note">Public testnet — mainnet not live</p>
         </div>
       </div>
     );

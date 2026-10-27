@@ -35,7 +35,7 @@
   display: block;
   padding: 8px 4px;
   border-radius: 10px;
-  border: 1px solid rgba(0, 229, 255, 0.4);
+  border: 1px solid rgba(59, 140, 255, 0.4);
   background: transparent;
   color: rgba(230, 247, 255, 0.92);
   font-size: 0.78rem;
@@ -43,9 +43,9 @@
   text-align: center;
 }
 .radio:checked + .pill {
-  border-color: rgba(0, 229, 255, 0.9);
-  background: rgba(0, 229, 255, 0.14);
-  color: #8ff5ff;
+  border-color: rgba(59, 140, 255, 0.9);
+  background: rgba(59, 140, 255, 0.14);
+  color: #8DB8FF;
 }
 .radio:focus-visible + .pill {
   outline: 2px solid #ffffff;
@@ -73,9 +73,9 @@
   width: 100%;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(0, 229, 255, 0.45);
+  border: 1px solid rgba(59, 140, 255, 0.45);
   background: rgba(0, 0, 0, 0.25);
-  color: #e6f7ff;
+  color: #E8F0FF;
   font: inherit;
   font-size: 0.9rem;
 }

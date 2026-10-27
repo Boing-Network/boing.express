@@ -1,4 +1,4 @@
-/* Boing Network theme — outerspace-oceanic (Comfortaa, Primary #00E5CC, Dark #0A0E1A) */
+/* Boing Network theme — outerspace-oceanic (Comfortaa, Primary #3B8CFF, Dark #0A1128) */
 
 @font-face {
   font-family: 'Comfortaa';
@@ -37,24 +37,38 @@
 }
 
 :root {
-  --bg: #0A0E1A;
+  --bg: #0A1128;
   --surface: #12182999;
-  --surface-elevated: #1a2240;
-  --border: rgba(0, 229, 204, 0.2);
+  --surface-elevated: #18244A;
+  --border: rgba(59, 140, 255, 0.2);
   --text: #f8fafc;
   --text-secondary: #94a3b8;
-  --muted: #64748b;
-  --primary-color: #00E5CC;
+  --muted: #8b9bb3; /* AA on --bg and --surface-elevated (was #64748b, 3.3:1) */
+  --primary-color: #3B8CFF;
   --secondary-color: #00B4FF;
-  --accent-neon: #00E5CC;
-  --accent-glow: rgba(0, 229, 204, 0.3);
-  --danger: #ef4444;
+  --accent-neon: #3B8CFF;
+  --accent-glow: rgba(59, 140, 255, 0.3);
+  --danger: #f87171; /* AA for text on --surface-elevated (was #ef4444, 4.1:1) */
   --success: #10b981;
   --radius: 1rem;
   --radius-sm: 0.5rem;
   --font: 'Comfortaa', system-ui, sans-serif;
   --transition: 0.2s ease;
   --popup-width: 380px;
+
+  /* Unified Boing tokens (identical in boing.network, boing.express, boing.observer, boing.finance) */
+  --boing-navy-950: #050A1A;
+  --boing-navy-900: #0A1128;
+  --boing-navy-800: #101A38;
+  --boing-navy-700: #18244A;
+  --boing-line: rgba(120, 150, 220, 0.18);
+  --boing-accent: #3B8CFF;
+  --boing-accent-soft: #8DB8FF;
+  --boing-accent-ink: #040814;
+  --boing-text: #F0F4F8;
+  --boing-success: #34D399;
+  --boing-warning: #FBBF24; /* testnet label only */
+  --boing-danger: #F87171;
 }
 
 @keyframes fadeIn {
@@ -152,7 +166,7 @@ html[data-surface='window'] #app {
 .logo-mark {
   display: block;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 6px rgba(0, 232, 200, 0.3));
+  filter: drop-shadow(0 0 6px rgba(59, 140, 255, 0.3));
 }
 
 .dashboard-header {
@@ -224,7 +238,7 @@ html[data-surface='window'] #app {
 
 .btn-icon:hover {
   color: var(--accent-neon);
-  border-color: rgba(0, 229, 204, 0.4);
+  border-color: rgba(59, 140, 255, 0.4);
   transform: scale(1.05);
 }
 
@@ -270,7 +284,7 @@ html[data-surface='window'] #app {
 
 .tab-btn:hover {
   color: var(--text-secondary);
-  background: rgba(0, 229, 204, 0.06);
+  background: rgba(59, 140, 255, 0.06);
 }
 
 .tab-btn.active {
@@ -360,7 +374,7 @@ html[data-surface='window'] #app {
 .assets-collectibles {
   margin-top: 4px;
   padding-top: 14px;
-  border-top: 1px solid rgba(0, 229, 204, 0.18);
+  border-top: 1px solid rgba(59, 140, 255, 0.18);
 }
 
 .assets-subform {
@@ -374,8 +388,8 @@ html[data-surface='window'] #app {
 }
 
 .balance-hero {
-  background: linear-gradient(145deg, rgba(0, 229, 204, 0.08) 0%, rgba(0, 180, 255, 0.04) 100%);
-  border: 1px solid rgba(0, 229, 204, 0.25);
+  background: linear-gradient(145deg, rgba(59, 140, 255, 0.08) 0%, rgba(37, 99, 235, 0.04) 100%);
+  border: 1px solid rgba(59, 140, 255, 0.25);
   border-radius: 10px;
   margin-bottom: 14px;
   padding: 16px;
@@ -463,7 +477,7 @@ html[data-surface='window'] #app {
   justify-content: center;
   overflow: hidden;
   border: 1px solid var(--border);
-  background: rgba(0, 229, 204, 0.06);
+  background: rgba(59, 140, 255, 0.06);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -675,20 +689,20 @@ html[data-surface='window'] #app {
 .btn-primary {
   padding: 12px 18px;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-  color: #0A0E1A;
+  color: #0A1128;
   border: none;
   border-radius: var(--radius-sm);
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
   transition: filter var(--transition), transform var(--transition), box-shadow var(--transition);
-  box-shadow: 0 2px 12px rgba(0, 229, 204, 0.25);
+  box-shadow: 0 2px 12px rgba(59, 140, 255, 0.25);
 }
 
 .btn-primary:hover {
   filter: brightness(1.08);
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 229, 204, 0.35);
+  box-shadow: 0 4px 16px rgba(59, 140, 255, 0.35);
 }
 
 .btn-primary:active { transform: translateY(0); }
@@ -719,9 +733,9 @@ html[data-surface='window'] #app {
 
 .btn-small {
   padding: 8px 12px;
-  background: rgba(0, 229, 204, 0.1);
+  background: rgba(59, 140, 255, 0.1);
   color: var(--accent-neon);
-  border: 1px solid rgba(0, 229, 204, 0.3);
+  border: 1px solid rgba(59, 140, 255, 0.3);
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
@@ -730,7 +744,7 @@ html[data-surface='window'] #app {
 }
 
 .btn-small:hover {
-  background: rgba(0, 229, 204, 0.18);
+  background: rgba(59, 140, 255, 0.18);
   border-color: var(--accent-neon);
   transform: scale(1.02);
 }
@@ -760,8 +774,8 @@ html[data-surface='window'] #app {
 }
 
 .card:hover {
-  border-color: rgba(0, 229, 204, 0.35);
-  box-shadow: 0 4px 20px rgba(0, 229, 204, 0.06);
+  border-color: rgba(59, 140, 255, 0.35);
+  box-shadow: 0 4px 20px rgba(59, 140, 255, 0.06);
 }
 
 .label {
@@ -896,7 +910,7 @@ details.assets-subform > .form, details.assets-subform > .textarea { margin-top:
 .segmented { display: flex; gap: 4px; padding: 3px; margin: 0 0 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .segmented-btn { flex: 1; min-width: 0; padding: 7px 4px; background: transparent; border: none; border-radius: 6px; color: var(--muted); font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: color var(--transition), background var(--transition); }
 .segmented-btn:hover { color: var(--text-secondary); }
-.segmented-btn.active { background: rgba(0, 229, 204, 0.14); color: var(--accent-neon); }
+.segmented-btn.active { background: rgba(59, 140, 255, 0.14); color: var(--accent-neon); }
 .transfer-pane .select { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
 .nft-pick-list { max-height: 160px; overflow-y: auto; margin: 0 0 6px; }
 .nft-pick-row label { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px; color: var(--text-secondary); cursor: pointer; overflow-wrap: anywhere; }
@@ -922,16 +936,16 @@ details.assets-subform > .form, details.assets-subform > .textarea { margin-top:
 
 /* Opening screens (ref: welcome card) */
 .hero-screen { min-height: 470px; display: flex; align-items: center; justify-content: center; margin: -8px -12px 0; padding: 18px 12px;
-  background: radial-gradient(ellipse at center, rgba(2,8,20,0.3) 0%, rgba(2,8,20,0.85) 72%), url('images/welcome-bg.webp') center 25% / cover no-repeat, #020814; }
+  background: radial-gradient(ellipse at center, rgba(4, 8, 20,0.3) 0%, rgba(4, 8, 20,0.85) 72%), url('images/welcome-bg.webp') center 25% / cover no-repeat, #040814; }
 .hero-screen.hidden { display: none; }
-.hero-card { width: 100%; text-align: center; padding: 20px 16px 16px; border-radius: 16px; border: 1.5px solid rgba(0,229,255,0.7);
-  background: rgba(4,12,26,0.9); box-shadow: 0 0 24px rgba(0,229,255,0.18); }
+.hero-card { width: 100%; text-align: center; padding: 20px 16px 16px; border-radius: 16px; border: 1.5px solid rgba(59, 140, 255,0.7);
+  background: rgba(4,12,26,0.9); box-shadow: 0 0 24px rgba(59, 140, 255,0.18); }
 .hero-card .form { text-align: left; }
 .hero-mascot { width: 104px; height: 104px; object-fit: contain; display: block; margin: 0 auto 6px; }
-.hero-title { margin: 0 0 4px; font-size: 1.3rem; font-weight: 700; color: #e6f7ff; }
+.hero-title { margin: 0 0 4px; font-size: 1.3rem; font-weight: 700; color: #E8F0FF; }
 .hero-subtitle { margin: 0 0 16px; color: rgba(230,247,255,0.7); font-size: 0.9rem; }
-.btn-hero { background: linear-gradient(90deg,#00e5ff,#22d3ee) !important; color: #001018 !important; font-weight: 800; border: 0 !important; }
-.btn-hero-outline { background: transparent !important; border: 1.5px solid rgba(0,229,255,0.8) !important; color: #7df3ff !important; font-weight: 700; }
+.btn-hero { background: linear-gradient(90deg,#3B8CFF,#3B8CFF) !important; color: #040814 !important; font-weight: 800; border: 0 !important; }
+.btn-hero-outline { background: transparent !important; border: 1.5px solid rgba(59, 140, 255,0.8) !important; color: #8DB8FF !important; font-weight: 700; }
 .hero-keys { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 14px 0 0; font-size: 0.8rem; color: rgba(230,247,255,0.65); }
 .token-native .token-balance { font-weight: 700; }
 .btn-scan { white-space: nowrap; }
@@ -992,7 +1006,7 @@ details.assets-subform > .form, details.assets-subform > .textarea { margin-top:
   width: 100%;
   padding: 12px 18px;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-  color: #0a0e1a;
+  color: #0A1128;
   border: none;
   font-weight: 700;
 }
@@ -1003,3 +1017,37 @@ details.assets-subform > .form, details.assets-subform > .textarea { margin-top:
 }
 #claim-name-root button:disabled,
 #names-root button:disabled { opacity: 0.6; cursor: not-allowed; }
+.compat-banner .compat-dismiss {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  font: inherit;
+  font-size: 0.75rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.compat-banner .compat-dismiss:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Recovery phrase (BIP-39) */
+.method-choice { border: 0; padding: 0; margin: 0 0 0.5rem; }
+.phrase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem 0.6rem;
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+}
+.phrase-grid .n { opacity: 0.6; display: inline-block; width: 1.8em; }
+.hidden { display: none; }
+
+.hero-testnet { display: inline-flex; align-self: center; margin: 10px auto 0; padding: 3px 10px; border: 1px solid rgba(251, 191, 36, 0.45); border-radius: 999px; font-size: 0.72rem; font-weight: 600; color: var(--boing-warning); background: rgba(251, 191, 36, 0.08); }
