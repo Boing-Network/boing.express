@@ -65,6 +65,8 @@ test.describe('recovery phrase (BIP-39 24 words, SLIP-0010 ed25519)', () => {
     await finishOnboarding(page);
     const me = await address(page);
     expect(me).toMatch(/^[0-9a-f]{64}$/);
+    // A phrase account already has a recovery phrase, so it never sees the raw-key tip.
+    await expect(page.getByTestId('recovery-nudge')).toHaveCount(0);
 
     // Settings: wrong password shows a plain message, right password reveals (hidden until toggled).
     await page.getByTestId('wallet-header-settings').click();
@@ -119,6 +121,40 @@ test.describe('recovery phrase (BIP-39 24 words, SLIP-0010 ed25519)', () => {
     await page.getByTestId('wallet-backup-ack').check();
     await page.getByTestId('wallet-backup-continue').click();
     await finishOnboarding(page);
+    await page.getByTestId('wallet-header-settings').click();
+    await page.getByTestId('reveal-recovery-phrase').locator('summary').click();
+    await expect(page.getByTestId('reveal-recovery-phrase-none')).toContainText('no recovery phrase');
+  });
+
+  test('a private-key account sees a gentle, dismissible recovery-phrase tip; dismissing it changes nothing else', async ({ context, page }) => {
+    await installBoingNetworkMocks(context, {});
+    await startCreate(page);
+    await page.getByTestId('wallet-create-method-key').check();
+    await page.getByTestId('wallet-create-submit').click();
+    const key = ((await page.getByTestId('wallet-backup-key').textContent()) ?? '').trim();
+    await page.getByTestId('wallet-backup-confirm').fill(key.slice(-6));
+    await page.getByTestId('wallet-backup-ack').check();
+    await page.getByTestId('wallet-backup-continue').click();
+    await finishOnboarding(page);
+    const me = await address(page);
+
+    const nudge = page.getByTestId('recovery-nudge');
+    await expect(nudge).toBeVisible();
+    await expect(nudge).toContainText('recovery phrase');
+    await expect(nudge).toContainText('stays exactly as it is');
+
+    // "Show me how" opens Settings, where the full explanation lives; the tip is not repeated there.
+    await page.getByTestId('recovery-nudge-show').click();
+    await expect(page.getByTestId('settings-back')).toBeVisible();
+    await expect(nudge).toHaveCount(0);
+    await page.getByTestId('settings-back').click();
+    await expect(nudge).toBeVisible();
+
+    // Dismissing hides it and remembers that (same localStorage pattern as the update note).
+    await page.getByTestId('recovery-nudge-dismiss').click();
+    await expect(nudge).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem('boing_recovery_nudge_dismissed'))).toBe('1');
+    expect(await address(page)).toBe(me);
     await page.getByTestId('wallet-header-settings').click();
     await page.getByTestId('reveal-recovery-phrase').locator('summary').click();
     await expect(page.getByTestId('reveal-recovery-phrase-none')).toContainText('no recovery phrase');

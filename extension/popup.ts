@@ -63,6 +63,7 @@ import { normalizeBoingNetworkId } from './config';
 import { isBackupConfirmed } from '../src/security/backupVerify';
 import { checkNodeCompat, configuredChainIdDecimal } from '../src/boing/nodeCompat';
 import { renderCompatBanner } from '../src/boing/updateNote';
+import { renderRecoveryNudge } from '../src/boing/recoveryNudge';
 import { explorerAccountUrl, explorerBaseFor, explorerTxUrl } from '../src/boing/explorerLinks';
 import { isSessionExpired, normalizeAutoLockMinutes, STORAGE_KEY_AUTO_LOCK_MINUTES } from '../src/security/autoLock';
 import { bindAutoLockSelect } from '../src/security/autoLockUi';
@@ -324,10 +325,29 @@ async function refreshNodeCompat(): Promise<void> {
   renderCompatBanner(banner, status, store, document);
 }
 
+/** Gentle, dismissible tip for accounts that use a private key instead of a recovery phrase. */
+function refreshRecoveryNudge(): void {
+  const el = document.getElementById('recovery-nudge');
+  if (!el) return;
+  let store: Storage | null = null;
+  try {
+    store = window.localStorage;
+  } catch {
+    /* storage blocked: the tip just cannot be remembered as dismissed */
+  }
+  renderRecoveryNudge(el, {
+    hasRecoveryPhrase: !!getActiveRecoveryInfo(),
+    store,
+    onShow: () => document.getElementById('btn-settings')?.click(),
+    doc: document,
+  });
+}
+
 async function refreshDashboardBalance(): Promise<void> {
   if (!accountId) return;
   const net = getCurrentNetwork();
   void refreshNodeCompat();
+  refreshRecoveryNudge();
   const retryBtn = document.getElementById('btn-balance-retry');
   ($('balance') as HTMLElement).textContent = '…';
   ($('balance-error') as HTMLElement).classList.add('hidden');

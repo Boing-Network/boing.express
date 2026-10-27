@@ -2,6 +2,7 @@ import { describeWalletError } from '../boing/errorMessages';
 import { buildAndSubmit, submitNote } from '../boing/submitRetry';
 import { checkNodeCompat, configuredChainIdDecimal, type NodeCompatStatus } from '../boing/nodeCompat';
 import { dismissUpdateNote, updateNoteDismissLabel, visibleCompatIssues, visibleUpdateNote } from '../boing/updateNote';
+import { dismissRecoveryNudge, shouldShowRecoveryNudge } from '../boing/recoveryNudge';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
@@ -20,6 +21,7 @@ import {
   dismissOnboarding,
 } from '../storage/onboarding';
 import { getLockAfterLabel } from '../storage/lockSettings';
+import { getActiveRecoveryInfo } from '../storage/walletStore';
 import type { BalanceResult } from '../networks/types';
 import { chainIdHexToDecimal } from '../networks/chainIds';
 import { SiteLogo } from '../components/SiteLogo';
@@ -27,6 +29,7 @@ import { nextTabId } from '../components/tabNav';
 import { NftHoldingsPanel } from '../components/NftHoldingsPanel';
 import { RevealPrivateKeyPanel } from '../components/RevealPrivateKeyPanel';
 import { RevealRecoveryPhrasePanel } from '../components/RevealRecoveryPhrasePanel';
+import { RecoveryNudge } from '../components/RecoveryNudge';
 import { ConnectedSitesPanel } from '../components/ConnectedSitesPanel';
 import { TokenHoldingsPanel } from '../components/TokenHoldingsPanel';
 import { TokenSendForm } from '../components/TokenSendForm';
@@ -161,6 +164,9 @@ export function Dashboard() {
   const compatStore = typeof window !== 'undefined' ? window.localStorage : null;
   const nodeCompatIssues = visibleCompatIssues(nodeCompat?.issues ?? [], compatStore);
   const updateNote = visibleUpdateNote(nodeCompatIssues);
+  // Dismissal of the recovery-phrase tip (raw private-key accounts only); bumps to re-read the stored flag.
+  const [, setRecoveryNudgeDismissals] = useState(0);
+  const showRecoveryNudge = shouldShowRecoveryNudge(Boolean(getActiveRecoveryInfo()), compatStore);
 
   const address = accountId ? formatAddress(accountId, false) : '';
   const addressHint = address ? `${address.slice(0, 8)}…${address.slice(-8)}` : '';
@@ -772,6 +778,16 @@ export function Dashboard() {
             </button>
           )}
         </aside>
+      )}
+
+      {showRecoveryNudge && activeTab !== 'settings' && (
+        <RecoveryNudge
+          onShow={() => setActiveTab('settings')}
+          onDismiss={() => {
+            dismissRecoveryNudge(compatStore);
+            setRecoveryNudgeDismissals((x) => x + 1);
+          }}
+        />
       )}
 
       {showNetworkDiscoveryBar && (

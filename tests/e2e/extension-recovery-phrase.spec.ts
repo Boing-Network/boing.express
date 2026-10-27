@@ -57,6 +57,10 @@ describePopup('Extension recovery phrase (E2E)', () => {
     test.setTimeout(120_000);
     const a = await openPopupWithNewWallet({});
     try {
+      // A private-key account gets the gentle, dismissible tip; dismissing it is remembered.
+      await expect(a.popup.getByTestId('recovery-nudge')).toBeVisible();
+      await a.popup.getByTestId('recovery-nudge-dismiss').click();
+      await expect(a.popup.getByTestId('recovery-nudge')).toBeHidden();
       await a.popup.locator('#btn-settings').click();
       await a.popup.getByTestId('reveal-recovery-phrase').locator('summary').click();
       await expect(a.popup.getByTestId('reveal-recovery-phrase-none')).toBeVisible();
