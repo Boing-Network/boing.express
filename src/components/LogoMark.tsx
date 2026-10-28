@@ -9,7 +9,7 @@ type Props = {
 
 /**
  * Boing Express mark ("Arc Slab"): the shared Boing recovery arc + orb on a rounded slab
- * (boing.finance shell, boing.network motif) in Express teal, with speed streaks.
+ * (boing.finance shell, boing.network motif) in Boing blue (BRAND.md accent #3B8CFF), with speed streaks.
  * Source of truth for rasters: public/assets/boing-express-mark.svg (keep geometry in sync).
  * Frame gradient uses CSS variables so wallet/docs `data-page` accents apply.
  */
