@@ -90,18 +90,27 @@ Questions or feedback? Join the [Boing Network Discord](https://discord.gg/K3w9n
 
 ## 📚 Docs in this repo
 
+Full index with "I want to..." shortcuts: **[docs/README.md](docs/README.md)**.
+
 | Doc | For |
 |-----|-----|
 | [docs/WALLET_CONNECTION_AND_API.md](docs/WALLET_CONNECTION_AND_API.md) | `window.boing` provider API |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | CI, tests, Chrome Web Store checklist |
-| [docs/BOING-EXPRESS-WALLET.md](docs/BOING-EXPRESS-WALLET.md) | Product + integration spec |
-| [docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md) | Optional HTTPS JSON-RPC Worker |
-| [docs/CODEBASE-ALIGNMENT.md](docs/CODEBASE-ALIGNMENT.md) | Local summary of cross-repo URLs |
-| [docs/NETWORK_SETUP.md](docs/NETWORK_SETUP.md) | Network config, runtime node check, signing chain id |
-| [docs/SECURITY.md](docs/SECURITY.md) | Security model, auto-lock, CSP |
+| [docs/BOING-EXPRESS-WALLET.md](docs/BOING-EXPRESS-WALLET.md) | Provider / RPC-forwarding reference (the canonical product spec of the same name is in [boing.network](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-EXPRESS-WALLET.md)) |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Environment, CI, Chrome Web Store checklist |
 | [docs/TESTING.md](docs/TESTING.md) | Unit, web and extension e2e tests |
-| [docs/HANDOFF.md](docs/HANDOFF.md) | Portal / protocol handoff |
-| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Aqua Personal tokens |
+| [docs/NETWORK_SETUP.md](docs/NETWORK_SETUP.md) | Network config, runtime node check, signing chain id |
+| [docs/RPC_GATEWAY.md](docs/RPC_GATEWAY.md) | Optional HTTPS JSON-RPC Worker |
+| [docs/SECURITY.md](docs/SECURITY.md) | Security model, auto-lock, CSP |
+| [docs/EXTENSION_STORE.md](docs/EXTENSION_STORE.md) | Store listing copy and screenshots |
+| [docs/WEB-SIGNING-FLOW.md](docs/WEB-SIGNING-FLOW.md) | Web signing (`/connect`) flow for dApps |
+| [docs/BULK-TRANSFER.md](docs/BULK-TRANSFER.md) | Bulk mode in the Transfer tab |
+| [docs/PUT-BLOB-PUBLISH-SESSION.md](docs/PUT-BLOB-PUBLISH-SESSION.md) | `boing_requestPutBlobSession` publish sessions |
+| [docs/RECOVERY_PHRASE_DESIGN.md](docs/RECOVERY_PHRASE_DESIGN.md) | Recovery phrase decision and implementation |
+| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | UI tokens, following [BRAND.md](https://github.com/Boing-Network/boing.network/blob/main/BRAND.md) |
+| [docs/ASSETS_AND_FONTS.md](docs/ASSETS_AND_FONTS.md) | Brand assets and fonts |
+| [docs/CODEBASE-ALIGNMENT.md](docs/CODEBASE-ALIGNMENT.md) | Local summary of cross-repo URLs |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | Portal / protocol handoff and backlog |
+| [docs/BOING_NETWORK_WALLET_IMPLEMENTATION_CHECKLIST.md](docs/BOING_NETWORK_WALLET_IMPLEMENTATION_CHECKLIST.md) | Wallet implementation checklist |
 | Upstream [BOING-LINKED-NFT-TOKEN.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-LINKED-NFT-TOKEN.md) | On-chain NFT↔token link registry (SDK / dApp discovery) |
 | Upstream [BOING-BUILDER-ATTESTATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-BUILDER-ATTESTATION.md) | On-chain builder attestation registry (builder signal; companions remain project authority) |
 
@@ -120,13 +129,25 @@ More: [docs/SECURITY.md](docs/SECURITY.md), [docs/NETWORK_SETUP.md](docs/NETWORK
 | Command | Purpose |
 |---------|---------|
 | `pnpm dev` | Vite dev server on http://localhost:5173 |
-| `pnpm build` | Type check and build `dist/` |
+| `pnpm build` | Type check and build `dist/` (runs `prebuild`: chain defaults and brand assets) |
+| `pnpm preview` | Preview the production build |
 | `pnpm run build:extension` | Build the MV3 extension into `extension/` |
+| `pnpm run build:extension:load` | Build the extension and prepare it for "Load unpacked" |
+| `pnpm run build:extension:unpacked` | Build and copy the unpacked extension |
+| `pnpm run zip:extension` | Zip the built extension for upload |
+| `pnpm run typecheck:ext` | Type check the extension sources |
 | `pnpm test` | Unit tests (Vitest) |
 | `pnpm test:e2e:web` | Web end-to-end tests (Playwright) |
-| `EXTENSION_E2E=1 EXTENSION_E2E_FULL=1 pnpm test:e2e` | Extension end-to-end tests (headed Chromium) |
+| `pnpm test:e2e` | Extension end-to-end tests (builds the extension first; see [docs/TESTING.md](docs/TESTING.md) for `EXTENSION_E2E` flags) |
+| `pnpm run fixtures:sync` / `fixtures:check` | Sync / verify chain-metadata fixtures against boing.network |
+| `pnpm run generate:chain-defaults` / `generate:brand-assets` | Regenerate chain defaults / brand assets |
+| `pnpm run pages:deploy` | Build and deploy to Cloudflare Pages |
+| `pnpm run gateway:dev` / `gateway:deploy` | Run / deploy the optional RPC gateway Worker |
+
+Maintainers also have `publish:extension`, `prepare:extension`, `copy:extension:unpacked` (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)).
 
 Requires Node 20+ and pnpm 9 (`corepack enable`).
+
 ## License
 
 MIT

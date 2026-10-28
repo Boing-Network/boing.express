@@ -4,6 +4,8 @@
 > 🛠️ **Developers:** `window.boing.request`. Unsigned simulation vs signed submit paths are below.  
 > 🛰️ **Operators:** n/a — wallet client behavior.
 
+> **Which doc is which?** This file, in the boing.express repo, is the **provider / RPC-forwarding reference**: what `window.boing` does and which node methods it forwards. The **canonical product spec** with the same file name (bootstrap, integration, Chrome Web Store) is [`docs/BOING-EXPRESS-WALLET.md` in boing.network](https://github.com/Boing-Network/boing.network/blob/main/docs/BOING-EXPRESS-WALLET.md). If they disagree on product behavior, the canonical spec wins; for exact provider behavior, check [WALLET_CONNECTION_AND_API.md](WALLET_CONNECTION_AND_API.md) and the code.
+
 This document is the **handoff target** referenced from **boing.network** (RPC specs, SDK). It describes what **`window.boing`** does in **Boing Express** and how dApps should call **unsigned simulation** vs **signed** paths.
 
 ```mermaid

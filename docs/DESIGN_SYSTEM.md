@@ -1,216 +1,78 @@
 # Boing Design System — Express
 
-> **Rebrand note:** Express now uses the shared Boing palette (deep navy + electric blue `#3B8CFF`, tokens listed in `src/index.css` under "Unified Boing tokens" and in boing.network `BRAND.md`). Older sections below that mention teal / "Aqua Personal" describe the previous theme; token *names* such as `--express-primary` were kept, their values changed.  
-> 👋 **Everyday users:** the look is dark navy with one electric-blue accent, Comfortaa — same family as boing.network.  
-> 🛠️ **Developers:** tokens in `src/index.css`. This is the **Aqua Personal** variant. Do not invent a fourth palette.  
+> 👋 **Everyday users:** the look is dark navy with one electric-blue accent, set in Comfortaa — the same family as boing.network.
+> 🛠️ **Developers:** tokens live in `src/index.css`. Use them instead of hard-coded colors. Do not invent a new palette.
 > 🛰️ **Operators:** n/a — visual system only.
 
-This document describes the **Boing Design System** as it applies to **boing.express**: one shared foundation plus three site-specific variants, with this repo implementing the **Aqua Personal** variant. It is the single reference for tokens, typography, components, and layout when building or updating the Express UI.
+Boing Express follows the shared Boing brand defined in [BRAND.md](https://github.com/Boing-Network/boing.network/blob/main/BRAND.md) (tagline *"Boing Network — Quality, enforced by the protocol"*, naming, tone, shared tokens). This page records how this repo applies it. If this page and `BRAND.md` disagree, `BRAND.md` wins.
 
-```mermaid
-flowchart LR
-  Foundation[Shared Boing foundation] --> Net[Network site]
-  Foundation --> Exp[Express · Aqua Personal]
-  Foundation --> Fin[Finance]
-```
+> **Status:** public testnet. Mainnet is not live. Independent audits are not complete.
 
 ---
 
-## Overview
+## Palette
 
-The Boing Design System is **one foundational theme with three variants** — one per official Boing property. All three share the same structural and brand rules; each variant applies a distinct accent palette, background character, and component personality suited to its product.
-
-- **Reference assets:** External design theme files (e.g. `boing-design-themes/express/index.html`, `finance/index.html`, `network/index.html`) and PDFs: *Boing Design System — Site Variants*, *design_strategy.md*, *audit_notes.md*.
-- **This repo:** Implements only the **Express** variant. Tokens and base styles live in `src/index.css`; component patterns follow Aqua Personal (glassmorphism, warm teal-cyan, **Comfortaa** for all UI type).
-
----
-
-## Three variants (one per Boing property)
-
-| Site | Variant name | Personality | Primary accent(s) |
-|------|----------------|-------------|--------------------|
-| **boing.express** | **Your gateway to Boing** | Personal · Secure · Approachable · Evidence-led | #3B8CFF electric blue |
-| **boing.finance** | **Deep Trade** | Professional · Data-driven · Dynamic · Powerful | #00e5ff electric cyan + #00ff88 profit green |
-| **boing.network** | **Cosmic Foundation** | Authoritative · Technical · Epic · Foundational | #7c3aed deep violet + #06b6d4 cosmic cyan |
-
-- **Express (this app):** Wallet and explorer; warmer, trust-forward palette; underwater caustics; security badges prominent.
-- **Finance:** DeFi platform; data-forward; grid background; green/red for P&L; JetBrains Mono for numbers; ticker, charts, swap widget.
-- **Network:** L1 protocol site; cosmic/nebula feel; violet primary; roadmap/ecosystem/status systems; largest hero; developer-focused.
-
-Shared across all three: dark base (boing-black, boing-navy), glassmorphism cards, section structure (eyebrow → title → subtitle), six pillars, tagline, and breakpoints (1024px, 640px). Only **accent palette** and **background character** differ by variant. **boing.express (this repo)** uses Comfortaa for typography site-wide.
-
----
-
-## Shared foundation (all Boing sites)
-
-- **Visual theme:** Aquatic–space (deep sea + cosmic depth).
-- **Typography (boing.express):** Comfortaa (300–700) for display, body, and code tokens (`--font-display`, `--font-body`, `--font-mono`). Other Boing properties may use different stacks per their variant guides.
-- **Background system:** Base gradient → structural layer (grid/nebula/caustics) → star field → shooting stars → atmospheric glow.
-- **Cards:** Glassmorphism (backdrop blur, semi-transparent background, 1px accent border, hover brighten).
-- **Tagline:** “Boing Network — Quality, enforced by the protocol.” (Express line: “Your gateway to Boing”)
-- **Six pillars:** Security, Scalability, Decentralization, Authenticity, Transparency, Quality Assurance.
-
----
-
-## Express variant: Aqua Personal
-
-**Personality:** Personal · Secure · Approachable · Trustworthy.
-
-**Accent palette:**
+The shared brand tokens are defined once in `src/index.css` under "Unified Boing tokens". Express keeps its older `--express-*` token names as aliases, so existing components keep working.
 
 | Token | Value | Role |
-|-------|--------|------|
-| `--express-primary` | #3B8CFF | Primary CTA, active states, borders |
-| `--express-secondary` | #00b4d8 | Secondary elements, gradients |
-| `--express-accent` | #48cae4 | Highlights, hover |
-| `--express-warm` | #0096c7 | Deeper trust-blue contrast |
-| `--express-soft` | #90e0ef | Soft pastel accents |
-| `--trust-green` | #34D399 | Security / “safe” indicators |
-| `--shield-gold` | #fbbf24 | Premium / security badges |
+|-------|-------|------|
+| `--boing-navy-950` (`--boing-black`) | `#050A1A` | Page background |
+| `--boing-navy-900` (`--boing-navy`) | `#0A1128` | Surfaces |
+| `--boing-navy-800` (`--boing-navy-mid`) | `#101A38` | Cards, glass panels |
+| `--boing-navy-700` (`--boing-navy-light`) | `#18244A` | Raised surfaces, hover |
+| `--boing-accent` (`--express-primary`) | `#3B8CFF` | Primary actions, active states, links |
+| `--boing-accent-soft` (`--express-accent`, `--express-soft`) | `#8DB8FF` | Highlights, hover |
+| `--express-secondary` / `--express-warm` | `#2563EB` | Deeper blue for gradients |
+| `--boing-text` (`--text-primary`) | `#F0F4F8` | Primary text |
+| `--text-secondary` | `#94a3b8` | Secondary text |
+| `--text-muted` | `#8b9bb3` | Hints and captions (passes WCAG AA) |
+| `--boing-success` (`--trust-green`) | `#34D399` | Security and "safe" indicators |
+| `--boing-warning` / `--shield-gold` | `#FBBF24` | Testnet label and caution badges |
+| `--boing-danger` (`--danger`) | `#F87171` | Errors |
 
-**Background character:** Underwater caustics, warm teal-cyan shooting stars, calm “deep ocean at night” feel.
+Borders and glass: `--card-border`, `--card-border-hover`, `--glass-bg`, `--nav-bg`. Glow: `--express-primary-glow`, `--shadow-teal` (the name is historical; the value is blue).
 
-**Breakpoints (design system standard):**
+Check `src/index.css` for the exact current values before copying a hex into a doc or component.
 
-- `> 1024px` — Full desktop.
-- `≤ 1024px` — Reduced columns, optional sidebar collapse.
-- `≤ 640px` — Single column, compact nav (e.g. hide nav links).
+## Typography and shape
 
----
+- **Font:** Comfortaa (300–700) for display, body and code (`--font-display`, `--font-body`, `--font-mono`). The web app loads it through a Google Fonts `@import` in `src/index.css`. The extension does the same in `popup.css` and `approval.css`, with optional local `@font-face` files under `extension/fonts/`.
+- **Radius:** `--radius-sm` 8px, `--radius-md` 14px, `--radius-lg` 20px, `--radius-xl` 28px, `--radius-pill` 999px.
+- **Breakpoints:** above 1024px is full desktop. At 1024px and below, columns reduce. At 640px and below, the layout is a single column with compact navigation.
 
-## Page color variants (data-page)
+## Page accent variants (`data-page`)
 
-The app sets `data-page` on the main content wrapper from the current route so accents can shift subtly per section:
+The app sets `data-page` on the main content wrapper from the route, so the accent shifts slightly per section. Overrides live in `src/index.css`.
 
-| Route | data-page | Accent feel |
-|-------|-----------|-------------|
-| `/` | landing | Default Aqua Personal (warm teal-cyan) |
-| `/wallet/*` | wallet | Trust-forward (teal-green `--trust-green`) |
-| `/docs`, `/docs/*` | docs | Cooler cyan (`--express-secondary`) |
-| `/privacy`, `/support`, `/terms` | legal | Same as docs |
+| Route | `data-page` | Accent |
+|-------|-------------|--------|
+| `/` | `landing` | Default (`#3B8CFF`) |
+| `/wallet/*` | `wallet` | `--trust-green` |
+| `/docs`, `/docs/*` | `docs` | `--express-secondary` (`#2563EB`) |
+| `/privacy`, `/support`, `/terms` | `legal` | Same as docs |
 
-Overrides in `src/index.css` adjust `--express-primary`, `--express-primary-glow`, `--card-border`, and `--express-primary-dashed` so nav, buttons, and cards pick up the variant.
+The overrides change `--express-primary`, `--express-primary-glow`, `--express-primary-dashed`, `--card-border` and `--card-border-hover`.
 
-## Design tokens in code (Express only)
+## Components
 
-This codebase implements **only the Aqua Personal (Express) variant**. Finance and Network each have their own token sets (e.g. `--finance-primary`, `--network-primary`) in their respective repos; they are not mixed here. All Express tokens are defined in `src/index.css` under `:root`. Key groups:
-
-- **Backgrounds:** `--boing-black`, `--boing-navy`, `--boing-navy-mid`, `--boing-navy-light`, `--card-bg`, `--glass-bg`, `--nav-bg`.
-- **Text:** `--text-primary`, `--text-secondary`, `--text-muted`, `--text-accent`.
-- **Express accents:** `--express-primary` through `--express-soft`, `--trust-green`, `--shield-gold`.
-- **Borders & glass:** `--card-border`, `--card-border-hover`, `--nav-border`, `--glass-border`.
-- **Shadows & glow:** `--shadow-teal`, `--shadow-card`, `--express-primary-glow`.
-- **Typography:** `--font-display`, `--font-body`, `--font-mono` — all **Comfortaa** (Google Fonts in `index.css`).
-- **Radius:** `--radius-sm` (8px), `--radius-md` (14px), `--radius-lg` (20px), `--radius-xl` (28px), `--radius-pill` (999px).
-
-Legacy tokens (e.g. `--accent-teal`, `--bg-card`) are aliased to these so existing components keep working.
-
----
-
-## Section structure
-
-Use this pattern for section headers:
-
-- **Eyebrow:** `.section-eyebrow` — small label above the title (0.75rem, 700, uppercase, letter-spacing 0.15em, accent color).
-- **Title:** `.section-title` — Comfortaa via `--font-display`, clamp(1.8rem, 3.5vw, 2.8rem), 700.
-- **Subtitle:** `.section-subtitle` — 1.05rem, `--text-secondary`, max-width ~520px, centered.
-
-Defined in `src/index.css` for use in any screen or layout.
-
----
-
-## Buttons
-
-- **Primary:** Teal-cyan gradient (`--express-primary` → `--express-warm`), dark text, pill or rounded.
-- **Secondary:** Transparent + teal border (dashed or solid).
-- **Ghost:** Semi-transparent background, subtle border.
-- **Trust:** Teal-green gradient for security/trust actions (optional).
-
-Use classes `.btn-primary`, `.btn-secondary`, `.btn-ghost` or `data-variant="primary"` / `"secondary"` on `<button>` where supported.
-
----
+- **Section headers:** `.section-eyebrow` (small uppercase label), `.section-title` (Comfortaa, `clamp(1.8rem, 3.5vw, 2.8rem)`), `.section-subtitle`.
+- **Buttons:** `.btn-primary` (accent gradient, dark text), `.btn-secondary` (transparent with accent border). Hover lifts slightly with a shadow.
+- **Cards:** glassmorphism (translucent `--glass-bg`, 1px `--card-border`, brighter border on hover).
+- **Background:** the web shell uses `EngraveSceneBackdrop` (`src/components/EngravingBackdrop.tsx`): a stone slab with an engraved vein network and soft animated accents. Page shells (`.page-landing`, `.page-app`) sit transparently over it.
+- **Pillar illustrations:** `public/assets/pillar-*.svg` (same files as boing.network).
+- **Assets and mascot:** see [ASSETS_AND_FONTS.md](ASSETS_AND_FONTS.md).
 
 ## Accessibility
 
-- **Focus:** Interactive elements use a visible focus ring (accent color) — see `:focus-visible` in `src/index.css`.
+- **Focus:** visible focus ring in the accent color (`:focus-visible` in `src/index.css`).
 - **Motion:** `prefers-reduced-motion: reduce` is respected; animations are disabled or minimal.
-- **Contrast:** Text colours meet WCAG AA (4.5:1) on every dark surface; this is enforced by `tests/a11yContrast.test.ts`. `--text-muted` is `#8b9bb3` and `--danger` is `#f87171` (the earlier `#64748b` and `#ef4444` measured 3.3 to 4.4:1 on the navy surfaces). Use `--text-muted` only for hints, never for essential information that has no other cue.
-- **Tabs (keyboard):** wallet section tabs and the Transfer asset switch are ARIA tablists with a roving tabindex (one tab stop). Left/Right wrap, Home/End jump (`src/components/tabNav.ts`, mirrored in `extension/popup.ts`). While Settings is open the last main tab stays the tab stop.
-- **Live regions:** loading and empty states use `role="status"` (`aria-busy` while loading); errors use `role="alert"`; success messages use `role="status"`. SendConfirm moves focus to its heading when the review step opens, announces the fee while it is estimated, marks the confirm button `aria-busy` while sending, and Escape goes back (blocked while sending).
+- **Contrast:** text meets WCAG AA (4.5:1) on every dark surface, enforced by `tests/a11yContrast.test.ts`. If you change a text or surface token, that test tells you whether it still passes.
+- **Tabs (keyboard):** wallet section tabs and the Transfer asset switch are ARIA tablists with a roving tabindex. Left/Right wrap, Home/End jump (`src/components/tabNav.ts`).
+- **Live regions:** loading and empty states use `role="status"` (`aria-busy` while loading); errors use `role="alert"`.
 
----
+## Maintenance rules
 
-## App background (global scene)
-
-The web shell uses **`EngraveSceneBackdrop`** (`src/components/EngravingBackdrop.tsx`): a cool stone slab, engraved silver vein network (SVG), and soft animated neon accents—aligned with the Creator Treasury / Colosseum hackathon reference. It sits inside `pageWrap` in `App.tsx` so it grows with scroll height. There is **no canvas** or separate motion engine; `prefers-reduced-motion: reduce` tones down the neon layer animations in CSS.
-
-## Maintenance
-
-- When adding or changing global styles, prefer design tokens from `src/index.css` over hard-coded colors or spacing.
-- For new sections, use the section-eyebrow / section-title / section-subtitle pattern.
-- Keep the six pillars and tagline consistent with other Boing properties.
-- For full Aqua Personal reference (all components, wallet preview, tokens showcase), see the external theme file: `express/index.html` in the boing-design-themes package.
-
----
-
-## Compliance & assets (merged from design-system-compliance-and-assets.md)
-
-**Reviewed against:** Boing_Network_Official_Visual_Design_System.pdf and related design docs.
-
-### Implementation status
-
-- **Colors, typography, components:** Aligned with Official Visual Design System. Tokens in `:root`; hex grid stroke 0.06; H1/H2/H3 type scale per spec.
-- **Backgrounds:** Global engraved stone + vein + neon via `EngraveSceneBackdrop`. Page shells (`.page-landing`, `.page-app`) use a transparent background over that scene (no repeating hex grid in the shell).
-- **Motion:** UI keyframes (float, glow pulse, fade-in-up); neon layer respects `prefers-reduced-motion`.
-
-### Optional assets
-
-- **Boing Bot mascot:** For landing, onboarding, empty states; see [ASSETS_AND_FONTS.md](ASSETS_AND_FONTS.md).
-- **Pillar illustrations:** `public/assets/pillar-*.svg` (same files as boing.network); used in Landing pills and feature cards.
-
----
-
-## Audit (2025-02-21)
-
-Steps 1 & 8 of the Boing Takeover Redesign — audit and quality check.
-
-### Global stylesheet
-
-- **`src/index.css`** — Primary global stylesheet. Contains `:root` tokens, base resets, and keyframes. Single source for design tokens.
-
-### Component structure
-
-- **WalletNav, SiteLogo, EngraveSceneBackdrop** — Core shell components. Buttons, cards, inputs are inline in screens with local class names.
-- **FullPage3DElements** — Removed during cleanup (was orphaned).
-
-### Hardcoded colors → tokens
-
-All non-`:root` instances were replaced with CSS variables. Tokens in `:root` include `--glow-cyan-soft`, `--accent-cyan-subtle`, `--overlay-*`, etc.
-
-### Fonts
-
-- **Web app:** Comfortaa (300–700) from Google Fonts — `@import` in `src/index.css`.
-- **Extension:** Comfortaa — Google Fonts `@import` in `popup.css` and `approval.css`; optional local `@font-face` in `popup.css` when `.ttf` files are present under `extension/fonts/`.
-
-### Hardcoded colors — resolved
-
-- All styling in `src/**` uses `var(--…)`. Raw values only in `:root`.
-- **Excluded:** `index.html` (theme-color meta requires hex); `docs/screenshot-helper.html` (ad-hoc helper page).
-
-### Interactive states
-
-- **Buttons:** Hover with translateY, box-shadow, transitions.
-- **Links:** Accent color, hover glow.
-- **Cards:** Border and shadow on hover.
-- **Inputs:** Focus border and glow.
-- **Reduced motion:** Respected site-wide.
-
-### Contrast (WCAG)
-
-- Muted/secondary/danger text: see Accessibility above (guarded by a test). Primary text `#F0FFFE` on `#0A0E1A` — AAA. Secondary passes AA.
-
-### Rules enforced
-
-- No new colors outside `:root`.
-- Do not remove existing functionality.
-- Preserve accessibility (WCAG AA).
+- Take colors and spacing from the tokens in `src/index.css`. Raw values belong only in `:root` (exceptions: the `theme-color` meta in `index.html` and the ad-hoc `docs/screenshot-helper.html`).
+- Do not remove existing functionality or weaken accessibility when restyling.
+- Keep the tagline, naming and status wording consistent with `BRAND.md`.
+- Update this page in the same PR when you change a token.
