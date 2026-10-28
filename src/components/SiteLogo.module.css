@@ -43,7 +43,7 @@
   transform: scale(1.04);
 }
 
-/* Wordmark: solid accent at rest; hover = teal → blue → violet (neon layer) */
+/* Wordmark: solid accent at rest; hover = blue → light blue (neon layer) */
 .logoText {
   display: inline-block;
   color: var(--express-primary);
@@ -65,7 +65,7 @@
   background-clip: text;
   filter: drop-shadow(0 0 8px var(--express-primary-glow))
     drop-shadow(0 0 14px rgba(90, 176, 255, 0.35))
-    drop-shadow(0 0 22px rgba(159, 143, 255, 0.22));
+    drop-shadow(0 0 22px rgba(141, 184, 255, 0.22));
 }
 
 .logoText::after {

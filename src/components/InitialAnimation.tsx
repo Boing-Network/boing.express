@@ -7,10 +7,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import styles from './InitialAnimation.module.css';
 
-const TEAL = '#3B8CFF';
-const TEAL_R = 0;
-const TEAL_G = 232;
-const TEAL_B = 200;
+const BRAND_BLUE = '#3B8CFF';
+// RGB of BRAND_BLUE (#3B8CFF) for rgba() gradients
+const BLUE_R = 59;
+const BLUE_G = 140;
+const BLUE_B = 255;
 const DEEP_BG = '#050A1A';
 
 const TOTAL_MS = 4200;
@@ -129,8 +130,8 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
 
       if (glowR > 0) {
         const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
-        grd.addColorStop(0, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${opacity * 0.35})`);
-        grd.addColorStop(0.5, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${opacity * 0.1})`);
+        grd.addColorStop(0, `rgba(${BLUE_R},${BLUE_G},${BLUE_B},${opacity * 0.35})`);
+        grd.addColorStop(0.5, `rgba(${BLUE_R},${BLUE_G},${BLUE_B},${opacity * 0.1})`);
         grd.addColorStop(1, 'rgba(59, 140, 255,0)');
         ctx.fillStyle = grd;
         ctx.beginPath();
@@ -146,9 +147,9 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
         cy,
         bellH
       );
-      bellGrd.addColorStop(0, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${opacity * 0.9})`);
-      bellGrd.addColorStop(0.6, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${opacity * 0.55})`);
-      bellGrd.addColorStop(1, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${opacity * 0.1})`);
+      bellGrd.addColorStop(0, `rgba(${BLUE_R},${BLUE_G},${BLUE_B},${opacity * 0.9})`);
+      bellGrd.addColorStop(0.6, `rgba(${BLUE_R},${BLUE_G},${BLUE_B},${opacity * 0.55})`);
+      bellGrd.addColorStop(1, `rgba(${BLUE_R},${BLUE_G},${BLUE_B},${opacity * 0.1})`);
       ctx.fillStyle = bellGrd;
       ctx.beginPath();
       ctx.ellipse(cx, cy, bellW, bellH, 0, Math.PI, 0);
@@ -169,7 +170,7 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
           tx + sway * 1.4,
           cy + len
         );
-        ctx.strokeStyle = `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${opacity * 0.35})`;
+        ctx.strokeStyle = `rgba(${BLUE_R},${BLUE_G},${BLUE_B},${opacity * 0.35})`;
         ctx.lineWidth = 1.2;
         ctx.stroke();
       }
@@ -189,7 +190,7 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
         ctx.moveTo(x, y);
         ctx.lineTo(ex, ey);
         ctx.lineWidth = depth * 1.2;
-        ctx.strokeStyle = TEAL;
+        ctx.strokeStyle = BRAND_BLUE;
         ctx.stroke();
         const jitter = 0.15 * Math.sin(x * 0.01 + depth) * Math.cos(y * 0.01);
         branch(ex, ey, angle - 0.4 + jitter, len * 0.68, depth - 1);
@@ -237,7 +238,7 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
           Math.sin(x * 0.013 - t * 0.0005) * 2;
         ctx.lineTo(x, y);
       }
-      ctx.strokeStyle = `rgba(${TEAL_R},${TEAL_G},${TEAL_B},0.55)`;
+      ctx.strokeStyle = `rgba(${BLUE_R},${BLUE_G},${BLUE_B},0.55)`;
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.restore();
@@ -282,9 +283,9 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
           const ta = (i / trailLen) * 0.7 * p;
           ctx.save();
           ctx.globalAlpha = ta;
-          ctx.fillStyle = TEAL;
+          ctx.fillStyle = BRAND_BLUE;
           ctx.shadowBlur = 12;
-          ctx.shadowColor = TEAL;
+          ctx.shadowColor = BRAND_BLUE;
           ctx.beginPath();
           ctx.arc(tx, ty, 1.5 + tp * 2, 0, Math.PI * 2);
           ctx.fill();
@@ -294,7 +295,7 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
         ctx.globalAlpha = 0.95;
         ctx.fillStyle = '#ffffff';
         ctx.shadowBlur = 24;
-        ctx.shadowColor = TEAL;
+        ctx.shadowColor = BRAND_BLUE;
         ctx.beginPath();
         ctx.arc(sx, sy, 4, 0, Math.PI * 2);
         ctx.fill();
@@ -313,8 +314,8 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
         );
         const grd = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, fr);
         grd.addColorStop(0, `rgba(255,255,255,${flashOpacity * 0.9})`);
-        grd.addColorStop(0.15, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${flashOpacity * 0.7})`);
-        grd.addColorStop(0.5, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${flashOpacity * 0.2})`);
+        grd.addColorStop(0.15, `rgba(${BLUE_R},${BLUE_G},${BLUE_B},${flashOpacity * 0.7})`);
+        grd.addColorStop(0.5, `rgba(${BLUE_R},${BLUE_G},${BLUE_B},${flashOpacity * 0.2})`);
         grd.addColorStop(1, 'rgba(59, 140, 255,0)');
         ctx.save();
         ctx.fillStyle = grd;
@@ -360,7 +361,7 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
             wR
           );
           grd.addColorStop(0, 'rgba(59, 140, 255,0)');
-          grd.addColorStop(0.7, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${wO * 0.6})`);
+          grd.addColorStop(0.7, `rgba(${BLUE_R},${BLUE_G},${BLUE_B},${wO * 0.6})`);
           grd.addColorStop(1, 'rgba(59, 140, 255,0)');
           ctx.save();
           ctx.fillStyle = grd;
