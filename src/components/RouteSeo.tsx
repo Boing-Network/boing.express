@@ -37,7 +37,9 @@ function setCanonical(href: string) {
   el.setAttribute('href', href);
 }
 
-function seoForPath(pathname: string): { title: string; description: string; canonicalPath: string } {
+type Seo = { title: string; description: string; canonicalPath: string; noindex?: boolean };
+
+function seoForPath(pathname: string): Seo {
   const path = pathname.replace(/\/+$/, '') || '/';
 
   if (path === '/wallet' || path.startsWith('/wallet/')) {
@@ -84,6 +86,24 @@ function seoForPath(pathname: string): { title: string; description: string; can
     };
   }
 
+  if (path === '/connect') {
+    return {
+      title: 'Connect to an app | Boing Express',
+      description: 'Approve a connection or signature request from a Boing app with your Boing Express wallet.',
+      canonicalPath: '/connect',
+      noindex: true,
+    };
+  }
+
+  if (path !== '/') {
+    return {
+      title: 'Page not found | Boing Express',
+      description: 'This page does not exist on boing.express.',
+      canonicalPath: '/',
+      noindex: true,
+    };
+  }
+
   return {
     title: HOME_TITLE,
     description: HOME_DESC,
@@ -96,10 +116,11 @@ export function RouteSeo() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const { title, description, canonicalPath } = seoForPath(pathname);
+    const { title, description, canonicalPath, noindex } = seoForPath(pathname);
     const canonical = `${SITE}${canonicalPath}`;
     document.title = title;
     setNamedMeta('description', description);
+    setNamedMeta('robots', noindex ? 'noindex, follow' : 'index, follow');
     setCanonical(canonical);
     setPropertyMeta('og:url', canonical);
     setPropertyMeta('og:title', title);

@@ -22,11 +22,11 @@ export type WelcomeProps = {
 const ASSETS = '/assets';
 
 const MASCOT_BY_STEP: Record<string, string> = {
-  choose: 'mascot-excited.png',
-  unlock: 'mascot-thinking.png',
-  create: 'mascot-default.png',
-  import: 'mascot-default.png',
-  backup: 'mascot-default.png',
+  choose: 'mascot-excited.webp',
+  unlock: 'mascot-thinking.webp',
+  create: 'mascot-default.webp',
+  import: 'mascot-default.webp',
+  backup: 'mascot-default.webp',
 };
 
 type Step = 'choose' | 'create' | 'import' | 'unlock' | 'backup' | 'claim-name' | 'add-pick';
@@ -306,7 +306,7 @@ export function Welcome({ addAccountWhileUnlocked = false, onLeaveAddAccount }: 
     return (
       <div className={`${styles.wrap} ${styles.heroWrap} page-app`}>
         <div className={`${styles.card} ${styles.heroCard}`}>
-          <img src={`${ASSETS}/mascot-default.png`} alt="" className={styles.mascot} aria-hidden />
+          <img src={`${ASSETS}/mascot-default.webp`} alt="" className={styles.mascot} aria-hidden />
           <h1 className={styles.title}>Add another account</h1>
           <p className={styles.subtitle}>
             New keys are encrypted with your password and stored alongside your existing wallet. Use Boing Express on

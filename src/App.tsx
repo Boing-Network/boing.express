@@ -17,6 +17,7 @@ import { Privacy } from './screens/Privacy';
 import { Support } from './screens/Support';
 import { Terms } from './screens/Terms';
 import { WebSign } from './screens/WebSign';
+import { NotFound } from './screens/NotFound';
 import { useWallet } from './context/WalletContext';
 
 function WalletApp() {
@@ -70,7 +71,7 @@ function AppContent() {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/support" element={<Support />} />
       <Route path="/terms" element={<Terms />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
@@ -84,12 +85,37 @@ function getPageKey(pathname: string): string {
   return 'landing';
 }
 
+const INTRO_SEEN_KEY = 'boing-express:intro-seen';
+
+function shouldSkipIntro(): boolean {
+  try {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return true;
+    return window.sessionStorage.getItem(INTRO_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markIntroSeen() {
+  try {
+    window.sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+  } catch {
+    /* storage unavailable (private mode): the intro simply plays again next load */
+  }
+}
+
 function AppShell() {
   const location = useLocation();
   const pageKey = getPageKey(location.pathname);
-  // The web signing page (/connect) must not be hidden behind the intro animation.
-  const [introDone, setIntroDone] = useState(() => location.pathname.startsWith('/connect'));
-  const handleIntroComplete = useCallback(() => setIntroDone(true), []);
+  // The intro plays once per browser session. It is skipped for the web signing page (/connect), which must
+  // never sit behind an animation, and for visitors who prefer reduced motion.
+  const [introDone, setIntroDone] = useState(
+    () => location.pathname.startsWith('/connect') || shouldSkipIntro(),
+  );
+  const handleIntroComplete = useCallback(() => {
+    markIntroSeen();
+    setIntroDone(true);
+  }, []);
 
   /* Colosseum-style stone + engraved vein + neon; intro overlays until complete. */
   return (
