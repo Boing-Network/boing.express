@@ -57,7 +57,7 @@
     105deg,
     var(--express-primary) 0%,
     #5ab0ff 38%,
-    #9f8fff 72%,
+    #8DB8FF 72%,
     var(--express-secondary) 100%
   );
   background-size: 100% 100%;
@@ -86,11 +86,11 @@
     to right,
     var(--express-primary),
     #5ab0ff 45%,
-    #9f8fff 78%,
+    #8DB8FF 78%,
     var(--express-secondary)
   );
   box-shadow:
-    0 0 8px rgba(0, 232, 200, 0.35),
+    0 0 8px rgba(59, 140, 255, 0.35),
     0 0 14px rgba(90, 176, 255, 0.35),
     0 0 20px rgba(159, 143, 255, 0.25);
 }

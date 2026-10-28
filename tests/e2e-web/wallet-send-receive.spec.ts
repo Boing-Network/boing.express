@@ -49,7 +49,7 @@ test.describe('welcome, send review, receive, scan (mocked RPC)', () => {
     const skip = page.getByRole('button', { name: 'Skip intro' });
     if (await skip.isVisible().catch(() => false)) await skip.click();
     await expect(page.getByRole('heading', { name: 'Welcome to Boing Express' })).toBeVisible();
-    await expect(page.getByText('Your non-custodial wallet for Boing Network')).toBeVisible();
+    await expect(page.getByText('Your gateway to Boing')).toBeVisible();
     await expect(page.getByTestId('wallet-landing-create')).toHaveText('Create New Wallet');
     await expect(page.getByTestId('wallet-landing-import')).toHaveText('Import Existing Wallet');
     await expect(page.getByTestId('wallet-keys-note')).toHaveText(/Your keys never leave your device/);

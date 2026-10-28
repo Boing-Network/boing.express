@@ -1,11 +1,11 @@
 :root {
-  --bg: #0a0e1a;
+  --bg: #0A1128;
   --surface: #131a2b;
-  --surface-strong: #1a2240;
-  --border: rgba(0, 229, 204, 0.18);
+  --surface-strong: #18244A;
+  --border: rgba(59, 140, 255, 0.18);
   --text: #f8fafc;
   --text-secondary: #a5b4cc;
-  --primary: #00e5cc;
+  --primary: #3B8CFF;
   --primary-strong: #00c9b3;
   --danger: #f87171;
 }
@@ -135,12 +135,12 @@ body {
   width: 38%;
   font-weight: 600;
   color: var(--text-secondary);
-  border-bottom: 1px solid rgba(0, 229, 204, 0.08);
+  border-bottom: 1px solid rgba(59, 140, 255, 0.08);
 }
 
 .tx-table td {
   padding: 8px 10px;
-  border-bottom: 1px solid rgba(0, 229, 204, 0.08);
+  border-bottom: 1px solid rgba(59, 140, 255, 0.08);
   word-break: break-word;
 }
 

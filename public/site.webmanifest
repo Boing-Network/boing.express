@@ -1,12 +1,12 @@
 {
   "name": "Boing Express",
   "short_name": "Express",
-  "description": "Official non-custodial wallet for Boing Network. Create or import a wallet, send and receive BOING.",
+  "description": "A non-custodial wallet designed for the Boing ecosystem. Create or import a wallet, get testnet BOING, send and receive.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#06080c",
-  "theme_color": "#06080c",
+  "background_color": "#050A1A",
+  "theme_color": "#050A1A",
   "icons": [
     {
       "src": "/favicon.svg",

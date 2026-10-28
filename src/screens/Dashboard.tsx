@@ -1527,7 +1527,7 @@ export function Dashboard() {
             {activeTab === 'settings' && <RevealRecoveryPhrasePanel />}
             {activeTab === 'settings' && <RevealPrivateKeyPanel />}
             <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Deploy check</h2>
+              <h2 className={styles.sectionTitle}>Boing Quality Gate — deploy check</h2>
               <form onSubmit={handleQaValidate} className={styles.form}>
                 <textarea
                   placeholder="Contract bytecode (hex)"

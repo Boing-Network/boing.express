@@ -64,9 +64,9 @@ export const DOCS: Record<string, Doc> = {
         <p>
           First-time users see an onboarding checklist: Create wallet → Get testnet BOING → Send a transaction. Complete each step to get familiar with the wallet.
         </p>
-        <h2>Deploy contract (QA Pillar)</h2>
+        <h2>Deploy contract (Boing Quality Gate)</h2>
         <p>
-          The dashboard includes a contract deployment validator. Paste bytecode (hex) and validate before deploy. See <Link to="/docs/qa-pillar">QA Pillar</Link> for details.
+          The dashboard includes a contract deployment validator. Paste bytecode (hex) and validate before deploy. See <Link to="/docs/qa-pillar">Boing Quality Gate</Link> for details.
         </p>
         <h2>Recent transactions</h2>
         <p>
@@ -145,11 +145,11 @@ export const DOCS: Record<string, Doc> = {
     ),
   },
   'qa-pillar': {
-    title: 'QA Pillar — Contract deployment',
+    title: 'Boing Quality Gate — Contract deployment',
     content: (
       <>
         <p>
-          The <strong>Quality Assurance</strong> (Pillar 6) ensures only safe, well-formed contracts reach the network. Aligned with <a href="https://github.com/Boing-Network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> and <a href="https://github.com/Boing-Network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a>.
+          The <strong>Boing Quality Gate</strong> screens deployments against transparent rules before they reach the ledger. Automated checks handle clear cases; a decentralized community pool reviews edge cases. It is designed to reduce malicious, deceptive and low-quality deployments through transparent, protocol-level checks. This wallet runs a client-side preview of those checks and can also call the node. Aligned with <a href="https://github.com/Boing-Network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md" target="_blank" rel="noopener noreferrer">TECHNICAL-SPECIFICATION</a> and <a href="https://github.com/Boing-Network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md" target="_blank" rel="noopener noreferrer">QUALITY-ASSURANCE-NETWORK</a>.
         </p>
         <h2>Validation flow</h2>
         <p>

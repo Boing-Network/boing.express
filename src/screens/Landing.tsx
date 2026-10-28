@@ -11,15 +11,8 @@ const HEADER_LINKS: SiteHeaderLink[] = [
 
 const ASSETS_BASE = '/assets';
 
-/* Same pillar artwork as https://boing.network/ (SVGs in public/assets/) */
-const PILLARS = [
-  { key: 'security', label: 'Security', img: 'pillar-security.svg' },
-  { key: 'scalability', label: 'Scalability', img: 'pillar-scalability.svg' },
-  { key: 'decentralization', label: 'Decentralization', img: 'pillar-decentralization.svg' },
-  { key: 'authenticity', label: 'Authenticity', img: 'pillar-authenticity.svg' },
-  { key: 'transparency', label: 'Transparency', img: 'pillar-transparency.svg' },
-  { key: 'quality', label: 'Quality Assurance', img: 'pillar-quality.svg' },
-] as const;
+/* Proof chips: facts about the wallet and the network it targets (no claims about audits or mainnet). */
+const CHIPS = ['Non-custodial', 'Ed25519 keys', 'Web + browser extension', 'Public testnet'] as const;
 
 export function Landing() {
   return (
@@ -39,18 +32,17 @@ export function Landing() {
             </div>
           </div>
           <h1 className={styles.heroTitle}>Boing Express</h1>
-          <p className={styles.heroTagline}>Authentic. Decentralized. Optimal. Quality-Assured.</p>
+          <p className={styles.heroTagline}>Your gateway to Boing</p>
+          <p className={styles.stageBadge} data-testid="landing-testnet-label">Public testnet — mainnet not live</p>
           <div className={styles.heroPills}>
-            {PILLARS.map(({ key, label, img }) => (
-              <span key={key}>
-                <img src={`${ASSETS_BASE}/${img}`} alt="" className={styles.pillarIcon} aria-hidden />
-                {label}
-              </span>
+            {CHIPS.map((label) => (
+              <span key={label}>{label}</span>
             ))}
           </div>
           <p className={styles.heroDesc}>
-            Non-custodial wallet for Boing Network. Create or import a wallet, send and receive BOING,
-            use the testnet faucet — all from the browser or extension. Your keys never leave your device.
+            Boing Express is a non-custodial wallet designed for the Boing ecosystem. Create or import a wallet,
+            get testnet BOING, send and receive, and connect to apps from the browser or the extension.
+            Your keys never leave your device.
           </p>
           <div className={styles.heroActions}>
             <Link to="/wallet" className={styles.primaryBtn}>Get started</Link>
@@ -74,15 +66,16 @@ export function Landing() {
           <ol style={{ maxWidth: 640, margin: '0 auto', lineHeight: 1.7 }}>
             <li><Link to="/wallet">Create a wallet</Link> and save your private key backup.</li>
             <li>Get free testnet BOING in the wallet&apos;s Faucet tab or at <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">boing.network/faucet</a>.</li>
-            <li>Send BOING, then look up the transaction on <a href="https://boing.observer" target="_blank" rel="noopener noreferrer">Boing Observer</a>.</li>
-            <li>To use dApps like <a href="https://boing.finance" target="_blank" rel="noopener noreferrer">boing.finance</a>, <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">add the Chrome extension</a> (desktop Chrome, Edge or Brave).</li>
+            <li>Send BOING, then see what happened on-chain in <a href="https://boing.observer" target="_blank" rel="noopener noreferrer">Boing Observer</a>.</li>
+            <li>To connect to apps like <a href="https://boing.finance" target="_blank" rel="noopener noreferrer">Boing Finance</a>, <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">add the Chrome extension</a> (desktop Chrome, Edge or Brave).</li>
           </ol>
         </section>
 
         <section className={styles.features}>
           <div className="section-header">
-            <span className="section-eyebrow">Why Boing Express</span>            <h2 className="section-title">Your Wallet, Your Rules</h2>
-            <p className="section-subtitle">Everything you need to interact with the Boing Network, with nothing you don&apos;t.</p>
+            <span className="section-eyebrow">Why Boing Express</span>
+            <h2 className="section-title">Your keys. Your account on Boing.</h2>
+            <p className="section-subtitle">Everything you need to use Boing, and nothing you don&apos;t.</p>
           </div>
           <div className={styles.featureGrid}>
             <div className={styles.card}>
@@ -103,8 +96,8 @@ export function Landing() {
             </div>
             <div className={styles.card}>
               <img src={`${ASSETS_BASE}/pillar-decentralization.svg`} alt="" className={styles.cardIconImg} aria-hidden />
-              <h3>Boing Network</h3>
-              <p>Native support for Boing: Ed25519 addresses, send/receive BOING, testnet faucet, mainnet when live.</p>
+              <h3>Built for Boing</h3>
+              <p>Native support for Boing: Ed25519 addresses, send and receive BOING, testnet faucet. Mainnet is not live.</p>
             </div>
           </div>
         </section>
@@ -131,7 +124,7 @@ export function Landing() {
             <Link to="/privacy">Privacy Policy</Link>
             <Link to="/terms">Terms of Service</Link>
           </div>
-          <p className={styles.footerCopy}>Boing Express · boing.express · Authentic. Decentralized. Optimal. Quality-Assured.</p>
+          <p className={styles.footerCopy}>Boing Express · boing.express · Part of Boing Network — Quality, enforced by the protocol.</p>
         </footer>
       </main>
       </div>

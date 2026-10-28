@@ -7,11 +7,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import styles from './InitialAnimation.module.css';
 
-const TEAL = '#00e8c8';
+const TEAL = '#3B8CFF';
 const TEAL_R = 0;
 const TEAL_G = 232;
 const TEAL_B = 200;
-const DEEP_BG = '#06080c';
+const DEEP_BG = '#050A1A';
 
 const TOTAL_MS = 4200;
 const REDUCED_MOTION_MS = 1800;
@@ -131,7 +131,7 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
         const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
         grd.addColorStop(0, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${opacity * 0.35})`);
         grd.addColorStop(0.5, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${opacity * 0.1})`);
-        grd.addColorStop(1, 'rgba(0,232,200,0)');
+        grd.addColorStop(1, 'rgba(59, 140, 255,0)');
         ctx.fillStyle = grd;
         ctx.beginPath();
         ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
@@ -215,7 +215,7 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
       STARS.forEach((s) => {
         const twinkle = s.base + 0.15 * Math.sin(t * 0.001 + s.phase);
         ctx.globalAlpha = opacity * twinkle;
-        ctx.fillStyle = '#e0f8ff';
+        ctx.fillStyle = '#E8F0FF';
         ctx.beginPath();
         ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
         ctx.fill();
@@ -315,7 +315,7 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
         grd.addColorStop(0, `rgba(255,255,255,${flashOpacity * 0.9})`);
         grd.addColorStop(0.15, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${flashOpacity * 0.7})`);
         grd.addColorStop(0.5, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${flashOpacity * 0.2})`);
-        grd.addColorStop(1, 'rgba(0,232,200,0)');
+        grd.addColorStop(1, 'rgba(59, 140, 255,0)');
         ctx.save();
         ctx.fillStyle = grd;
         ctx.fillRect(0, 0, W, H);
@@ -359,9 +359,9 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
             H / 2,
             wR
           );
-          grd.addColorStop(0, 'rgba(0,232,200,0)');
+          grd.addColorStop(0, 'rgba(59, 140, 255,0)');
           grd.addColorStop(0.7, `rgba(${TEAL_R},${TEAL_G},${TEAL_B},${wO * 0.6})`);
-          grd.addColorStop(1, 'rgba(0,232,200,0)');
+          grd.addColorStop(1, 'rgba(59, 140, 255,0)');
           ctx.save();
           ctx.fillStyle = grd;
           ctx.fillRect(0, 0, W, H);
@@ -388,7 +388,7 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
         sceneTextRef.current.innerHTML = `
           <div class="${styles.sceneLabel}">Your Wallet. Your Keys.</div>
           <div class="${styles.sceneTitle}">Boing Express</div>
-          <div class="${styles.sceneSub}">Non-custodial. Secure. Yours.</div>
+          <div class="${styles.sceneSub}">Your gateway to Boing.</div>
         `;
         sceneTextRef.current.classList.add(styles.sceneShow);
       }

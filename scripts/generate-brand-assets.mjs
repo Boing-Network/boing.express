@@ -18,7 +18,7 @@ const svgPath = join(assetsDir, 'boing-express-mark.svg')
 const smallSvgPath = join(publicDir, 'favicon.svg')
 const wordmarkPath = join(assetsDir, 'boing-express-wordmark.svg')
 
-const BRAND_RGB = { r: 6, g: 8, b: 12 }
+const BRAND_RGB = { r: 5, g: 10, b: 26 }
 const PNG = { compressionLevel: 9 }
 
 function pngsToIco(pngBuffers) {
@@ -79,8 +79,8 @@ async function writeFaviconIco(smallSvg, svg, outPath) {
 function ogTaglineSvg() {
   return Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="700" height="120" viewBox="0 0 700 120">
-  <text x="0" y="40" fill="#94a3b8" font-family="Comfortaa,Segoe UI,system-ui,sans-serif" font-size="30">Non-custodial wallet for Boing Network</text>
-  <text x="0" y="92" fill="#64748b" font-family="Comfortaa,Segoe UI,system-ui,sans-serif" font-size="24">boing.express</text>
+  <text x="0" y="40" fill="#94a3b8" font-family="Comfortaa,Segoe UI,system-ui,sans-serif" font-size="30">Your gateway to Boing</text>
+  <text x="0" y="92" fill="#64748b" font-family="Comfortaa,Segoe UI,system-ui,sans-serif" font-size="24">boing.express · Public testnet, mainnet not live</text>
 </svg>`,
     'utf8',
   )

@@ -19,12 +19,13 @@
       <div class="hero-card">
         <img src="images/mascot.webp" alt="" class="hero-mascot" aria-hidden="true" />
         <h2 class="hero-title">Welcome to Boing Express</h2>
-        <p class="hero-subtitle">Your non-custodial wallet for Boing Network</p>
+        <p class="hero-subtitle">Your gateway to Boing</p>
         <div class="actions">
           <button type="button" id="btn-create" class="btn-primary btn-hero" aria-label="Create new wallet" data-testid="wallet-landing-create">Create New Wallet</button>
           <button type="button" id="btn-import" class="btn-secondary btn-hero-outline" aria-label="Import wallet with private key" data-testid="wallet-landing-import">Import Existing Wallet</button>
         </div>
         <p class="hero-keys" data-testid="wallet-keys-note"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Your keys never leave your device</p>
+        <p class="hero-testnet" data-testid="wallet-testnet-note">Public testnet — mainnet not live</p>
       </div>
     </div>
     <div id="screen-unlock" class="screen hidden hero-screen">
@@ -43,8 +44,19 @@
       </div>
     </div>
     <div id="screen-create" class="screen hidden">
-      <p class="subtitle">Generate a new keypair. Back up your key.</p>
+      <p class="subtitle">Create a new account. Choose how you want to back it up.</p>
       <form id="form-create" class="form">
+        <fieldset class="method-choice">
+          <legend class="hint">How do you want to back up this account?</legend>
+          <label class="row backup-checkbox">
+            <input type="radio" name="create-method" value="phrase" checked data-testid="wallet-create-method-phrase" />
+            <span><strong>Recovery phrase (recommended).</strong> 24 words you write on paper. Works in any wallet that supports Boing.</span>
+          </label>
+          <label class="row backup-checkbox">
+            <input type="radio" name="create-method" value="key" data-testid="wallet-create-method-key" />
+            <span><strong>Private key (advanced).</strong> One long code you must store safely.</span>
+          </label>
+        </fieldset>
         <input type="password" id="create-password" placeholder="Password (min 8 chars)" class="input" data-testid="wallet-create-password" />
         <input type="password" id="create-confirm" placeholder="Confirm password" class="input" data-testid="wallet-create-password-confirm" />
         <p id="create-error" class="error hidden"></p>
@@ -53,15 +65,31 @@
       <button type="button" id="btn-create-back" class="btn-text" aria-label="Back">Back</button>
     </div>
     <div id="screen-backup" class="screen hidden">
-      <p class="subtitle">Save this key in a safe place. Anyone with it can control your wallet.</p>
-      <div class="row">
-        <code id="backup-key" class="backup-key"></code>
-        <button type="button" id="btn-backup-copy" class="btn-small" aria-label="Copy private key">Copy</button>
+      <p id="backup-subtitle" class="subtitle">Save this key in a safe place. Anyone with it can control your wallet.</p>
+      <div id="backup-key-block">
+        <div class="row">
+          <code id="backup-key" class="backup-key"></code>
+          <button type="button" id="btn-backup-copy" class="btn-small" aria-label="Copy private key">Copy</button>
+        </div>
+      </div>
+      <div id="backup-phrase-block" class="hidden">
+        <ol id="backup-phrase-words" class="phrase-grid" aria-label="Recovery phrase" data-testid="wallet-phrase-words"></ol>
+        <p class="hint">Write the words on paper, in this order. Do not take a screenshot or save them in a notes app or email.</p>
       </div>
       <label class="row backup-checkbox">
-        <input type="checkbox" id="backup-acknowledged" aria-label="I have saved my private key" data-testid="wallet-backup-ack" />
-        <span>I have saved my private key in a safe place</span>
+        <input type="checkbox" id="backup-acknowledged" aria-label="I have saved my backup" data-testid="wallet-backup-ack" />
+        <span id="backup-ack-text">I have saved my private key in a safe place</span>
       </label>
+      <div id="backup-key-confirm">
+        <label class="backup-confirm" for="backup-confirm">Type the last 6 characters of your key to confirm you saved it</label>
+        <input type="text" id="backup-confirm" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="12" placeholder="Last 6 characters" data-testid="wallet-backup-confirm" />
+      </div>
+      <div id="backup-phrase-confirm" class="hidden">
+        <label class="backup-confirm">Type these words from your phrase to check you wrote it down</label>
+        <input type="text" id="backup-phrase-confirm-0" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="wallet-phrase-confirm-0" />
+        <input type="text" id="backup-phrase-confirm-1" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="wallet-phrase-confirm-1" />
+        <input type="text" id="backup-phrase-confirm-2" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="wallet-phrase-confirm-2" />
+      </div>
       <p id="backup-error" class="error hidden"></p>
       <button type="button" id="btn-backup-continue" class="btn-primary" aria-label="Continue to wallet" disabled data-testid="wallet-backup-continue">I've backed it up — Continue</button>
     </div>
@@ -69,9 +97,21 @@
       <div id="claim-name-root"></div>
     </div>
     <div id="screen-import" class="screen hidden">
-      <p class="subtitle">Enter 64-char hex private key.</p>
+      <p id="import-subtitle" class="subtitle">Enter your 12 or 24 word recovery phrase.</p>
       <form id="form-import" class="form">
-        <textarea id="import-key" placeholder="0x... or 64 hex chars" class="textarea" rows="3" data-testid="wallet-import-key"></textarea>
+        <fieldset class="method-choice">
+          <legend class="hint">What do you want to import?</legend>
+          <label class="row backup-checkbox">
+            <input type="radio" name="import-method" value="phrase" checked data-testid="wallet-import-method-phrase" />
+            <span>Recovery phrase (12 or 24 words)</span>
+          </label>
+          <label class="row backup-checkbox">
+            <input type="radio" name="import-method" value="key" data-testid="wallet-import-method-key" />
+            <span>Private key (64 hex characters)</span>
+          </label>
+        </fieldset>
+        <textarea id="import-phrase" placeholder="Type your words in order, separated by spaces" class="textarea" rows="3" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="wallet-import-phrase"></textarea>
+        <textarea id="import-key" placeholder="0x... or 64 hex chars" class="textarea hidden" rows="3" data-testid="wallet-import-key"></textarea>
         <input type="password" id="import-password" placeholder="Password (min 8 chars)" class="input" data-testid="wallet-import-password" />
         <input type="password" id="import-confirm" placeholder="Confirm password" class="input" data-testid="wallet-import-password-confirm" />
         <p id="import-error" class="error hidden"></p>
@@ -111,15 +151,17 @@
         </div>
       </div>
       <nav class="tab-bar" role="tablist" aria-label="Wallet sections">
-        <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" aria-controls="panel-wallet" data-tab="wallet" data-testid="wallet-tab-wallet">Wallet</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transaction history" data-testid="wallet-tab-transactions">Tx</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-transfer" aria-selected="false" aria-controls="panel-transfer" data-tab="transfer" data-testid="wallet-tab-transfer">Transfer</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-validate" aria-selected="false" aria-controls="panel-validate" data-tab="validate" aria-label="Validate and stake" data-testid="wallet-tab-validate">Validate</button>
-            <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
+        <button type="button" class="tab-btn active" role="tab" id="tab-wallet" aria-selected="true" tabindex="0" aria-controls="panel-wallet" data-tab="wallet" data-testid="wallet-tab-wallet">Wallet</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-transactions" aria-selected="false" tabindex="-1" aria-controls="panel-transactions" data-tab="transactions" aria-label="Transaction history" data-testid="wallet-tab-transactions">Tx</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-transfer" aria-selected="false" tabindex="-1" aria-controls="panel-transfer" data-tab="transfer" data-testid="wallet-tab-transfer">Transfer</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-validate" aria-selected="false" tabindex="-1" aria-controls="panel-validate" data-tab="validate" aria-label="Validate and stake" data-testid="wallet-tab-validate">Validate</button>
+            <button type="button" class="tab-btn" role="tab" id="tab-faucet" aria-selected="false" tabindex="-1" aria-controls="panel-faucet" data-tab="faucet">Faucet</button>
       </nav>
       <div class="tab-panels">
         <section id="panel-wallet" class="tab-panel active" role="tabpanel" aria-labelledby="tab-wallet">
           <div id="pending-name-root"></div>
+          <p id="compat-banner" class="hint compat-banner hidden" role="status" aria-live="polite" data-testid="node-compat-banner"></p>
+          <p id="recovery-nudge" class="hint compat-banner hidden" role="note" data-testid="recovery-nudge"></p>
           <div class="assets-composition" data-testid="assets-composition">
             <p id="primary-name" class="primary-name hidden" data-testid="wallet-primary-name"></p>
             <div class="assets-tokens" data-testid="wallet-tokens">
@@ -186,12 +228,12 @@
         </section>
         <section id="panel-transfer" class="tab-panel" role="tabpanel" aria-labelledby="tab-transfer" hidden>
           <div class="segmented" role="tablist" aria-label="Asset to transfer">
-            <button type="button" class="segmented-btn active" data-transfer-mode="boing" aria-selected="true" data-testid="transfer-mode-boing">BOING</button>
-            <button type="button" class="segmented-btn" data-transfer-mode="token" aria-selected="false" data-testid="transfer-mode-token">Token</button>
-            <button type="button" class="segmented-btn" data-transfer-mode="nft" aria-selected="false" data-testid="transfer-mode-nft">NFT</button>
-            <button type="button" class="segmented-btn" data-transfer-mode="bulk" aria-selected="false" data-testid="transfer-mode-bulk">Bulk</button>
+            <button type="button" class="segmented-btn active" role="tab" id="transfer-mode-tab-boing" tabindex="0" data-transfer-mode="boing" aria-selected="true" data-testid="transfer-mode-boing">BOING</button>
+            <button type="button" class="segmented-btn" role="tab" id="transfer-mode-tab-token" tabindex="-1" data-transfer-mode="token" aria-selected="false" data-testid="transfer-mode-token">Token</button>
+            <button type="button" class="segmented-btn" role="tab" id="transfer-mode-tab-nft" tabindex="-1" data-transfer-mode="nft" aria-selected="false" data-testid="transfer-mode-nft">NFT</button>
+            <button type="button" class="segmented-btn" role="tab" id="transfer-mode-tab-bulk" tabindex="-1" data-transfer-mode="bulk" aria-selected="false" data-testid="transfer-mode-bulk">Bulk</button>
           </div>
-          <div class="card transfer-pane" id="transfer-pane-boing" data-testid="transfer-pane-boing">
+          <div class="card transfer-pane" id="transfer-pane-boing" role="tabpanel" aria-labelledby="transfer-mode-tab-boing" data-testid="transfer-pane-boing" role="tabpanel" aria-labelledby="transfer-mode-tab-boing">
             <h2 class="label">Send BOING</h2>
             <form id="form-send" class="form">
               <div class="row row-amount">
@@ -207,7 +249,7 @@
               <button type="submit" id="btn-send-submit" class="btn-primary" aria-label="Review BOING send" data-testid="send-submit">Review send</button>
             </form>
           </div>
-          <div class="card transfer-pane hidden" id="transfer-pane-token" data-testid="transfer-pane-token">
+          <div class="card transfer-pane hidden" id="transfer-pane-token" role="tabpanel" aria-labelledby="transfer-mode-tab-token" data-testid="transfer-pane-token" role="tabpanel" aria-labelledby="transfer-mode-tab-token">
             <h2 class="label">Send token</h2>
             <p class="hint">Boing reference tokens (v1 and v2). Sending to your own address is refused (v1 self-transfer bug).</p>
             <form id="form-token-send" class="form">
@@ -225,7 +267,7 @@
               <button type="submit" id="btn-token-send" class="btn-primary" data-testid="token-send-submit">Review send</button>
             </form>
           </div>
-          <div class="card transfer-pane hidden" id="transfer-pane-nft" data-testid="transfer-pane-nft">
+          <div class="card transfer-pane hidden" id="transfer-pane-nft" role="tabpanel" aria-labelledby="transfer-mode-tab-nft" data-testid="transfer-pane-nft" role="tabpanel" aria-labelledby="transfer-mode-tab-nft">
             <h2 class="label">Transfer NFT</h2>
             <form id="form-nft-transfer" class="form">
               <ul id="nft-transfer-pick" class="connected-sites-list nft-pick-list" aria-label="Owned NFTs to transfer"></ul>
@@ -240,7 +282,7 @@
               <button type="submit" id="btn-nft-transfer" class="btn-primary" aria-label="Transfer NFT" data-testid="nft-transfer-submit" disabled>Transfer NFT</button>
             </form>
           </div>
-          <div class="card transfer-pane hidden" id="transfer-pane-bulk">
+          <div class="card transfer-pane hidden" id="transfer-pane-bulk" role="tabpanel" aria-labelledby="transfer-mode-tab-bulk">
             <!-- Same mixed BOING / token / NFT bulk component as the web wallet (native batch when supported). -->
             <div id="bulk-root"></div>
           </div>
@@ -301,6 +343,11 @@
             <button type="button" id="btn-add-account" class="btn-secondary" aria-label="Add account" data-testid="wallet-dashboard-add-account">Add account</button>
             <p class="hint">Create or import another key in the same vault. Your password stays the same.</p>
           </div>
+          <div class="card" data-testid="settings-auto-lock">
+            <h2 class="label"><label for="auto-lock-select">Auto-lock</label></h2>
+            <select id="auto-lock-select" class="input" aria-describedby="auto-lock-hint"></select>
+            <p class="hint" id="auto-lock-hint">Locks the wallet after this much time without activity. Locking also disconnects sites until you unlock again.</p>
+          </div>
           <div id="names-root" class="names-root"></div>
           <div class="card card-connected-sites" data-testid="settings-connected-sites">
             <h2 class="label">Connected sites</h2>
@@ -308,6 +355,24 @@
             <ul id="connected-sites-list" class="connected-sites-list" aria-label="List of connected sites"></ul>
             <p id="connected-sites-empty" class="connected-sites-empty hidden">No sites connected.</p>
           </div>
+          <details class="card reveal-key-card" data-testid="reveal-recovery-phrase">
+            <summary class="label">Recovery phrase</summary>
+            <p id="reveal-recovery-phrase-none" class="hint hidden" data-testid="reveal-recovery-phrase-none">This account was set up with a private key, so it has no recovery phrase. Its private key (below) is its backup. To get a recovery phrase, add a new account and choose "Recovery phrase".</p>
+            <div id="reveal-phrase-body">
+              <p class="error" role="note">Anyone with these words controls this account and its funds. Never type them into a website, share them, or send them to anyone (Boing will never ask). Write them on paper and keep them offline.</p>
+              <form id="form-reveal-phrase">
+                <input type="password" id="reveal-phrase-password" placeholder="Wallet password" class="input" autocomplete="current-password" aria-label="Wallet password" data-testid="reveal-phrase-password" />
+                <button type="submit" id="btn-reveal-phrase" class="btn-secondary" data-testid="reveal-phrase-submit">Show phrase</button>
+              </form>
+              <div id="reveal-phrase-output" class="hidden">
+                <p class="hint">Hidden automatically after 30 seconds or when this popup closes.</p>
+                <ol id="reveal-phrase-words" class="phrase-grid" aria-label="Recovery phrase" data-testid="reveal-phrase-words"></ol>
+                <button type="button" id="btn-reveal-phrase-toggle" class="btn-secondary" data-testid="reveal-phrase-toggle">Show</button>
+                <button type="button" id="btn-reveal-phrase-done" class="btn-secondary">Done</button>
+              </div>
+              <p id="reveal-phrase-error" class="error hidden"></p>
+            </div>
+          </details>
           <details class="card reveal-key-card" data-testid="reveal-private-key">
             <summary class="label">Export private key</summary>
             <p class="error" role="note">Anyone with this key controls this account and its funds. Never share it, paste it into a website, or send it to anyone (Boing will never ask). Use it only in tools you trust, such as the boing CLI (BOING_SECRET_HEX).</p>

@@ -3,13 +3,13 @@
  * Full system: docs/DESIGN_SYSTEM.md
  *
  * Element              Value
- * Primary Accent       #00e8c8 (--express-primary)
- * Secondary            #00b4d8 (--express-secondary)
- * Trust / Security     #2dd4bf (--trust-green), #fbbf24 (--shield-gold)
- * Dark Background      #050c18 (--boing-black), #0a1628 (--boing-navy)
+ * Primary Accent       #3B8CFF (--express-primary)
+ * Secondary            #2563EB (--express-secondary)
+ * Trust / Security     #34D399 (--trust-green), #fbbf24 (--shield-gold)
+ * Dark Background      #050A1A (--boing-black), #0A1128 (--boing-navy)
  * Typography           Comfortaa (display, body, mono tokens — boing.express)
  * Theme                Aqua Personal: warm teal-cyan, trust-forward, caustics
- * Tagline              "Authentic. Decentralized. Optimal. Quality-Assured."
+ * Tagline              "Boing Network — Quality, enforced by the protocol."
  *
  * Primary btn: linear-gradient(--express-primary, --express-warm)
  * Cards: background var(--card-bg); border 1px solid var(--card-border)
@@ -17,13 +17,13 @@
  */
 
 :root {
-  --express-primary: #00e8c8;
-  --express-secondary: #00b4d8;
-  --express-warm: #0096c7;
-  --trust-green: #2dd4bf;
+  --express-primary: #3B8CFF;
+  --express-secondary: #2563EB;
+  --express-warm: #2563EB;
+  --trust-green: #34D399;
   --shield-gold: #fbbf24;
-  --boing-black: #050c18;
-  --boing-navy: #0a1628;
+  --boing-black: #050A1A;
+  --boing-navy: #0A1128;
   --font-display: 'Comfortaa', system-ui, sans-serif;
   --font-body: 'Comfortaa', system-ui, sans-serif;
   --font-mono: 'Comfortaa', ui-monospace, monospace;

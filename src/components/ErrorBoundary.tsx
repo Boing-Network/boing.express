@@ -39,8 +39,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
             justifyContent: 'center',
             padding: '2rem',
             textAlign: 'center',
-            color: 'var(--text-primary, #f0f9ff)',
-            background: 'var(--bg, #06080c)',
+            color: 'var(--text-primary, #F0F4F8)',
+            background: 'var(--bg, #050A1A)',
           }}
         >
           <h1 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Something went wrong</h1>
@@ -54,9 +54,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
             style={{
               padding: '0.6rem 1.25rem',
               borderRadius: '8px',
-              border: '1px solid rgba(0, 232, 200, 0.35)',
-              background: 'rgba(0, 232, 200, 0.12)',
-              color: '#00e8c8',
+              border: '1px solid rgba(59, 140, 255, 0.35)',
+              background: 'rgba(59, 140, 255, 0.12)',
+              color: '#3B8CFF',
               cursor: 'pointer',
               fontWeight: 600,
             }}

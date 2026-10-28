@@ -32,18 +32,18 @@ export function LogoMark({ className, size = 44 }: Props) {
     >
       <defs>
         <linearGradient id={frame} x1="8" y1="54" x2="56" y2="10" gradientUnits="userSpaceOnUse">
-          <stop stopColor="var(--express-primary, #00e8c8)" />
+          <stop stopColor="var(--express-primary, #3B8CFF)" />
           <stop offset="0.5" stopColor="var(--logo-neon-mid, #5ab0ff)" />
-          <stop offset="1" stopColor="var(--express-secondary, #00b4d8)" />
+          <stop offset="1" stopColor="var(--express-secondary, #2563EB)" />
         </linearGradient>
         <linearGradient id={orb} x1="40" y1="14" x2="56" y2="30" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#c4b5fd" />
-          <stop offset="0.5" stopColor="var(--express-primary, #00e8c8)" />
-          <stop offset="1" stopColor="#90e0ef" />
+          <stop stopColor="#CFE0FF" />
+          <stop offset="0.5" stopColor="var(--express-primary, #3B8CFF)" />
+          <stop offset="1" stopColor="#8DB8FF" />
         </linearGradient>
         <radialGradient id={slab} cx="34%" cy="28%" r="78%">
-          <stop offset="0" stopColor="#1a2434" />
-          <stop offset="1" stopColor="#0c1018" />
+          <stop offset="0" stopColor="#18244A" />
+          <stop offset="1" stopColor="#0A1128" />
         </radialGradient>
         <filter id={glow} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="1.6" result="b" />
@@ -63,7 +63,7 @@ export function LogoMark({ className, size = 44 }: Props) {
         opacity="0.9"
       />
       <circle cx="49" cy="24" r="7.25" fill={`url(#${orb})`} filter={`url(#${glow})`} className={styles.core} />
-      <circle cx="46.8" cy="21.6" r="2" fill="#f0f9ff" opacity="0.45" />
+      <circle cx="46.8" cy="21.6" r="2" fill="#F0F4F8" opacity="0.45" />
     </svg>
   );
 }
