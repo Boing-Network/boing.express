@@ -25,7 +25,7 @@ Official Boing Network design system assets. All are used in the web app.
 
 ### Branding
 
-- **boing-express-mark.svg** — Vector mark (stone slab + engraved hex + teal→blue gradient core). Source for raster icon.
+- **boing-express-mark.svg** — Vector mark (stone slab + engraved hex + blue gradient core). Source for raster icon.
 - **favicon.svg** (repo root `public/`) — Tab icon (simplified 32×32-style mark).
 - **icon-only-transparent.png** — 512×512 PNG generated from `boing-express-mark.svg` (Sharp) for Apple touch and PNG favicon fallback.
 - **logo-light-transparent.png** / **logo-dark-transparent.png** — Full wordmark logos for dark and light backgrounds (optional; app uses icon-only).

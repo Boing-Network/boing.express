@@ -18,7 +18,7 @@ flowchart LR
 
 ## Design system
 
-Boing Express uses the **Boing Design System** variant **Aqua Personal** (personal, secure, approachable, trustworthy). Design tokens, typography, and component patterns are documented in **[docs/DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)**. When adding or changing UI, use the tokens and section/button patterns from `src/index.css` and refer to DESIGN_SYSTEM.md for consistency with the rest of the Boing ecosystem.
+Boing Express uses the shared Boing brand palette (deep navy with one electric-blue accent, Comfortaa). Design tokens, typography, and component patterns are documented in **[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)**, which follows [BRAND.md](https://github.com/Boing-Network/boing.network/blob/main/BRAND.md). When adding or changing UI, use the tokens and section/button patterns from `src/index.css` and refer to DESIGN_SYSTEM.md for consistency with the rest of the Boing ecosystem.
 
 ### Automated tests
 
@@ -159,10 +159,10 @@ If these variables are **not** set, the app defaults to the official testnet RPC
 - **Theme color:** theme-color and msapplication-TileColor for browser UI (#0A0E1A — Boing Deep Navy)
 - **Icons:** favicon.svg and apple-touch-icon use the shared Boing accent blue (#3B8CFF) to match the Boing brand
 
-### Brand consistency (aqua/teal)
+### Brand consistency
 
 - **Favicon:** SVG uses the accent blue `#3B8CFF` so the tab/bookmark icon matches the Boing Network brand.
-- **og-image:** When you add `public/og-image.png` (1200×630), use the same aqua/teal accent so link previews match the brand.
+- **og-image:** When you add `public/og-image.png` (1200×630), use the same electric-blue accent (`#3B8CFF`) on deep navy so link previews match the brand.
 
 ### Maintenance
 
@@ -214,17 +214,17 @@ Tracks readiness for Boing Network incentivized testnet and mainnet.
 
 ## 5. Alignment with Boing Network specs
 
-This section summarizes how boing.express aligns with the six reference documents in the boing-network repository.
+This section summarizes how boing.express aligns with the reference documents in the [boing.network](https://github.com/Boing-Network/boing.network) repository.
 
 ### Reference documents
 
 | Document | Purpose |
 |----------|---------|
-| [SIX-PILLARS-READINESS.md](https://github.com/chiku524/boing-network/blob/main/docs/SIX-PILLARS-READINESS.md) | Six pillars assessment |
-| [TECHNICAL-SPECIFICATION.md](https://github.com/chiku524/boing-network/blob/main/docs/TECHNICAL-SPECIFICATION.md) | Cryptography, data formats, VM, RPC |
-| [QUALITY-ASSURANCE-NETWORK.md](https://github.com/boing-network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md) | QA policy, deployer guidance, and canonical malice definition |
-| [RUNBOOK.md](https://github.com/chiku524/boing-network/blob/main/docs/RUNBOOK.md) | Node ops, RPC, incident response |
-| [SECURITY-STANDARDS.md](https://github.com/chiku524/boing-network/blob/main/docs/SECURITY-STANDARDS.md) | Security requirements, contacts |
+| [SIX-PILLARS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/SIX-PILLARS.md) | The six pillars |
+| [TECHNICAL-SPECIFICATION.md](https://github.com/Boing-Network/boing.network/blob/main/docs/TECHNICAL-SPECIFICATION.md) | Cryptography, data formats, VM, RPC |
+| [QUALITY-ASSURANCE-NETWORK.md](https://github.com/Boing-Network/boing.network/blob/main/docs/QUALITY-ASSURANCE-NETWORK.md) | QA policy, deployer guidance, and canonical malice definition |
+| [RUNBOOK.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RUNBOOK.md) | Node ops, RPC, incident response |
+| [SECURITY-STANDARDS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/SECURITY-STANDARDS.md) | Security requirements, contacts |
 
 ### Alignment summary
 

@@ -13,6 +13,10 @@ override them, and how the wallet checks at runtime that a node really is the ne
 
 Mainnet stays hidden until `VITE_BOING_MAINNET_RPC` (or the runtime catalog) provides a URL that differs from the testnet URL.
 
+### Operator-only RPC methods
+
+The wallet never calls operator-only node methods (admin and policy methods). Those are fail-closed on the node: they are rejected with `-32057` unless the node has `BOING_OPERATOR_RPC_TOKEN` configured and the request sends it in `X-Boing-Operator`, and a mainnet node refuses to start without the token. Never put that token in a `VITE_` variable or in the extension: it would ship to every user. See boing.network [RUNBOOK.md](https://github.com/Boing-Network/boing.network/blob/main/docs/RUNBOOK.md).
+
 ### Changing an endpoint
 
 1. Copy `.env.example` to `.env.local`.
