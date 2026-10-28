@@ -295,9 +295,9 @@ export function WebSign() {
   };
 
   const shell = (body: React.ReactNode) => (
-    <div className={`${styles.wrap} page-app`} data-testid="web-sign">
+    <main className={`${styles.wrap} page-app`} data-testid="web-sign">
       <div className={styles.card}>{body}</div>
-    </div>
+    </main>
   );
 
   if (isFramed) return shell(<p className={styles.error}>Boing Express can't be shown inside another page.</p>);

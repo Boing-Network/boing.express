@@ -25,7 +25,7 @@ export function Landing() {
           <div className={styles.heroVisual}>
             <div className={styles.heroMascotWrap}>
               <img
-                src={`${ASSETS_BASE}/mascot-excited.png`}
+                src={`${ASSETS_BASE}/mascot-excited.webp`}
                 alt="Boing Bot — Boing Network mascot"
                 className={styles.heroMascotImg}
               />

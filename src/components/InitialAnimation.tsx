@@ -415,8 +415,8 @@ export function InitialAnimation({ onComplete }: { onComplete: () => void }) {
   return (
     <div
       className={`${styles.wrapper} ${exiting ? styles.fadeOut : ''}`}
-      role="img"
-      aria-label="Boing Express — The Wallet Awakens"
+      role="region"
+      aria-label="Boing Express intro animation"
     >
       <button
         type="button"

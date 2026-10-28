@@ -101,7 +101,7 @@ export function SendConfirm(p: SendConfirmProps) {
           </svg>
         </button>
       </div>
-      <img src={p.mascotSrc ?? '/assets/mascot-default.png'} alt="" className={styles.mascot} aria-hidden />
+      <img src={p.mascotSrc ?? '/assets/mascot-default.webp'} alt="" className={styles.mascot} aria-hidden />
       <h2 className={styles.title} ref={headingRef} tabIndex={-1}>{p.title}</h2>
       <dl className={styles.rows}>
         {p.toName ? (

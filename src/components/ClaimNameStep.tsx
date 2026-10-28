@@ -45,7 +45,7 @@ export function ClaimNameStep(p: ClaimNameStepProps) {
   const v = normalizeName(wantName);
   return (
     <div className={`${styles.card} ${styles.heroCard}`} data-testid="wallet-claim-name">
-      <img src={p.mascotSrc ?? '/assets/mascot-default.png'} alt="" className={styles.mascot} aria-hidden />
+      <img src={p.mascotSrc ?? '/assets/mascot-default.webp'} alt="" className={styles.mascot} aria-hidden />
       <h1 className={styles.title}>Pick a name (optional)</h1>
       <p className={styles.subtitle}>
         Get a <strong>.boing</strong> name so friends can send to <em>you.boing</em> instead of a long address. It is claimed
