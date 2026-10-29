@@ -8,7 +8,7 @@ import type { AccountId, AccessList, BatchCall, Payload, Transaction } from './t
 import { accountIdFromHex, accountIdToHex, formatAddress, MAX_BATCH_CALLS } from './types';
 import { emptyAccessList, suggestedAccessList } from './accessList';
 import { parseReferenceMintBatchTokenIds } from './referenceNft';
-import { dappDisplayHintFromJson, describeCalldataIntent } from './calldataIntent';
+import { describeCalldataIntent } from './calldataIntent';
 
 export { dappDisplayHintFromJson, describeCalldataIntent } from './calldataIntent';
 
