@@ -225,7 +225,7 @@ The wallet work is in good shape when:
 Next highest-impact items:
 
 - **multi-account support**
-- **transaction approval UX** (clearer contract_call / access_list display)
+- **transaction approval UX** (clearer contract_call / access_list display) — **0.1.24:** optional dApp `display`/`description` + decoded approve/swap/transfer/router/wBOING intent on the approval window
 - **error string parity** with **boing-sdk** for dApp integrators
 
 Cross-repo checklist: [HANDOFF-DEPENDENT-PROJECTS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/HANDOFF-DEPENDENT-PROJECTS.md), [THREE-CODEBASE-ALIGNMENT.md](https://github.com/Boing-Network/boing.network/blob/main/docs/THREE-CODEBASE-ALIGNMENT.md).

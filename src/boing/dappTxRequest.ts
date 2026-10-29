@@ -8,6 +8,9 @@ import type { AccountId, AccessList, BatchCall, Payload, Transaction } from './t
 import { accountIdFromHex, accountIdToHex, formatAddress, MAX_BATCH_CALLS } from './types';
 import { emptyAccessList, suggestedAccessList } from './accessList';
 import { parseReferenceMintBatchTokenIds } from './referenceNft';
+import { describeCalldataIntent } from './calldataIntent';
+
+export { dappDisplayHintFromJson, describeCalldataIntent } from './calldataIntent';
 
 const U128_MAX = (1n << 128n) - 1n;
 
@@ -180,6 +183,16 @@ function batchStepLine(c: BatchCall, decimals: number = BOING_BASE_DECIMALS): st
   if (c.kind === 'transfer') return `Transfer ${formatNativeBoing(c.amount, decimals)} to ${formatAddress(c.to, true)}`;
   const mint = describeReferenceMintBatchCalldata(c.calldata);
   if (mint) return `Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)} (contract ${formatAddress(c.contract, true)})`;
+  const intent = describeCalldataIntent(c.calldata, { value: c.value, decimals });
+  if (intent) {
+    // Wrap summaries already include the BOING amount; other value-carrying calls append it.
+    const alreadyHasValue = intent.action === 'Wrap' || /BOING/.test(intent.summary);
+    const v =
+      !alreadyHasValue && c.value != null && c.value > 0n
+        ? ` · sending ${formatNativeBoing(c.value, decimals)}`
+        : '';
+    return `${intent.summary}${v} (contract ${formatAddress(c.contract, true)})`;
+  }
   const v = c.value != null && c.value > 0n ? ` sending ${formatNativeBoing(c.value, decimals)}` : '';
   return `Call contract ${formatAddress(c.contract, true)}${v} | calldata ${c.calldata.length} bytes`;
 }
@@ -206,7 +219,12 @@ export function batchCallsFromDappJson(raw: unknown, sender: AccountId): BatchCa
   });
 }
 
-export function transactionSummary(tx: Transaction, ctx?: NativeAmountContext): string {
+export type ApprovalDetailOptions = {
+  /** Optional dApp-supplied intent string (`display` / `description` on the tx JSON). */
+  display?: string;
+};
+
+export function transactionSummary(tx: Transaction, ctx?: NativeAmountContext, opts?: ApprovalDetailOptions): string {
   const d = ctxDecimals(ctx);
   const from = formatAddress(tx.sender, true);
   const n = tx.nonce.toString();
@@ -214,6 +232,10 @@ export function transactionSummary(tx: Transaction, ctx?: NativeAmountContext): 
     tx.priorityTip != null && tx.priorityTip > 0n
       ? ` | tip ${formatNativeBoing(tx.priorityTip, d)}`
       : '';
+  const display = opts?.display?.trim();
+  if (display) {
+    return `Boing tx | From ${from} | Nonce ${n} | ${display}${tip}`;
+  }
   const p = tx.payload;
   let body: string;
   switch (p.kind) {
@@ -240,8 +262,14 @@ export function transactionSummary(tx: Transaction, ctx?: NativeAmountContext): 
       if (mint) {
         body = `Boing tx | From ${from} | Nonce ${n} | Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)}${al}`;
       } else {
-        const v = p.value != null && p.value > 0n ? ` | sending ${formatNativeBoing(p.value, d)}` : '';
-        body = `Boing tx | From ${from} | Nonce ${n} | Call contract ${formatAddress(p.contract, true)}${v} | calldata ${p.calldata.length} bytes${al}`;
+        const intent = describeCalldataIntent(p.calldata, { value: p.value, decimals: d });
+        if (intent) {
+          const v = p.value != null && p.value > 0n ? ` | sending ${formatNativeBoing(p.value, d)}` : '';
+          body = `Boing tx | From ${from} | Nonce ${n} | ${intent.summary}${v}${al}`;
+        } else {
+          const v = p.value != null && p.value > 0n ? ` | sending ${formatNativeBoing(p.value, d)}` : '';
+          body = `Boing tx | From ${from} | Nonce ${n} | Call contract ${formatAddress(p.contract, true)}${v} | calldata ${p.calldata.length} bytes${al}`;
+        }
       }
       break;
     }
@@ -337,14 +365,23 @@ function accessListSummary(tx: Transaction): { label: string; value: string } {
 
 /**
  * Human-readable breakdown for the approval popup (transaction signing / send).
+ * Prefer a dApp `display` / `description` string when present; otherwise decode known calldata.
  */
-export function buildTransactionApprovalDetail(tx: Transaction, ctx?: NativeAmountContext): TransactionApprovalDetail {
+export function buildTransactionApprovalDetail(
+  tx: Transaction,
+  ctx?: NativeAmountContext,
+  opts?: ApprovalDetailOptions
+): TransactionApprovalDetail {
   const d = ctxDecimals(ctx);
   const from = formatAddress(tx.sender, true);
+  const display = opts?.display?.trim();
   const rows: { label: string; value: string }[] = [
     { label: 'From', value: from },
     { label: 'Nonce', value: tx.nonce.toString() },
   ];
+  if (display) {
+    rows.push({ label: 'Intent', value: display });
+  }
   const p = tx.payload;
   switch (p.kind) {
     case 'transfer':
@@ -399,15 +436,28 @@ export function buildTransactionApprovalDetail(tx: Transaction, ctx?: NativeAmou
       break;
     case 'contract_call': {
       const mint = describeReferenceMintBatchCalldata(p.calldata);
+      const intent = !mint ? describeCalldataIntent(p.calldata, { value: p.value, decimals: d }) : null;
       rows.push({
         label: 'Operation',
-        value: mint ? `Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)}` : 'Contract call',
+        value: mint
+          ? `Mint ${mint.n} NFTs to ${formatAddress(mint.to, true)}`
+          : intent
+            ? intent.summary
+            : display
+              ? display
+              : 'Contract call',
       });
       rows.push({ label: 'Contract', value: formatAddress(p.contract, true) });
       if (p.value != null && p.value > 0n) rows.push(...nativeAmountRows('BOING sent to contract', p.value, d));
       if (mint) {
         rows.push({ label: 'Recipient', value: formatAddress(mint.to, true) });
         rows.push({ label: 'Count', value: String(mint.n) });
+      } else if (intent) {
+        for (const r of intent.rows) {
+          // Avoid duplicating the Operation sentence as a second Action row when Intent was set.
+          if (display && r.label === 'Action') continue;
+          rows.push(r);
+        }
       }
       rows.push({ label: 'Calldata', value: `${p.calldata.length} bytes — ${hexPreview(p.calldata)}` });
       rows.push(accessListSummary(tx));
@@ -449,7 +499,12 @@ export function buildTransactionApprovalDetail(tx: Transaction, ctx?: NativeAmou
       rows.push(accessListSummary(tx));
       break;
     case 'batch':
-      rows.push({ label: 'Operation', value: `Batch: ${p.calls.length} steps in one transaction (all succeed or all revert)` });
+      rows.push({
+        label: 'Operation',
+        value: display
+          ? display
+          : `Batch: ${p.calls.length} steps in one transaction (all succeed or all revert)`,
+      });
       p.calls.forEach((c, i) => {
         rows.push({ label: `Step ${i + 1}`, value: batchStepLine(c, d) });
       });
@@ -517,7 +572,7 @@ export function buildTransactionApprovalDetail(tx: Transaction, ctx?: NativeAmou
 
   return {
     txType: p.kind,
-    summaryLine: transactionSummary(tx, ctx),
+    summaryLine: transactionSummary(tx, ctx, opts),
     rows,
   };
 }

@@ -19,6 +19,7 @@ import { applyChosenTip, planTip, tipPlanToWire, type TipPlan, type TipPlanWire 
 import {
   assertFromMatchesSender,
   buildTransactionApprovalDetail,
+  dappDisplayHintFromJson,
   describeReferenceMintBatchCalldata,
   transactionFromDappJson,
   transactionSummary,
@@ -597,12 +598,13 @@ async function signOrSendBoingTransaction(
     }
     // One prior `boing_requestPutBlobSession` approval covers this PutBlob — no per-file popup.
   } else {
+    const displayHint = dappDisplayHintFromJson(txReq);
     const approved = await requestSignatureApproval({
       origin,
       chainId,
       address: normalizedAddr,
-      message: transactionSummary(tx, amountCtx),
-      transactionDetail: buildTransactionApprovalDetail(tx, amountCtx),
+      message: transactionSummary(tx, amountCtx, { display: displayHint }),
+      transactionDetail: buildTransactionApprovalDetail(tx, amountCtx, { display: displayHint }),
       txPipeline: method === BOING_METHODS.SEND_TRANSACTION ? 'send' : 'sign',
       tipPlan,
     });

@@ -11,6 +11,7 @@ import { accountIdToHex } from '../boing/types';
 import {
   assertFromMatchesSender,
   buildTransactionApprovalDetail,
+  dappDisplayHintFromJson,
   transactionFromDappJson,
   transactionSummary,
   type TransactionApprovalDetail,
@@ -190,10 +191,11 @@ export function WebSign() {
         const amountCtx = await approvalAmountContext(network.config.rpcUrl, t, wallet.privateKey);
         const plan = await planTip(network.config.rpcUrl, t, amountCtx);
         if (cancelled) return;
+        const displayHint = dappDisplayHintFromJson(txReq);
         setTipPlan(plan);
         setTx(t);
-        setSummary(transactionSummary(t, amountCtx));
-        setDetail(buildTransactionApprovalDetail(t, amountCtx));
+        setSummary(transactionSummary(t, amountCtx, { display: displayHint }));
+        setDetail(buildTransactionApprovalDetail(t, amountCtx, { display: displayHint }));
       } catch (e) {
         if (!cancelled) setPrepError(e instanceof Error ? e.message : String(e));
       }

@@ -152,8 +152,19 @@ async function main(): Promise<void> {
     $('btn-approve').textContent = 'Connect';
   } else if (detail) {
     document.title = 'Approve transaction';
-    titleEl.textContent = 'Approve transaction';
-    subtitleEl.textContent = 'Check the amount and recipient below. Approve only if you started this action.';
+    const intentText =
+      detail.rows.find((r) => r.label === 'Intent')?.value ||
+      detail.rows.find((r) => r.label === 'Operation')?.value ||
+      detail.summaryLine?.replace(/^Boing tx \| From [^|]+\| Nonce \d+ \| /, '');
+    titleEl.textContent = intentText?.startsWith('Approve')
+      ? 'Approve allowance'
+      : intentText?.startsWith('Swap')
+        ? 'Confirm swap'
+        : intentText?.startsWith('Send')
+          ? 'Confirm send'
+          : 'Approve transaction';
+    subtitleEl.textContent =
+      intentText || 'Check the amount and recipient below. Approve only if you started this action.';
     txSection.classList.remove('hidden');
     messageBlock.classList.add('hidden');
     fillTxTable($('approval-tx-tbody') as HTMLTableSectionElement, detail.rows);
