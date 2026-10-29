@@ -88,7 +88,7 @@ BOING_RPC_URL=https://testnet-rpc.boing.network \
   node scripts/print-native-dex-routes.mjs
 ```
 
-See [PRE-VIBEMINER-NODE-COMMANDS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/PRE-VIBEMINER-NODE-COMMANDS.md) for **`preflight-rpc`** / **`check-testnet-rpc`** smoke.
+See [NODE-OPERATOR-COMMANDS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/NODE-OPERATOR-COMMANDS.md) for **`preflight-rpc`** / **`check-testnet-rpc`** smoke.
 
 ---
 

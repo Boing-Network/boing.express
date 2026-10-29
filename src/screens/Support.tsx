@@ -15,16 +15,16 @@ export function Support() {
         <article className={styles.article}>
           <p>
             Boing Express is a non-custodial wallet designed for the Boing ecosystem. Use this page to find help,
-            docs, and links for the incentivized testnet and beyond.
+            docs, and links for the Boing Network public testnet.
           </p>
 
-          <h2>Boing Network incentivized testnet</h2>
+          <h2>Boing Network public testnet</h2>
           <p>
-            Get ready for the Boing Network incentivized testnet with Boing Express: create or import
+            Try the Boing Network public testnet with Boing Express: create or import
             a wallet, switch to <strong>Boing Testnet</strong>, use the faucet to receive test BOING,
             and send transactions. Your keys stay on your device; we never see them. See the{' '}
             <Link to="/docs/launch-readiness">launch readiness roadmap</Link>{' '}
-            for current status and upcoming features.
+            for current status and upcoming features. The incentivized testnet is not currently running; it may happen in the future, and any announcement will be posted on official Boing Network channels.
           </p>
           <ul>
             <li>

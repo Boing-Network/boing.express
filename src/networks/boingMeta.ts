@@ -1,5 +1,5 @@
 /**
- * Runtime discovery from GET https://boing.network/api/networks (same meta as VibeMiner).
+ * Runtime discovery from GET https://boing.network/api/networks (public node listing meta).
  * Applies public testnet RPC + ecosystem URLs when the build does not pin testnet RPC via env.
  */
 

@@ -185,9 +185,9 @@ export const DOCS: Record<string, Doc> = {
         <p>
           The wallet supports create/import, send/receive, reference NFT view/transfer, testnet faucet, staking (Bond/Unbond), and network switching. All features use real RPC calls against <code>https://testnet-rpc.boing.network</code> — nothing is simulated. Mainnet should be treated as configurable until official launch metadata is published.
         </p>
-        <h2>VibeMiner vs boing.express</h2>
+        <h2>Node vs boing.express</h2>
         <p>
-          <strong>VibeMiner</strong> runs nodes and stakes (one-click mining/validating). It dials public bootnodes at <code>/ip4/169.155.48.188/tcp/4001</code> and <code>/ip4/109.105.220.118/tcp/4001</code> (hosted Fly pair) to join the testnet. <strong>boing.express</strong> is the wallet — it needs RPC endpoints for balance and transactions. Both use the same live Boing Network infrastructure.
+          A <strong>node</strong> (<code>boing-node</code>) runs the chain and stakes. It dials public bootnodes at <code>/ip4/169.155.48.188/tcp/4001</code> and <code>/ip4/109.105.220.118/tcp/4001</code> (hosted Fly pair) to join the testnet. <strong>boing.express</strong> is the wallet — it needs RPC endpoints for balance and transactions. Both use the same live Boing Network infrastructure.
         </p>
         <h2>Priorities</h2>
         <ul>

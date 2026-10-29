@@ -178,7 +178,7 @@ If these variables are **not** set, the app defaults to the official testnet RPC
 
 ## 4. Launch readiness (merged from LAUNCH_READINESS.md)
 
-Tracks readiness for Boing Network incentivized testnet and mainnet.
+Tracks readiness for mainnet and for a possible future Boing Network incentivized testnet. **The incentivized testnet is not currently running; we hope to run one in the future.** Announcements will be posted on the official Boing Network channels.
 
 ### Current state
 
@@ -193,10 +193,10 @@ Tracks readiness for Boing Network incentivized testnet and mainnet.
 
 **RPC endpoints:** Testnet `https://testnet-rpc.boing.network`; Mainnet should be treated as configurable until the official public endpoint is published.
 
-### VibeMiner vs boing.express
+### Wallet vs node
 
-- **VibeMiner:** One-click mining/validating (run node, stake). Depends on P2P bootnodes.
-- **boing.express:** Non-custodial wallet. Depends on RPC endpoints. Both need Boing Network infrastructure live for incentivized testnet.
+- **Node (`boing-node`):** Runs the chain and stakes. Depends on P2P bootnodes.
+- **boing.express:** Non-custodial wallet. Depends on RPC endpoints. A future incentivized testnet, if one is run, would need the Boing Network infrastructure live.
 
 ### Testnet checklist
 
@@ -265,6 +265,6 @@ BOING_RPC_URL=https://testnet-rpc.boing.network \
   node scripts/print-native-dex-routes.mjs
 ```
 
-Operator copy/paste checks: [PRE-VIBEMINER-NODE-COMMANDS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/PRE-VIBEMINER-NODE-COMMANDS.md) (`preflight-rpc`, `check-testnet-rpc`).
+Operator copy/paste checks: [NODE-OPERATOR-COMMANDS.md](https://github.com/Boing-Network/boing.network/blob/main/docs/NODE-OPERATOR-COMMANDS.md) (`preflight-rpc`, `check-testnet-rpc`).
 
 Local index: [docs/CODEBASE-ALIGNMENT.md](CODEBASE-ALIGNMENT.md).
