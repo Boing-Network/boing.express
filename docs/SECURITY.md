@@ -28,6 +28,7 @@
 - **Origin warnings:** approval prompts show a banner for suspicious origins (non-HTTPS, raw IP addresses, localhost development apps, look-alike international characters, URLs with embedded credentials). See `src/security/originRisk.ts`.
 - **Plain-language approvals:** every approval shows who is asking, what will move, the fee and the network, with no
   simulated data that could mislead.
+- **PutBlob publish sessions (0.1.22+):** `boing_requestPutBlobSession` is the only multi-tx approval exception — PutBlob-only, bound to origin + active account, with count/byte/TTL caps; cleared on lock, account switch, or worker restart. Other tx types still need a click each time. See [PUT-BLOB-PUBLISH-SESSION.md](PUT-BLOB-PUBLISH-SESSION.md).
 - **Wrong-network protection:** the wallet refuses to broadcast if the node's chain id differs from the selected
   network (see NETWORK_SETUP.md).
 - **Manifest and CSP:** minimal permissions (no broad host access), extension CSP

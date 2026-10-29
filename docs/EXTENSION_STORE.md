@@ -181,6 +181,11 @@ Bump `"version"` in `extension/manifest.base.json` first; the store rejects a ve
 
 Publish path: bump is already in `manifest.base.json` → `pnpm run publish:extension` (draft by default).
 
+### What's new for 0.1.22 (submitted for Chrome Web Store review)
+
+- **`put_blob` dApp signing** — native PutBlob transactions via `boing_signTransaction` / `boing_sendTransaction`.
+- **PutBlob publish session** — `boing_requestPutBlobSession` / `boing_getPutBlobSession` / `boing_endPutBlobSession`; feature flag `putBlobSession`. One approval covers many subsequent PutBlob publishes (origin-, account-, and quota-bound). See [PUT-BLOB-PUBLISH-SESSION.md](PUT-BLOB-PUBLISH-SESSION.md).
+
 ### What's new for 0.1.23 (draft upload)
 
 - **Wording only:** the Support screen and docs now say the Boing Network incentivized testnet is not currently running and may happen in the future (announcements on official channels). No functional, permission, or network change versus 0.1.22.
