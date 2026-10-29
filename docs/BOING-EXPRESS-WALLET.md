@@ -29,8 +29,10 @@ sequenceDiagram
 | `boing_accounts` | — | No RPC. |
 | `boing_signMessage` | — | Local signing after approval. |
 | `boing_chainId` / `boing_switchChain` | — | Network selection in extension storage. |
-| `boing_signTransaction` | — | Local sign → hex `SignedTransaction`. |
-| `boing_sendTransaction` | `boing_simulateTransaction` (optional) → `boing_submitTransaction` | Signs first; uses wallet-selected RPC URL. Returns **`{ tx_hash, tx_id }`** (`tx_id` = `Transaction::id()` for receipt polling; mempool `tx_hash` is often `"ok"`). Reference NFT **`mint_batch` (`0x06`)** approval preview: **“Mint N NFTs to {to}”**. After a successful send, minted token-id words are added to the recipient’s NFT watchlist (XOR owner probes + observer item links). |
+| `boing_signTransaction` | — | Local sign → hex `SignedTransaction` (includes **`put_blob`**). |
+| `boing_sendTransaction` | `boing_simulateTransaction` (optional) → `boing_submitTransaction` | Signs first; uses wallet-selected RPC URL. Returns **`{ tx_hash, tx_id }`** (`tx_id` = `Transaction::id()` for receipt polling; mempool `tx_hash` is often `"ok"`). Reference NFT **`mint_batch` (`0x06`)** approval preview: **“Mint N NFTs to {to}”**. After a successful send, minted token-id words are added to the recipient’s NFT watchlist (XOR owner probes + observer item links). Active PutBlob sessions can skip per-file approval for `put_blob` only. |
+| **`boing_requestPutBlobSession`** | — | **0.1.22+.** One approval for many subsequent `put_blob` sign/send calls. Feature `putBlobSession`. See [PUT-BLOB-PUBLISH-SESSION.md](PUT-BLOB-PUBLISH-SESSION.md). |
+| **`boing_getPutBlobSession`** / **`boing_endPutBlobSession`** | — | **0.1.22+.** Inspect or clear the origin’s PutBlob publish session. |
 | `boing_simulateTransaction` | **`boing_simulateTransaction`** | Params: `[hexSignedTx]`. **Connected origin** required. No signing. |
 | **`boing_simulateContractCall`** | **`boing_simulateContractCall`** | Params: `[contractHex, calldataHex, senderHex?, atBlock?]`. **Connected origin** required. **Unsigned** dry-run of a `contract_call` (see [RPC-API-SPEC.md — `boing_simulateContractCall`](https://github.com/Boing-Network/boing.network/blob/main/docs/RPC-API-SPEC.md)). |
 | **`boing_listDexPools`** | **`boing_listDexPools`** | Params: `[requestObject]` — same single-object argument as **`BoingClient.listDexPoolsPage`** (**@boing-network/boing-sdk** ≥ 0.5.38). **Connected origin** required. Forwards unchanged to the wallet’s selected RPC. |

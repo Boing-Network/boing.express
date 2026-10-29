@@ -140,7 +140,8 @@ Status: implemented.
 
 Status: **implemented** (extension `window.boing`).
 
-- `boing_signTransaction` / `boing_sendTransaction` with Boing-native tx JSON (including `contract_call` + `access_list`).
+- `boing_signTransaction` / `boing_sendTransaction` with Boing-native tx JSON (including `contract_call` + `access_list` and **`put_blob`**).
+- **`boing_requestPutBlobSession` / `boing_getPutBlobSession` / `boing_endPutBlobSession`** (0.1.22+; feature `putBlobSession`) — see [PUT-BLOB-PUBLISH-SESSION.md](PUT-BLOB-PUBLISH-SESSION.md).
 - `boing_simulateTransaction([hex])` forwards to RPC for pre-flight / `suggested_access_list` flows.
 - `boing_simulateContractCall([contract, calldata, …])` forwards to RPC for **unsigned** simulate (SDK parity).
 - Submit uses RPC `boing_submitTransaction` (there is no separate `boing_submitTransaction` provider method).
