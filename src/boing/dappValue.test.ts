@@ -55,7 +55,7 @@ describe('contract calls carrying native BOING (value)', () => {
       0n,
     );
     const d = buildTransactionApprovalDetail(tx);
-    expect(d.rows.find((r) => r.label === 'Step 1')?.value).toContain('sending 1.5 BOING');
+    expect(d.rows.find((r) => r.label === 'Step 1')?.value).toMatch(/Wrap 1\.5 BOING into wBOING/);
     expect(d.rows.find((r) => r.label === 'BOING sent to contracts')?.value).toBe('1.5 BOING');
   });
 

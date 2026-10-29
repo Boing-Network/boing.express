@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Boing Express",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "description": "A non-custodial wallet designed for the Boing ecosystem. Create a wallet, get testnet BOING, send and receive. Public testnet.",
   "author": "Boing Express",
   "homepage_url": "https://boing.express",
