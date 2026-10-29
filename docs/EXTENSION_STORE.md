@@ -181,6 +181,13 @@ Bump `"version"` in `extension/manifest.base.json` first; the store rejects a ve
 
 Publish path: bump is already in `manifest.base.json` → `pnpm run publish:extension` (draft by default).
 
+### What's new for 0.1.23 (draft upload)
+
+- **Wording only:** the Support screen and docs now say the Boing Network incentivized testnet is not currently running and may happen in the future (announcements on official channels). No functional, permission, or network change versus 0.1.22.
+- Removed third-party listing-tool wording from the wallet docs.
+
+Publish path: bump is already in `manifest.base.json` -> `pnpm run publish:extension` (draft by default; run by hand with your own Chrome Web Store credentials, never from CI).
+
 ---
 
 ## Part 3: References

@@ -4,7 +4,7 @@
  */
 
 import { execSync } from 'child_process';
-import { readdirSync, statSync } from 'fs';
+import { readdirSync, rmSync, statSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -30,10 +30,10 @@ const bundledEntries = readdirSync(extDir).filter((name) => {
 const archiveEntries = bundledEntries.join(', ');
 
 if (isWin) {
-  execSync(
-    `powershell -Command "Compress-Archive -Path ${archiveEntries} -DestinationPath '${outZip.replace(/'/g, "''")}' -Force"`,
-    { cwd: extDir }
-  );
+  // Windows PowerShell 5.1's Compress-Archive writes backslash entry names, which are not valid zip paths (AMO rejects them).
+  // bsdtar (bundled with Windows 10+) writes spec-compliant forward-slash entries.
+  rmSync(outZip, { force: true });
+  execSync(`tar -a -c -f "${outZip}" ${bundledEntries.map((entry) => `"${entry}"`).join(' ')}`, { cwd: extDir });
 } else {
   execSync(
     `zip -r '${outZip}' ${bundledEntries.map((entry) => `'${entry}'`).join(' ')} -x "*.map"`,
