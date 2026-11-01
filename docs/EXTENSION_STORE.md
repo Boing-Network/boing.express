@@ -193,6 +193,13 @@ Publish path: bump is already in `manifest.base.json` → `pnpm run publish:exte
 
 Publish path: bump is already in `manifest.base.json` -> `pnpm run publish:extension` (draft by default; run by hand with your own Chrome Web Store credentials, never from CI).
 
+### What's new for 0.1.24 (Chrome Web Store / release zip)
+
+- **Clearer approve / swap signing intent** — optional dApp `display` / `description` on `boing_sendTransaction` / `boing_signTransaction`, plus decoded approve / swap / transfer / router / wBOING copy on the approval window when `display` is omitted.
+- Feature surface unchanged aside from approval UX (`putBlobSession`, `priorityTip`, `nativeValue` still as in 0.1.22+).
+
+Publish path: bump is already in `manifest.base.json` → `pnpm run publish:extension` (draft by default; run by hand with your own Chrome Web Store credentials, never from CI).
+
 ---
 
 ## Part 3: References
