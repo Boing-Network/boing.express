@@ -200,6 +200,13 @@ Publish path: bump is already in `manifest.base.json` -> `pnpm run publish:exten
 
 Publish path: bump is already in `manifest.base.json` → `pnpm run publish:extension` (draft by default; run by hand with your own Chrome Web Store credentials, never from CI).
 
+### What's new for 0.1.25 (Chrome Web Store / release zip)
+
+- **Wallet tx history under RPC rate limits** — retries transient HTTP 429s on RPC reads and soft-fails the activity/history panel instead of hard-erroring when the public gateway throttles.
+- Includes `570cf59` (`fix(wallet): retry RPC 429s and soft-fail tx history`).
+
+Publish path: bump is already in `manifest.base.json` → `pnpm run publish:extension` (draft by default; run by hand with your own Chrome Web Store credentials, never from CI).
+
 ---
 
 ## Part 3: References
