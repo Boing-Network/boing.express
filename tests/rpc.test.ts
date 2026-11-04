@@ -8,6 +8,7 @@ import {
   parseSubmitTransactionResult,
   rpcCall,
   RpcClientError,
+  RPC_EDGE_RATE_LIMIT_MESSAGE,
   simulateContractCall,
   submitTransaction,
 } from '../src/boing/rpc';
@@ -177,5 +178,80 @@ describe('rpc client', () => {
     await expect(getAccount('https://testnet-rpc.boing.network', '0xabc')).rejects.toThrow(
       'Network unavailable or RPC not responding. Check your connection and try again.'
     );
+  });
+
+  it('retries HTTP 429 then returns the result', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        statusText: '',
+        headers: { get: () => null },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ jsonrpc: '2.0', id: 1, result: { transactions: [], next_cursor: null } }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const pending = rpcCall('https://testnet-rpc.boing.network', 'boing_getAccountTransactions', [
+      '0xabc',
+      { cursor: null, limit: 25 },
+    ]);
+    await vi.advanceTimersByTimeAsync(2_500);
+    await expect(pending).resolves.toEqual({ transactions: [], next_cursor: null });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('surfaces a clear rate-limit message after exhausted 429 retries', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      statusText: '',
+      headers: { get: () => '2' },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const pending = rpcCall('https://testnet-rpc.boing.network', 'boing_getAccountTransactions', [
+      '0xabc',
+      { cursor: null, limit: 25 },
+    ]).then(
+      () => null,
+      (e: unknown) => e
+    );
+    // Three attempts: waits after 1st and 2nd (Retry-After 2s each).
+    await vi.advanceTimersByTimeAsync(5_000);
+    const thrown = await pending;
+    expect(thrown).toBeInstanceOf(RpcClientError);
+    expect((thrown as RpcClientError).message).toBe(RPC_EDGE_RATE_LIMIT_MESSAGE);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
+  });
+
+  it('retries transient 5xx once then succeeds', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { get: () => null },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ jsonrpc: '2.0', id: 1, result: 'ok' }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const pending = rpcCall('https://testnet-rpc.boing.network', 'boing_health', []);
+    await vi.advanceTimersByTimeAsync(1_500);
+    await expect(pending).resolves.toBe('ok');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
   });
 });

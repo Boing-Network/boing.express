@@ -190,30 +190,43 @@ export function Dashboard() {
     setBalanceError(null);
     setStakeError(null);
     try {
-      const [bal, h, st, unbondStatus] = await Promise.all([
-        network.getBalance(accountId).catch((e) => {
+      // Coalesce balance/stake/unbond into one `boing_getAccount` instead of three parallel
+      // identical calls — wallet open + Tx tab was tripping the CF Free edge 429 guard.
+      const hex = accountIdToHex(accountId);
+      const rpcUrl = network.config.rpcUrl;
+      let account: rpc.BoingAccountState | null = null;
+      try {
+        account = await rpc.getAccount(rpcUrl, hex);
+      } catch (e) {
+        if (rpc.isMethodNotFoundError(e)) {
+          try {
+            const bal = await network.getBalance(accountId);
+            setBalance(bal);
+          } catch (be) {
+            setBalanceError(describeWalletError(be));
+          }
+        } else {
           setBalanceError(describeWalletError(e));
-          return null;
-        }),
-        network.getChainHeight?.().catch(() => null) ?? Promise.resolve(null),
-        network.getStake ? network.getStake(accountId).catch((e) => {
           setStakeError(describeWalletError(e));
-          return null;
-        }) : Promise.resolve(null),
-        network.getUnbondStatus
-          ? network.getUnbondStatus(accountId).catch(() => null)
-          : Promise.resolve(null),
-      ]);
-      if (bal) setBalance(bal);
-      if (h != null) setChainHeight(h);
-      if (st != null) setStake(st);
-      if (unbondStatus) {
-        setPendingUnbond(unbondStatus.pendingUnbond);
-        setUnbondUnlockHeight(unbondStatus.unlockHeight);
+        }
+      }
+      if (account) {
+        let decimals = account.decimals;
+        if (decimals == null) {
+          const nc = await fetchNativeCurrency(rpcUrl);
+          decimals = nc.info ? ledgerDecimalsAt(nc.info, nc.head) : knownLedgerDecimals(rpcUrl);
+        }
+        setBalance({ value: account.balance, symbol: 'BOING', decimals });
+        setStake(account.stake ?? '0');
+        setPendingUnbond(account.pendingUnbond ?? null);
+        setUnbondUnlockHeight(account.unbondUnlockHeight ?? null);
       } else {
         setPendingUnbond(null);
         setUnbondUnlockHeight(null);
       }
+      // Height after account so one wallet refresh is sequential (~2 RPCs), not a fan-out burst.
+      const h = network.getChainHeight ? await network.getChainHeight().catch(() => null) : null;
+      if (h != null) setChainHeight(h);
     } finally {
       setRefreshing(false);
     }

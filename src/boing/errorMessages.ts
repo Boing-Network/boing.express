@@ -7,7 +7,7 @@
  * docs/BOING-RPC-ERROR-CODES-FOR-DAPPS.md.
  */
 
-import { RpcClientError } from './rpc';
+import { RpcClientError, RPC_EDGE_RATE_LIMIT_MESSAGE } from './rpc';
 import { describeRejection, rejectionFromRpcData } from './submitRejection';
 
 /** Pattern -> friendly text. First match wins; patterns are matched case-insensitively against the node message. */
@@ -39,7 +39,8 @@ const CODE_TEXT: Record<number, string> = {
   [-32601]: 'This network node does not support that feature yet.',
   [-32602]: 'The network rejected one of the transaction fields. Check the address and amount.',
   [-32603]: 'The network node hit an internal error. Try again shortly.',
-  [-32016]: 'The faucet is rate-limited for this account. Wait about a minute and try again.',
+  // Node / gateway rate limit (HTTP 200 + -32016 for faucet cooldown, or edge 429 mapped here).
+  [-32016]: RPC_EDGE_RATE_LIMIT_MESSAGE,
   [-32051]: 'This deployment was sent to the community review pool and is waiting for votes.',
   [-32052]: 'No pending review item was found for this transaction.',
   [-32053]: 'This account is not eligible to vote on that review item (not a pool member, its own deployment, or stake below the minimum).',
@@ -82,11 +83,17 @@ export function describeWalletError(err: unknown): string {
     return `${CODE_TEXT[-32051]}${q.txHash ? ` Reference: ${q.txHash}` : ''}`;
   }
 
+  // Faucet account cooldown (HTTP 200 + -32016 with "faucet cooldown" text) before the generic -32016 map.
+  if (code === -32016 && /faucet/i.test(raw)) {
+    return 'The faucet is rate-limited for this account. Wait about a minute and try again.';
+  }
+
   for (const [re, text] of MESSAGE_PATTERNS) {
     const m = re.exec(raw);
     if (m) return text(m);
   }
   if (code !== undefined && CODE_TEXT[code]) return CODE_TEXT[code];
+  if (/HTTP 429|rate[- ]?limit/i.test(raw)) return RPC_EDGE_RATE_LIMIT_MESSAGE;
   if (/abort|timed out/i.test(raw)) return 'The network took too long to respond. Check your connection and try again.';
   if (/failed to fetch|networkerror|load failed/i.test(raw)) return 'Could not reach the network. Check your connection and try again.';
   return raw || 'Something went wrong. Please try again.';

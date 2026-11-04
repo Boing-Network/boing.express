@@ -169,6 +169,10 @@ describe('parity with boing.observer describeRpcRejection (same reasons, same vo
   it('QA pool voter-ineligible and faucet rate-limit codes follow docs/BOING-RPC-ERROR-CODES-FOR-DAPPS.md', () => {
     expect(describeWalletError(new RpcClientError('x', -32053))).toMatch(/not eligible to vote/);
     expect(describeWalletError(new RpcClientError('x', -32053))).not.toMatch(/administrator/i);
-    expect(describeWalletError(new RpcClientError('x', -32016))).toMatch(/faucet is rate-limited/);
+    expect(describeWalletError(new RpcClientError('Faucet cooldown for this account', -32016))).toMatch(
+      /faucet is rate-limited/
+    );
+    expect(describeWalletError(new RpcClientError('Rate limit exceeded', -32016))).toMatch(/rate-limited/i);
+    expect(describeWalletError(new RpcClientError('RPC HTTP 429: Error'))).toMatch(/rate-limited/i);
   });
 });

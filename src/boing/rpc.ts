@@ -70,8 +70,67 @@ let rpcId = 0;
 /** Default timeout for RPC requests (ms). Prevents hanging on slow or unresponsive RPC. */
 const RPC_TIMEOUT_MS = 15_000;
 
+/**
+ * Cloudflare Free-tier edge guard (~100 req / 10 s / IP / colo) returns HTTP 429 for ~10 s.
+ * Same UX pattern as boing.network status/faucet (#168): brief retry, then clear rate-limit copy.
+ */
+export const RPC_EDGE_RATE_LIMIT_MESSAGE =
+  'Public RPC is temporarily rate-limited for this IP (usually ~10 s). The node is likely fine — wait a moment and try again.';
+
+const RPC_MAX_ATTEMPTS = 3;
+
 function nextId(): number {
   return ++rpcId;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Wait before retrying a 429; honors Retry-After when present (capped like status.astro). */
+function retryAfterMs(res: Response, attempt: number): number {
+  const raw = res.headers?.get?.('Retry-After') ?? res.headers?.get?.('retry-after');
+  const fromHeader = raw != null ? Number(raw) : NaN;
+  if (Number.isFinite(fromHeader) && fromHeader > 0) {
+    return Math.min(12_000, Math.max(1_000, fromHeader * 1000));
+  }
+  // Default ~2 s, then ~4 s — long enough to clear a short edge block without stalling the UI.
+  return Math.min(12_000, 2_000 * attempt);
+}
+
+function httpErrorMessage(status: number, statusText: string): string {
+  if (status === 429) return RPC_EDGE_RATE_LIMIT_MESSAGE;
+  if (status === 404) return 'RPC endpoint not available. The network may not be running.';
+  if (status >= 500) return 'Network temporarily unavailable. Check your connection or try again later.';
+  if (status === 403 || status === 401) return 'Access denied. The RPC may not allow this request.';
+  return `RPC HTTP ${status}: ${statusText || 'Error'}`;
+}
+
+async function fetchOnce(
+  rpcUrl: string,
+  body: JsonRpcRequest
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
+  try {
+    return await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new RpcClientError('Request timed out. The network may be slow — try again.');
+    }
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
+      throw new RpcClientError('Network unavailable or RPC not responding. Check your connection and try again.');
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function rpcCall<T>(
@@ -85,46 +144,28 @@ export async function rpcCall<T>(
     method,
     params,
   };
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
-  let res: Response;
-  try {
-    res = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-  } catch (e) {
-    clearTimeout(timeoutId);
-    if (e instanceof Error && e.name === 'AbortError') {
-      throw new RpcClientError('Request timed out. The network may be slow — try again.');
+
+  let lastHttpError: RpcClientError | null = null;
+  for (let attempt = 1; attempt <= RPC_MAX_ATTEMPTS; attempt++) {
+    const res = await fetchOnce(rpcUrl, body);
+    if (res.ok) {
+      const data = (await res.json()) as JsonRpcResponse<T>;
+      if (data.error) {
+        const nodeMsg = data.error.message != null ? String(data.error.message).trim() : '';
+        const message = nodeMsg || rpcErrorToMessage(data.error.code, '');
+        throw new RpcClientError(message, data.error.code, data.error.data);
+      }
+      if (data.result === undefined) throw new RpcClientError('RPC response missing result');
+      return data.result as T;
     }
-    const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
-      throw new RpcClientError('Network unavailable or RPC not responding. Check your connection and try again.');
-    }
-    throw e;
+
+    // Retry transient edge / origin failures (429 rate limit, 5xx).
+    const retryable = res.status === 429 || (res.status >= 500 && res.status <= 599);
+    lastHttpError = new RpcClientError(httpErrorMessage(res.status, res.statusText));
+    if (!retryable || attempt >= RPC_MAX_ATTEMPTS) break;
+    await sleep(res.status === 429 ? retryAfterMs(res, attempt) : Math.min(4_000, 1_000 * attempt));
   }
-  clearTimeout(timeoutId);
-  if (!res.ok) {
-    if (res.status === 404) throw new RpcClientError('RPC endpoint not available. The network may not be running.');
-    const friendly = res.status >= 500
-      ? 'Network temporarily unavailable. Check your connection or try again later.'
-      : res.status === 403 || res.status === 401
-        ? 'Access denied. The RPC may not allow this request.'
-        : null;
-    throw new RpcClientError(friendly ?? `RPC HTTP ${res.status}: ${res.statusText || 'Error'}`);
-  }
-  const data = (await res.json()) as JsonRpcResponse<T>;
-  if (data.error) {
-    const nodeMsg = data.error.message != null ? String(data.error.message).trim() : '';
-    const message =
-      nodeMsg || rpcErrorToMessage(data.error.code, '');
-    throw new RpcClientError(message, data.error.code, data.error.data);
-  }
-  if (data.result === undefined) throw new RpcClientError('RPC response missing result');
-  return data.result as T;
+  throw lastHttpError ?? new RpcClientError('Network temporarily unavailable. Check your connection or try again later.');
 }
 
 /** Parsed `boing_submitTransaction` result per RPC-API-SPEC (`{ tx_hash: string }`). */
@@ -272,6 +313,10 @@ export function faucetRequest(rpcUrl: string, hexAccountId: string): Promise<unk
   return rpcCall<unknown>(rpcUrl, 'boing_faucetRequest', [hexAccountId]).catch((e: Error) => {
     const msg = e.message;
     const code = (e as { code?: number }).code;
+    // Edge HTTP 429 already has clear copy from rpcCall — do not relabel as faucet account cooldown.
+    if (msg === RPC_EDGE_RATE_LIMIT_MESSAGE || /HTTP 429|temporarily rate-limited/i.test(msg)) {
+      throw e;
+    }
     if (code === -32016 || msg.includes('Rate limit') || msg.includes('cooldown')) {
       throw new Error(
         msg.toLowerCase().includes('faucet cooldown')
