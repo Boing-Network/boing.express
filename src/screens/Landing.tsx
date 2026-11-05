@@ -5,7 +5,7 @@ import styles from './Landing.module.css';
 
 const HEADER_LINKS: SiteHeaderLink[] = [
   { label: 'Docs', to: '/docs' },
-  { label: 'Extension', href: CHROME_EXTENSION_STORE_URL, external: true },
+  { label: 'Web wallet', href: CHROME_EXTENSION_STORE_URL, external: true },
   { label: 'Open wallet', to: '/wallet', variant: 'cta' },
 ];
 
@@ -52,7 +52,7 @@ export function Landing() {
               rel="noopener noreferrer"
               className={styles.secondaryBtn}
             >
-              Add to Chrome
+              Open web wallet
             </a>
             <Link to="/docs" className={styles.secondaryBtn}>Documentation</Link>
           </div>
@@ -67,7 +67,7 @@ export function Landing() {
             <li><Link to="/wallet">Create a wallet</Link> and save your private key backup.</li>
             <li>Get free testnet BOING in the wallet&apos;s Faucet tab or at <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">boing.network/faucet</a>.</li>
             <li>Send BOING, then see what happened on-chain in <a href="https://boing.observer" target="_blank" rel="noopener noreferrer">Boing Observer</a>.</li>
-            <li>To connect to apps like <a href="https://boing.finance" target="_blank" rel="noopener noreferrer">Boing Finance</a>, <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">add the Chrome extension</a> (desktop Chrome, Edge or Brave).</li>
+            <li>To connect to apps like <a href="https://boing.finance" target="_blank" rel="noopener noreferrer">Boing Finance</a>, use the <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">boing.express web wallet</a> or the Chrome extension when the store listing is live (desktop Chrome, Edge or Brave).</li>
           </ol>
         </section>
 
@@ -87,11 +87,11 @@ export function Landing() {
               <img src={`${ASSETS_BASE}/pillar-scalability.svg`} alt="" className={styles.cardIconImg} aria-hidden />
               <h3>Web & extension</h3>
               <p>
-                Use the wallet at boing.express or{' '}
+                Use the wallet at{' '}
                 <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">
-                  install the Chrome extension
-                </a>{' '}
-                for one-click access from your browser toolbar.
+                  boing.express
+                </a>
+                . A Chrome extension listing will replace this CTA once the store item ID is published.
               </p>
             </div>
             <div className={styles.card}>
@@ -112,7 +112,7 @@ export function Landing() {
           <h3 className={styles.footerTitle}>Resources</h3>
           <div className={styles.footerLinks}>
             <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">
-              Chrome Web Store
+              Boing Express wallet
             </a>
             <a href="https://boing.network/testnet/join" target="_blank" rel="noopener noreferrer">Join Testnet</a>
             <a href="https://boing.network/faucet" target="_blank" rel="noopener noreferrer">Faucet</a>

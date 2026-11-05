@@ -191,7 +191,7 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>Priorities</h2>
         <ul>
-          <li>Chrome Web Store listing — in review</li>
+          <li>Chrome extension listing — store item URL not published in-repo yet; use the web wallet at boing.express (or Load unpacked from the release zip)</li>
           <li>Staking UI (Bond/Unbond) — implemented</li>
           <li>Backup reminder for new wallets — implemented</li>
           <li>Explorer tx deep links — pending stable route on boing.observer</li>
