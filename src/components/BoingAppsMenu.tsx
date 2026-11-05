@@ -5,7 +5,7 @@ export const BOING_APPS = [
   { name: 'Boing Network', desc: 'The quality-assured Layer 1', href: 'https://boing.network' },
   { name: 'Boing Express', desc: 'Your gateway to Boing', href: 'https://boing.express' },
   { name: 'Boing Observer', desc: 'See what happens on-chain', href: 'https://boing.observer' },
-  { name: 'Boing Finance', desc: 'Move liquidity across chains', href: 'https://boing.finance' },
+  { name: 'Boing Finance', desc: 'The DEX for Boing Network', href: 'https://boing.finance' },
 ] as const;
 
 export function BoingAppsMenu() {
