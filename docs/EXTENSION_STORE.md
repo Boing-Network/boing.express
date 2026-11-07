@@ -207,6 +207,13 @@ Publish path: bump is already in `manifest.base.json` → `pnpm run publish:exte
 
 Publish path: bump is already in `manifest.base.json` → `pnpm run publish:extension` (draft by default; run by hand with your own Chrome Web Store credentials, never from CI).
 
+### What's new for 0.1.26 (Chrome Web Store / release zip)
+
+- **NFT tiles open an in-extension detail modal** — image-only gallery tiles; click for Transfer, View on block explorer, and Remove from wallet view (local watchlist unlist). Inline Transfer/Remove row actions and tile metadata text are gone.
+- Transfer-tab multi-select batch send is unchanged.
+
+Publish path: bump is already in `manifest.base.json` → `pnpm run publish:extension` (draft by default; run by hand with your own Chrome Web Store credentials, never from CI).
+
 ---
 
 ## Part 3: References

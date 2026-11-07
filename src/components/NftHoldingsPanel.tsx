@@ -1,7 +1,7 @@
 /**
  * Reference NFT holdings for the unlocked Express account.
- * Watchlist + XOR owner storage probes; metadata gallery; observer deep links;
- * multi-select transfer as N× transfer_nft (no on-chain batch).
+ * Watchlist + XOR owner storage probes; image gallery with in-extension detail modal
+ * (transfer / explorer / local remove); Transfer-tab multi-select as N× transfer_nft.
  */
 
 import { describeWalletError } from '../boing/errorMessages';
@@ -32,6 +32,7 @@ import { encodeReferenceTransferNftCalldata } from '../boing/referenceNft';
 import { SendConfirm } from './SendConfirm';
 import { resolveRecipient } from '../boing/names';
 import { ScanQrButton } from './ScanQrButton';
+import { NftDetailModal } from './NftDetailModal';
 import { fetchOwnerIndexHoldings, type OwnerIndexResult } from '../boing/nftOwnerIndex';
 import {
   findFreshmintCollectionLink,
@@ -64,11 +65,10 @@ export interface NftHoldingsPanelProps {
   addressHint: string;
   onTxRecorded?: () => void;
   /**
-   * `view` (Wallet tab): gallery + add-to-watchlist, no selection; a row's Transfer calls `onTransferItem`.
-   * `transfer` (Transfer tab): owned items only, with selection and the transfer form.
+   * `view` (Wallet tab): image-only tiles; click opens an in-extension detail modal (transfer / explorer / remove).
+   * `transfer` (Transfer tab): owned items only, with selection and the batch transfer form.
    */
   mode?: 'view' | 'transfer';
-  onTransferItem?: (key: string) => void;
   /** Pre-select one item (`collectionHex:tokenIdHex`) in transfer mode. */
   initialSelectedKey?: string | null;
 }
@@ -85,7 +85,6 @@ export function NftHoldingsPanel({
   addressHint,
   onTxRecorded,
   mode = 'view',
-  onTransferItem,
   initialSelectedKey,
 }: NftHoldingsPanelProps) {
   const transferMode = mode === 'transfer';
@@ -113,6 +112,8 @@ export function NftHoldingsPanel({
   const [transferSuccess, setTransferSuccess] = useState('');
   const [transferring, setTransferring] = useState(false);
   const [transferProgress, setTransferProgress] = useState<string | null>(null);
+  /** Wallet-tab detail sheet (`collectionHex:tokenIdHex`). */
+  const [detailKey, setDetailKey] = useState<string | null>(null);
 
   const explorerBase = network.config.explorerUrl?.replace(/\/$/, '') ?? 'https://boing.observer';
   const isTestnet = Boolean(network.config.isTestnet);
@@ -234,7 +235,28 @@ export function NftHoldingsPanel({
       next.delete(key);
       return next;
     });
+    if (detailKey === key) setDetailKey(null);
     await refresh();
+  }
+
+  function openDetail(item: NftHoldingStatus) {
+    const key = holdingKey(item);
+    setDetailKey(key);
+    setConfirmBatch(false);
+    setTransferError('');
+    setTransferSuccess('');
+    setTransferProgress(null);
+    setNftRecipient(null);
+    if (item.owned) setSelectedKeys(new Set([key]));
+  }
+
+  function closeDetail() {
+    setDetailKey(null);
+    setConfirmBatch(false);
+    setTransferError('');
+    setTransferSuccess('');
+    setTransferProgress(null);
+    setNftRecipient(null);
   }
 
   function toggleSelected(item: NftHoldingStatus) {
@@ -254,6 +276,20 @@ export function NftHoldingsPanel({
   const owned = filterOwnedHoldings(statuses);
   const groups = groupHoldingsByCollection(transferMode ? owned : statuses);
   const selectedCount = selectedKeys.size;
+  const detailItem = detailKey
+    ? statuses.find((s) => holdingKey(s) === detailKey) ?? null
+    : null;
+  const detailMeta = detailItem ? metaByKey.get(holdingKey(detailItem)) : undefined;
+  const detailTitle =
+    detailMeta?.name?.trim() || detailItem?.label || 'NFT';
+  const detailItemUrl = detailItem
+    ? observerNftItemUrl(
+        explorerBase,
+        detailItem.collectionHex,
+        detailItem.tokenIdHex,
+        isTestnet
+      )
+    : '';
 
   function selectAllOwned() {
     setSelectedKeys(new Set(owned.map((o) => holdingKey(o))));
@@ -271,9 +307,16 @@ export function NftHoldingsPanel({
     setTransferSuccess('');
     setTransferProgress(null);
 
-    const targets = statuses.filter((s) => s.owned && selectedKeys.has(holdingKey(s)));
+    const targets =
+      detailKey && !transferMode
+        ? statuses.filter((s) => s.owned && holdingKey(s) === detailKey)
+        : statuses.filter((s) => s.owned && selectedKeys.has(holdingKey(s)));
     if (targets.length === 0) {
-      setTransferError('Select one or more owned NFTs to transfer');
+      setTransferError(
+        detailKey && !transferMode
+          ? 'This NFT is not owned by this wallet'
+          : 'Select one or more owned NFTs to transfer'
+      );
       return;
     }
     if (!confirmBatch) {
@@ -339,6 +382,9 @@ export function NftHoldingsPanel({
         setTransferTo('');
         setSelectedKeys(new Set());
         setConfirmBatch(false);
+        if (detailKey) {
+          window.setTimeout(() => closeDetail(), 1_200);
+        }
       } else {
         setTransferError(
           `${result.submitted} submitted, ${result.failed} failed. Protocol sends one transfer_nft per item.`
@@ -449,23 +495,10 @@ export function NftHoldingsPanel({
                 </ul>
               </div>
             )}
-            <ul className={styles.nftItemList}>
+            <ul className={transferMode ? styles.nftItemList : styles.nftTileGrid}>
               {items.map((item) => {
                 const key = holdingKey(item);
-                const itemUrl = observerNftItemUrl(
-                  explorerBase,
-                  item.collectionHex,
-                  item.tokenIdHex,
-                  isTestnet
-                );
                 const meta = metaByKey.get(key);
-                const statusLabel = item.error
-                  ? 'Error'
-                  : item.owned
-                    ? 'Owned'
-                    : item.exists
-                      ? 'Not yours'
-                      : 'Not found';
                 const title =
                   meta?.name?.trim() ||
                   item.label ||
@@ -489,114 +522,55 @@ export function NftHoldingsPanel({
                       className={styles.nftThumbPlaceholder}
                       hidden={Boolean(meta?.imageUrl)}
                       aria-hidden
-                    >
-                      NFT
-                    </span>
+                    />
                   </>
                 );
-                const main = (
-                  <div className={styles.nftItemMain}>
-                    {transferMode && (
-                      <span
-                        className={
-                          item.owned
-                            ? styles.nftBadgeOwned
-                            : item.exists
-                              ? styles.nftBadgeOther
-                              : styles.nftBadgeMissing
-                        }
+
+                if (!transferMode) {
+                  return (
+                    <li key={key} className={styles.nftTile}>
+                      <button
+                        type="button"
+                        className={styles.nftTileBtn}
+                        onClick={() => openDetail(item)}
+                        aria-label={title}
+                        data-testid="nft-tile"
                       >
-                        {statusLabel}
-                      </span>
-                    )}
-                    <span className={styles.nftTitleLink}>{title}</span>
-                    {meta?.description ? (
-                      <p className={styles.nftDescription}>{meta.description}</p>
-                    ) : null}
-                  </div>
-                );
+                        <span className={styles.nftThumbLink}>{thumb}</span>
+                      </button>
+                    </li>
+                  );
+                }
+
                 return (
                   <li key={key} className={styles.nftItem}>
                     <div className={styles.nftGalleryRow}>
-                      {transferMode ? (
-                        item.owned ? (
-                          <label className={styles.nftCheck}>
-                            <input
-                              type="checkbox"
-                              checked={selectedKeys.has(key)}
-                              onChange={() => toggleSelected(item)}
-                              aria-label={`Select ${title}`}
-                              data-testid="nft-select"
-                            />
-                          </label>
-                        ) : (
-                          <span className={styles.nftCheckSpacer} aria-hidden />
-                        )
-                      ) : null}
-                      {transferMode ? (
-                        <>
-                          <a
-                            href={itemUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.nftThumbLink}
-                            title="Open on explorer"
-                          >
-                            {thumb}
-                          </a>
-                          <a
-                            href={itemUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.nftRowLink}
-                          >
-                            {main}
-                          </a>
-                        </>
+                      {item.owned ? (
+                        <label className={styles.nftCheck}>
+                          <input
+                            type="checkbox"
+                            checked={selectedKeys.has(key)}
+                            onChange={() => toggleSelected(item)}
+                            aria-label={`Select ${title}`}
+                            data-testid="nft-select"
+                          />
+                        </label>
                       ) : (
-                        <a
-                          href={itemUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.nftRowLink}
-                          title="Open on explorer"
-                        >
-                          <span className={styles.nftThumbLink}>{thumb}</span>
-                          {main}
-                        </a>
+                        <span className={styles.nftCheckSpacer} aria-hidden />
                       )}
+                      <button
+                        type="button"
+                        className={styles.nftThumbLink}
+                        onClick={() => {
+                          if (item.owned) toggleSelected(item);
+                        }}
+                        disabled={!item.owned}
+                        aria-label={title}
+                        data-testid="nft-tile"
+                      >
+                        {thumb}
+                      </button>
                     </div>
-                    <div className={styles.nftItemActions}>
-                      {item.owned && (
-                        <button
-                          type="button"
-                          className={styles.copyBtn}
-                          data-testid="nft-row-transfer"
-                          onClick={() => {
-                            if (!transferMode) {
-                              onTransferItem?.(key);
-                              return;
-                            }
-                            setSelectedKeys(new Set([key]));
-                            setConfirmBatch(false);
-                            setTransferError('');
-                            setTransferSuccess('');
-                          }}
-                        >
-                          {transferMode ? 'Select only' : 'Transfer'}
-                        </button>
-                      )}
-                      {!transferMode && (
-                        <button
-                          type="button"
-                          className={styles.copyBtn}
-                          onClick={() => void handleRemove(item)}
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                    {item.error && <p className={styles.error}>{item.error}</p>}
                   </li>
                 );
               })}
@@ -725,6 +699,60 @@ export function NftHoldingsPanel({
         </p>
       </section>
       )}
+
+      {!transferMode && detailItem ? (
+        <NftDetailModal
+          item={detailItem}
+          meta={detailMeta}
+          itemUrl={detailItemUrl}
+          title={detailTitle}
+          onClose={closeDetail}
+          onRemove={() => void handleRemove(detailItem)}
+          canTransfer={detailItem.owned}
+          transferTo={transferTo}
+          onTransferToChange={(value) => {
+            setTransferTo(value);
+            setConfirmBatch(false);
+          }}
+          onTransferSubmit={(ev) => void handleTransfer(ev)}
+          transferring={transferring}
+          transferError={transferError}
+          transferSuccess={transferSuccess}
+          transferProgress={transferProgress}
+          confirmBatch={confirmBatch}
+          sendConfirm={
+            confirmBatch && detailItem.owned
+              ? {
+                  to: nftRecipient?.hex ?? transferTo.replace(/\s/g, ''),
+                  toName: nftRecipient?.name,
+                  amount: `#${shortHexLabel(detailItem.tokenIdHex, 4, 4)}`,
+                  network,
+                  buildSigned: async () => {
+                    const pk = getPrivateKey();
+                    if (!pk || !network.buildContractCall) throw new Error('Wallet locked');
+                    const toHex = parseTransferRecipientHex(
+                      nftRecipient?.hex ?? transferTo,
+                      accountIdToHex(accountId)
+                    );
+                    const calldata = encodeReferenceTransferNftCalldata(
+                      accountIdFromHex(toHex),
+                      normalizeHex64(detailItem.tokenIdHex)
+                    );
+                    return network.buildContractCall(
+                      accountId,
+                      accountIdFromHex(normalizeHex64(detailItem.collectionHex)),
+                      calldata,
+                      await network.getNonce(accountId),
+                      pk
+                    );
+                  },
+                  onBack: () => setConfirmBatch(false),
+                  onConfirm: () => void handleTransfer({ preventDefault() {} } as React.FormEvent),
+                }
+              : null
+          }
+        />
+      ) : null}
     </>
   );
 }

@@ -1031,6 +1031,43 @@
   list-style: none;
 }
 
+.nftTileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nftTile {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.nftTileBtn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.nftTileBtn:focus-visible {
+  outline: 2px solid var(--express-primary, #3B8CFF);
+  outline-offset: 2px;
+}
+
+.nftTileBtn .nftThumbLink {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+}
+
 .nftItem {
   padding: 0.55rem 0;
   border-bottom: 1px solid var(--border-color, var(--card-border));
@@ -1067,6 +1104,9 @@
   overflow: hidden;
   border: 1px solid var(--border-color, var(--card-border));
   background: var(--surface, rgba(255, 255, 255, 0.04));
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
 }
 
 .nftThumb {
@@ -1079,13 +1119,7 @@
 .nftThumbPlaceholder {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--muted);
+  display: block;
   background: linear-gradient(
     145deg,
     rgba(59, 140, 255, 0.08),
@@ -1143,6 +1177,131 @@
   gap: 0.5rem;
   margin-top: 0.4rem;
   padding-left: calc(1rem + 0.65rem + 3.25rem + 0.65rem);
+}
+
+/* NFT detail modal (extension popup–safe) */
+.nftModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(0, 4, 12, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.nftModalCard {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  max-height: min(560px, calc(100vh - 20px));
+  overflow: auto;
+  padding: 16px 14px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(59, 140, 255, 0.45);
+  background: linear-gradient(180deg, rgba(10, 17, 40, 0.98), rgba(6, 14, 28, 0.99));
+  color: var(--text, #e8f0ff);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.nftModalClose {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(59, 140, 255, 0.35);
+  background: transparent;
+  color: #8db8ff;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.nftModalMedia {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: 180px;
+  margin: 0 auto 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color, rgba(59, 140, 255, 0.28));
+  background: var(--surface, rgba(255, 255, 255, 0.04));
+}
+
+.nftModalThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.nftModalThumbPlaceholder {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: linear-gradient(
+    145deg,
+    rgba(59, 140, 255, 0.1),
+    rgba(10, 17, 40, 0.7)
+  );
+}
+
+.nftModalThumbPlaceholder[hidden] {
+  display: none;
+}
+
+.nftModalTitle {
+  margin: 0 28px 6px 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.nftModalDescription {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  color: var(--text-secondary, var(--muted));
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.nftModalExplorer {
+  display: inline-block;
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--express-primary, #3b8cff);
+  text-decoration: none;
+}
+
+.nftModalExplorer:hover,
+.nftModalExplorer:focus-visible {
+  text-decoration: underline;
+}
+
+.nftModalRemove {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.nftModalRemove:hover {
+  color: var(--text-secondary, #cfe0ff);
 }
 
 .nftSelectBar {

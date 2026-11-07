@@ -132,7 +132,6 @@ export function Dashboard() {
   const [activeTab, setActiveTabRaw] = useState<WalletTabId>('wallet');
   const [lastMainTab, setLastMainTab] = useState<WalletTabId>('wallet');
   const [transferMode, setTransferMode] = useState<TransferMode>('boing');
-  const [nftPreselect, setNftPreselect] = useState<string | null>(null);
   const tokens = useTokenHoldings(accountId, network);
   const setActiveTab = useCallback((t: WalletTabId) => {
     setActiveTabRaw(t);
@@ -1022,11 +1021,6 @@ export function Dashboard() {
                     addressHint={addressHint}
                     onTxRecorded={refreshTxHistory}
                     mode="view"
-                    onTransferItem={(key) => {
-                      setNftPreselect(key);
-                      setTransferMode('nft');
-                      setActiveTab('transfer');
-                    }}
                   />
                 )}
               </div>
@@ -1287,7 +1281,6 @@ export function Dashboard() {
             )}
             {transferMode === 'nft' && accountId && activeTab === 'transfer' && (
               <NftHoldingsPanel
-                key={nftPreselect ?? 'none'}
                 accountId={accountId}
                 network={network}
                 rpcUrl={network.config.rpcUrl}
@@ -1295,7 +1288,6 @@ export function Dashboard() {
                 addressHint={addressHint}
                 onTxRecorded={refreshTxHistory}
                 mode="transfer"
-                initialSelectedKey={nftPreselect}
               />
             )}
             {transferMode === 'bulk' && accountId && (
