@@ -1,2 +1,7 @@
+# Apex host is canonical. Keep in sync with Cloudflare Single Redirect www→apex.
+https://www.boing.express/* https://boing.express/:splat 301!
+http://www.boing.express/* https://boing.express/:splat 301!
+http://boing.express/* https://boing.express/:splat 301!
+
 # SPA: serve index.html for all routes (Cloudflare Pages)
 /*    /index.html   200
