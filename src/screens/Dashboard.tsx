@@ -27,6 +27,7 @@ import { chainIdHexToDecimal } from '../networks/chainIds';
 import { SiteLogo } from '../components/SiteLogo';
 import { nextTabId } from '../components/tabNav';
 import { NftHoldingsPanel } from '../components/NftHoldingsPanel';
+import { MultiTokenHoldingsPanel } from '../components/MultiTokenHoldingsPanel';
 import { RevealPrivateKeyPanel } from '../components/RevealPrivateKeyPanel';
 import { RevealRecoveryPhrasePanel } from '../components/RevealRecoveryPhrasePanel';
 import { RecoveryNudge } from '../components/RecoveryNudge';
@@ -1021,6 +1022,16 @@ export function Dashboard() {
                     addressHint={addressHint}
                     onTxRecorded={refreshTxHistory}
                     mode="view"
+                  />
+                )}
+                {accountId && activeTab === 'wallet' && (
+                  <MultiTokenHoldingsPanel
+                    accountId={accountId}
+                    network={network}
+                    rpcUrl={network.config.rpcUrl}
+                    getPrivateKey={getPrivateKey}
+                    addressHint={addressHint}
+                    onTxRecorded={refreshTxHistory}
                   />
                 )}
               </div>

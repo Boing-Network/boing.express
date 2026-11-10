@@ -8,6 +8,7 @@
 import type { AccountId } from './types';
 import { formatAddress } from './types';
 import { BOING_BASE_DECIMALS, formatNative } from './nativeUnit';
+import { decodeMultiTokenCalldata, describeMultiTokenCall } from './referenceMultiToken';
 
 /** Optional dApp-supplied approval copy (`display` or `description` on the tx JSON). */
 export const DAPP_DISPLAY_MAX_CHARS = 280;
@@ -245,6 +246,12 @@ export function describeCalldataIntent(
       ],
     };
   }
+
+  // Reference multi-token (game items): 0x21 transfer / 0x22 mint (128 B), 0x23 set_item_metadata (96 B),
+  // 0x24 mint_batch / 0x25 transfer_batch (96+64n), 0x29 transfer_admin (64 B). Exact lengths keep these
+  // apart from wBOING 0x20-0x26 (32/64/96-byte calls) handled above.
+  const mt = decodeMultiTokenCalldata(calldata);
+  if (mt) return describeMultiTokenCall(mt);
 
   return null;
 }
