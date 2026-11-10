@@ -1,5 +1,5 @@
 /**
- * Payload variant indices 0-35 (BOING-SIGNED-TRANSACTION-ENCODING.md) and chain-bound (v2) signing for the
+ * Payload variant indices 0-39 (BOING-SIGNED-TRANSACTION-ENCODING.md) and chain-bound (v2) signing for the
  * two Boing chains. The index is a u32 LE bincode enum discriminant, so a wrong value silently produces a
  * different transaction type.
  */
@@ -53,6 +53,10 @@ const SPEC_VARIANTS: Record<string, number> = {
   ResolveSlashAppealBlsAggregate: 33,
   GrantBlobDownload: 34,
   RevokeBlobDownload: 35,
+  ReportEquivocation: 36,
+  GovernancePropose: 37,
+  GovernanceVote: 38,
+  GovernanceAdvanceCooling: 39,
 };
 
 type SdkPayload = Parameters<typeof sdk.encodeTransactionPayload>[0];
@@ -99,10 +103,10 @@ const WALLET_VARIANTS: Array<{ variant: string; wallet: Payload; sdk: SdkPayload
   },
 ];
 
-describe('payload variant indices (0-35)', () => {
-  it('the spec table is 36 contiguous indices and matches boing-sdk PayloadVariant exactly', () => {
+describe('payload variant indices (0-39)', () => {
+  it('the spec table is 40 contiguous indices and matches boing-sdk PayloadVariant exactly', () => {
     const values = Object.values(SPEC_VARIANTS).sort((a, b) => a - b);
-    expect(values).toEqual(Array.from({ length: 36 }, (_, i) => i));
+    expect(values).toEqual(Array.from({ length: 40 }, (_, i) => i));
     expect({ ...sdk.PayloadVariant }).toEqual(SPEC_VARIANTS);
   });
 

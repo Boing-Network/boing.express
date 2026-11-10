@@ -1,8 +1,8 @@
 /**
  * Reference multi-token v1 (ERC-1155-style shared item types) — calldata, storage keys, log decoding and
- * human-readable call descriptions. Dependency-free mirror of boing-sdk 0.5.41 `referenceMultiToken.ts`
- * (spec: boing.network `docs/BOING-REFERENCE-MULTI-TOKEN.md`). Replace with the SDK exports once
- * `@boing-network/boing-sdk@0.5.41` is published.
+ * human-readable call descriptions. Constants and bytecode come from `@boing-network/boing-sdk` (>= 0.5.41);
+ * the wallet keeps its own string-tolerant encoders/decoders and approval copy, pinned to the SDK by
+ * `referenceMultiToken.test.ts` (spec: boing.network `docs/BOING-REFERENCE-MULTI-TOKEN.md`).
  *
  * Every holder of item `7` holds the same item: balances are `balance[itemId][account]`, item ids are u64,
  * amounts u128. Slot keys are XOR-tagged words (no hashing opcode).
@@ -15,20 +15,34 @@ import {
 
 export { REFERENCE_MULTI_TOKEN_DEPLOY_HEX, REFERENCE_MULTI_TOKEN_RUNTIME_HEX };
 
-export const SELECTOR_MT_BALANCE_OF = 0x20;
-export const SELECTOR_MT_TRANSFER = 0x21;
-export const SELECTOR_MT_MINT = 0x22;
-export const SELECTOR_MT_SET_ITEM_METADATA = 0x23;
-export const SELECTOR_MT_MINT_BATCH = 0x24;
-export const SELECTOR_MT_TRANSFER_BATCH = 0x25;
-export const SELECTOR_MT_TOTAL_SUPPLY = 0x26;
-export const SELECTOR_MT_ITEM_METADATA = 0x27;
-export const SELECTOR_MT_ADMIN = 0x28;
-export const SELECTOR_MT_TRANSFER_ADMIN = 0x29;
-
-/** Max entries per `mint_batch` / `transfer_batch` (one log per entry; VM cap 24 logs per tx). */
-export const MAX_REFERENCE_MULTI_TOKEN_BATCH = 16;
-export const REFERENCE_MULTI_TOKEN_ARTIFACT_ID = 'boing.reference_multi_token.v1';
+// Selectors, batch cap and artifact id come straight from the SDK (single source of truth).
+export {
+  SELECTOR_MT_BALANCE_OF,
+  SELECTOR_MT_TRANSFER,
+  SELECTOR_MT_MINT,
+  SELECTOR_MT_SET_ITEM_METADATA,
+  SELECTOR_MT_MINT_BATCH,
+  SELECTOR_MT_TRANSFER_BATCH,
+  SELECTOR_MT_TOTAL_SUPPLY,
+  SELECTOR_MT_ITEM_METADATA,
+  SELECTOR_MT_ADMIN,
+  SELECTOR_MT_TRANSFER_ADMIN,
+  MAX_REFERENCE_MULTI_TOKEN_BATCH,
+  REFERENCE_MULTI_TOKEN_ARTIFACT_ID,
+} from '@boing-network/boing-sdk';
+import {
+  SELECTOR_MT_BALANCE_OF,
+  SELECTOR_MT_TRANSFER,
+  SELECTOR_MT_MINT,
+  SELECTOR_MT_SET_ITEM_METADATA,
+  SELECTOR_MT_MINT_BATCH,
+  SELECTOR_MT_TRANSFER_BATCH,
+  SELECTOR_MT_TOTAL_SUPPLY,
+  SELECTOR_MT_ITEM_METADATA,
+  SELECTOR_MT_ADMIN,
+  SELECTOR_MT_TRANSFER_ADMIN,
+  MAX_REFERENCE_MULTI_TOKEN_BATCH,
+} from '@boing-network/boing-sdk';
 
 function tag32(ascii: string): string {
   let h = '';
