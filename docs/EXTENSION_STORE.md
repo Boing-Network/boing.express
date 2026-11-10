@@ -211,6 +211,9 @@ Publish path: bump is already in `manifest.base.json` → `pnpm run publish:exte
 
 - **NFT tiles open an in-extension detail modal** — image-only gallery tiles; click for Transfer, View on block explorer, and Remove from wallet view (local watchlist unlist). Inline Transfer/Remove row actions and tile metadata text are gone.
 - Transfer-tab multi-select batch send is unchanged.
+- **Game items (reference multi-token v1)** - holdings panel, send, and decoded approval copy for shared game items (`mint` / `transfer` / batch calls); multi-token constants and bytecode now come from `@boing-network/boing-sdk` 0.5.41.
+- **Newer transaction types** - payload variants 36-39 (equivocation report, governance propose / vote / advance cooling) are recognised; chain metadata synced with boing.network.
+- **Release zip:** `boing-wallet-extension-0.1.26.zip` on the GitHub release [`extension-v0.1.26`](https://github.com/Boing-Network/boing.express/releases/tag/extension-v0.1.26) (built by `pnpm run zip:extension`, testnet RPC pinned to `https://testnet-rpc.boing.network`).
 
 Publish path: bump is already in `manifest.base.json` → `pnpm run publish:extension` (draft by default; run by hand with your own Chrome Web Store credentials, never from CI).
 

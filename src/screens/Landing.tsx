@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { SiteHeader, type SiteHeaderLink } from '../components/SiteHeader';
-import { CHROME_EXTENSION_STORE_URL } from '../constants/chromeExtension';
+import { CHROME_EXTENSION_STORE_URL, EXTENSION_RELEASE_URL, EXTENSION_RELEASE_VERSION } from '../constants/chromeExtension';
 import styles from './Landing.module.css';
 
 const HEADER_LINKS: SiteHeaderLink[] = [
@@ -91,7 +91,11 @@ export function Landing() {
                 <a href={CHROME_EXTENSION_STORE_URL} target="_blank" rel="noopener noreferrer">
                   boing.express
                 </a>
-                . A Chrome extension listing will replace this CTA once the store item ID is published.
+                . The Chrome extension is in store review; developers can Load unpacked from the{' '}
+                <a href={EXTENSION_RELEASE_URL} target="_blank" rel="noopener noreferrer">
+                  {EXTENSION_RELEASE_VERSION} release zip
+                </a>
+                .
               </p>
             </div>
             <div className={styles.card}>

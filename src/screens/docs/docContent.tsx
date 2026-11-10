@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { EXTENSION_RELEASE_VERSION, EXTENSION_RELEASE_ZIP_URL } from '../../constants/chromeExtension';
 
 type Doc = { title: string; content: React.ReactNode };
 
@@ -191,7 +192,7 @@ export const DOCS: Record<string, Doc> = {
         </p>
         <h2>Priorities</h2>
         <ul>
-          <li>Chrome extension listing — store item URL not published in-repo yet; use the web wallet at boing.express (or Load unpacked from the release zip)</li>
+          <li>Chrome extension listing — in Chrome Web Store review; use the web wallet at boing.express, or Load unpacked from the{' '}<a href={EXTENSION_RELEASE_ZIP_URL}>{EXTENSION_RELEASE_VERSION} release zip</a></li>
           <li>Staking UI (Bond/Unbond) — implemented</li>
           <li>Backup reminder for new wallets — implemented</li>
           <li>Explorer tx deep links — pending stable route on boing.observer</li>
